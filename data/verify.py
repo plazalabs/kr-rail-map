@@ -6,10 +6,11 @@ lines = json.load(open("lines.geojson"))["features"]
 sts = json.load(open("stations.geojson"))["features"]
 
 # 1. 스키마 검사
-lkeys = {"id", "name_ko", "name_en", "color", "category", "status"}
+lkeys = {"id", "name_ko", "name_en", "color", "category", "status", "variants"}
+lkeys_opt = lkeys | {"note"}
 skeys = {"id", "name_ko", "name_en", "line_id", "lines"}
 bad_l = [f["properties"]["id"] for f in lines
-         if set(f["properties"].keys()) != lkeys
+         if not set(f["properties"].keys()) <= lkeys_opt or not lkeys <= set(f["properties"].keys())
          or f["geometry"]["type"] not in ("LineString", "MultiLineString")]
 bad_s = [s["properties"]["id"] for s in sts
          if set(s["properties"].keys()) != skeys

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>한국철도맵 (가제)</title>
+<meta name="description" content="한국의 모든 철도 노선과 역을 한 지도에 — 노선도 웹앱 (제작 중)">
+<meta name="theme-color" content="#f6465d">
+<link rel="manifest" href="site.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link href="vendor/maplibre-gl.css" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="light">
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">한국철도맵 <span class="tag">제작 중</span></div>
+    <input id="search" type="text" placeholder="역 검색 — / 키를 눌러보세요" autocomplete="off">
+    <div id="search-results"></div>
+    <div class="panel-head">테마</div>
+    <div class="theme-row" id="theme-row"></div>
+    <div class="panel-head">노선 <span id="line-count"></span></div>
+    <div id="line-list"><p class="empty">데이터 로딩 중…</p></div>
+    <div class="panel-head">나의 노선 <span id="myline-count"></span></div>
+    <div id="myline-list"><p class="empty">그리기 모드에서 노선을 만들어보세요</p></div>
+    <div class="attrib">노선/역 데이터 © OpenStreetMap contributors (ODbL)<br>지도 © OpenStreetMap · OpenFreeMap / 위성 © Esri</div>
+  </aside>
+  <main id="map-wrap">
+    <div id="map"></div>
+    <div id="toolbar">
+      <button data-style="normal" class="active">일반</button>
+      <button data-style="satellite">위성</button>
+      <button data-style="gray">흑백</button>
+      <button id="route-btn">길찾기</button>
+      <button id="draw-btn">그리기</button>
+      <button id="measure-btn">측정</button>
+      <button id="save-btn" title="지도를 PNG 이미지로 저장">이미지 저장</button>
+      <button id="share-btn" title="현재 화면 링크 복사">링크 복사</button>
+    </div>
+    <div id="draw-panel" hidden>
+      <div class="rp-head">나의 노선 그리기</div>
+      <div class="dp-row"><span>색상</span><div id="draw-palette"></div></div>
+      <div class="dp-row"><span>선 모양</span><select id="draw-dash"></select></div>
+      <div class="rp-note">지도 클릭: 점 추가 · Enter: 완료 · Backspace: 되돌리기 · Esc: 취소</div>
+    </div>
+    <div id="route-panel" hidden>
+      <div class="rp-head">길찾기 <button id="route-close" title="닫기">✕</button></div>
+      <input id="route-from" list="station-list" placeholder="출발역" autocomplete="off">
+      <input id="route-to" list="station-list" placeholder="도착역" autocomplete="off">
+      <datalist id="station-list"></datalist>
+      <div class="rp-row">
+        <button id="route-swap" title="출발↔도착 바꾸기">⇅</button>
+        <button id="route-go">찾기</button>
+      </div>
+      <div id="route-result"></div>
+      <div class="rp-note">노선별 평균 속도로 어림한 예상 소요시간입니다</div>
+    </div>
+    <div id="status">지도 로딩 중…</div>
+  </main>
+</div>
+<script src="vendor/maplibre-gl.js"></script>
+<script src="js/route.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

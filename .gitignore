@@ -1,0 +1,6 @@
+# GitHub에 올리지 않을 것들
+data/raw/
+dist/
+qa/
+qa_shots.py
+qa-style.json

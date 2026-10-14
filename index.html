@@ -27,6 +27,7 @@
   </aside>
   <main id="map-wrap">
     <div id="map"></div>
+    <button id="sidebar-toggle" title="사이드바 접기/펼치기">◀</button>
     <div id="toolbar">
       <button data-style="normal" class="active">일반</button>
       <button data-style="satellite">위성</button>
@@ -45,9 +46,8 @@
     </div>
     <div id="route-panel" hidden>
       <div class="rp-head">길찾기 <button id="route-close" title="닫기">✕</button></div>
-      <input id="route-from" list="station-list" placeholder="출발역" autocomplete="off">
-      <input id="route-to" list="station-list" placeholder="도착역" autocomplete="off">
-      <datalist id="station-list"></datalist>
+      <div class="ac-wrap"><input id="route-from" placeholder="출발역" autocomplete="off"><div class="ac-list" hidden></div></div>
+      <div class="ac-wrap"><input id="route-to" placeholder="도착역" autocomplete="off"><div class="ac-list" hidden></div></div>
       <div class="rp-row">
         <button id="route-swap" title="출발↔도착 바꾸기">⇅</button>
         <button id="route-go">찾기</button>

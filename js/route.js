@@ -74,7 +74,12 @@ const RouteFinder = (() => {
   function buildGraph(lines, stations) {
     adj = new Map(); lineCat = new Map(); stationsById = new Map();
     const lineGeom = new Map();
-    lines.forEach(f => {
+    // 공사중/계획 노선은 길찾기에서 제외 (운행 중인 노선만)
+    const activeLines = lines.filter(f => {
+      const st = (f.properties.status || '').toLowerCase();
+      return st !== 'construction' && st !== 'planned' && st !== 'proposed';
+    });
+    activeLines.forEach(f => {
       lineCat.set(f.properties.id, f.properties.category || 'etc');
       lineGeom.set(f.properties.id, flatCoords(f.geometry));
     });

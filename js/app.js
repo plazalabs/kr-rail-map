@@ -289,17 +289,77 @@ function setupRouteFinder() {
   LINES.forEach(f => lineNameOf.set(f.properties.id, f.properties.name_ko));
   const info = RouteFinder.buildGraph(LINES, STATIONS);
   console.log('route graph:', info);
-  const dl = document.getElementById('station-list');
-  const seen = new Set();
-  STATIONS.forEach(s => {
-    const n = s.properties.name_ko;
-    if (seen.has(n)) return;
-    seen.add(n);
-    const o = document.createElement('option');
-    o.value = n;
-    dl.appendChild(o);
+  attachAutocomplete(document.getElementById('route-from'));
+  attachAutocomplete(document.getElementById('route-to'));
+}
+/* 커스텀 자동완성: 입력 중 매칭 역 목록 표시 */
+function attachAutocomplete(input) {
+  const list = input.parentElement.querySelector('.ac-list');
+  let items = [], activeIdx = -1;
+  function hide() { list.hidden = true; activeIdx = -1; }
+  function render(q) {
+    const seen = new Set();
+    items = [];
+    for (const s of STATIONS) {
+      const n = s.properties.name_ko;
+      if (seen.has(n)) continue;
+      if (!n.includes(q)) continue;
+      seen.add(n);
+      // 시작 매칭 우선
+      items.push({ name: n, lines: s.properties.lines || [], starts: n.startsWith(q) });
+      if (items.length >= 60) break;
+    }
+    items.sort((a, b) => (b.starts - a.starts));
+    items = items.slice(0, 8);
+    if (!items.length) { hide(); return; }
+    list.innerHTML = items.map((it, i) => {
+      const ln = it.lines.map(lid => lineNameOf.get(lid) || lid).slice(0, 3).join('·');
+      return '<div class="ac-item" data-i="' + i + '">' + it.name +
+        (ln ? '<span class="ac-lines">' + ln + '</span>' : '') + '</div>';
+    }).join('');
+    list.hidden = false;
+    activeIdx = -1;
+  }
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    if (!q) { hide(); return; }
+    render(q);
+  });
+  input.addEventListener('focus', () => {
+    const q = input.value.trim();
+    if (q) render(q);
+  });
+  input.addEventListener('blur', () => setTimeout(hide, 180));
+  input.addEventListener('keydown', e => {
+    if (list.hidden) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = e.key === 'ArrowDown'
+        ? Math.min(activeIdx + 1, items.length - 1)
+        : Math.max(activeIdx - 1, 0);
+      list.querySelectorAll('.ac-item').forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+    } else if (e.key === 'Enter' && activeIdx >= 0) {
+      e.preventDefault();
+      input.value = items[activeIdx].name;
+      hide();
+    } else if (e.key === 'Escape') { hide(); }
+  });
+  list.addEventListener('mousedown', e => {
+    const el = e.target.closest('.ac-item');
+    if (!el) return;
+    e.preventDefault();
+    input.value = items[+el.dataset.i].name;
+    hide();
+    input.focus();
   });
 }
+/* 사이드바 토글 */
+document.getElementById('sidebar-toggle').addEventListener('click', () => {
+  const hidden = document.body.classList.toggle('sidebar-hidden');
+  document.getElementById('sidebar-toggle').textContent = hidden ? '▶' : '◀';
+  document.getElementById('sidebar-toggle').title = hidden ? '사이드바 펼치기' : '사이드바 접기';
+  if (window.map) setTimeout(() => map.resize(), 50);
+});
 function resolveStation(name) {
   name = (name || '').trim();
   return STATIONS.find(s => s.properties.name_ko === name) || null;

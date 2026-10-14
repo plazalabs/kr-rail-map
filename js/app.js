@@ -401,7 +401,11 @@ map.on('click', e => {
   // 그리기 모드 중에는 역 팝업 띄우지 않음
   if (document.body.classList.contains('drawing')) return;
   let feats = [];
-  try { feats = map.queryRenderedFeatures(e.point, { layers: ['rail-stations'] }); } catch (_) { return; }
+  try {
+    // 탭이 빗나가도 잡히도록 클릭 지점 주변 18px 박스로 조회 (모바일 대응)
+    const p = e.point, r = 18;
+    feats = map.queryRenderedFeatures([[p.x - r, p.y - r], [p.x + r, p.y + r]], { layers: ['rail-stations'] });
+  } catch (_) { return; }
   if (!feats.length) return;
   openStationPopup(feats[0], e.lngLat);
 });

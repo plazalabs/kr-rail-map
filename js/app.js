@@ -360,3 +360,50 @@ function restoreCustomLayers() {
 }
 map.on('style.load', restoreCustomLayers);
 map.on('styledata', restoreCustomLayers); // 동일 스타일 재적용 등 style.load 미발화 대비 안전망
+
+/* ---------- 역 클릭 팝업: 출발지/도착지 지정 ---------- */
+let stationPopup = null;
+function closeStationPopup() {
+  if (stationPopup) { stationPopup.remove(); stationPopup = null; }
+}
+function openStationPopup(feature, lngLat) {
+  closeStationPopup();
+  const p = feature.properties;
+  const sname = p.name_ko;
+  // STATIONS 원본에서 찾기 (MapLibre feature properties는 배열이 문자열화될 수 있음)
+  const orig = STATIONS.find(s => s.properties.id === p.id);
+  const lineIds = orig ? (orig.properties.lines || []) : [];
+  const lineTxt = lineIds.length ? lineIds.map(lid => lineNameOf.get(lid) || lid).join(' · ') : '노선 정보 없음';
+  const el = document.createElement('div');
+  el.className = 'st-popup';
+  el.innerHTML =
+    '<div class="st-name">' + sname + '</div>' +
+    '<div class="st-lines">' + lineTxt + '</div>' +
+    '<div class="st-btns">' +
+      '<button data-act="from">출발지</button>' +
+      '<button data-act="to">도착지</button>' +
+    '</div>';
+  el.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const act = b.dataset.act;
+      document.getElementById(act === 'from' ? 'route-from' : 'route-to').value = sname;
+      document.getElementById('route-panel').hidden = false;
+      closeStationPopup();
+    });
+  });
+  stationPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: '240px' })
+    .setLngLat(lngLat)
+    .setDOMContent(el)
+    .addTo(map);
+}
+map.on('click', e => {
+  // 그리기 모드 중에는 역 팝업 띄우지 않음
+  if (document.body.classList.contains('drawing')) return;
+  let feats = [];
+  try { feats = map.queryRenderedFeatures(e.point, { layers: ['rail-stations'] }); } catch (_) { return; }
+  if (!feats.length) return;
+  openStationPopup(feats[0], e.lngLat);
+});
+map.on('mouseenter', 'rail-stations', () => { map.getCanvas().style.cursor = 'pointer'; });
+map.on('mouseleave', 'rail-stations', () => { map.getCanvas().style.cursor = ''; });

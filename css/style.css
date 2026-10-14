@@ -146,3 +146,15 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
 #draw-dash { background: var(--input); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px; }
 .mini-del { margin-left: auto; border: none; background: none; color: var(--muted); cursor: pointer; font-size: 12px; }
 .mini-del:hover { color: #e0574f; }
+
+/* ---- 역 팝업 (출발지/도착지) ---- */
+.st-popup { min-width: 160px; font-size: 13px; }
+.st-popup .st-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.st-popup .st-lines { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.st-popup .st-btns { display: flex; gap: 6px; }
+.st-popup .st-btns button {
+  flex: 1; padding: 7px 0; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--input); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.st-popup .st-btns button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.maplibregl-popup-content { border-radius: 12px; padding: 12px; }

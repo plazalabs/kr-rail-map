@@ -530,7 +530,7 @@ document.getElementById('route-go').addEventListener('click', () => {
   });
   box.innerHTML = html;
   // 경로 하이라이트: 해당 경로 역만 밝게, 나머지는 어둡게
-  highlightRoute(r.path);
+  highlightRoute(r.path, r.legs);
   // 경유역 펼치기 토글
   box.querySelectorAll('.via-toggle').forEach(btn => {
     const orig = btn.textContent;
@@ -544,28 +544,45 @@ document.getElementById('route-go').addEventListener('click', () => {
 
 /* ---------- 경로 하이라이트 (철맘 스타일) ---------- */
 // 경로상의 역만 밝게 표시, 나머지는 어둡게. 경로 선을 지도에 그림.
-function highlightRoute(path) {
+function highlightRoute(path, legs) {
   if (!map || !path || !path.length) return;
   clearRouteHighlight();
 
   const pathSet = new Set(path);
+  // 경로에 사용된 노선 ID 수집
+  const routeLineIds = new Set();
+  if (legs) {
+    legs.forEach(leg => { if (leg.lineId) routeLineIds.add(leg.lineId); });
+  }
 
-  // 역 원: 경로에 포함된 역만 불투명, 나머지는 15% 투명도
+  // 노선: 경로 노선만 밝게, 나머지는 10% 투명도로 비활성화 느낌
+  if (routeLineIds.size > 0) {
+    map.setPaintProperty('rail-lines', 'line-opacity', [
+      'case',
+      ['in', ['get', 'id'], ['literal', [...routeLineIds]]],
+      0.9,
+      0.08
+    ]);
+  } else {
+    map.setPaintProperty('rail-lines', 'line-opacity', 0.08);
+  }
+
+  // 역 원: 경로에 포함된 역만 불투명, 나머지는 10% 투명도
   map.setPaintProperty('rail-stations', 'circle-opacity', [
     'case',
     ['in', ['get', 'id'], ['literal', [...pathSet]]],
     1,
-    0.15
+    0.1
   ]);
   // 역 라벨도 동일하게
   map.setPaintProperty('station-labels', 'text-opacity', [
     'case',
     ['in', ['get', 'id'], ['literal', [...pathSet]]],
     1,
-    0.15
+    0.1
   ]);
 
-  // 경로 선 그리기 (역 좌표 연결)
+  // 경로 선 그리기 (역 좌표 연결) - 굵고 밝게
   const coords = [];
   for (const id of path) {
     const s = STATIONS.find(x => x.properties.id === id);
@@ -579,11 +596,11 @@ function highlightRoute(path) {
   });
   map.addLayer({
     id: 'route-highlight-line', type: 'line', source: 'route-highlight',
-    paint: { 'line-color': '#FF0000', 'line-width': 5, 'line-opacity': 0.9 }
+    paint: { 'line-color': '#FF0000', 'line-width': 6, 'line-opacity': 1 }
   });
   map.addLayer({
     id: 'route-highlight-stations', type: 'circle', source: 'route-highlight',
-    paint: { 'circle-radius': 6, 'circle-color': '#FF0000', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 }
+    paint: { 'circle-radius': 7, 'circle-color': '#FF0000', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2.5 }
   });
 
   // 경로에 맞게 지도 이동
@@ -597,6 +614,7 @@ function clearRouteHighlight() {
   if (map.getLayer('route-highlight-line')) map.removeLayer('route-highlight-line');
   if (map.getLayer('route-highlight-stations')) map.removeLayer('route-highlight-stations');
   if (map.getSource('route-highlight')) map.removeSource('route-highlight');
+  if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0.9);
   if (map.getLayer('rail-stations')) map.setPaintProperty('rail-stations', 'circle-opacity', 1);
   if (map.getLayer('station-labels')) map.setPaintProperty('station-labels', 'text-opacity', 1);
 }

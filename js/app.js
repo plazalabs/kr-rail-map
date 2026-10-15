@@ -470,10 +470,26 @@ document.getElementById('route-go').addEventListener('click', () => {
         : `<div class="leg">🚶 ${a} → ${b} (도보 이동)</div>`;
     } else {
       const ln = lineNameOf.get(leg.lineId) || leg.lineId;
-      html += `<div class="leg">${a} → <b>${ln}</b> ${n}개역 → ${b}</div>`;
+      // 경유역 목록 (펼치기 가능)
+      const segStations = [];
+      const step = i2 > i1 ? 1 : -1;
+      for (let i = i1; i !== i2; i += step) segStations.push(sname(r.path[i]));
+      segStations.push(sname(r.path[i2]));
+      const viaId = `via-${leg.from}-${leg.to}`;
+      html += `<div class="leg">${a} → <b>${ln}</b> <button class="via-toggle" data-target="${viaId}">${n}개역</button> → ${b}
+        <div class="via-list" id="${viaId}" hidden>${segStations.join(' → ')}</div></div>`;
     }
   });
   box.innerHTML = html;
+  // 경유역 펼치기 토글
+  box.querySelectorAll('.via-toggle').forEach(btn => {
+    const orig = btn.textContent;
+    btn.addEventListener('click', () => {
+      const t = document.getElementById(btn.dataset.target);
+      t.hidden = !t.hidden;
+      btn.textContent = t.hidden ? orig : '접기';
+    });
+  });
 });
 
 /* ---------- 시작 ---------- */
@@ -486,6 +502,7 @@ map.on('load', async () => {
   addDataLayers(); renderLineList(); updateFilters(); setupRouteFinder();
   DrawTools.setStations(STATIONS);
   DrawTools.refreshMyLines(); DrawTools.renderMyLineList();
+  DrawTools.refreshMemos();
   restoreFromUrl();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원

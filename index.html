@@ -21,8 +21,11 @@
     <div class="theme-row" id="theme-row"></div>
     <div class="panel-head">노선 <span id="line-count"></span></div>
     <div id="line-list"><p class="empty">데이터 로딩 중…</p></div>
-    <div class="panel-head">나의 노선 <span id="myline-count"></span></div>
+    <div class="panel-head">나의 노선 <span id="myline-count"></span>
+      <button id="export-geojson" title="자작 노선 GeoJSON 다운로드" style="float:right">⬇ GeoJSON</button>
+    </div>
     <div id="myline-list"><p class="empty">그리기 모드에서 노선을 만들어보세요</p></div>
+    <div id="memo-list"></div>
     <div class="attrib">노선/역 데이터 © OpenStreetMap contributors (ODbL)<br>지도 © OpenStreetMap · OpenFreeMap / 위성 © Esri</div>
   </aside>
   <main id="map-wrap">
@@ -36,6 +39,7 @@
       <button id="draw-btn">그리기</button>
       <button id="measure-btn">측정</button>
       <button id="radius-btn" title="반경 측정">반경</button>
+      <button id="memo-btn" title="메모 핀">📌 메모</button>
       <button id="locate-btn" title="내 위치로 이동">📍 내 위치</button>
       <button id="save-btn" title="지도를 PNG 이미지로 저장">이미지 저장</button>
       <button id="share-btn" title="현재 화면 링크 복사">링크 복사</button>

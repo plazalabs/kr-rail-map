@@ -562,6 +562,11 @@ map.on('load', async () => {
     };
   }
   if (typeof LineCompare !== 'undefined') LineCompare.init(LINES, STATIONS);
+  if (typeof RailStats !== 'undefined') RailStats.init(LINES, STATIONS);
+  if (typeof RailTimeline !== 'undefined') {
+    RailTimeline.init(LINES, STATIONS);
+    RailTimeline.onSelect = (lineId) => highlightLine(lineId);
+  }
   restoreFromUrl();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
@@ -759,3 +764,17 @@ document.getElementById('compare-btn').addEventListener('click', () => {
 
 // DiagramMode에서 역 클릭 시 팝업을 띄우기 위한 전역 노출
 window.openStationPopup = (feature, lngLat) => openStationPopup(feature, lngLat);
+
+// 통계 / 타임라인 버튼
+document.getElementById('stats-btn').addEventListener('click', () => {
+  if (typeof RailStats === 'undefined') { setStatus('통계 모듈을 불러오지 못했습니다.'); return; }
+  RailStats.show();
+});
+document.getElementById('timeline-btn').addEventListener('click', () => {
+  if (typeof RailTimeline === 'undefined') { setStatus('타임라인 모듈을 불러오지 못했습니다.'); return; }
+  RailTimeline.show();
+});
+document.getElementById('diagram-save-btn').addEventListener('click', () => {
+  if (typeof DiagramExport === 'undefined') { setStatus('저장 모듈을 불러오지 못했습니다.'); return; }
+  DiagramExport.save();
+});

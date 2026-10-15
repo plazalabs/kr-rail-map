@@ -574,6 +574,7 @@ map.on('load', async () => {
   }
   if (typeof RouteCompare !== 'undefined') RouteCompare.init(RouteFinder, STATIONS, LINES);
   if (typeof InvestAnalyzer !== 'undefined') InvestAnalyzer.init(map, STATIONS, LINES);
+  if (typeof CoverageMap !== 'undefined') CoverageMap.init(map, STATIONS, LINES);
   restoreFromUrl();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
@@ -794,4 +795,9 @@ document.getElementById('invest-btn').addEventListener('click', () => {
   InvestAnalyzer.setMode(on);
   document.getElementById('invest-btn').classList.toggle('active', on);
   if (on) setStatus('투자분석: 분석할 지점을 클릭하세요 (Esc 취소)');
+});
+document.getElementById('coverage-btn').addEventListener('click', () => {
+  if (typeof CoverageMap === 'undefined') { setStatus('영향권 모듈을 불러오지 못했습니다.'); return; }
+  CoverageMap.isActive() ? CoverageMap.hide() : CoverageMap.show();
+  document.getElementById('coverage-btn').classList.toggle('active', CoverageMap.isActive());
 });

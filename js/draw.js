@@ -11,8 +11,21 @@ const DrawTools = (() => {
   let myLines = [];                  // {id, name, color, dashKey, coords}
   let seq = 1;
   let onUpdate = null;               // 상태 표시 콜백
+  const LS_KEY = 'kr-rail-map-mylines-v1';
 
   function setStatus(msg) { if (onUpdate) onUpdate(msg); }
+
+  function saveMyLines() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ seq, myLines })); } catch (_) {}
+  }
+  function loadMyLines() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (Array.isArray(d.myLines)) { myLines = d.myLines; seq = d.seq || (myLines.length + 1); }
+    } catch (_) {}
+  }
 
   function hav(ax, ay, bx, by) {
     const r = Math.PI / 180;
@@ -152,6 +165,7 @@ const DrawTools = (() => {
     const line = { id: 'my-' + (seq), name: '나의 노선 ' + (seq), color, dashKey, coords: [...pts] };
     seq++;
     myLines.push(line);
+    saveMyLines();
     refreshMyLines();
     renderMyLineList();
     mode = null; pts = [];
@@ -174,6 +188,7 @@ const DrawTools = (() => {
       del.className = 'mini-del'; del.textContent = '✕'; del.title = '삭제';
       del.addEventListener('click', () => {
         myLines = myLines.filter(x => x.id !== l.id);
+        saveMyLines();
         refreshMyLines(); renderMyLineList();
       });
       row.append(sw, document.createTextNode(l.name), del);
@@ -193,6 +208,7 @@ const DrawTools = (() => {
 
   function init(m, statusCb) {
     map = m; onUpdate = statusCb;
+    loadMyLines();
     map.on('click', e => onClick(e.lngLat));
     document.addEventListener('keydown', onKey);
     // 그리기 패널: 색상 팔레트 + 선 스타일
@@ -236,5 +252,5 @@ const DrawTools = (() => {
     }
   }
 
-  return { init, renderMyLineList, restyle };
+  return { init, renderMyLineList, restyle, refreshMyLines };
 })();

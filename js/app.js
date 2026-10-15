@@ -448,6 +448,16 @@ document.getElementById('route-swap').addEventListener('click', () => {
   const a = document.getElementById('route-from'), b = document.getElementById('route-to');
   [a.value, b.value] = [b.value, a.value];
 });
+document.getElementById('route-save').addEventListener('click', () => {
+  const from = document.getElementById('route-from').value.trim();
+  const to = document.getElementById('route-to').value.trim();
+  if (!from || !to) { setStatus('출발역과 도착역을 입력하세요.'); return; }
+  const exists = favorites.routes.some(r => r.from === from && r.to === to);
+  if (exists) { setStatus('이미 저장된 경로입니다.'); return; }
+  favorites.routes.push({ from, to });
+  saveFavorites(); renderFavorites();
+  setStatus(`⭐ 경로 저장됨: ${from} → ${to}`);
+});
 document.getElementById('route-go').addEventListener('click', () => {
   const box = document.getElementById('route-result');
   const from = resolveStation(document.getElementById('route-from').value);
@@ -459,7 +469,40 @@ document.getElementById('route-go').addEventListener('click', () => {
     const s = STATIONS.find(x => x.properties.id === id);
     return s ? s.properties.name_ko : id;
   };
-  let html = `<div class="total">총 약 ${r.minutes}분 · 환승 ${r.transfers}회</div>`;
+  // 요금 계산 (수도권 전철 기준, 2024년 인상 후)
+  function calcFare(distKm) {
+    let fare = 1400; // 기본 10km
+    if (distKm > 10) {
+      const extra1 = Math.min(distKm - 10, 40); // 10~50km
+      fare += Math.ceil(extra1 / 5) * 100;
+    }
+    if (distKm > 50) {
+      fare += Math.ceil((distKm - 50) / 8) * 100;
+    }
+    return fare;
+  }
+  // 경로 거리 계산 (역 좌표 기반)
+  function routeDistance(path) {
+    let km = 0;
+    const R = Math.PI / 180;
+    const coordOf = id => {
+      const s = STATIONS.find(x => x.properties.id === id);
+      return s ? s.geometry.coordinates : null;
+    };
+    for (let i = 0; i < path.length - 1; i++) {
+      const c1 = coordOf(path[i]), c2 = coordOf(path[i+1]);
+      if (!c1 || !c2) continue;
+      const dLat = (c2[1]-c1[1])*R, dLon = (c2[0]-c1[0])*R;
+      const h = Math.sin(dLat/2)**2 + Math.cos(c1[1]*R)*Math.cos(c2[1]*R)*Math.sin(dLon/2)**2;
+      km += 6371 * 2 * Math.asin(Math.sqrt(h));
+    }
+    return km;
+  }
+
+  let html = `<div class="total">총 약 ${r.minutes}분 · 환승 ${r.transfers}회`;
+  const distKm = routeDistance(r.path);
+  const fare = calcFare(distKm);
+  html += ` · 예상 요금 ${fare.toLocaleString()}원</div>`;
   r.legs.forEach(leg => {
     const a = sname(leg.from), b = sname(leg.to);
     const i1 = r.path.indexOf(leg.from), i2 = r.path.indexOf(leg.to);
@@ -503,6 +546,7 @@ map.on('load', async () => {
   DrawTools.setStations(STATIONS);
   DrawTools.refreshMyLines(); DrawTools.renderMyLineList();
   DrawTools.refreshMemos();
+  loadFavorites(); renderFavorites();
   restoreFromUrl();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
@@ -559,6 +603,68 @@ document.getElementById('locate-btn').addEventListener('click', () => {
   }, { enableHighAccuracy: true, timeout: 10000 });
 });
 
+/* ---------- 즐겨찾기 ---------- */
+const FAV_KEY = 'kr-rail-map-favorites-v1';
+let favorites = { stations: [], routes: [] };
+function loadFavorites() {
+  try { favorites = JSON.parse(localStorage.getItem(FAV_KEY) || '{"stations":[],"routes":[]}'); } catch {}
+  if (!favorites.stations) favorites.stations = [];
+  if (!favorites.routes) favorites.routes = [];
+}
+function saveFavorites() {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(favorites)); } catch {}
+}
+function isFavStation(name) { return favorites.stations.includes(name); }
+function toggleFavStation(name) {
+  const i = favorites.stations.indexOf(name);
+  if (i >= 0) favorites.stations.splice(i, 1);
+  else favorites.stations.push(name);
+  saveFavorites(); renderFavorites();
+}
+function renderFavorites() {
+  const box = document.getElementById('fav-list');
+  if (!box) return;
+  box.innerHTML = '';
+  if (favorites.stations.length) {
+    const h = document.createElement('div'); h.className = 'panel-head'; h.textContent = '⭐ 즐겨찾는 역';
+    box.appendChild(h);
+    favorites.stations.forEach(name => {
+      const div = document.createElement('div'); div.className = 'fav-item';
+      div.textContent = name;
+      div.onclick = () => {
+        const s = STATIONS.find(x => x.properties.name_ko === name);
+        if (s) {
+          map.flyTo({ center: s.geometry.coordinates, zoom: 14 });
+          openStationPopup(s, { lng: s.geometry.coordinates[0], lat: s.geometry.coordinates[1] });
+        }
+      };
+      const del = document.createElement('button'); del.textContent = '✕'; del.className = 'memo-del';
+      del.onclick = (e) => { e.stopPropagation(); toggleFavStation(name); };
+      div.appendChild(del); box.appendChild(div);
+    });
+  }
+  if (favorites.routes.length) {
+    const h = document.createElement('div'); h.className = 'panel-head'; h.textContent = '⭐ 저장된 경로';
+    box.appendChild(h);
+    favorites.routes.forEach((r, i) => {
+      const div = document.createElement('div'); div.className = 'fav-item';
+      div.textContent = `${r.from} → ${r.to}`;
+      div.onclick = () => {
+        document.getElementById('route-panel').hidden = false;
+        document.getElementById('route-from').value = r.from;
+        document.getElementById('route-to').value = r.to;
+        document.getElementById('route-go').click();
+      };
+      const del = document.createElement('button'); del.textContent = '✕'; del.className = 'memo-del';
+      del.onclick = (e) => { e.stopPropagation(); favorites.routes.splice(i, 1); saveFavorites(); renderFavorites(); };
+      div.appendChild(del); box.appendChild(div);
+    });
+  }
+  if (!favorites.stations.length && !favorites.routes.length) {
+    box.innerHTML = '<p class="empty">역 팝업의 ⭐ 버튼으로 즐겨찾기를 추가하세요</p>';
+  }
+}
+
 /* ---------- 역 클릭 팝업: 출발지/도착지 지정 ---------- */
 let stationPopup = null;
 function closeStationPopup() {
@@ -589,11 +695,17 @@ function openStationPopup(feature, lngLat) {
     '<div class="st-btns">' +
       '<button data-act="from">출발지</button>' +
       '<button data-act="to">도착지</button>' +
+      '<button data-act="fav">' + (isFavStation(sname) ? '★' : '☆') + ' 즐겨찾기</button>' +
     '</div>';
   el.querySelectorAll('button').forEach(b => {
     b.addEventListener('click', ev => {
       ev.stopPropagation();
       const act = b.dataset.act;
+      if (act === 'fav') {
+        toggleFavStation(sname);
+        b.innerHTML = (isFavStation(sname) ? '★' : '☆') + ' 즐겨찾기';
+        return;
+      }
       document.getElementById(act === 'from' ? 'route-from' : 'route-to').value = sname;
       document.getElementById('route-panel').hidden = false;
       closeStationPopup();

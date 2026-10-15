@@ -518,28 +518,30 @@ document.getElementById('route-go').addEventListener('click', () => {
         : `<div class="leg">🚶 ${a} → ${b} (도보 이동)</div>`;
     } else {
       const ln = lineNameOf.get(leg.lineId) || leg.lineId;
-      // 경유역 목록 (펼치기 가능)
+      const lineColor = (LINES.find(l => l.properties.id === leg.lineId)?.properties.color) || '#888';
+      // 경유역 목록 (네이버 스타일: 세로 타임라인, 전부 표시)
       const segStations = [];
       const step = i2 > i1 ? 1 : -1;
-      for (let i = i1; i !== i2; i += step) segStations.push(sname(r.path[i]));
-      segStations.push(sname(r.path[i2]));
-      const viaId = `via-${leg.from}-${leg.to}`;
-      html += `<div class="leg">${a} → <b>${ln}</b> <button class="via-toggle" data-target="${viaId}">${n}개역</button> → ${b}
-        <div class="via-list" id="${viaId}" hidden>${segStations.join(' → ')}</div></div>`;
+      for (let i = i1; i !== i2; i += step) segStations.push({ id: r.path[i], name: sname(r.path[i]) });
+      segStations.push({ id: r.path[i2], name: sname(r.path[i2]) });
+      html += `<div class="leg" style="border-left: 4px solid ${lineColor}; padding-left: 8px; margin: 8px 0;">
+        <div class="leg-header"><b>${a}</b> → <b style="color:${lineColor}">${ln}</b> → <b>${b}</b> (${n}개역)</div>
+        <div class="station-timeline">` +
+        segStations.map((s, idx) => {
+          const isFirst = idx === 0, isLast = idx === segStations.length - 1;
+          const dot = isFirst || isLast
+            ? `<span class="st-dot start-end" style="background:${lineColor}"></span>`
+            : `<span class="st-dot"></span>`;
+          const label = isFirst ? '출발' : isLast ? '도착' : `${idx}번째`;
+          return `<div class="st-row">${dot}<span class="st-name">${s.name}</span><span class="st-label">${label}</span></div>`;
+        }).join('') +
+        `</div></div>`;
     }
   });
   box.innerHTML = html;
   // 경로 하이라이트: 해당 경로 역만 밝게, 나머지는 어둡게
   highlightRoute(r.path, r.legs);
-  // 경유역 펼치기 토글
-  box.querySelectorAll('.via-toggle').forEach(btn => {
-    const orig = btn.textContent;
-    btn.addEventListener('click', () => {
-      const t = document.getElementById(btn.dataset.target);
-      t.hidden = !t.hidden;
-      btn.textContent = t.hidden ? orig : '접기';
-    });
-  });
+  // (경유역은 이제 항상 표시되므로 토글 불필요)
 });
 
 /* ---------- 경로 하이라이트 (철맘 스타일) ---------- */
@@ -602,6 +604,28 @@ function highlightRoute(path, legs) {
     id: 'route-highlight-stations', type: 'circle', source: 'route-highlight',
     paint: { 'circle-radius': 7, 'circle-color': '#FF0000', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2.5 }
   });
+  // 경유역 이름 라벨 (지도 위에 표시)
+  const labelFeatures = [];
+  for (let i = 0; i < path.length; i++) {
+    const s = STATIONS.find(x => x.properties.id === path[i]);
+    if (s) labelFeatures.push({
+      type: 'Feature',
+      geometry: s.geometry,
+      properties: { name: s.properties.name_ko, order: i + 1 }
+    });
+  }
+  map.addSource('route-highlight-labels', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: labelFeatures }
+  });
+  map.addLayer({
+    id: 'route-highlight-labels', type: 'symbol', source: 'route-highlight-labels',
+    layout: {
+      'text-field': ['concat', ['to-string', ['get', 'order']], '. ', ['get', 'name']],
+      'text-size': 12, 'text-offset': [0, 1.5], 'text-anchor': 'top'
+    },
+    paint: { 'text-color': '#CC0000', 'text-halo-color': '#fff', 'text-halo-width': 2 }
+  });
 
   // 경로에 맞게 지도 이동
   const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
@@ -613,7 +637,9 @@ function clearRouteHighlight() {
   if (!map) return;
   if (map.getLayer('route-highlight-line')) map.removeLayer('route-highlight-line');
   if (map.getLayer('route-highlight-stations')) map.removeLayer('route-highlight-stations');
+  if (map.getLayer('route-highlight-labels')) map.removeLayer('route-highlight-labels');
   if (map.getSource('route-highlight')) map.removeSource('route-highlight');
+  if (map.getSource('route-highlight-labels')) map.removeSource('route-highlight-labels');
   if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0.9);
   if (map.getLayer('rail-stations')) map.setPaintProperty('rail-stations', 'circle-opacity', 1);
   if (map.getLayer('station-labels')) map.setPaintProperty('station-labels', 'text-opacity', 1);

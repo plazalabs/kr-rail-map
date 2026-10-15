@@ -202,3 +202,23 @@ body.sidebar-hidden #map-wrap { margin-left: 0; }
 .memo-del { background: none; border: none; cursor: pointer; color: var(--muted); }
 .fav-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; margin: 4px 0; background: var(--bg); border-radius: 4px; cursor: pointer; font-size: 13px; }
 .fav-item:hover { background: var(--hover); }
+
+/* 툴바 드롭다운 */
+.tb-group { display: inline-flex; gap: 2px; }
+.tb-dropdown { position: relative; display: inline-block; }
+.tb-dropbtn { cursor: pointer; }
+.tb-dropmenu {
+  display: none; position: absolute; top: 100%; left: 0; z-index: 100;
+  min-width: 140px; background: var(--panel-bg, #fff);
+  border: 1px solid var(--border, #ddd); border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 4px;
+}
+.tb-dropdown.open .tb-dropmenu { display: block; }
+.tb-dropmenu button {
+  display: block; width: 100%; text-align: left;
+  border: none; background: none; padding: 8px 12px;
+  border-radius: 4px; cursor: pointer; font-size: 14px;
+  color: var(--text, #333); white-space: nowrap;
+}
+.tb-dropmenu button:hover { background: var(--hover, #f0f0f0); }
+#toolbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }

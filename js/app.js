@@ -801,3 +801,21 @@ document.getElementById('coverage-btn').addEventListener('click', () => {
   CoverageMap.isActive() ? CoverageMap.hide() : CoverageMap.show();
   document.getElementById('coverage-btn').classList.toggle('active', CoverageMap.isActive());
 });
+
+// 툴바 드롭다운 토글
+document.querySelectorAll('.tb-dropdown').forEach(dd => {
+  const btn = dd.querySelector('.tb-dropbtn');
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.tb-dropdown.open').forEach(o => o.classList.remove('open'));
+    if (!wasOpen) dd.classList.add('open');
+  });
+  // 메뉴 안 버튼 클릭 시 드롭다운 닫기
+  dd.querySelectorAll('.tb-dropmenu button').forEach(b => {
+    b.addEventListener('click', () => dd.classList.remove('open'));
+  });
+});
+document.addEventListener('click', () => {
+  document.querySelectorAll('.tb-dropdown.open').forEach(o => o.classList.remove('open'));
+});

@@ -202,55 +202,78 @@ const DiagramMode = (() => {
   /* ---------- 오버레이 ---------- */
   function enter() {
     if (active) return true;
-    if (!LINES.length || !STATIONS.length) return false;
-
-    const mapEl = document.getElementById('map');
-    if (!mapEl) return false;
-
-    overlay = document.createElement('div');
-    overlay.id = 'diagram-overlay';
-    overlay.style.cssText =
-      'position:absolute;inset:0;z-index:30;overflow:auto;background:#0f172a;';
-
-    // 상단 컨트롤 바
-    const bar = document.createElement('div');
-    bar.style.cssText =
-      'position:sticky;top:0;z-index:2;display:flex;gap:8px;align-items:center;' +
-      'padding:8px 12px;background:rgba(15,23,42,0.92);color:#e2e8f0;' +
-      'font-family:sans-serif;font-size:14px;border-bottom:1px solid #334155;';
-    const title = document.createElement('b');
-    title.textContent = '다이어그램 모드';
-    const zoomOut = document.createElement('button'); zoomOut.textContent = '－';
-    const zoomIn = document.createElement('button'); zoomIn.textContent = '＋';
-    const closeBtn = document.createElement('button'); closeBtn.textContent = '✕ 닫기';
-    [zoomOut, zoomIn, closeBtn].forEach(b => {
-      b.style.cssText = 'cursor:pointer;padding:4px 10px;border-radius:6px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;';
-    });
-    const hint = document.createElement('span');
-    hint.style.cssText = 'color:#94a3b8;font-size:12px;';
-    hint.textContent = '역을 클릭하면 정보 팝업 · 흰 테두리=환승역 · 점선=환승 연결';
-    bar.append(title, zoomOut, zoomIn, closeBtn, hint);
-
-    let built;
     try {
-      built = build();
+      if (!LINES.length || !STATIONS.length) {
+        console.error('[DiagramMode] 데이터 없음');
+        return false;
+      }
+
+      const mapEl = document.getElementById('map');
+      if (!mapEl) {
+        console.error('[DiagramMode] #map 없음');
+        return false;
+      }
+
+      overlay = document.createElement('div');
+      overlay.id = 'diagram-overlay';
+      overlay.style.cssText =
+        'position:absolute;inset:0;z-index:30;overflow:auto;background:#0f172a;';
+
+      // 상단 컨트롤 바
+      const bar = document.createElement('div');
+      bar.style.cssText =
+        'position:sticky;top:0;z-index:2;display:flex;gap:8px;align-items:center;' +
+        'padding:8px 12px;background:rgba(15,23,42,0.92);color:#e2e8f0;' +
+        'font-family:sans-serif;font-size:14px;border-bottom:1px solid #334155;';
+      const title = document.createElement('b');
+      title.textContent = '다이어그램 모드';
+      const zoomOut = document.createElement('button'); zoomOut.textContent = '－';
+      const zoomIn = document.createElement('button'); zoomIn.textContent = '＋';
+      const closeBtn = document.createElement('button'); closeBtn.textContent = '✕ 닫기';
+      [zoomOut, zoomIn, closeBtn].forEach(b => {
+        b.style.cssText = 'cursor:pointer;padding:4px 10px;border-radius:6px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;';
+      });
+      const hint = document.createElement('span');
+      hint.style.cssText = 'color:#94a3b8;font-size:12px;';
+      hint.textContent = '역을 클릭하면 정보 팝업 · 흰 테두리=환승역 · 점선=환승 연결';
+      bar.append(title, zoomOut, zoomIn, closeBtn, hint);
+      overlay.appendChild(bar);
+
+      // 로딩 표시
+      const loading = document.createElement('div');
+      loading.style.cssText = 'color:#e2e8f0;padding:40px;text-align:center;font-family:sans-serif;';
+      loading.textContent = '노선도 생성 중...';
+      overlay.appendChild(loading);
+
+      mapEl.style.position = 'relative';
+      mapEl.appendChild(overlay);
+      active = true;
+
+      // 비동기로 SVG 빌드 (UI 블로킹 방지)
+      setTimeout(() => {
+        try {
+          const built = build();
+          const wrap = document.createElement('div');
+          wrap.style.cssText = 'transform-origin:0 0;';
+          const applyScale = () => { wrap.style.transform = `scale(${scale})`; };
+          wrap.appendChild(built.svg);
+          zoomIn.onclick = () => { scale = Math.min(3, scale * 1.2); applyScale(); };
+          zoomOut.onclick = () => { scale = Math.max(0.3, scale / 1.2); applyScale(); };
+          loading.remove();
+          overlay.appendChild(wrap);
+        } catch (e) {
+          console.error('[DiagramMode] build 실패:', e);
+          loading.textContent = '노선도 생성 실패: ' + (e.message || e);
+          loading.style.color = '#f87171';
+        }
+      }, 50);
+
+      closeBtn.onclick = () => exit();
+      return true;
     } catch (e) {
+      console.error('[DiagramMode] enter 실패:', e);
       return false;
     }
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'transform-origin:0 0;';
-    const applyScale = () => { wrap.style.transform = `scale(${scale})`; };
-    wrap.appendChild(built.svg);
-
-    zoomIn.onclick = () => { scale = Math.min(3, scale * 1.2); applyScale(); };
-    zoomOut.onclick = () => { scale = Math.max(0.3, scale / 1.2); applyScale(); };
-    closeBtn.onclick = () => exit();
-
-    overlay.append(bar, wrap);
-    mapEl.style.position = 'relative';
-    mapEl.appendChild(overlay);
-    active = true;
-    return true;
   }
 
   function exit() {

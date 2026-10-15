@@ -463,6 +463,11 @@ document.getElementById('route-go').addEventListener('click', () => {
   const from = resolveStation(document.getElementById('route-from').value);
   const to = resolveStation(document.getElementById('route-to').value);
   if (!from || !to) { box.innerHTML = '출발역과 도착역을 목록에서 선택해주세요.'; return; }
+  // 3종 비교 모듈이 있으면 사용, 없으면 기존 단일 경로
+  if (typeof RouteCompare !== 'undefined') {
+    RouteCompare.show(from.properties.id, to.properties.id);
+    return;
+  }
   const r = RouteFinder.findRoute(from.properties.id, to.properties.id);
   if (!r) { box.innerHTML = '경로를 찾을 수 없습니다.'; return; }
   const sname = id => {
@@ -567,6 +572,8 @@ map.on('load', async () => {
     RailTimeline.init(LINES, STATIONS);
     RailTimeline.onSelect = (lineId) => highlightLine(lineId);
   }
+  if (typeof RouteCompare !== 'undefined') RouteCompare.init(RouteFinder, STATIONS, LINES);
+  if (typeof InvestAnalyzer !== 'undefined') InvestAnalyzer.init(map, STATIONS, LINES);
   restoreFromUrl();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
@@ -780,4 +787,11 @@ document.getElementById('diagram-save-btn').addEventListener('click', () => {
 });
 document.getElementById('report-btn').addEventListener('click', () => {
   window.open('https://docs.google.com/forms/d/e/1FAIpQLScv2JPh45AjKo9Lif7SM4hCQtCqrN5BofI_xeJ04Wh9unPaXw/viewform', '_blank');
+});
+document.getElementById('invest-btn').addEventListener('click', () => {
+  if (typeof InvestAnalyzer === 'undefined') { setStatus('투자분석 모듈을 불러오지 못했습니다.'); return; }
+  const on = !InvestAnalyzer.isActive();
+  InvestAnalyzer.setMode(on);
+  document.getElementById('invest-btn').classList.toggle('active', on);
+  if (on) setStatus('투자분석: 분석할 지점을 클릭하세요 (Esc 취소)');
 });

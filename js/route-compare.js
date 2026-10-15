@@ -422,12 +422,12 @@ const RouteCompare = (() => {
         document.getElementById('rc-panel-' + btn.dataset.tab).hidden = false;
         // 탭별 경로 하이라이트
         const tab = tabs.find(t => t.id === btn.dataset.tab);
-        if (tab && tab.r && typeof highlightRoute === 'function') highlightRoute(tab.r.path);
+        if (tab && tab.r && typeof highlightRoute === 'function') highlightRoute(tab.r.path, tab.r.legs);
       });
     });
     // 첫 번째 탭 경로 하이라이트
     if (tabs[0] && tabs[0].r && typeof highlightRoute === 'function') {
-      highlightRoute(tabs[0].r.path);
+      highlightRoute(tabs[0].r.path, tabs[0].r.legs);
     }
     box.querySelectorAll('.via-toggle').forEach(btn => {
       const orig = btn.textContent;

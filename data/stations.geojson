@@ -282,7 +282,8 @@
     "name_en": "Sinimun",
     "line_id": "seoul-metropolitan-subway-line-1",
     "lines": [
-     "seoul-metropolitan-subway-line-1"
+     "seoul-metropolitan-subway-line-1",
+     "dongbu-line"
     ]
    }
   },
@@ -11580,7 +11581,8 @@
     "name_en": "Seongsu",
     "line_id": "seoul-subway-line-2",
     "lines": [
-     "seoul-subway-line-2"
+     "seoul-subway-line-2",
+     "dongbu-line"
     ]
    }
   },
@@ -12272,7 +12274,8 @@
     "name_en": "Sports Complex",
     "line_id": "seoul-subway-line-2",
     "lines": [
-     "seoul-subway-line-2"
+     "seoul-subway-line-2",
+     "dongbu-line"
     ]
    }
   },
@@ -12883,7 +12886,8 @@
     "name_en": "Suyu",
     "line_id": "seoul-metropolitan-subway-line-4",
     "lines": [
-     "seoul-metropolitan-subway-line-4"
+     "seoul-metropolitan-subway-line-4",
+     "dongbu-line"
     ]
    }
   },
@@ -13362,7 +13366,8 @@
     "name_en": "Janghanpyeong",
     "line_id": "seoul-subway-line-5",
     "lines": [
-     "seoul-subway-line-5"
+     "seoul-subway-line-5",
+     "dongbu-line"
     ]
    }
   },
@@ -14965,7 +14970,8 @@
     "name_en": "Cheongdam",
     "line_id": "seoul-subway-line-7",
     "lines": [
-     "seoul-subway-line-7"
+     "seoul-subway-line-7",
+     "dongbu-line"
     ]
    }
   },
@@ -19956,7 +19962,8 @@
     "name_en": "April 19th National Cemetery",
     "line_id": "ui-sinseol-line",
     "lines": [
-     "ui-sinseol-line"
+     "ui-sinseol-line",
+     "dongbu-line"
     ]
    }
   },
@@ -23618,7 +23625,8 @@
     "name_en": "110정거장(우이천 · 월계2교)",
     "line_id": "dongbuk-line",
     "lines": [
-     "dongbuk-line"
+     "dongbuk-line",
+     "dongbu-line"
     ]
    }
   },
@@ -23733,6 +23741,25 @@
     "line_id": "dongbuk-line",
     "lines": [
      "dongbuk-line"
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     127.07225,
+     37.57893
+    ]
+   },
+   "properties": {
+    "id": "st-dongbu-4",
+    "name_ko": "장안",
+    "name_en": "장안",
+    "line_id": "dongbu-line",
+    "lines": [
+     "dongbu-line"
     ]
    }
   }

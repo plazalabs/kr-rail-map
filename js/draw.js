@@ -5,13 +5,13 @@ const DrawTools = (() => {
   const PALETTE = ['#e91e63', '#9c27b0', '#3f51b5', '#03a9f4', '#009688', '#ff9800', '#795548'];
   const DASHES = { '실선': [], '파선': [3, 2], '점선': [0.2, 2] };
 
-  let map = null, mode = null;       // 'draw' | 'measure' | null
+  let map = null, mode = null;       // 'draw' | 'measure' | 'radius' | null
   let pts = [];
   let color = PALETTE[0], dashKey = '실선';
   let myLines = [];                  // {id, name, color, dashKey, coords}
   let seq = 1;
   let onUpdate = null;               // 상태 표시 콜백
-  let allStations = [];              // 역 스냅용
+  let allStations = [];              // 역 스냅용 + 반경 내 역 계산용
   const LS_KEY = 'kr-rail-map-mylines-v1';
   const SNAP_PX = 25;                // 스냅 반경 (픽셀)
 
@@ -108,7 +108,41 @@ const DrawTools = (() => {
       ? '그리기: 지도 클릭으로 점 추가 · Enter 완료 · Backspace 되돌리기 · Esc 취소'
       : mode === 'measure'
       ? '측정: 지도 클릭으로 점 추가 · Enter 완료(면적도 표시) · Backspace 되돌리기 · Esc 취소'
+      : mode === 'radius'
+      ? '반경: 중심점 클릭 → 반경 끝점 클릭 (Esc 취소)'
       : '';
+  }
+
+  // 반경 원 그리기 (GeoJSON Polygon 근사)
+  function circlePolygon(center, radiusKm, steps) {
+    steps = steps || 64;
+    const coords = [];
+    const [clng, clat] = center;
+    const R = 6371, r = Math.PI / 180;
+    for (let i = 0; i <= steps; i++) {
+      const brng = (i / steps) * 2 * Math.PI;
+      const lat2 = Math.asin(Math.sin(clat*r)*Math.cos(radiusKm/R) +
+        Math.cos(clat*r)*Math.sin(radiusKm/R)*Math.cos(brng));
+      const lng2 = clng*r + Math.atan2(Math.sin(brng)*Math.sin(radiusKm/R)*Math.cos(clat*r),
+        Math.cos(radiusKm/R) - Math.sin(clat*r)*Math.sin(lat2));
+      coords.push([lng2/r, lat2/r]);
+    }
+    return coords;
+  }
+  function countStationsIn(center, radiusKm) {
+    const [clng, clat] = center;
+    const R = Math.PI / 180;
+    let n = 0;
+    const seen = new Set();
+    for (const s of allStations) {
+      const nm = s.properties.name_ko;
+      if (seen.has(nm)) continue;
+      const [slng, slat] = s.geometry.coordinates;
+      const dLat = (slat - clat) * R, dLon = (slng - clng) * R;
+      const h = Math.sin(dLat/2)**2 + Math.cos(clat*R)*Math.cos(slat*R)*Math.sin(dLon/2)**2;
+      if (6371 * 2 * Math.asin(Math.sqrt(h)) <= radiusKm) { n++; seen.add(nm); }
+    }
+    return n;
   }
 
   function start(m) {
@@ -117,11 +151,12 @@ const DrawTools = (() => {
     ensurePreview();
     refreshPreview();
     map.getCanvas().style.cursor = 'crosshair';
-    if (m === 'measure') map.doubleClickZoom.disable();
+    if (m === 'measure' || m === 'radius') map.doubleClickZoom.disable();
     setStatus(hint());
     document.getElementById('draw-panel').hidden = (m !== 'draw');
     document.getElementById('draw-btn').classList.toggle('active', m === 'draw');
     document.getElementById('measure-btn').classList.toggle('active', m === 'measure');
+    document.getElementById('radius-btn').classList.toggle('active', m === 'radius');
   }
   function cancel(silent) {
     if (!mode && !silent) return;
@@ -132,11 +167,39 @@ const DrawTools = (() => {
     document.getElementById('draw-panel').hidden = true;
     document.getElementById('draw-btn').classList.remove('active');
     document.getElementById('measure-btn').classList.remove('active');
+    document.getElementById('radius-btn').classList.remove('active');
     if (!silent) setStatus('');
   }
 
   function onClick(lngLat) {
     if (!mode) return;
+    // 반경 모드: 2점 (중심, 끝점)
+    if (mode === 'radius') {
+      pts.push([lngLat.lng, lngLat.lat]);
+      if (pts.length === 1) {
+        setStatus('반경: 반경 끝점을 클릭하세요 (Esc 취소)');
+        refreshPreview();
+      } else if (pts.length === 2) {
+        const c = pts[0], e = pts[1];
+        const rKm = hav(c[0], c[1], e[0], e[1]);
+        const n = countStationsIn(c, rKm);
+        // 원 + 중심점 표시
+        ensurePreview();
+        const feats = [
+          { type: 'Feature', properties: {},
+            geometry: { type: 'Polygon', coordinates: [circlePolygon(c, rKm)] } },
+          { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } }
+        ];
+        map.getSource('draw-preview').setData({ type: 'FeatureCollection', features: feats });
+        const rM = rKm >= 1 ? rKm.toFixed(2) + 'km' : Math.round(rKm*1000) + 'm';
+        setStatus(`반경 ${rM} · 원 면적 ${(Math.PI*rKm*rKm).toFixed(2)}km² · 반경 안 역 ${n}개`);
+        mode = null; pts = [];
+        map.getCanvas().style.cursor = '';
+        map.doubleClickZoom.enable();
+        document.getElementById('radius-btn').classList.remove('active');
+      }
+      return;
+    }
     let pt = [lngLat.lng, lngLat.lat];
     let snapName = null;
     // 역 스냅: 클릭 지점 근처 역이 있으면 그 역 좌표로
@@ -174,7 +237,11 @@ const DrawTools = (() => {
     if (mode === 'measure') {
       const km = totalKm(coords);
       const a = areaKm2(coords);
-      setStatus(`측정 완료: 거리 ${km.toFixed(2)} km${pts.length >= 3 ? ` · 면적 약 ${a.toFixed(2)} km²` : ''}`);
+      const walkMin = Math.round(km / 4 * 60);   // 도보 4km/h
+      const bikeMin = Math.round(km / 15 * 60);  // 자전거 15km/h
+      const walkTxt = walkMin >= 60 ? `${Math.floor(walkMin/60)}시간 ${walkMin%60}분` : `${walkMin}분`;
+      const bikeTxt = bikeMin >= 60 ? `${Math.floor(bikeMin/60)}시간 ${bikeMin%60}분` : `${bikeMin}분`;
+      setStatus(`측정 완료: 거리 ${km.toFixed(2)} km (도보 ${walkTxt} · 자전거 ${bikeTxt})${pts.length >= 3 ? ` · 면적 약 ${a.toFixed(2)} km²` : ''}`);
       // 측정선은 미리보기에 남겨둠 (다음 측정/취소 시 지워짐)
       mode = null;
       map.getCanvas().style.cursor = '';
@@ -259,6 +326,8 @@ const DrawTools = (() => {
       mode === 'draw' ? cancel() : start('draw'));
     document.getElementById('measure-btn').addEventListener('click', () =>
       mode === 'measure' ? cancel() : start('measure'));
+    document.getElementById('radius-btn').addEventListener('click', () =>
+      mode === 'radius' ? cancel() : start('radius'));
   }
 
   function restyle() {

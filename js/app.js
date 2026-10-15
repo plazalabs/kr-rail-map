@@ -215,6 +215,28 @@ function updateFilters() {
 
 /* ---------- 노선 토글 UI ---------- */
 const CAT_NAMES = { metro: '도시철도', urban: '광역·도시', ktx: 'KTX·고속', conventional: '일반철도', etc: '기타' };
+function lineStats(lid) {
+  const f = LINES.find(l => l.properties.id === lid);
+  if (!f) return { km: 0, stations: 0 };
+  // 길이 계산
+  let km = 0;
+  const R = Math.PI / 180;
+  const flat = f.geometry.type === 'LineString' ? f.geometry.coordinates
+    : f.geometry.coordinates.flat(1);
+  for (let i = 0; i < flat.length - 1; i++) {
+    const [x1, y1] = flat[i], [x2, y2] = flat[i+1];
+    const dLat = (y2-y1)*R, dLon = (x2-x1)*R;
+    const h = Math.sin(dLat/2)**2 + Math.cos(y1*R)*Math.cos(y2*R)*Math.sin(dLon/2)**2;
+    km += 6371 * 2 * Math.asin(Math.sqrt(h));
+  }
+  // 역 수 (중복 제거)
+  const seen = new Set();
+  STATIONS.forEach(s => {
+    if ((s.properties.lines || []).includes(lid)) seen.add(s.properties.name_ko);
+  });
+  return { km, stations: seen.size };
+}
+
 function renderLineList() {
   const box = document.getElementById('line-list');
   box.innerHTML = '';
@@ -240,7 +262,11 @@ function renderLineList() {
       });
       const sw = document.createElement('span');
       sw.className = 'swatch'; sw.style.background = p.color || '#888888';
-      label.append(cb, sw, document.createTextNode(p.name_ko || p.id));
+      const st = lineStats(p.id);
+      const info = document.createElement('span');
+      info.className = 'line-meta';
+      info.textContent = `${st.km.toFixed(1)}km · ${st.stations}역`;
+      label.append(cb, sw, document.createTextNode(p.name_ko || p.id), info);
       if (p.note) label.title = p.note;
       if (p.status !== 'open') label.title = (label.title ? label.title + ' / ' : '') +
         (p.status === 'construction' ? '공사 중' : '계획 중');
@@ -298,9 +324,37 @@ document.getElementById('save-btn').addEventListener('click', () => {
 
 /* ---------- 링크 공유 ---------- */
 document.getElementById('share-btn').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText(location.href); setStatus('링크 복사됨'); }
-  catch { setStatus('링크 복사에 실패했습니다'); }
+  try {
+    const url = new URL(location.href);
+    // 길찾기 상태 포함
+    const from = document.getElementById('route-from').value.trim();
+    const to = document.getElementById('route-to').value.trim();
+    if (from) url.searchParams.set('from', from); else url.searchParams.delete('from');
+    if (to) url.searchParams.set('to', to); else url.searchParams.delete('to');
+    // 지도 중심/줌 포함
+    const c = map.getCenter(), z = map.getZoom();
+    url.searchParams.set('c', `${c.lng.toFixed(5)},${c.lat.toFixed(5)},${z.toFixed(1)}`);
+    await navigator.clipboard.writeText(url.toString());
+    setStatus('링크 복사됨' + (from && to ? ` (${from}→${to} 포함)` : ''));
+  } catch { setStatus('링크 복사에 실패했습니다'); }
 });
+
+// URL 파라미터로 길찾기 복원
+function restoreFromUrl() {
+  const q = new URLSearchParams(location.search);
+  const from = q.get('from'), to = q.get('to');
+  if (from || to) {
+    document.getElementById('route-panel').hidden = false;
+    if (from) document.getElementById('route-from').value = from;
+    if (to) document.getElementById('route-to').value = to;
+    if (from && to) setTimeout(() => document.getElementById('route-go').click(), 800);
+  }
+  const c = q.get('c');
+  if (c) {
+    const [lng, lat, z] = c.split(',').map(Number);
+    if (lng && lat) map.flyTo({ center: [lng, lat], zoom: z || 11, duration: 0 });
+  }
+}
 
 /* ---------- 길찾기 UI ---------- */
 const lineNameOf = new Map();
@@ -432,6 +486,7 @@ map.on('load', async () => {
   addDataLayers(); renderLineList(); updateFilters(); setupRouteFinder();
   DrawTools.setStations(STATIONS);
   DrawTools.refreshMyLines(); DrawTools.renderMyLineList();
+  restoreFromUrl();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
 function restoreCustomLayers() {

@@ -195,3 +195,4 @@ body.sidebar-hidden #map-wrap { margin-left: 0; }
 /* ---- 그리기 이름 입력 ---- */
 #draw-name { width: 100%; padding: 6px 8px; font-size: 13px; border: 1px solid var(--border);
   border-radius: 6px; background: var(--input); color: var(--text); }
+.line-meta { margin-left: auto; font-size: 11px; color: var(--muted); white-space: nowrap; }

@@ -272,8 +272,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.034467,
-     37.578378
+     127.03447,
+     37.57838
     ]
    },
    "properties": {
@@ -330,8 +330,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.058865,
-     37.633063
+     127.05887,
+     37.63306
     ]
    },
    "properties": {
@@ -7801,8 +7801,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.038579,
-     37.561486
+     127.03858,
+     37.56149
     ]
    }
   },
@@ -10804,8 +10804,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.036013,
-     37.590378
+     127.03601,
+     37.59038
     ]
    },
    "properties": {
@@ -12994,8 +12994,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.030091,
-     37.613185
+     127.03009,
+     37.61319
     ]
    },
    "properties": {
@@ -14658,8 +14658,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.068252,
-     37.636018
+     127.06825,
+     37.63602
     ]
    },
    "properties": {
@@ -19119,8 +19119,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.073439,
-     37.660765
+     127.07344,
+     37.66076
     ]
    },
    "properties": {
@@ -23589,8 +23589,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.036577,
-     37.569709
+     127.03752,
+     37.56954
     ]
    }
   },
@@ -23598,7 +23598,7 @@
    "type": "Feature",
    "properties": {
     "id": "st-dongbuk-02",
-    "name_ko": "종암우체국",
+    "name_ko": "종암이육사",
     "name_en": "종암우체국",
     "line_id": "dongbuk-line",
     "lines": [
@@ -23608,8 +23608,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.034133,
-     37.59762
+     127.03499,
+     37.59801
     ]
    }
   },
@@ -23617,7 +23617,7 @@
    "type": "Feature",
    "properties": {
     "id": "st-dongbuk-03",
-    "name_ko": "종암경찰서",
+    "name_ko": "종암사거리",
     "name_en": "종암경찰서",
     "line_id": "dongbuk-line",
     "lines": [
@@ -23627,8 +23627,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.031831,
-     37.606483
+     127.03172,
+     37.60529
     ]
    }
   },
@@ -23636,7 +23636,7 @@
    "type": "Feature",
    "properties": {
     "id": "st-dongbuk-04",
-    "name_ko": "장위",
+    "name_ko": "하월곡",
     "name_en": "장위",
     "line_id": "dongbuk-line",
     "lines": [
@@ -23646,8 +23646,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.03631,
-     37.617482
+     127.03828,
+     37.61575
     ]
    }
   },
@@ -23665,8 +23665,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.043579,
-     37.622503
+     127.04516,
+     37.62018
     ]
    }
   },
@@ -23684,8 +23684,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.050023,
-     37.626955
+     127.05138,
+     37.62517
     ]
    }
   },
@@ -23693,7 +23693,7 @@
    "type": "Feature",
    "properties": {
     "id": "st-dongbuk-07",
-    "name_ko": "서울시립과학관",
+    "name_ko": "서울과학기술대",
     "name_en": "서울시립과학관",
     "line_id": "dongbuk-line",
     "lines": [
@@ -23703,8 +23703,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.069314,
-     37.641083
+     127.0762,
+     37.63976
     ]
    }
   },
@@ -23722,8 +23722,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.071316,
-     37.650635
+     127.07688,
+     37.65029
     ]
    }
   },
@@ -23731,7 +23731,7 @@
    "type": "Feature",
    "properties": {
     "id": "st-dongbuk-09",
-    "name_ko": "불암산",
+    "name_ko": "중계주공",
     "name_en": "불암산",
     "line_id": "dongbuk-line",
     "lines": [
@@ -23741,8 +23741,8 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.07892,
-     37.6701
+     127.07831,
+     37.65573
     ]
    }
   }

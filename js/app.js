@@ -778,3 +778,6 @@ document.getElementById('diagram-save-btn').addEventListener('click', () => {
   if (typeof DiagramExport === 'undefined') { setStatus('저장 모듈을 불러오지 못했습니다.'); return; }
   DiagramExport.save();
 });
+document.getElementById('report-btn').addEventListener('click', () => {
+  window.open('https://docs.google.com/forms/d/e/1FAIpQLScv2JPh45AjKo9Lif7SM4hCQtCqrN5BofI_xeJ04Wh9unPaXw/viewform', '_blank');
+});

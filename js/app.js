@@ -430,6 +430,7 @@ map.on('load', async () => {
   await loadData();
   dataReady = true;
   addDataLayers(); renderLineList(); updateFilters(); setupRouteFinder();
+  DrawTools.setStations(STATIONS);
   DrawTools.refreshMyLines(); DrawTools.renderMyLineList();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
@@ -498,12 +499,21 @@ function openStationPopup(feature, lngLat) {
   // STATIONS 원본에서 찾기 (MapLibre feature properties는 배열이 문자열화될 수 있음)
   const orig = STATIONS.find(s => s.properties.id === p.id);
   const lineIds = orig ? (orig.properties.lines || []) : [];
-  const lineTxt = lineIds.length ? lineIds.map(lid => lineNameOf.get(lid) || lid).join(' · ') : '노선 정보 없음';
+  const nameEn = orig ? (orig.properties.name_en || '') : '';
+  // 노선별 색상 도트와 함께 표시
+  const lineHtml = lineIds.length ? lineIds.map(lid => {
+    const ln = LINES.find(l => l.properties.id === lid);
+    const nm = lineNameOf.get(lid) || lid;
+    const col = ln ? (ln.properties.color || '#888') : '#888';
+    const st = ln && ln.properties.status !== 'open' ?
+      (ln.properties.status === 'construction' ? ' (공사중)' : ' (계획)') : '';
+    return `<span class="st-line"><span class="dot" style="background:${col}"></span>${nm}${st}</span>`;
+  }).join('') : '노선 정보 없음';
   const el = document.createElement('div');
   el.className = 'st-popup';
   el.innerHTML =
-    '<div class="st-name">' + sname + '</div>' +
-    '<div class="st-lines">' + lineTxt + '</div>' +
+    '<div class="st-name">' + sname + (nameEn ? ' <span class="st-en">' + nameEn + '</span>' : '') + '</div>' +
+    '<div class="st-lines">' + lineHtml + '</div>' +
     '<div class="st-btns">' +
       '<button data-act="from">출발지</button>' +
       '<button data-act="to">도착지</button>' +

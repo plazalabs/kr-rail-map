@@ -11,7 +11,9 @@ const DrawTools = (() => {
   let myLines = [];                  // {id, name, color, dashKey, coords}
   let seq = 1;
   let onUpdate = null;               // 상태 표시 콜백
+  let allStations = [];              // 역 스냅용
   const LS_KEY = 'kr-rail-map-mylines-v1';
+  const SNAP_PX = 25;                // 스냅 반경 (픽셀)
 
   function setStatus(msg) { if (onUpdate) onUpdate(msg); }
 
@@ -61,10 +63,12 @@ const DrawTools = (() => {
   function refreshPreview() {
     ensurePreview();
     const feats = [];
-    if (pts.length >= 2) feats.push({ type: 'Feature', properties: {},
-      geometry: { type: 'LineString', coordinates: pts } });
-    pts.forEach(p => feats.push({ type: 'Feature', properties: {},
-      geometry: { type: 'Point', coordinates: p } }));
+    const coords = pts.map(p => p.coord);
+    if (coords.length >= 2) feats.push({ type: 'Feature', properties: {},
+      geometry: { type: 'LineString', coordinates: coords } });
+    pts.forEach(p => feats.push({ type: 'Feature',
+      properties: { name: p.name || '' },
+      geometry: { type: 'Point', coordinates: p.coord } }));
     map.getSource('draw-preview').setData({ type: 'FeatureCollection', features: feats });
     map.setPaintProperty('draw-preview-line', 'line-color', color);
     map.setPaintProperty('draw-preview-line', 'line-dasharray', DASHES[dashKey]);
@@ -133,12 +137,28 @@ const DrawTools = (() => {
 
   function onClick(lngLat) {
     if (!mode) return;
-    pts.push([lngLat.lng, lngLat.lat]);
+    let pt = [lngLat.lng, lngLat.lat];
+    let snapName = null;
+    // 역 스냅: 클릭 지점 근처 역이 있으면 그 역 좌표로
+    if (mode === 'draw' && allStations.length) {
+      const clickPx = map.project(lngLat);
+      let bestD = SNAP_PX, bestS = null;
+      for (const s of allStations) {
+        const sp = map.project(s.geometry.coordinates);
+        const d = Math.hypot(sp.x - clickPx.x, sp.y - clickPx.y);
+        if (d < bestD) { bestD = d; bestS = s; }
+      }
+      if (bestS) {
+        pt = [...bestS.geometry.coordinates];
+        snapName = bestS.properties.name_ko;
+      }
+    }
+    pts.push({ coord: pt, name: snapName });
     refreshPreview();
     if (mode === 'measure') {
-      const km = totalKm(pts);
+      const km = totalKm(pts.map(p => p.coord));
       setStatus(`측정 중: ${km.toFixed(2)} km ${hint()}`);
-    } else setStatus(hint());
+    } else setStatus(hint() + (snapName ? ` · 📌 ${snapName}에 스냅됨` : ''));
   }
 
   function undo() {
@@ -150,9 +170,10 @@ const DrawTools = (() => {
 
   function finish() {
     if (!mode || pts.length < 2) { setStatus('점을 2개 이상 찍어주세요. ' + hint()); return; }
+    const coords = pts.map(p => p.coord);
     if (mode === 'measure') {
-      const km = totalKm(pts);
-      const a = areaKm2(pts);
+      const km = totalKm(coords);
+      const a = areaKm2(coords);
       setStatus(`측정 완료: 거리 ${km.toFixed(2)} km${pts.length >= 3 ? ` · 면적 약 ${a.toFixed(2)} km²` : ''}`);
       // 측정선은 미리보기에 남겨둠 (다음 측정/취소 시 지워짐)
       mode = null;
@@ -162,7 +183,10 @@ const DrawTools = (() => {
       return;
     }
     // 그리기 완료 → 나의 노선으로 저장
-    const line = { id: 'my-' + (seq), name: '나의 노선 ' + (seq), color, dashKey, coords: [...pts] };
+    const customName = (document.getElementById('draw-name').value || '').trim();
+    const line = { id: 'my-' + (seq), name: customName || ('나의 노선 ' + seq),
+      color, dashKey, coords,
+      stations: pts.map(p => p.name).filter(Boolean) };
     seq++;
     myLines.push(line);
     saveMyLines();
@@ -252,5 +276,6 @@ const DrawTools = (() => {
     }
   }
 
-  return { init, renderMyLineList, restyle, refreshMyLines };
+  return { init, renderMyLineList, restyle, refreshMyLines,
+    setStations: sts => { allStations = sts || []; } };
 })();

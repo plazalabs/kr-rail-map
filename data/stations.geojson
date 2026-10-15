@@ -272,26 +272,6 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.03447,
-     37.57838
-    ]
-   },
-   "properties": {
-    "id": "st-355172758",
-    "name_ko": "제기동",
-    "name_en": "Jegi-dong",
-    "line_id": "seoul-metropolitan-subway-line-1",
-    "lines": [
-     "seoul-metropolitan-subway-line-1",
-     "dongbuk-line"
-    ]
-   }
-  },
-  {
-   "type": "Feature",
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
      127.06729,
      37.601638
     ]
@@ -322,26 +302,6 @@
     "line_id": "gyeongui-jungang-line",
     "lines": [
      "gyeongui-jungang-line"
-    ]
-   }
-  },
-  {
-   "type": "Feature",
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
-     127.05887,
-     37.63306
-    ]
-   },
-   "properties": {
-    "id": "st-355172771",
-    "name_ko": "월계",
-    "name_en": "Wolgye",
-    "line_id": "seoul-metropolitan-subway-line-1",
-    "lines": [
-     "seoul-metropolitan-subway-line-1",
-     "dongbuk-line"
     ]
    }
   },
@@ -7785,29 +7745,6 @@
   },
   {
    "type": "Feature",
-   "properties": {
-    "id": "st-5225311374",
-    "name_ko": "왕십리",
-    "name_en": "Wangsimni",
-    "line_id": "gyeongui-jungang-line",
-    "lines": [
-     "gyeongui-jungang-line",
-     "seoul-subway-line-2",
-     "seoul-subway-line-5",
-     "gtx-c",
-     "dongbuk-line"
-    ]
-   },
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
-     127.03858,
-     37.56149
-    ]
-   }
-  },
-  {
-   "type": "Feature",
    "geometry": {
     "type": "Point",
     "coordinates": [
@@ -10801,26 +10738,6 @@
   },
   {
    "type": "Feature",
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
-     127.03601,
-     37.59038
-    ]
-   },
-   "properties": {
-    "id": "st-5916874395",
-    "name_ko": "고려대",
-    "name_en": "Korea Univ.",
-    "line_id": "seoul-subway-line-6",
-    "lines": [
-     "seoul-subway-line-6",
-     "dongbuk-line"
-    ]
-   }
-  },
-  {
-   "type": "Feature",
    "properties": {
     "id": "st-5919544685",
     "name_ko": "홍대입구",
@@ -12994,26 +12911,6 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.03009,
-     37.61319
-    ]
-   },
-   "properties": {
-    "id": "st-6036160316",
-    "name_ko": "미아사거리",
-    "name_en": "Miasageori",
-    "line_id": "seoul-metropolitan-subway-line-4",
-    "lines": [
-     "seoul-metropolitan-subway-line-4",
-     "dongbuk-line"
-    ]
-   }
-  },
-  {
-   "type": "Feature",
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
      127.024852,
      37.60316
     ]
@@ -14650,26 +14547,6 @@
     "line_id": "seoul-subway-line-7",
     "lines": [
      "seoul-subway-line-7"
-    ]
-   }
-  },
-  {
-   "type": "Feature",
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
-     127.06825,
-     37.63602
-    ]
-   },
-   "properties": {
-    "id": "st-6046633875",
-    "name_ko": "하계",
-    "name_en": "Hagye",
-    "line_id": "seoul-subway-line-7",
-    "lines": [
-     "seoul-subway-line-7",
-     "dongbuk-line"
     ]
    }
   },
@@ -19119,26 +18996,6 @@
    "geometry": {
     "type": "Point",
     "coordinates": [
-     127.07344,
-     37.66076
-    ]
-   },
-   "properties": {
-    "id": "st-9165988119",
-    "name_ko": "상계",
-    "name_en": "Sanggye",
-    "line_id": "seoul-metropolitan-subway-line-4",
-    "lines": [
-     "seoul-metropolitan-subway-line-4",
-     "dongbuk-line"
-    ]
-   }
-  },
-  {
-   "type": "Feature",
-   "geometry": {
-    "type": "Point",
-    "coordinates": [
      126.459919,
      37.437097
     ]
@@ -23577,173 +23434,306 @@
   },
   {
    "type": "Feature",
-   "properties": {
-    "id": "st-dongbuk-01",
-    "name_ko": "동명초교",
-    "name_en": "동명초교",
-    "line_id": "dongbuk-line",
-    "lines": [
-     "dongbuk-line"
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     127.03858,
+     37.56149
     ]
    },
+   "properties": {
+    "id": "st-dongbuk-0",
+    "name_ko": "왕십리",
+    "name_en": "Wangsimni",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
+   }
+  },
+  {
+   "type": "Feature",
    "geometry": {
     "type": "Point",
     "coordinates": [
      127.03752,
      37.56954
     ]
+   },
+   "properties": {
+    "id": "st-dongbuk-1",
+    "name_ko": "동명초교",
+    "name_en": "동명초교",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
    }
   },
   {
    "type": "Feature",
-   "properties": {
-    "id": "st-dongbuk-02",
-    "name_ko": "종암이육사",
-    "name_en": "종암우체국",
-    "line_id": "dongbuk-line",
-    "lines": [
-     "dongbuk-line"
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     127.03447,
+     37.57838
     ]
    },
+   "properties": {
+    "id": "st-dongbuk-2",
+    "name_ko": "제기동",
+    "name_en": "Jegi-dong",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     127.03601,
+     37.59038
+    ]
+   },
+   "properties": {
+    "id": "st-dongbuk-3",
+    "name_ko": "고려대",
+    "name_en": "Korea Univ.",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
+   }
+  },
+  {
+   "type": "Feature",
    "geometry": {
     "type": "Point",
     "coordinates": [
      127.03499,
      37.59801
     ]
+   },
+   "properties": {
+    "id": "st-dongbuk-4",
+    "name_ko": "종암이육사",
+    "name_en": "종암이육사",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
    }
   },
   {
    "type": "Feature",
-   "properties": {
-    "id": "st-dongbuk-03",
-    "name_ko": "종암사거리",
-    "name_en": "종암경찰서",
-    "line_id": "dongbuk-line",
-    "lines": [
-     "dongbuk-line"
-    ]
-   },
    "geometry": {
     "type": "Point",
     "coordinates": [
      127.03172,
      37.60529
     ]
+   },
+   "properties": {
+    "id": "st-dongbuk-5",
+    "name_ko": "종암사거리",
+    "name_en": "종암사거리",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
    }
   },
   {
    "type": "Feature",
-   "properties": {
-    "id": "st-dongbuk-04",
-    "name_ko": "하월곡",
-    "name_en": "장위",
-    "line_id": "dongbuk-line",
-    "lines": [
-     "dongbuk-line"
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     127.03009,
+     37.61319
     ]
    },
+   "properties": {
+    "id": "st-dongbuk-6",
+    "name_ko": "미아사거리",
+    "name_en": "Miasageori",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
+   }
+  },
+  {
+   "type": "Feature",
    "geometry": {
     "type": "Point",
     "coordinates": [
      127.03828,
      37.61575
     ]
+   },
+   "properties": {
+    "id": "st-dongbuk-7",
+    "name_ko": "하월곡",
+    "name_en": "하월곡",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
    }
   },
   {
    "type": "Feature",
-   "properties": {
-    "id": "st-dongbuk-05",
-    "name_ko": "북서울꿈의숲",
-    "name_en": "북서울꿈의숲",
-    "line_id": "dongbuk-line",
-    "lines": [
-     "dongbuk-line"
-    ]
-   },
    "geometry": {
     "type": "Point",
     "coordinates": [
      127.04516,
      37.62018
     ]
+   },
+   "properties": {
+    "id": "st-dongbuk-8",
+    "name_ko": "북서울꿈의숲",
+    "name_en": "북서울꿈의숲",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
    }
   },
   {
    "type": "Feature",
-   "properties": {
-    "id": "st-dongbuk-06",
-    "name_ko": "우이천",
-    "name_en": "우이천",
-    "line_id": "dongbuk-line",
-    "lines": [
-     "dongbuk-line"
-    ]
-   },
    "geometry": {
     "type": "Point",
     "coordinates": [
      127.05138,
      37.62517
     ]
+   },
+   "properties": {
+    "id": "st-dongbuk-9",
+    "name_ko": "우이천",
+    "name_en": "우이천",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
    }
   },
   {
    "type": "Feature",
-   "properties": {
-    "id": "st-dongbuk-07",
-    "name_ko": "서울과학기술대",
-    "name_en": "서울시립과학관",
-    "line_id": "dongbuk-line",
-    "lines": [
-     "dongbuk-line"
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     127.05887,
+     37.63306
     ]
    },
+   "properties": {
+    "id": "st-dongbuk-10",
+    "name_ko": "월계",
+    "name_en": "Wolgye",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     127.06825,
+     37.63602
+    ]
+   },
+   "properties": {
+    "id": "st-dongbuk-11",
+    "name_ko": "하계",
+    "name_en": "Hagye",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
+   }
+  },
+  {
+   "type": "Feature",
    "geometry": {
     "type": "Point",
     "coordinates": [
      127.0762,
      37.63976
     ]
+   },
+   "properties": {
+    "id": "st-dongbuk-12",
+    "name_ko": "서울과학기술대",
+    "name_en": "서울과학기술대",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
    }
   },
   {
    "type": "Feature",
-   "properties": {
-    "id": "st-dongbuk-08",
-    "name_ko": "은행사거리",
-    "name_en": "은행사거리",
-    "line_id": "dongbuk-line",
-    "lines": [
-     "dongbuk-line"
-    ]
-   },
    "geometry": {
     "type": "Point",
     "coordinates": [
      127.07688,
      37.65029
     ]
+   },
+   "properties": {
+    "id": "st-dongbuk-13",
+    "name_ko": "은행사거리",
+    "name_en": "은행사거리",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
    }
   },
   {
    "type": "Feature",
-   "properties": {
-    "id": "st-dongbuk-09",
-    "name_ko": "중계주공",
-    "name_en": "불암산",
-    "line_id": "dongbuk-line",
-    "lines": [
-     "dongbuk-line"
-    ]
-   },
    "geometry": {
     "type": "Point",
     "coordinates": [
      127.07831,
      37.65573
     ]
+   },
+   "properties": {
+    "id": "st-dongbuk-14",
+    "name_ko": "중계주공",
+    "name_en": "중계주공",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     127.07344,
+     37.66076
+    ]
+   },
+   "properties": {
+    "id": "st-dongbuk-15",
+    "name_ko": "상계",
+    "name_en": "Sanggye",
+    "lines": [
+     "dongbuk-line"
+    ],
+    "line_id": "dongbuk-line"
    }
   }
  ]

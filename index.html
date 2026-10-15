@@ -48,6 +48,7 @@
       <button id="diagram-save-btn" title="다이어그램 PNG 저장">💾 노선도 저장</button>
       <button id="report-btn" title="오류 제보하기">📝 제보</button>
       <button id="invest-btn" title="역세권 투자 분석">📊 투자분석</button>
+      <button id="coverage-btn" title="노선 영향권 히트맵">🗺️ 영향권</button>
       <button id="locate-btn" title="내 위치로 이동">📍 내 위치</button>
       <button id="save-btn" title="지도를 PNG 이미지로 저장">이미지 저장</button>
       <button id="share-btn" title="현재 화면 링크 복사">링크 복사</button>
@@ -85,6 +86,17 @@
 <script src="js/timeline.js"></script>
 <script src="js/route-compare.js"></script>
 <script src="js/invest.js"></script>
+<script src="js/coverage.js"></script>
 <script src="js/app.js"></script>
+<script>
+// PWA: 서비스 워커 등록
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('ServiceWorker 등록 실패:', err);
+    });
+  });
+}
+</script>
 </body>
 </html>

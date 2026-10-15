@@ -771,7 +771,7 @@ document.getElementById('compare-btn').addEventListener('click', () => {
 });
 
 // DiagramMode에서 역 클릭 시 팝업을 띄우기 위한 전역 노출
-window.openStationPopup = (feature, lngLat) => openStationPopup(feature, lngLat);
+window.openStationPopup = openStationPopup;
 
 // 통계 / 타임라인 버튼
 document.getElementById('stats-btn').addEventListener('click', () => {

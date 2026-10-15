@@ -70,7 +70,13 @@ const DiagramMode = (() => {
       if (!seen.has(nm)) seen.set(nm, s);
     }
     const arr = [...seen.values()];
-    arr.forEach(s => { s._along = projectAlong(s.geometry.coordinates, coords); });
+    // 성능: 좌표가 많으면 다운샘플링 (최대 200점) — 순서 파악용이므로 정밀도 무관
+    let projCoords = coords;
+    if (coords.length > 200) {
+      const step = Math.ceil(coords.length / 200);
+      projCoords = coords.filter((_, i) => i % step === 0);
+    }
+    arr.forEach(s => { s._along = projectAlong(s.geometry.coordinates, projCoords); });
     arr.sort((a, b) => a._along - b._along);
     return arr;
   }

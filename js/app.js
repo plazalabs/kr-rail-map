@@ -529,6 +529,8 @@ document.getElementById('route-go').addEventListener('click', () => {
     }
   });
   box.innerHTML = html;
+  // 경로 하이라이트: 해당 경로 역만 밝게, 나머지는 어둡게
+  highlightRoute(r.path);
   // 경유역 펼치기 토글
   box.querySelectorAll('.via-toggle').forEach(btn => {
     const orig = btn.textContent;
@@ -539,6 +541,67 @@ document.getElementById('route-go').addEventListener('click', () => {
     });
   });
 });
+
+/* ---------- 경로 하이라이트 (철맘 스타일) ---------- */
+// 경로상의 역만 밝게 표시, 나머지는 어둡게. 경로 선을 지도에 그림.
+function highlightRoute(path) {
+  if (!map || !path || !path.length) return;
+  clearRouteHighlight();
+
+  const pathSet = new Set(path);
+
+  // 역 원: 경로에 포함된 역만 불투명, 나머지는 15% 투명도
+  map.setPaintProperty('rail-stations', 'circle-opacity', [
+    'case',
+    ['in', ['get', 'id'], ['literal', [...pathSet]]],
+    1,
+    0.15
+  ]);
+  // 역 라벨도 동일하게
+  map.setPaintProperty('station-labels', 'text-opacity', [
+    'case',
+    ['in', ['get', 'id'], ['literal', [...pathSet]]],
+    1,
+    0.15
+  ]);
+
+  // 경로 선 그리기 (역 좌표 연결)
+  const coords = [];
+  for (const id of path) {
+    const s = STATIONS.find(x => x.properties.id === id);
+    if (s) coords.push(s.geometry.coordinates);
+  }
+  if (coords.length < 2) return;
+
+  map.addSource('route-highlight', {
+    type: 'geojson',
+    data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} }
+  });
+  map.addLayer({
+    id: 'route-highlight-line', type: 'line', source: 'route-highlight',
+    paint: { 'line-color': '#FF0000', 'line-width': 5, 'line-opacity': 0.9 }
+  });
+  map.addLayer({
+    id: 'route-highlight-stations', type: 'circle', source: 'route-highlight',
+    paint: { 'circle-radius': 6, 'circle-color': '#FF0000', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 }
+  });
+
+  // 경로에 맞게 지도 이동
+  const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
+  map.fitBounds(bounds, { padding: 60 });
+}
+
+// 하이라이트 제거 (원래대로)
+function clearRouteHighlight() {
+  if (!map) return;
+  if (map.getLayer('route-highlight-line')) map.removeLayer('route-highlight-line');
+  if (map.getLayer('route-highlight-stations')) map.removeLayer('route-highlight-stations');
+  if (map.getSource('route-highlight')) map.removeSource('route-highlight');
+  if (map.getLayer('rail-stations')) map.setPaintProperty('rail-stations', 'circle-opacity', 1);
+  if (map.getLayer('station-labels')) map.setPaintProperty('station-labels', 'text-opacity', 1);
+}
+window.clearRouteHighlight = clearRouteHighlight;
+window.highlightRoute = highlightRoute;
 
 /* ---------- 시작 ---------- */
 renderThemes();

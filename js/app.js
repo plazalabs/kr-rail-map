@@ -173,6 +173,22 @@ function addDataLayers() {
       'line-opacity': 0.9
     }
   });
+  // 노선 하이라이트 레이어 (사이드바 호버용)
+  map.addSource('line-highlight', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({
+    id: 'rail-lines-highlight', type: 'line', source: 'line-highlight',
+    paint: {
+      'line-color': ['coalesce', ['get', 'color'], '#ff0000'],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 7, 4, 12, 8, 16, 12],
+      'line-opacity': 0.6
+    }
+  });
+  // 내 위치 레이어
+  map.addSource('my-location', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({
+    id: 'my-location-dot', type: 'circle', source: 'my-location',
+    paint: { 'circle-radius': 8, 'circle-color': '#4285f4', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 }
+  });
   map.addSource('stations', { type: 'geojson', data: { type: 'FeatureCollection', features: STATIONS } });
   map.addLayer({
     id: 'rail-stations', type: 'circle', source: 'stations',
@@ -228,6 +244,9 @@ function renderLineList() {
       if (p.note) label.title = p.note;
       if (p.status !== 'open') label.title = (label.title ? label.title + ' / ' : '') +
         (p.status === 'construction' ? '공사 중' : '계획 중');
+      // 호버 시 지도에서 하이라이트
+      label.addEventListener('mouseenter', () => highlightLine(p.id));
+      label.addEventListener('mouseleave', () => highlightLine(null));
       det.appendChild(label);
     });
     box.appendChild(det);
@@ -411,6 +430,7 @@ map.on('load', async () => {
   await loadData();
   dataReady = true;
   addDataLayers(); renderLineList(); updateFilters(); setupRouteFinder();
+  DrawTools.refreshMyLines(); DrawTools.renderMyLineList();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
 function restoreCustomLayers() {
@@ -420,6 +440,51 @@ function restoreCustomLayers() {
 }
 map.on('style.load', restoreCustomLayers);
 map.on('styledata', restoreCustomLayers); // 동일 스타일 재적용 등 style.load 미발화 대비 안전망
+
+/* ---------- 노선 하이라이트 ---------- */
+function highlightLine(lineId) {
+  if (!map.getSource('line-highlight')) return;
+  if (!lineId) {
+    map.getSource('line-highlight').setData({ type: 'FeatureCollection', features: [] });
+    return;
+  }
+  const f = LINES.find(l => l.properties.id === lineId);
+  if (f) map.getSource('line-highlight').setData({ type: 'FeatureCollection', features: [f] });
+}
+
+/* ---------- 내 위치 ---------- */
+document.getElementById('locate-btn').addEventListener('click', () => {
+  if (!navigator.geolocation) { setStatus('위치 정보를 지원하지 않는 브라우저입니다.'); return; }
+  setStatus('위치 확인 중…');
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lng = pos.coords.longitude, lat = pos.coords.latitude;
+    // 내 위치 표시
+    if (map.getSource('my-location')) {
+      map.getSource('my-location').setData({ type: 'FeatureCollection', features: [{
+        type: 'Feature', properties: {},
+        geometry: { type: 'Point', coordinates: [lng, lat] }
+      }]});
+    }
+    // 가장 가까운 역 찾기
+    let best = null, bestD = Infinity;
+    const R = Math.PI / 180;
+    STATIONS.forEach(s => {
+      const [slng, slat] = s.geometry.coordinates;
+      const dLat = (slat - lat) * R, dLon = (slng - lng) * R;
+      const h = Math.sin(dLat/2)**2 + Math.cos(lat*R)*Math.cos(slat*R)*Math.sin(dLon/2)**2;
+      const d = 6371 * 2 * Math.asin(Math.sqrt(h));
+      if (d < bestD) { bestD = d; best = s; }
+    });
+    map.flyTo({ center: [lng, lat], zoom: 14, duration: 1000 });
+    if (best) {
+      const nm = best.properties.name_ko;
+      const lns = (best.properties.lines || []).map(lid => lineNameOf.get(lid) || lid).join('·');
+      setStatus(`내 위치: 가장 가까운 역은 ${nm} (${bestD.toFixed(1)}km${lns ? ' · ' + lns : ''})`);
+    } else setStatus('내 위치로 이동했습니다.');
+  }, err => {
+    setStatus('위치를 가져올 수 없습니다: ' + (err.message || '권한 거부'));
+  }, { enableHighAccuracy: true, timeout: 10000 });
+});
 
 /* ---------- 역 클릭 팝업: 출발지/도착지 지정 ---------- */
 let stationPopup = null;

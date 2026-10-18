@@ -357,6 +357,11 @@ const UI = (() => {
   }
 
   function boot() {
+    // app.js 는 지도 load 이후에 데이터를 받는다. 타일과 병렬로 미리 받아
+    // 두면 체감 로딩이 줄어든다 (브라우저/SW 캐시에서 재사용됨).
+    ['data/lines.geojson', 'data/stations.geojson'].forEach(u => {
+      try { fetch(u, { cache: 'force-cache' }).catch(() => {}); } catch (e) {}
+    });
     watchStatus();
     watchModals();
     initKeys();

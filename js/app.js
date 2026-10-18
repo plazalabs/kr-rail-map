@@ -651,10 +651,16 @@ window.highlightRoute = highlightRoute;
 renderThemes();
 applyView();
 DrawTools.init(map, setStatus);
+// 데이터는 지도 타일과 병렬로 받고, 도착하는 즉시 사이드바를 그린다.
+// (지도 load 를 기다리면 타일이 느릴 때 첫 화면이 수 초 늦어진다)
+const dataPromise = loadData().then(() => {
+  renderLineList();
+  setupRouteFinder();
+});
 map.on('load', async () => {
-  await loadData();
+  await dataPromise;
   dataReady = true;
-  addDataLayers(); renderLineList(); updateFilters(); setupRouteFinder();
+  addDataLayers(); updateFilters();
   DrawTools.setStations(STATIONS);
   DrawTools.refreshMyLines(); DrawTools.renderMyLineList();
   DrawTools.refreshMemos();

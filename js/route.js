@@ -151,11 +151,17 @@ const RouteFinder = (() => {
     });
   }
 
+  // GTX·고속 계통은 category 가 urban 이라 표의 속도(45km/h)를 쓰면
+  // 일반철도(55km/h)보다 느려져 엉뚱한 우회 경로가 잡힌다. 따로 처리한다.
+  function speedOf(lineId) {
+    if (/^gtx|great-train-express|^ktx|^srt/.test(lineId || '')) return 110;
+    return SPEEDS[lineCat.get(lineId)] || 40;
+  }
+
   function edgeMinutes(e) {
     if (e.walk) return e.distKm / WALK_KMH * 60 + 2;
     if (e.officialMin != null) return e.officialMin;  // GTX 공식 소요시간 우선
-    const v = SPEEDS[lineCat.get(e.lineId)] || 40;
-    return e.distKm / v * 60;
+    return e.distKm / speedOf(e.lineId) * 60;
   }
 
   function findRoute(fromId, toId) {

@@ -218,16 +218,18 @@ const CAT_NAMES = { metro: '도시철도', urban: '광역·도시', ktx: 'KTX·�
 function lineStats(lid) {
   const f = LINES.find(l => l.properties.id === lid);
   if (!f) return { km: 0, stations: 0 };
-  // 길이 계산
+  // 길이: MultiLineString 은 조각별로 따로 더한다.
+  // (조각을 이어붙여 계산하면 끊긴 구간 사이 거리까지 더해져 2배가 된다)
   let km = 0;
   const R = Math.PI / 180;
-  const flat = f.geometry.type === 'LineString' ? f.geometry.coordinates
-    : f.geometry.coordinates.flat(1);
-  for (let i = 0; i < flat.length - 1; i++) {
-    const [x1, y1] = flat[i], [x2, y2] = flat[i+1];
-    const dLat = (y2-y1)*R, dLon = (x2-x1)*R;
-    const h = Math.sin(dLat/2)**2 + Math.cos(y1*R)*Math.cos(y2*R)*Math.sin(dLon/2)**2;
-    km += 6371 * 2 * Math.asin(Math.sqrt(h));
+  const parts = f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates;
+  for (const flat of parts) {
+    for (let i = 0; i < flat.length - 1; i++) {
+      const [x1, y1] = flat[i], [x2, y2] = flat[i + 1];
+      const dLat = (y2 - y1) * R, dLon = (x2 - x1) * R;
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(y1 * R) * Math.cos(y2 * R) * Math.sin(dLon / 2) ** 2;
+      km += 6371 * 2 * Math.asin(Math.sqrt(h));
+    }
   }
   // 역 수 (중복 제거)
   const seen = new Set();
@@ -237,47 +239,119 @@ function lineStats(lid) {
   return { km, stations: seen.size };
 }
 
+/* ---------- 표시 범위: 수도권 / 전국 ---------- */
+const CAT_ORDER = ['metro', 'urban', 'ktx', 'conventional', 'etc'];
+const METRO_BBOX = { minLng: 126.28, maxLng: 128.02, minLat: 36.88, maxLat: 38.36 };
+let scope = 'metro';
+let metroIds = new Set();
+
+function inMetro(c) {
+  return c[0] >= METRO_BBOX.minLng && c[0] <= METRO_BBOX.maxLng &&
+         c[1] >= METRO_BBOX.minLat && c[1] <= METRO_BBOX.maxLat;
+}
+function computeMetroIds() {
+  const ids = new Set();
+  STATIONS.forEach(s => {
+    if (!inMetro(s.geometry.coordinates)) return;
+    (s.properties.lines || []).forEach(l => ids.add(l));
+  });
+  return ids;
+}
+function scopeLines() {
+  if (scope === 'all') return LINES;
+  return LINES.filter(f => metroIds.has(f.properties.id));
+}
+
+function setScope(mode, opts) {
+  scope = mode;
+  metroIds = computeMetroIds();
+  document.querySelectorAll('.scope-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.scope === scope));
+  visibleLines.clear();
+  scopeLines().forEach(f => visibleLines.add(f.properties.id));
+  renderLineList();
+  updateFilters();
+  const n = scopeLines().length;
+  const sc = document.getElementById('scope-count');
+  if (sc) sc.textContent = `${n}개 노선`;
+  if (!opts || opts.fly !== false) {
+    if (scope === 'metro') map.fitBounds([[126.28, 36.88], [128.02, 38.36]], { padding: 40, duration: 700 });
+    else map.fitBounds([[125.9, 33.0], [129.6, 38.6]], { padding: 40, duration: 700 });
+  }
+}
+document.querySelectorAll('.scope-btn').forEach(b =>
+  b.addEventListener('click', () => setScope(b.dataset.scope)));
+window.setScope = setScope;
+
 function renderLineList() {
   const box = document.getElementById('line-list');
   box.innerHTML = '';
+  const lines = scopeLines();
   const groups = {};
-  LINES.forEach(f => {
+  lines.forEach(f => {
     const c = f.properties.category || 'etc';
     (groups[c] = groups[c] || []).push(f);
   });
-  Object.keys(groups).sort().forEach(cat => {
+  Object.keys(groups).sort((a, b) => {
+    const ia = CAT_ORDER.indexOf(a), ib = CAT_ORDER.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  }).forEach(cat => {
     const det = document.createElement('details'); det.open = true;
     const sum = document.createElement('summary');
     sum.textContent = `${CAT_NAMES[cat] || cat} (${groups[cat].length})`;
     det.appendChild(sum);
-    groups[cat].forEach(f => {
-      const p = f.properties;
-      const label = document.createElement('label');
-      label.className = 'line-item';
-      const cb = document.createElement('input');
-      cb.type = 'checkbox'; cb.checked = true;
-      cb.addEventListener('change', () => {
-        cb.checked ? visibleLines.add(p.id) : visibleLines.delete(p.id);
-        updateFilters();
+    groups[cat]
+      .sort((a, b) => (a.properties.name_ko || '').localeCompare(b.properties.name_ko || '', 'ko', { numeric: true }))
+      .forEach(f => {
+        const p = f.properties;
+        const label = document.createElement('label');
+        label.className = 'line-item';
+        label.dataset.lineId = p.id;
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.checked = visibleLines.has(p.id);
+        cb.addEventListener('change', () => {
+          cb.checked ? visibleLines.add(p.id) : visibleLines.delete(p.id);
+          updateFilters();
+        });
+        const sw = document.createElement('span');
+        sw.className = 'swatch'; sw.style.background = p.color || '#888888';
+        const st = lineStats(p.id);
+        const info = document.createElement('span');
+        info.className = 'line-meta';
+        info.textContent = `${st.km.toFixed(1)}km · ${st.stations}역`;
+        label.append(cb, sw, document.createTextNode(p.name_ko || p.id), info);
+        if (p.note) label.title = p.note;
+        if (p.status !== 'open') label.title = (label.title ? label.title + ' / ' : '') +
+          (p.status === 'construction' ? '공사 중' : '계획 중');
+        label.addEventListener('mouseenter', () => highlightLine(p.id));
+        label.addEventListener('mouseleave', () => highlightLine(null));
+        det.appendChild(label);
       });
-      const sw = document.createElement('span');
-      sw.className = 'swatch'; sw.style.background = p.color || '#888888';
-      const st = lineStats(p.id);
-      const info = document.createElement('span');
-      info.className = 'line-meta';
-      info.textContent = `${st.km.toFixed(1)}km · ${st.stations}역`;
-      label.append(cb, sw, document.createTextNode(p.name_ko || p.id), info);
-      if (p.note) label.title = p.note;
-      if (p.status !== 'open') label.title = (label.title ? label.title + ' / ' : '') +
-        (p.status === 'construction' ? '공사 중' : '계획 중');
-      // 호버 시 지도에서 하이라이트
-      label.addEventListener('mouseenter', () => highlightLine(p.id));
-      label.addEventListener('mouseleave', () => highlightLine(null));
-      det.appendChild(label);
-    });
     box.appendChild(det);
   });
-  document.getElementById('line-count').textContent = `(${LINES.length})`;
+  document.getElementById('line-count').textContent = `(${lines.length})`;
+}
+
+/* ?line=<id> 로 특정 노선만 보기 */
+function focusLineFromUrl() {
+  const lid = new URLSearchParams(location.search).get('line');
+  if (!lid) return false;
+  const f = LINES.find(l => l.properties.id === lid);
+  if (!f) return false;
+  setScope('all', { fly: false });
+  visibleLines.clear();
+  visibleLines.add(lid);
+  document.querySelectorAll('#line-list .line-item').forEach(l => {
+    const cb = l.querySelector('input');
+    if (cb) cb.checked = l.dataset.lineId === lid;
+  });
+  updateFilters();
+  const b = new maplibregl.LngLatBounds();
+  const parts = f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates;
+  parts.forEach(part => part.forEach(c => b.extend(c)));
+  map.fitBounds(b, { padding: 60, duration: 0 });
+  setStatus(`${f.properties.name_ko} 노선만 표시 중 · 범위 버튼으로 전체 보기`);
+  return true;
 }
 
 /* ---------- 검색 (한/영) ---------- */
@@ -297,8 +371,12 @@ searchInput.addEventListener('input', () => {
     d.className = 'hit';
     d.textContent = `${f.properties.name_ko}${f.properties.name_en ? ' (' + f.properties.name_en + ')' : ''}`;
     d.addEventListener('click', () => {
-      map.flyTo({ center: f.geometry.coordinates, zoom: 14 });
+      const c = f.geometry.coordinates;
+      map.flyTo({ center: c, zoom: 14 });
       searchBox.innerHTML = '';
+      searchInput.blur();
+      // 역 상세 팝업까지 열어준다
+      setTimeout(() => openStationPopup(f, { lng: c[0], lat: c[1] }), 720);
     });
     searchBox.appendChild(d);
   });
@@ -544,105 +622,133 @@ document.getElementById('route-go').addEventListener('click', () => {
   // (경유역은 이제 항상 표시되므로 토글 불필요)
 });
 
-/* ---------- 경로 하이라이트 (철맘 스타일) ---------- */
-// 경로상의 역만 밝게 표시, 나머지는 어둡게. 경로 선을 지도에 그림.
+/* ---------- 경로 하이라이트 ----------
+ * 경로에 쓰인 노선만 남기고 나머지는 지운다(투명도 0).
+ * 역 이름은 라벨 충돌과 무관하게 항상 그린다(allow-overlap).
+ */
 function highlightRoute(path, legs) {
   if (!map || !path || !path.length) return;
   clearRouteHighlight();
+  if (typeof closeStationPopup === 'function') closeStationPopup();
+  // 배경 지도에 그려진 철도·역 심볼까지 숨겨 경로만 남긴다
+  (map.getStyle().layers || []).forEach(l => {
+    if (/railway/.test(l.id) && l.id !== 'rail-lines' && l.id !== 'rail-stations') {
+      try { map.setLayoutProperty(l.id, 'visibility', 'none'); } catch (e) {}
+    }
+  });
 
   const pathSet = new Set(path);
-  // 경로에 사용된 노선 ID 수집
   const routeLineIds = new Set();
-  if (legs) {
-    legs.forEach(leg => { if (leg.lineId) routeLineIds.add(leg.lineId); });
+  if (legs) legs.forEach(leg => { if (leg.lineId) routeLineIds.add(leg.lineId); });
+
+  // 1) 노선: 경로 노선만 보이게
+  if (map.getLayer('rail-lines')) {
+    map.setPaintProperty('rail-lines', 'line-opacity',
+      routeLineIds.size
+        ? ['case', ['in', ['get', 'id'], ['literal', [...routeLineIds]]], 1, 0]
+        : 0);
+  }
+  // 2) 역 점: 경로 역만
+  if (map.getLayer('rail-stations')) {
+    map.setPaintProperty('rail-stations', 'circle-opacity',
+      ['case', ['in', ['get', 'id'], ['literal', [...pathSet]]], 1, 0]);
+  }
+  // 3) 기본 역 라벨은 경로 역만 남긴다(자리 차지 경쟁 제거)
+  if (map.getLayer('station-labels')) {
+    map.setFilter('station-labels', ['in', ['get', 'id'], ['literal', [...pathSet]]]);
+    map.setPaintProperty('station-labels', 'text-opacity', 1);
   }
 
-  // 노선: 경로 노선만 밝게, 나머지는 10% 투명도로 비활성화 느낌
-  if (routeLineIds.size > 0) {
-    map.setPaintProperty('rail-lines', 'line-opacity', [
-      'case',
-      ['in', ['get', 'id'], ['literal', [...routeLineIds]]],
-      0.9,
-      0.08
-    ]);
-  } else {
-    map.setPaintProperty('rail-lines', 'line-opacity', 0.08);
-  }
-
-  // 역 원: 경로에 포함된 역만 불투명, 나머지는 10% 투명도
-  map.setPaintProperty('rail-stations', 'circle-opacity', [
-    'case',
-    ['in', ['get', 'id'], ['literal', [...pathSet]]],
-    1,
-    0.1
-  ]);
-  // 역 라벨도 동일하게
-  map.setPaintProperty('station-labels', 'text-opacity', [
-    'case',
-    ['in', ['get', 'id'], ['literal', [...pathSet]]],
-    1,
-    0.1
-  ]);
-
-  // 경로 선 그리기 (역 좌표 연결) - 굵고 밝게
   const coords = [];
-  for (const id of path) {
+  const labelFeatures = [];
+  path.forEach((id, i) => {
     const s = STATIONS.find(x => x.properties.id === id);
-    if (s) coords.push(s.geometry.coordinates);
-  }
+    if (!s) return;
+    coords.push(s.geometry.coordinates);
+    labelFeatures.push({
+      type: 'Feature',
+      geometry: s.geometry,
+      properties: { name: s.properties.name_ko, order: i + 1, last: i === path.length - 1 ? 1 : 0 },
+    });
+  });
   if (coords.length < 2) return;
 
+  // 경로 선 (흰 테두리 + 노선색)
   map.addSource('route-highlight', {
     type: 'geojson',
-    data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} }
+    data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} },
+  });
+  map.addLayer({
+    id: 'route-casing', type: 'line', source: 'route-highlight',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#ffffff', 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 7, 14, 14, 17, 20], 'line-opacity': 1 },
   });
   map.addLayer({
     id: 'route-highlight-line', type: 'line', source: 'route-highlight',
-    paint: { 'line-color': '#FF0000', 'line-width': 6, 'line-opacity': 1 }
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#e23b3b', 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 4, 14, 8, 17, 12], 'line-opacity': 1 },
   });
   map.addLayer({
     id: 'route-highlight-stations', type: 'circle', source: 'route-highlight',
-    paint: { 'circle-radius': 7, 'circle-color': '#FF0000', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2.5 }
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 4, 14, 7, 17, 9],
+      'circle-color': '#ffffff',
+      'circle-stroke-color': '#e23b3b',
+      'circle-stroke-width': 2.5,
+    },
   });
-  // 경유역 이름 라벨 (지도 위에 표시)
-  const labelFeatures = [];
-  for (let i = 0; i < path.length; i++) {
-    const s = STATIONS.find(x => x.properties.id === path[i]);
-    if (s) labelFeatures.push({
-      type: 'Feature',
-      geometry: s.geometry,
-      properties: { name: s.properties.name_ko, order: i + 1 }
-    });
-  }
+
+  // 경로 역 이름 — 다른 라벨과 충돌해도 무조건 표시
   map.addSource('route-highlight-labels', {
     type: 'geojson',
-    data: { type: 'FeatureCollection', features: labelFeatures }
+    data: { type: 'FeatureCollection', features: labelFeatures },
   });
   map.addLayer({
     id: 'route-highlight-labels', type: 'symbol', source: 'route-highlight-labels',
     layout: {
-      'text-field': ['concat', ['to-string', ['get', 'order']], '. ', ['get', 'name']],
-      'text-size': 12, 'text-offset': [0, 1.5], 'text-anchor': 'top'
+      'text-field': ['get', 'name'],
+      'text-size': ['interpolate', ['linear'], ['zoom'], 8, 12, 13, 15, 17, 18],
+      'text-font': ['Noto Sans Bold', 'Noto Sans Regular'],
+      'text-offset': [0, 1.15],
+      'text-anchor': 'top',
+      'text-allow-overlap': true,
+      'text-ignore-placement': true,
+      'text-padding': 2,
     },
-    paint: { 'text-color': '#CC0000', 'text-halo-color': '#fff', 'text-halo-width': 2 }
+    paint: {
+      'text-color': '#111418',
+      'text-halo-color': '#ffffff',
+      'text-halo-width': 2.2,
+      'text-halo-blur': 0.4,
+    },
   });
 
-  // 경로에 맞게 지도 이동
   const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
-  map.fitBounds(bounds, { padding: 60 });
+  map.fitBounds(bounds, { padding: { top: 80, bottom: 80, left: 420, right: 380 }, maxZoom: 13.5 });
 }
 
 // 하이라이트 제거 (원래대로)
 function clearRouteHighlight() {
   if (!map) return;
-  if (map.getLayer('route-highlight-line')) map.removeLayer('route-highlight-line');
-  if (map.getLayer('route-highlight-stations')) map.removeLayer('route-highlight-stations');
-  if (map.getLayer('route-highlight-labels')) map.removeLayer('route-highlight-labels');
-  if (map.getSource('route-highlight')) map.removeSource('route-highlight');
-  if (map.getSource('route-highlight-labels')) map.removeSource('route-highlight-labels');
+  ['route-highlight-labels', 'route-highlight-stations', 'route-highlight-line', 'route-casing'].forEach(id => {
+    if (map.getLayer(id)) map.removeLayer(id);
+  });
+  ['route-highlight', 'route-highlight-labels'].forEach(id => {
+    if (map.getSource(id)) map.removeSource(id);
+  });
   if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0.9);
   if (map.getLayer('rail-stations')) map.setPaintProperty('rail-stations', 'circle-opacity', 1);
   if (map.getLayer('station-labels')) map.setPaintProperty('station-labels', 'text-opacity', 1);
+  // 배경 지도의 철도 레이어 복구
+  try {
+    (map.getStyle().layers || []).forEach(l => {
+      if (/railway/.test(l.id) && l.id !== 'rail-lines' && l.id !== 'rail-stations') {
+        map.setLayoutProperty(l.id, 'visibility', 'visible');
+      }
+    });
+  } catch (e) {}
+  // 라벨 필터를 원래(보이는 노선)로 되돌린다
+  if (map.getLayer('station-labels') && typeof updateFilters === 'function') updateFilters();
 }
 window.clearRouteHighlight = clearRouteHighlight;
 window.highlightRoute = highlightRoute;
@@ -654,7 +760,13 @@ DrawTools.init(map, setStatus);
 // 데이터는 지도 타일과 병렬로 받고, 도착하는 즉시 사이드바를 그린다.
 // (지도 load 를 기다리면 타일이 느릴 때 첫 화면이 수 초 늦어진다)
 const dataPromise = loadData().then(() => {
+  metroIds = computeMetroIds();
+  // 기본 표시 범위(수도권)만 지도에 남긴다
+  visibleLines.clear();
+  scopeLines().forEach(f => visibleLines.add(f.properties.id));
   renderLineList();
+  const sc = document.getElementById('scope-count');
+  if (sc) sc.textContent = scopeLines().length + '개 노선';
   setupRouteFinder();
 });
 map.on('load', async () => {
@@ -688,7 +800,7 @@ map.on('load', async () => {
   if (typeof RouteCompare !== 'undefined') RouteCompare.init(RouteFinder, STATIONS, LINES);
   if (typeof InvestAnalyzer !== 'undefined') InvestAnalyzer.init(map, STATIONS, LINES);
   if (typeof CoverageMap !== 'undefined') CoverageMap.init(map, STATIONS, LINES);
-  restoreFromUrl();
+  if (!focusLineFromUrl()) restoreFromUrl();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
 function restoreCustomLayers() {

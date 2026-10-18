@@ -515,11 +515,38 @@ const DiagramMode = (() => {
     bar.querySelector('#dg-save').onclick = () => {
       if (typeof DiagramExport !== 'undefined') DiagramExport.save();
     };
+    // 휠 = 커서 위치 기준 확대/축소 (지도처럼)
     scroll.addEventListener('wheel', e => {
-      if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
-      zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12);
+      const rect = scroll.getBoundingClientRect();
+      const ox = e.clientX - rect.left;
+      const oy = e.clientY - rect.top;
+      zoomAt(ox, oy, e.deltaY < 0 ? 1.14 : 1 / 1.14);
     }, { passive: false });
+
+    // 드래그 = 이동
+    let drag = null;
+    scroll.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      if (e.target.closest('.dg-station')) return;
+      drag = { x: e.clientX, y: e.clientY, l: scroll.scrollLeft, t: scroll.scrollTop, moved: 0 };
+      scroll.setPointerCapture(e.pointerId);
+      scroll.style.cursor = 'grabbing';
+    });
+    scroll.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      drag.moved = Math.max(drag.moved, Math.abs(dx) + Math.abs(dy));
+      scroll.scrollLeft = drag.l - dx;
+      scroll.scrollTop = drag.t - dy;
+    });
+    const endDrag = () => {
+      if (!drag) return;
+      drag = null;
+      scroll.style.cursor = '';
+    };
+    scroll.addEventListener('pointerup', endDrag);
+    scroll.addEventListener('pointercancel', endDrag);
 
     return true;
   }
@@ -557,6 +584,18 @@ const DiagramMode = (() => {
   function zoomBy(k) {
     scale = Math.max(0.08, Math.min(3.2, scale * k));
     applyScale();
+  }
+
+  // 커서 아래 지점을 고정한 채 확대/축소
+  function zoomAt(ox, oy, k) {
+    const scroll = overlay && overlay.querySelector('.dg-scroll');
+    if (!scroll) return;
+    const before = scale;
+    scale = Math.max(0.08, Math.min(3.2, scale * k));
+    const r = scale / before;
+    applyScale();
+    scroll.scrollLeft = (scroll.scrollLeft + ox) * r - ox;
+    scroll.scrollTop = (scroll.scrollTop + oy) * r - oy;
   }
   function applyScale() {
     const canvas = overlay && overlay.querySelector('.dg-canvas');

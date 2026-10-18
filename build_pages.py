@@ -217,8 +217,10 @@ def main():
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(desc)}">
 <meta property="og:url" content="{SITE}/line/{esc(lid)}.html">
-<meta property="og:image" content="{SITE}/icons/icon-512.png">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="{SITE}/image/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="{esc(color)}">
 <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>
 <style>{STYLE}</style>

@@ -36,39 +36,63 @@ const UI = (() => {
     { panel: 'lc-panel', close: 'lc-close' },
     { panel: 'iv-panel', close: 'iv-close' },
     { panel: 'cv-panel', close: 'cv-close' },
-    { panel: 'sd-panel', close: 'sd-close' },
-    { panel: 'rt-panel', close: 'rt-close' },
+    { panel: 'sd-panel', close: 'sd-close', visibleClass: 'sd-open' },
+    { panel: 'rt-panel', close: 'rt-close', visibleEl: 'rt-backdrop', watchEl: 'rt-backdrop' },
   ];
-  function visibleModal() {
-    for (const m of MODALS) {
-      const el = document.getElementById(m.panel);
-      if (el && el.style.display !== 'none' && !el.hidden) return m;
+  // 패널이 실제로 보이는 상태인지.
+  //  - 대부분은 style.display 로 제어한다
+  //  - 역 상세(sd-panel)는 클래스, 타임라인(rt-panel)은 감싼 백드롭으로 제어한다
+  function panelOpen(m) {
+    const el = document.getElementById(m.panel);
+    if (!el || el.style.display === 'none' || el.hidden) return false;
+    if (m.visibleEl) {
+      const wrap = document.getElementById(m.visibleEl);
+      return !!wrap && wrap.style.display !== 'none';
     }
+    if (m.visibleClass) return el.classList.contains(m.visibleClass);
+    return true;
+  }
+  function visibleModal() {
+    for (const m of MODALS) if (panelOpen(m)) return m;
     return null;
   }
   function closeModals(exceptId) {
     for (const m of MODALS) {
       if (m.panel === exceptId) continue;
       const el = document.getElementById(m.panel);
-      if (!el || el.style.display === 'none') continue;
+      if (!el || !panelOpen(m)) continue;
       const btn = document.getElementById(m.close);
       if (btn) btn.click();
       else el.style.display = 'none';
     }
   }
+  // 모듈이 패널을 게을리 만들어도 요소가 나타나는 순간 감시를 붙인다
   function watchModals() {
     MODALS.forEach(m => {
-      const el = document.getElementById(m.panel);
-      if (!el) return;
-      new MutationObserver(() => {
-        if (el.style.display !== 'none') closeModals(m.panel);
-      }).observe(el, { attributes: true, attributeFilter: ['style'] });
+      const attach = () => {
+        const el = document.getElementById(m.watchEl || m.panel);
+        if (!el || el.__uiWatched) return;
+        el.__uiWatched = true;
+        const check = () => { if (panelOpen(m)) closeModals(m.panel); };
+        new MutationObserver(check).observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
+        check();  // 생성과 동시에 열린 경우를 위해 한 번 검사
+      };
+      attach();
+      if (document.body) {
+        new MutationObserver(attach).observe(document.body, { childList: true, subtree: true });
+      }
     });
     ['route-panel', 'draw-panel'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       new MutationObserver(() => {
-        if (el.hidden) return;
+        if (el.hidden) {
+          // 길찾기 패널이 닫히면 경로 하이라이트도 같이 지운다
+          if (id === 'route-panel' && typeof clearRouteHighlight === 'function') {
+            clearRouteHighlight();
+          }
+          return;
+        }
         ['route-panel', 'draw-panel'].forEach(other => {
           if (other === id) return;
           const o = document.getElementById(other);

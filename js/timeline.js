@@ -147,6 +147,7 @@
     if (!panel) {
       backdrop = document.createElement('div');
       backdrop.className = 'rt-backdrop';
+      backdrop.id = 'rt-backdrop';
       backdrop.addEventListener('click', function (e) {
         if (e.target === backdrop) RailTimeline.hide();
       });

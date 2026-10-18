@@ -5,7 +5,14 @@
 (function () {
   'use strict';
 
-  var BG = '#0f172a'; // 다이어그램 오버레이 배경색 (js/diagram.js와 동일)
+  var BG = '#f6f7f9'; // 테마 배경으로 대체된다
+
+  function bgColor() {
+    try {
+      var v = getComputedStyle(document.body).getPropertyValue('--surface').trim();
+      return v || BG;
+    } catch (e) { return BG; }
+  }
 
   function notify(msg) {
     // 앱의 setStatus가 있으면 사용, 없으면 alert
@@ -84,7 +91,7 @@
         canvas.width = W;
         canvas.height = H;
         var ctx = canvas.getContext('2d');
-        ctx.fillStyle = BG;
+        ctx.fillStyle = bgColor();
         ctx.fillRect(0, 0, W, H);
         ctx.drawImage(img, 0, 0, W, H);
         canvas.toBlob(function (blob) {

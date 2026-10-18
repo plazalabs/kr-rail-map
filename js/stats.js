@@ -153,7 +153,7 @@
       <div class="rs-cards">
         <div class="rs-card"><div class="rs-num">${s.lineInfo.length}</div><div class="rs-label">노선 수</div></div>
         <div class="rs-card"><div class="rs-num">${s.allStations.toLocaleString()}</div><div class="rs-label">역 수</div></div>
-        <div class="rs-card"><div class="rs-num">${Math.round(s.totalKm).toLocaleString()}</div><div class="rs-label">총 연장 (km)</div></div>
+        <div class="rs-card"><div class="rs-num">${Math.round(s.totalKm).toLocaleString()}</div><div class="rs-label">노선 연장 합계 (km)</div></div>
         <div class="rs-card"><div class="rs-num">${s.transfer.toLocaleString()}</div><div class="rs-label">환승역 수</div></div>
       </div>
 
@@ -175,7 +175,7 @@
       <div class="rs-sec">역이 가장 많은 노선 Top 5</div>
       ${topList(s.mostStations, l => l.stations + '역')}
 
-      <div class="rs-note">※ 길이는 노선 선형 좌표 기준 Haversine 합산이며, 지선 포함 전 구간 합산값입니다. 실제 영업거리와 다를 수 있습니다.</div>
+      <div class="rs-note">※ 길이는 노선별 선형을 Haversine 으로 합산한 값입니다. KTX·ITX 같은 운행계통이 같은 물리 선로를 중복 계산하므로, 전체 합계는 실제 선로 연장보다 큽니다(중복 포함).</div>
     `;
   }
 

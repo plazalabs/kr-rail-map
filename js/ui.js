@@ -1,8 +1,8 @@
 /* =========================================================
    앱 셸 (js/ui.js)
-   - app.js 를 건드리지 않고 UI 계층만 담당한다.
-   - 토스트 / 모달 관리 / 드로어 / 드롭다운 / 키보드
-   - 표시 범위(수도권·전국)와 ?line= 딥링크
+   - app.js 위에서 동작하는 UI 계층: 토스트 / 모달 관리 / 드로어 /
+     드롭다운 / 키보드 / 데이터 안전장치
+   - 표시 범위·딥링크는 app.js(setScope, focusLineFromUrl)가 담당한다
    ========================================================= */
 'use strict';
 
@@ -95,8 +95,7 @@ const UI = (() => {
     }
   }
   function initDrawer() {
-    // app.js 가 이미 같은 버튼에 접기 핸들러를 걸어두었으므로,
-    // 노드를 복제해 기존 리스너를 제거한 뒤 우리 동작만 연결한다.
+    // app.js 가 같은 버튼에 접기 핸들러를 걸어두므로 노드를 교체해 리스너를 비운다
     const old = document.getElementById('sidebar-toggle');
     if (old) {
       const btn = old.cloneNode(true);
@@ -128,7 +127,6 @@ const UI = (() => {
     document.querySelectorAll('.tb-dropdown').forEach(dd => {
       const btn = dd.querySelector('.tb-dropbtn');
       if (!btn) return;
-      // app.js 가 걸어둔 토글과 중복되지 않도록 노드를 교체한다
       const fresh = btn.cloneNode(true);
       btn.replaceWith(fresh);
       fresh.addEventListener('click', e => {
@@ -163,7 +161,6 @@ const UI = (() => {
       closeDropdowns();
       if (document.body.classList.contains('drawer-open')) closeDrawer();
     });
-    // 패널 공통 닫기 버튼
     document.querySelectorAll('[data-close]').forEach(b => {
       b.addEventListener('click', () => {
         const el = document.getElementById(b.dataset.close);
@@ -172,8 +169,10 @@ const UI = (() => {
     });
   }
 
-
-  /* ---------- 선형 중복 제거 (data/dedupe_geometry.py 와 같은 규칙) ---------- */
+  /* ---------- 데이터 안전장치 ----------
+   * data/lines.geojson 이 정리되기 전 상태에서도 연장이 2배로 보이지 않도록
+   * 같은 구간이 양방향으로 중복된 조각을 런타임에서도 한 번 걸러낸다.
+   */
   function havKm(a, b) {
     const R = Math.PI / 180;
     const dLat = (b[1] - a[1]) * R, dLon = (b[0] - a[0]) * R;
@@ -188,8 +187,10 @@ const UI = (() => {
   function partBox(p) {
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     p.forEach(c => {
-      if (c[0] < x0) x0 = c[0]; if (c[0] > x1) x1 = c[0];
-      if (c[1] < y0) y0 = c[1]; if (c[1] > y1) y1 = c[1];
+      if (c[0] < x0) x0 = c[0];
+      if (c[0] > x1) x1 = c[0];
+      if (c[1] < y0) y0 = c[1];
+      if (c[1] > y1) y1 = c[1];
     });
     return [x0, y0, x1, y1];
   }
@@ -220,165 +221,40 @@ const UI = (() => {
     return removed;
   }
 
-  /* ---------- 노선 길이 표기 보정 (조각을 이어붙여 계산하면 과대계상됨) ---------- */
-  function fixLineMeta() {
-    document.querySelectorAll('#line-list .line-item').forEach(label => {
-      const line = lineOfLabel(label);
-      if (!line) return;
-      const g = line.geometry;
-      const parts = g.type === 'LineString' ? [g.coordinates] : g.coordinates;
-      const km = parts.reduce((s, p) => s + partLen(p), 0);
-      const names = new Set();
-      STATIONS.forEach(st => {
-        if ((st.properties.lines || []).includes(line.properties.id)) names.add(st.properties.name_ko);
-      });
-      const meta = label.querySelector('.line-meta');
-      if (meta) meta.textContent = km.toFixed(1) + 'km · ' + names.size + '역';
-    });
-  }
-
-  /* ---------- 분류 순서 정리 ---------- */
-  const CAT_ORDER = ['도시철도', '광역·도시', 'KTX·고속', '일반철도', '기타'];
-  function sortGroups() {
-    const box = document.getElementById('line-list');
-    if (!box) return;
-    const ds = [...box.querySelectorAll('details')];
-    ds.sort((a, b) => {
-      const ta = (a.querySelector('summary') || {}).textContent || '';
-      const tb = (b.querySelector('summary') || {}).textContent || '';
-      const ia = CAT_ORDER.findIndex(c => ta.startsWith(c));
-      const ib = CAT_ORDER.findIndex(c => tb.startsWith(c));
-      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
-    });
-    ds.forEach(d => box.appendChild(d));
-  }
-
-  function refreshFromData() {
-    const removed = cleanDuplicates();
-    try {
-      const src = map.getSource('lines');
-      if (src) src.setData({ type: 'FeatureCollection', features: LINES });
-    } catch (e) {}
-    renderLineList();
-    fixLineMeta();
-    sortGroups();
-    return removed;
-  }
-
-  /* ---------- 표시 범위 ---------- */
-  const BBOX = { minLng: 126.28, maxLng: 128.02, minLat: 36.88, maxLat: 38.36 };
-  function inMetro(c) {
-    return c[0] >= BBOX.minLng && c[0] <= BBOX.maxLng && c[1] >= BBOX.minLat && c[1] <= BBOX.maxLat;
-  }
-  function metroIdSet() {
-    const ids = new Set();
-    STATIONS.forEach(s => {
-      if (!inMetro(s.geometry.coordinates)) return;
-      (s.properties.lines || []).forEach(l => ids.add(l));
-    });
-    return ids;
-  }
-  // 라벨 DOM 에서 노선을 찾는다 (app.js 의 renderLineList 구조에 의존)
-  function lineOfLabel(label) {
-    const node = label.childNodes[2];
-    const name = node && node.nodeValue ? node.nodeValue.trim() : '';
-    return LINES.find(l => (l.properties.name_ko || '') === name) || null;
-  }
-  function applyScope(mode, opts) {
-    const ids = mode === 'all' ? null : metroIdSet();
-    let shown = 0;
-    document.querySelectorAll('#line-list .line-item').forEach(label => {
-      const line = lineOfLabel(label);
-      const on = !ids || (line && ids.has(line.properties.id));
-      label.style.display = on ? '' : 'none';
-      const cb = label.querySelector('input[type="checkbox"]');
-      if (cb) cb.checked = !!on;
-      if (line) on ? visibleLines.add(line.properties.id) : visibleLines.delete(line.properties.id);
-      if (on) shown++;
-    });
-    // 비어 있는 분류는 접는다
-    document.querySelectorAll('#line-list details').forEach(d => {
-      const any = [...d.querySelectorAll('.line-item')].some(l => l.style.display !== 'none');
-      d.style.display = any ? '' : 'none';
-    });
-    updateFilters();
-    const lc = document.getElementById('line-count');
-    if (lc) lc.textContent = '(' + shown + ')';
-    const sc = document.getElementById('scope-count');
-    if (sc) sc.textContent = shown + '개 노선';
-    document.querySelectorAll('.scope-btn').forEach(b =>
-      b.classList.toggle('active', b.dataset.scope === mode));
-    if (!opts || opts.fly !== false) {
-      if (mode === 'metro') map.fitBounds([[126.28, 36.88], [128.02, 38.36]], { padding: 40, duration: 700 });
-      else map.fitBounds([[125.9, 33.0], [129.6, 38.6]], { padding: 40, duration: 700 });
-    }
-    return shown;
-  }
-  function initScope() {
-    document.querySelectorAll('.scope-btn').forEach(b => {
-      b.addEventListener('click', () => applyScope(b.dataset.scope));
-    });
-  }
-
-  /* ---------- ?line= 딥링크 ---------- */
-  function applyDeepLink() {
-    const lid = new URLSearchParams(location.search).get('line');
-    if (!lid) return false;
-    const f = LINES.find(l => l.properties.id === lid);
-    if (!f) return false;
-    applyScope('all', { fly: false });
-    document.querySelectorAll('#line-list .line-item').forEach(label => {
-      const line = lineOfLabel(label);
-      const on = !!line && line.properties.id === lid;
-      const cb = label.querySelector('input[type="checkbox"]');
-      if (cb) cb.checked = on;
-      if (line) on ? visibleLines.add(line.properties.id) : visibleLines.delete(line.properties.id);
-    });
-    updateFilters();
-    const b = new maplibregl.LngLatBounds();
-    const parts = f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates;
-    parts.forEach(p => p.forEach(c => b.extend(c)));
-    map.fitBounds(b, { padding: 60, duration: 0 });
-    setStatus(f.properties.name_ko + ' 노선만 표시 중 · 범위 버튼으로 전체 보기');
-    return true;
-  }
-
-  /* ---------- 데이터 준비 후 ---------- */
   function whenReady(fn) {
     let tries = 0;
     const t = setInterval(() => {
       tries++;
-      const listReady = document.querySelectorAll('#line-list .line-item').length > 0;
-      if ((listReady && typeof LINES !== 'undefined' && LINES.length) || tries > 120) {
+      const ok = typeof LINES !== 'undefined' && LINES.length &&
+                 document.querySelectorAll('#line-list .line-item').length > 0;
+      if (ok || tries > 150) {
         clearInterval(t);
-        if (tries <= 120) fn();
+        if (tries <= 150) fn();
       }
     }, 120);
   }
 
   function boot() {
-    // app.js 는 지도 load 이후에 데이터를 받는다. 타일과 병렬로 미리 받아
-    // 두면 체감 로딩이 줄어든다 (브라우저/SW 캐시에서 재사용됨).
+    // 데이터를 미리 받아 캐시를 데운다 (app.js 는 이 fetch 를 재사용)
     ['data/lines.geojson', 'data/stations.geojson'].forEach(u => {
-      try { fetch(u, { cache: 'force-cache' }).catch(() => {}); } catch (e) {}
+      try { fetch(u).catch(() => {}); } catch (e) {}
     });
     watchStatus();
     watchModals();
     initKeys();
     initDropdowns();
     initDrawer();
-    initScope();
+
     whenReady(() => {
       const sum = document.getElementById('data-summary');
       if (sum) sum.textContent = '노선 ' + LINES.length + '개 · 역 ' + STATIONS.length.toLocaleString() + '개';
-      refreshFromData();
-      const linked = applyDeepLink();
-      if (!linked) {
-        applyScope('metro', { fly: false });
-        map.fitBounds([[126.28, 36.88], [128.02, 38.36]], { padding: 40, duration: 0 });
-      } else {
-        document.querySelectorAll('.scope-btn').forEach(b =>
-          b.classList.toggle('active', b.dataset.scope === 'all'));
+      if (cleanDuplicates()) {
+        try {
+          const src = map.getSource('lines');
+          if (src) src.setData({ type: 'FeatureCollection', features: LINES });
+        } catch (e) {}
+        renderLineList();
+        updateFilters();
       }
     });
   }
@@ -386,7 +262,7 @@ const UI = (() => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  return { setStatus, closeModals, closeDropdowns, openDrawer, closeDrawer, applyScope, isMobile };
+  return { setStatus, closeModals, closeDropdowns, openDrawer, closeDrawer, isMobile };
 })();
 
 window.UI = UI;

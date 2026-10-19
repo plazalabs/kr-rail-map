@@ -811,3 +811,21 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
   .rt-label { font-size: 11.5px; padding: 2px 6px 2px 3px; }
   .rt-label-n { min-width: 14px; height: 14px; font-size: 9.5px; }
 }
+
+/* ---------- 경로 범례 (어떤 구간이 무슨 노선인지) ---------- */
+.route-legend {
+  position: absolute; left: 12px; bottom: 56px; z-index: 20;
+  display: flex; flex-direction: column; gap: 6px;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 11px; box-shadow: var(--shadow);
+  font-size: 12px; font-weight: 600; letter-spacing: -.01em;
+}
+.route-legend span { display: flex; align-items: center; gap: 7px; }
+.route-legend i {
+  display: inline-block; width: 16px; height: 4px; border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.06);
+}
+@media (max-width: 980px) {
+  .route-legend { bottom: calc(66px + env(safe-area-inset-bottom)); left: 8px; font-size: 11.5px; padding: 7px 9px; }
+}

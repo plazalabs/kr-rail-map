@@ -623,15 +623,57 @@ document.getElementById('route-go').addEventListener('click', () => {
 });
 
 /* ---------- 경로 하이라이트 ----------
- * 경로에 쓰인 노선만 남기고 나머지는 지운다(투명도 0).
- * 역 이름은 라벨 충돌과 무관하게 항상 그린다(allow-overlap).
+ * 경로에 쓰인 구간만 노선 색으로 그리고, 나머지 노선은 모두 숨긴다.
+ * (예전에는 노선의 전체 선형을 그려서 GTX-C 가 수원까지 이어져 보였다)
  */
 let routeLabelMarkers = [];
+
+// 노선 선형에서 두 역 사이 구간만 잘라낸다 (경로가 실제 선로를 따라가도록)
+function sliceLineCoords(feature, a, b) {
+  if (!feature || !feature.geometry) return null;
+  const parts = feature.geometry.type === 'LineString'
+    ? [feature.geometry.coordinates] : feature.geometry.coordinates;
+  const d2 = (p, q) => {
+    const dx = (p[0] - q[0]) * 88, dy = (p[1] - q[1]) * 111;
+    return dx * dx + dy * dy;
+  };
+  let best = null;
+  for (const part of parts) {
+    if (part.length < 2) continue;
+    let ia = 0, ib = 0, da = Infinity, db = Infinity;
+    for (let i = 0; i < part.length; i++) {
+      const x = d2(part[i], a); if (x < da) { da = x; ia = i; }
+      const y = d2(part[i], b); if (y < db) { db = y; ib = i; }
+    }
+    const score = da + db;
+    if (!best || score < best.score) best = { part, ia, ib, score };
+  }
+  if (!best || best.ia === best.ib) return null;
+  const { part, ia, ib } = best;
+  const seg = ia < ib ? part.slice(ia, ib + 1) : part.slice(ib, ia + 1).reverse();
+  if (seg.length < 2) return null;
+  // 역 좌표와 선형 끝점이 어긋나면 이어준다
+  const out = seg.slice();
+  if (d2(out[0], a) > 4) out.unshift(a);
+  if (d2(out[out.length - 1], b) > 4) out.push(b);
+  return out;
+}
+
+function routeLineInfo(lineId) {
+  const l = LINES.find(x => x.properties.id === lineId);
+  return {
+    color: (l && l.properties.color) || '#8a8f98',
+    name: (l && l.properties.name_ko) || '도보',
+    walk: !lineId,
+  };
+}
+
 function highlightRoute(path, legs) {
   if (!map || !path || !path.length) return;
   clearRouteHighlight();
   if (typeof closeStationPopup === 'function') closeStationPopup();
-  // 배경 지도에 그려진 철도·역 심볼까지 숨겨 경로만 남긴다
+
+  // 배경 지도에 그려진 철도·역 심볼까지 숨긴다
   (map.getStyle().layers || []).forEach(l => {
     if (/railway/.test(l.id) && l.id !== 'rail-lines' && l.id !== 'rail-stations') {
       try { map.setLayoutProperty(l.id, 'visibility', 'none'); } catch (e) {}
@@ -639,101 +681,176 @@ function highlightRoute(path, legs) {
   });
 
   const pathSet = new Set(path);
-  const routeLineIds = new Set();
-  if (legs) legs.forEach(leg => { if (leg.lineId) routeLineIds.add(leg.lineId); });
-
-  // 1) 노선: 경로 노선만 보이게
-  if (map.getLayer('rail-lines')) {
-    map.setPaintProperty('rail-lines', 'line-opacity',
-      routeLineIds.size
-        ? ['case', ['in', ['get', 'id'], ['literal', [...routeLineIds]]], 1, 0]
-        : 0);
-  }
-  // 2) 역 점: 경로 역만.
-  //    circle-opacity 는 테두리(stroke)를 숨기지 못하므로 둘 다 지정한다.
+  // 노선 레이어는 전부 숨기고, 경로만 따로 그린다
+  if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0);
   if (map.getLayer('rail-stations')) {
     const only = ['case', ['in', ['get', 'id'], ['literal', [...pathSet]]], 1, 0];
     map.setPaintProperty('rail-stations', 'circle-opacity', only);
     map.setPaintProperty('rail-stations', 'circle-stroke-opacity', only);
   }
-  // 3) 기본 역 라벨은 경로 역만 남긴다(자리 차지 경쟁 제거)
   if (map.getLayer('station-labels')) {
     map.setFilter('station-labels', ['in', ['get', 'id'], ['literal', [...pathSet]]]);
     map.setPaintProperty('station-labels', 'text-opacity', 1);
   }
 
-  const coords = [];
-  const labelFeatures = [];
-  path.forEach((id, i) => {
+  const coordOf = id => {
     const s = STATIONS.find(x => x.properties.id === id);
-    if (!s) return;
-    coords.push(s.geometry.coordinates);
-    labelFeatures.push({
-      type: 'Feature',
-      geometry: s.geometry,
-      properties: { name: s.properties.name_ko, order: i + 1, last: i === path.length - 1 ? 1 : 0 },
-    });
-  });
+    return s ? s.geometry.coordinates : null;
+  };
+  const coords = path.map(coordOf).filter(Boolean);
   if (coords.length < 2) return;
 
-  // 경로 선 (흰 테두리 + 노선색)
-  map.addSource('route-highlight', {
+  // 구간(leg)별 좌표와 노선 색
+  const segs = [];
+  let start = 0;
+  (legs || []).forEach(leg => {
+    let end = path.indexOf(leg.to, start);
+    if (end < 0) end = start;
+    if (end <= start) return;
+    const a = coordOf(path[start]);
+    const b = coordOf(path[end]);
+    const line = LINES.find(x => x.properties.id === leg.lineId);
+    // 실제 선로 선형을 따라 자른다. 실패하면 역끼리 직선으로 잇는다.
+    let segCoords = (line && a && b) ? sliceLineCoords(line, a, b) : null;
+    if (!segCoords) {
+      segCoords = [];
+      for (let i = start; i <= end; i++) {
+        const c = coordOf(path[i]);
+        if (c) segCoords.push(c);
+      }
+    }
+    const info = routeLineInfo(leg.lineId);
+    if (segCoords.length >= 2) {
+      segs.push({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: segCoords },
+        properties: { color: info.color, name: info.name, walk: info.walk ? 1 : 0 },
+      });
+    }
+    start = end;
+  });
+  if (!segs.length) {
+    segs.push({
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: coords },
+      properties: { color: '#e23b3b', name: '', walk: 0 },
+    });
+  }
+
+  // 흰 테두리 (경로 전체)
+  map.addSource('route-casing', {
     type: 'geojson',
     data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} },
   });
   map.addLayer({
-    id: 'route-casing', type: 'line', source: 'route-highlight',
+    id: 'route-casing', type: 'line', source: 'route-casing',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#ffffff', 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 7, 14, 14, 17, 20], 'line-opacity': 1 },
+    paint: {
+      'line-color': '#ffffff',
+      'line-width': ['interpolate', ['linear'], ['zoom'], 8, 8, 14, 14, 17, 19],
+    },
+  });
+
+  // 구간별 노선 색
+  map.addSource('route-segments', { type: 'geojson', data: { type: 'FeatureCollection', features: segs } });
+  // dasharray 에 [1,0] 을 주면 선이 그려지지 않는다. 도보/노선을 레이어로 분리한다.
+  map.addLayer({
+    id: 'route-highlight-line', type: 'line', source: 'route-segments',
+    filter: ['!=', ['get', 'walk'], 1],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 8, 5, 14, 9.5, 17, 14],
+    },
   });
   map.addLayer({
-    id: 'route-highlight-line', type: 'line', source: 'route-highlight',
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#e23b3b', 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 4, 14, 8, 17, 12], 'line-opacity': 1 },
+    id: 'route-highlight-walk', type: 'line', source: 'route-segments',
+    filter: ['==', ['get', 'walk'], 1],
+    layout: { 'line-cap': 'butt', 'line-join': 'round' },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 8, 4, 14, 6, 17, 8],
+      'line-dasharray': [2, 2],
+    },
+  });
+
+  // 역 점
+  map.addSource('route-highlight', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: coords.map(c => ({ type: 'Feature', geometry: { type: 'Point', coordinates: c }, properties: {} })) },
   });
   map.addLayer({
     id: 'route-highlight-stations', type: 'circle', source: 'route-highlight',
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 4, 14, 7, 17, 9],
       'circle-color': '#ffffff',
-      'circle-stroke-color': '#e23b3b',
-      'circle-stroke-width': 2.5,
+      'circle-stroke-color': '#1b1f24',
+      'circle-stroke-width': 2.2,
     },
   });
 
-  // 경로 역 이름은 HTML 마커로 그린다.
-  // 심볼 레이어는 한글 글리프를 처음 불러올 때 3~5초가 걸려 착각을 부른다.
-  labelFeatures.forEach((f, i) => {
+  // 역 이름 마커 — 배지 색은 그 역에 도착하는 구간의 노선 색
+  const colorAt = i => {
+    let acc = 0;
+    for (const leg of (legs || [])) {
+      const toIdx = path.indexOf(leg.to, acc);
+      if (toIdx < 0) continue;
+      if (i <= toIdx) return routeLineInfo(leg.lineId).color;
+      acc = toIdx;
+    }
+    return (legs && legs.length) ? routeLineInfo(legs[legs.length - 1].lineId).color : '#e23b3b';
+  };
+  path.forEach((id, i) => {
+    const c = coordOf(id);
+    const st = STATIONS.find(x => x.properties.id === id);
+    if (!c || !st) return;
     const el = document.createElement('div');
-    el.className = 'rt-label' + (f.properties.last ? ' is-end' : '');
-    const order = document.createElement('span');
-    order.className = 'rt-label-n';
-    order.textContent = String(i + 1);
+    el.className = 'rt-label' + (i === path.length - 1 ? ' is-end' : '');
+    const badge = document.createElement('span');
+    badge.className = 'rt-label-n';
+    badge.textContent = String(i + 1);
+    badge.style.background = i === 0 ? routeLineInfo((legs && legs[0] && legs[0].lineId) || '').color : colorAt(i);
     const nm = document.createElement('span');
-    nm.textContent = f.properties.name;
-    el.append(order, nm);
+    nm.textContent = st.properties.name_ko;
+    el.append(badge, nm);
     try {
-      const mk = new maplibregl.Marker({ element: el, offset: [0, -16], anchor: 'bottom' })
-        .setLngLat(f.geometry.coordinates)
-        .addTo(map);
-      routeLabelMarkers.push(mk);
+      routeLabelMarkers.push(new maplibregl.Marker({ element: el, offset: [0, -16], anchor: 'bottom' })
+        .setLngLat(c).addTo(map));
     } catch (e) {}
   });
 
+  // 범례 — 어떤 구간이 무슨 노선인지
+  const seen = [];
+  segs.forEach(sg => {
+    if (sg.properties.walk || !sg.properties.name) return;
+    if (seen.some(x => x.name === sg.properties.name)) return;
+    seen.push({ name: sg.properties.name, color: sg.properties.color });
+  });
+  if (seen.length) {
+    const host = document.getElementById('map-wrap');
+    const legend = document.createElement('div');
+    legend.className = 'route-legend';
+    legend.id = 'route-legend';
+    legend.innerHTML = seen.map(x =>
+      '<span><i style="background:' + x.color + '"></i>' + x.name + '</span>').join('');
+    if (host) host.appendChild(legend);
+  }
+
   const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
-  // 경로 전체가 보이도록. 오른쪽은 길찾기 패널만 가릴 만큼만 뺀다.
-  map.fitBounds(bounds, { padding: { top: 70, bottom: 70, left: 70, right: 320 }, maxZoom: 12.5 });
+  map.fitBounds(bounds, { padding: { top: 115, bottom: 85, left: 70, right: 330 }, maxZoom: 12.2 });
 }
 
 // 하이라이트 제거 (원래대로)
 function clearRouteHighlight() {
   if (!map) return;
-  ['route-highlight-labels', 'route-highlight-stations', 'route-highlight-line', 'route-casing'].forEach(id => {
+  ['route-highlight-labels', 'route-highlight-walk', 'route-highlight-stations', 'route-highlight-line', 'route-casing'].forEach(id => {
     if (map.getLayer(id)) map.removeLayer(id);
   });
-  ['route-highlight', 'route-highlight-labels'].forEach(id => {
+  ['route-highlight', 'route-highlight-labels', 'route-casing', 'route-segments'].forEach(id => {
     if (map.getSource(id)) map.removeSource(id);
   });
+  const lg = document.getElementById('route-legend');
+  if (lg) lg.remove();
   while (routeLabelMarkers.length) {
     const mk = routeLabelMarkers.pop();
     try { mk.remove(); } catch (e) {}

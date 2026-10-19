@@ -180,6 +180,11 @@ const UI = (() => {
         if (btn) btn.click();
         return;
       }
+      // 역을 클릭해 뜬 정보 팝업
+      if (document.querySelector('.maplibregl-popup') && typeof closeStationPopup === 'function') {
+        closeStationPopup();
+        return;
+      }
       const open = document.querySelector('#route-panel:not([hidden]), #draw-panel:not([hidden])');
       if (open) { open.hidden = true; return; }
       closeDropdowns();

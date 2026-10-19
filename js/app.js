@@ -737,10 +737,21 @@ function highlightRoute(path, legs) {
     });
   }
 
-  // 흰 테두리 (경로 전체)
+  // 흰 테두리 — 구간 좌표를 이어 붙여 색 선과 정확히 겹치게 한다.
+  // (역 좌표만 이으면 직선이 되어 색 선과 어긋난다)
+  const casingCoords = [];
+  segs.forEach(sg => {
+    const c = sg.geometry.coordinates;
+    if (!casingCoords.length) casingCoords.push(...c);
+    else casingCoords.push(...c.slice(1));
+  });
   map.addSource('route-casing', {
     type: 'geojson',
-    data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} },
+    data: {
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: casingCoords.length >= 2 ? casingCoords : coords },
+      properties: {},
+    },
   });
   map.addLayer({
     id: 'route-casing', type: 'line', source: 'route-casing',

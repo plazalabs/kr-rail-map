@@ -782,3 +782,32 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
   .dg-bar button { padding: 6px 9px; font-size: 12px; }
   .dg-legend { display: none; }
 }
+
+/* ---------- 경로 역 라벨 (HTML 마커) ---------- */
+.rt-label {
+  display: inline-flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+  font-size: 12.5px; font-weight: 600; letter-spacing: -.01em;
+  color: #10141a;
+  background: rgba(255,255,255,.94);
+  border: 1px solid var(--border-strong, #cdd3da);
+  border-radius: 6px;
+  padding: 3px 7px 3px 4px;
+  box-shadow: 0 1px 3px rgba(16,24,40,.18);
+  transform: translateY(-14px);
+  pointer-events: none;
+  user-select: none;
+}
+.rt-label-n {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px; padding: 0 3px;
+  border-radius: 4px;
+  background: #e23b3b; color: #fff;
+  font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.rt-label.is-end .rt-label-n { background: #b01f1f; }
+.rt-label.is-end { color: #8c1414; }
+@media (max-width: 640px) {
+  .rt-label { font-size: 11.5px; padding: 2px 6px 2px 3px; }
+  .rt-label-n { min-width: 14px; height: 14px; font-size: 9.5px; }
+}

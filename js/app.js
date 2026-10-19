@@ -61,8 +61,8 @@ function baseStyle() {
 const map = new maplibregl.Map({
   container: 'map',
   style: STYLES.normal,
-  center: [127.9, 36.35],
-  zoom: 7,
+  center: [126.98, 37.52],
+  zoom: 9.4,
   attributionControl: { compact: true },
   preserveDrawingBuffer: true // 이미지 저장용
 });
@@ -626,6 +626,7 @@ document.getElementById('route-go').addEventListener('click', () => {
  * 경로에 쓰인 노선만 남기고 나머지는 지운다(투명도 0).
  * 역 이름은 라벨 충돌과 무관하게 항상 그린다(allow-overlap).
  */
+let routeLabelMarkers = [];
 function highlightRoute(path, legs) {
   if (!map || !path || !path.length) return;
   clearRouteHighlight();
@@ -648,10 +649,12 @@ function highlightRoute(path, legs) {
         ? ['case', ['in', ['get', 'id'], ['literal', [...routeLineIds]]], 1, 0]
         : 0);
   }
-  // 2) 역 점: 경로 역만
+  // 2) 역 점: 경로 역만.
+  //    circle-opacity 는 테두리(stroke)를 숨기지 못하므로 둘 다 지정한다.
   if (map.getLayer('rail-stations')) {
-    map.setPaintProperty('rail-stations', 'circle-opacity',
-      ['case', ['in', ['get', 'id'], ['literal', [...pathSet]]], 1, 0]);
+    const only = ['case', ['in', ['get', 'id'], ['literal', [...pathSet]]], 1, 0];
+    map.setPaintProperty('rail-stations', 'circle-opacity', only);
+    map.setPaintProperty('rail-stations', 'circle-stroke-opacity', only);
   }
   // 3) 기본 역 라벨은 경로 역만 남긴다(자리 차지 경쟁 제거)
   if (map.getLayer('station-labels')) {
@@ -698,33 +701,28 @@ function highlightRoute(path, legs) {
     },
   });
 
-  // 경로 역 이름 — 다른 라벨과 충돌해도 무조건 표시
-  map.addSource('route-highlight-labels', {
-    type: 'geojson',
-    data: { type: 'FeatureCollection', features: labelFeatures },
-  });
-  map.addLayer({
-    id: 'route-highlight-labels', type: 'symbol', source: 'route-highlight-labels',
-    layout: {
-      'text-field': ['get', 'name'],
-      'text-size': ['interpolate', ['linear'], ['zoom'], 8, 12, 13, 15, 17, 18],
-      'text-font': ['Noto Sans Bold', 'Noto Sans Regular'],
-      'text-offset': [0, 1.15],
-      'text-anchor': 'top',
-      'text-allow-overlap': true,
-      'text-ignore-placement': true,
-      'text-padding': 2,
-    },
-    paint: {
-      'text-color': '#111418',
-      'text-halo-color': '#ffffff',
-      'text-halo-width': 2.2,
-      'text-halo-blur': 0.4,
-    },
+  // 경로 역 이름은 HTML 마커로 그린다.
+  // 심볼 레이어는 한글 글리프를 처음 불러올 때 3~5초가 걸려 착각을 부른다.
+  labelFeatures.forEach((f, i) => {
+    const el = document.createElement('div');
+    el.className = 'rt-label' + (f.properties.last ? ' is-end' : '');
+    const order = document.createElement('span');
+    order.className = 'rt-label-n';
+    order.textContent = String(i + 1);
+    const nm = document.createElement('span');
+    nm.textContent = f.properties.name;
+    el.append(order, nm);
+    try {
+      const mk = new maplibregl.Marker({ element: el, offset: [0, -16], anchor: 'bottom' })
+        .setLngLat(f.geometry.coordinates)
+        .addTo(map);
+      routeLabelMarkers.push(mk);
+    } catch (e) {}
   });
 
   const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
-  map.fitBounds(bounds, { padding: { top: 80, bottom: 80, left: 420, right: 380 }, maxZoom: 13.5 });
+  // 경로 전체가 보이도록. 오른쪽은 길찾기 패널만 가릴 만큼만 뺀다.
+  map.fitBounds(bounds, { padding: { top: 70, bottom: 70, left: 70, right: 320 }, maxZoom: 12.5 });
 }
 
 // 하이라이트 제거 (원래대로)
@@ -736,8 +734,15 @@ function clearRouteHighlight() {
   ['route-highlight', 'route-highlight-labels'].forEach(id => {
     if (map.getSource(id)) map.removeSource(id);
   });
+  while (routeLabelMarkers.length) {
+    const mk = routeLabelMarkers.pop();
+    try { mk.remove(); } catch (e) {}
+  }
   if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0.9);
-  if (map.getLayer('rail-stations')) map.setPaintProperty('rail-stations', 'circle-opacity', 1);
+  if (map.getLayer('rail-stations')) {
+    map.setPaintProperty('rail-stations', 'circle-opacity', 1);
+    map.setPaintProperty('rail-stations', 'circle-stroke-opacity', 1);
+  }
   if (map.getLayer('station-labels')) map.setPaintProperty('station-labels', 'text-opacity', 1);
   // 배경 지도의 철도 레이어 복구
   try {
@@ -767,6 +772,10 @@ const dataPromise = loadData().then(() => {
   renderLineList();
   const sc = document.getElementById('scope-count');
   if (sc) sc.textContent = scopeLines().length + '개 노선';
+  // 공유 링크(?line=)가 없으면 수도권 범위로 시작
+  if (!new URLSearchParams(location.search).get('line')) {
+    map.fitBounds([[126.28, 36.88], [128.02, 38.36]], { padding: 40, duration: 0 });
+  }
   setupRouteFinder();
 });
 map.on('load', async () => {

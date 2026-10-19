@@ -758,7 +758,7 @@ function highlightRoute(path, legs) {
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
       'line-color': '#ffffff',
-      'line-width': ['interpolate', ['linear'], ['zoom'], 8, 8, 14, 14, 17, 19],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 8, 7, 14, 12.5, 17, 17.5],
     },
   });
 

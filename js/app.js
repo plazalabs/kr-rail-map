@@ -169,7 +169,7 @@ function addDataLayers() {
     id: 'rail-lines', type: 'line', source: 'lines',
     paint: {
       'line-color': ['coalesce', ['get', 'color'], '#888888'],
-      'line-width': ['interpolate', ['linear'], ['zoom'], 7, 1.5, 12, 4, 16, 7],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 7, 2.2, 12, 5, 16, 8],
       'line-opacity': 0.9
     }
   });
@@ -772,10 +772,6 @@ const dataPromise = loadData().then(() => {
   renderLineList();
   const sc = document.getElementById('scope-count');
   if (sc) sc.textContent = scopeLines().length + '개 노선';
-  // 공유 링크(?line=)가 없으면 수도권 범위로 시작
-  if (!new URLSearchParams(location.search).get('line')) {
-    map.fitBounds([[126.28, 36.88], [128.02, 38.36]], { padding: 40, duration: 0 });
-  }
   setupRouteFinder();
 });
 map.on('load', async () => {

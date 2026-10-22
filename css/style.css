@@ -13,7 +13,7 @@
   --surface-2: #eef0f4;
   --text: #16191d;
   --text-2: #4a5158;
-  --muted: #868e96;
+  --muted: #6b7280;
   --border: #e3e6ea;
   --border-strong: #cdd3da;
   --accent: #0b57d0;
@@ -25,7 +25,7 @@
   --btn-text: #16191d;
   --shadow: 0 1px 2px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.06);
   --shadow-lg: 0 12px 32px rgba(16,24,40,.14);
-  --ring: 0 0 0 3px rgba(11,87,208,.22);
+  --ring: 0 0 0 2px #ffffff, 0 0 0 4px #0b57d0;
   --scrim: rgba(12,16,22,.42);
   color-scheme: light;
 }
@@ -39,35 +39,35 @@ body[data-theme="dark"] {
   --btn-bg: #1b1f25; --btn-text: #e9edf2;
   --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.32);
   --shadow-lg: 0 16px 40px rgba(0,0,0,.5);
-  --ring: 0 0 0 3px rgba(110,168,254,.28);
+  --ring: 0 0 0 2px #16191e, 0 0 0 4px #6ea8fe;
   --scrim: rgba(0,0,0,.55);
   color-scheme: dark;
 }
 body[data-theme="eclipse"] {
   --bg: #0b0f14; --panel: #131922; --panel-bg: #131922;
   --surface: #182029; --surface-2: #1f2833;
-  --text: #c9d6e2; --text-2: #93a3b5; --muted: #71808f;
+  --text: #c9d6e2; --text-2: #93a3b5; --muted: #8695a4;
   --border: #222c38; --border-strong: #33404f;
   --accent: #58a6ff; --accent-weak: #14283f; --accent-text: #06121f;
   --input: #182029; --hover: #1b2530;
   --btn-bg: #182029; --btn-text: #c9d6e2;
   --shadow: 0 4px 14px rgba(0,0,0,.45);
   --shadow-lg: 0 16px 40px rgba(0,0,0,.6);
-  --ring: 0 0 0 3px rgba(88,166,255,.3);
+  --ring: 0 0 0 2px #131922, 0 0 0 4px #58a6ff;
   --scrim: rgba(0,0,0,.6);
   color-scheme: dark;
 }
 body[data-theme="pink"] {
   --bg: #fffafb; --panel: #ffffff; --panel-bg: #ffffff;
   --surface: #fff1f4; --surface-2: #ffe4ea;
-  --text: #3d1420; --text-2: #6b3244; --muted: #a87384;
+  --text: #3d1420; --text-2: #6b3244; --muted: #8f5a6b;
   --border: #f7d4dd; --border-strong: #eeb7c6;
-  --accent: #e0355a; --accent-weak: #ffe6ec; --accent-text: #ffffff;
+  --accent: #cc274c; --accent-weak: #ffe6ec; --accent-text: #ffffff;
   --input: #ffffff; --hover: #fff0f4;
   --btn-bg: #ffffff; --btn-text: #3d1420;
   --shadow: 0 1px 2px rgba(224,53,90,.08), 0 6px 16px rgba(224,53,90,.10);
   --shadow-lg: 0 16px 40px rgba(224,53,90,.18);
-  --ring: 0 0 0 3px rgba(224,53,90,.22);
+  --ring: 0 0 0 2px #ffffff, 0 0 0 4px #e0355a;
   --scrim: rgba(61,20,32,.4);
   color-scheme: light;
 }
@@ -81,21 +81,21 @@ body[data-theme="neon"] {
   --btn-bg: #14141f; --btn-text: #d9ff4d;
   --shadow: 0 0 0 1px rgba(217,255,77,.06), 0 6px 20px rgba(0,0,0,.6);
   --shadow-lg: 0 16px 44px rgba(0,0,0,.7);
-  --ring: 0 0 0 3px rgba(217,255,77,.3);
+  --ring: 0 0 0 2px #0e0e18, 0 0 0 4px #d9ff4d;
   --scrim: rgba(0,0,0,.7);
   color-scheme: dark;
 }
 body[data-theme="hospital"] {
   --bg: #f7fbfb; --panel: #ffffff; --panel-bg: #ffffff;
   --surface: #eef6f6; --surface-2: #dcecec;
-  --text: #10302f; --text-2: #3d5c5b; --muted: #7a9a99;
+  --text: #10302f; --text-2: #3d5c5b; --muted: #55706f;
   --border: #d5e7e7; --border-strong: #b9d6d6;
-  --accent: #0d8f84; --accent-weak: #e2f4f2; --accent-text: #ffffff;
+  --accent: #0a776f; --accent-weak: #e2f4f2; --accent-text: #ffffff;
   --input: #ffffff; --hover: #eaf5f4;
   --btn-bg: #ffffff; --btn-text: #10302f;
   --shadow: 0 1px 2px rgba(13,143,132,.08), 0 6px 16px rgba(13,143,132,.08);
   --shadow-lg: 0 16px 40px rgba(13,143,132,.16);
-  --ring: 0 0 0 3px rgba(13,143,132,.22);
+  --ring: 0 0 0 2px #ffffff, 0 0 0 4px #0d8f84;
   --scrim: rgba(16,48,47,.4);
   color-scheme: light;
 }
@@ -108,7 +108,7 @@ body[data-theme="win95"] {
   --input: #ffffff; --hover: #d8d8d8;
   --btn-bg: #c0c0c0; --btn-text: #000000;
   --shadow: none; --shadow-lg: none;
-  --ring: 0 0 0 2px #000080;
+  --ring: 0 0 0 2px #ffffff, 0 0 0 4px #000080;
   --scrim: rgba(0,0,0,.4);
   color-scheme: light;
 }
@@ -147,7 +147,12 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 600;
   transition: top .15s;
 }
-.skip-link:focus { top: 8px; }
+.skip-link:focus, .skip-link:focus-visible {
+  top: 8px;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  box-shadow: var(--ring);
+}
 
 #app { display: flex; height: 100vh; height: 100dvh; }
 

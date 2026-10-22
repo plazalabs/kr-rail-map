@@ -85,8 +85,12 @@ function styleKeyFor(mode, theme) {
 }
 function applyView() {
   const mode = modeFromHash();
-  document.querySelectorAll('#toolbar [data-style]').forEach(b =>
-    b.classList.toggle('active', b.dataset.style === mode));
+  document.querySelectorAll('#toolbar [data-style]').forEach(b => {
+    const on = b.dataset.style === mode;
+    b.classList.toggle('active', on);
+    // 눌린 상태를 스크린리더에도 알린다 (색으로만 구분되면 안 됨)
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
   document.body.dataset.theme = theme;
   document.querySelectorAll('#theme-row .theme-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.theme === theme));
@@ -447,8 +451,20 @@ function setupRouteFinder() {
 /* 커스텀 자동완성: 입력 중 매칭 역 목록 표시 */
 function attachAutocomplete(input) {
   const list = input.parentElement.querySelector('.ac-list');
+  // 스크린리더에 '콤보박스 + 목록'이라고 알려준다.
+  // 목록 항목은 option, 지금 강조된 항목은 aria-activedescendant 로 가리킨다.
+  const listId = (input.id || 'ac') + '-list';
+  list.id = listId;
+  list.setAttribute('role', 'listbox');
+  list.setAttribute('aria-label', input.id === 'route-to' ? '도착역 후보' : '출발역 후보');
+  input.setAttribute('aria-controls', listId);
   let items = [], activeIdx = -1;
-  function hide() { list.hidden = true; activeIdx = -1; }
+  function setExpanded(v) { input.setAttribute('aria-expanded', v ? 'true' : 'false'); }
+  function hide() {
+    list.hidden = true; activeIdx = -1;
+    setExpanded(false);
+    input.removeAttribute('aria-activedescendant');
+  }
   function render(q) {
     const seen = new Set();
     items = [];
@@ -466,11 +482,22 @@ function attachAutocomplete(input) {
     if (!items.length) { hide(); return; }
     list.innerHTML = items.map((it, i) => {
       const ln = it.lines.map(lid => lineNameOf.get(lid) || lid).slice(0, 3).join('·');
-      return '<div class="ac-item" data-i="' + i + '">' + it.name +
+      return '<div class="ac-item" role="option" aria-selected="false" id="' + listId + '-o' + i +
+        '" data-i="' + i + '">' + it.name +
         (ln ? '<span class="ac-lines">' + ln + '</span>' : '') + '</div>';
     }).join('');
     list.hidden = false;
     activeIdx = -1;
+    setExpanded(true);
+  }
+  function highlight() {
+    list.querySelectorAll('.ac-item').forEach((el, i) => {
+      const on = i === activeIdx;
+      el.classList.toggle('active', on);
+      el.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    if (activeIdx >= 0) input.setAttribute('aria-activedescendant', listId + '-o' + activeIdx);
+    else input.removeAttribute('aria-activedescendant');
   }
   input.addEventListener('input', () => {
     const q = input.value.trim();
@@ -489,7 +516,7 @@ function attachAutocomplete(input) {
       activeIdx = e.key === 'ArrowDown'
         ? Math.min(activeIdx + 1, items.length - 1)
         : Math.max(activeIdx - 1, 0);
-      list.querySelectorAll('.ac-item').forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+      highlight();
     } else if (e.key === 'Enter' && activeIdx >= 0) {
       e.preventDefault();
       input.value = items[activeIdx].name;

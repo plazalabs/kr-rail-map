@@ -93,25 +93,25 @@
 
     <div id="toolbar" role="toolbar" aria-label="지도 도구">
       <div class="tb-group" role="group" aria-label="배경 지도">
-        <button data-style="normal" class="active" title="일반 지도">일반</button>
-        <button data-style="satellite" title="위성 지도">위성</button>
-        <button data-style="gray" title="흑백 지도">흑백</button>
+        <button data-style="normal" class="active" title="일반 지도" aria-label="일반 지도로 보기" aria-pressed="true">일반</button>
+        <button data-style="satellite" title="위성 지도" aria-label="위성 지도로 보기" aria-pressed="false">위성</button>
+        <button data-style="gray" title="흑백 지도" aria-label="흑백 지도로 보기" aria-pressed="false">흑백</button>
       </div>
       <button id="route-btn" class="tb-primary">길찾기</button>
       <button id="diagram-btn" title="45도 개략 노선도">노선도</button>
       <button id="locate-btn" class="tb-icon" title="내 위치" aria-label="내 위치로 이동">◎</button>
       <div class="tb-dropdown">
-        <button class="tb-dropbtn" aria-haspopup="true" aria-expanded="false">도구</button>
-        <div class="tb-dropmenu" role="menu">
-          <button id="draw-btn" role="menuitem">나만의 노선 그리기</button>
-          <button id="measure-btn" role="menuitem">거리·면적 측정</button>
-          <button id="radius-btn" role="menuitem">반경 측정</button>
-          <button id="memo-btn" role="menuitem">메모 핀</button>
+        <button class="tb-dropbtn" aria-expanded="false" aria-controls="tb-dropmenu-1">도구</button>
+        <div class="tb-dropmenu" role="group" aria-label="도구 모음">
+          <button id="draw-btn">나만의 노선 그리기</button>
+          <button id="measure-btn">거리·면적 측정</button>
+          <button id="radius-btn">반경 측정</button>
+          <button id="memo-btn">메모 핀</button>
         </div>
       </div>
       <div class="tb-dropdown">
         <button class="tb-dropbtn" aria-haspopup="true" aria-expanded="false">분석</button>
-        <div class="tb-dropmenu" role="menu">
+        <div class="tb-dropmenu" role="group" aria-label="도구 모음">
           <button id="compare-btn" role="menuitem">노선 비교</button>
           <button id="stats-btn" role="menuitem">철도망 통계</button>
           <button id="timeline-btn" role="menuitem">개통 타임라인</button>
@@ -121,7 +121,7 @@
       </div>
       <div class="tb-dropdown">
         <button class="tb-dropbtn" aria-haspopup="true" aria-expanded="false">저장</button>
-        <div class="tb-dropmenu" role="menu">
+        <div class="tb-dropmenu" role="group" aria-label="도구 모음">
           <button id="diagram-save-btn" role="menuitem">노선도 PNG</button>
           <button id="save-btn" role="menuitem">지도 PNG</button>
           <button id="share-btn" role="menuitem">링크 복사</button>
@@ -142,12 +142,12 @@
       <div class="rp-head">길찾기 <button id="route-close" class="rp-close" aria-label="닫기">✕</button></div>
       <div class="ac-wrap">
         <label class="ac-label" for="route-from">출발</label>
-        <input id="route-from" placeholder="출발역" autocomplete="off">
+        <input id="route-from" placeholder="출발역" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false">
         <div class="ac-list" hidden></div>
       </div>
       <div class="ac-wrap">
         <label class="ac-label" for="route-to">도착</label>
-        <input id="route-to" placeholder="도착역" autocomplete="off">
+        <input id="route-to" placeholder="도착역" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false">
         <div class="ac-list" hidden></div>
       </div>
       <div class="rp-row">
@@ -155,7 +155,7 @@
         <button id="route-go">경로 찾기</button>
         <button id="route-save" title="이 경로를 즐겨찾기에 저장" aria-label="경로 저장">☆</button>
       </div>
-      <div id="route-result"></div>
+      <div id="route-result" role="region" aria-label="경로 검색 결과" aria-live="polite"></div>
       <p class="rp-note">노선별 평균 속도로 어림한 예상 소요시간입니다</p>
     </div>
 

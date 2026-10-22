@@ -25,38 +25,38 @@
   /* ---------- CSS (동적 삽입) ---------- */
   var CSS =
     '#sd-panel{position:fixed;top:0;right:0;width:340px;max-width:92vw;height:100%;' +
-    'background:#fff;box-shadow:-2px 0 12px rgba(0,0,0,.18);z-index:1000;' +
+    'background:var(--panel-bg,#fff);box-shadow:var(--shadow-lg,-2px 0 12px rgba(0,0,0,.18));z-index:1000;' +
     'transform:translateX(105%);transition:transform .25s ease;overflow-y:auto;' +
-    'font-family:inherit;color:#222}' +
+    'font-family:inherit;color:var(--text,#222)}' +
     '#sd-panel.sd-open{transform:translateX(0)}' +
     '#sd-head{display:flex;align-items:center;justify-content:space-between;' +
-    'padding:14px 16px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:2}' +
+    'padding:14px 16px;border-bottom:1px solid var(--border,#eee);position:sticky;top:0;background:var(--panel-bg,#fff);z-index:2}' +
     '#sd-head h2{margin:0;font-size:18px}' +
-    '#sd-close{border:none;background:none;font-size:20px;cursor:pointer;color:#888;padding:4px 8px}' +
-    '#sd-close:hover{color:#222}' +
+    '#sd-close{border:none;background:none;font-size:20px;cursor:pointer;color:var(--muted,#6b7280);padding:4px 8px;border-radius:6px}' +
+    '#sd-close:hover{color:var(--text,#222);background:var(--hover,#f2f2f2)}' +
     '#sd-body{padding:14px 16px}' +
-    '.sd-en{color:#888;font-size:13px;margin-top:2px}' +
+    '.sd-en{color:var(--muted,#6b7280);font-size:13px;margin-top:2px}' +
     '.sd-sec{margin-top:16px}' +
-    '.sd-sec h3{font-size:13px;color:#888;margin:0 0 8px;font-weight:600}' +
-    '.sd-line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f4f4f4;font-size:14px}' +
+    '.sd-sec h3{font-size:13px;color:var(--muted,#6b7280);margin:0 0 8px;font-weight:600}' +
+    '.sd-line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border,#f4f4f4);font-size:14px}' +
     '.sd-dot{width:12px;height:12px;border-radius:50%;flex:none}' +
     '.sd-badge{margin-left:auto;font-size:11px;padding:2px 8px;border-radius:10px;flex:none}' +
     '.sd-badge.open{background:#e6f4ea;color:#137333}' +
     '.sd-badge.construction{background:#fef7e0;color:#b06000}' +
     '.sd-badge.proposed{background:#f1f3f4;color:#5f6368}' +
-    '.sd-adj{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #f4f4f4;font-size:13px}' +
+    '.sd-adj{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--border,#f4f4f4);font-size:13px}' +
     '.sd-adj .sd-lname{font-weight:600;white-space:nowrap}' +
-    '.sd-st{cursor:pointer;color:#1a73e8;text-decoration:underline;text-underline-offset:2px}' +
-    '.sd-st.sd-none{color:#aaa;text-decoration:none;cursor:default}' +
-    '.sd-arrow{color:#999}' +
-    '.sd-note{font-size:12px;color:#999;margin-top:4px}' +
+    '.sd-st{cursor:pointer;color:var(--accent,#1a73e8);text-decoration:underline;text-underline-offset:2px}' +
+    '.sd-st.sd-none{color:var(--muted,#6b7280);text-decoration:none;cursor:default}' +
+    '.sd-arrow{color:var(--muted,#6b7280)}' +
+    '.sd-note{font-size:12px;color:var(--muted,#6b7280);margin-top:4px}' +
     '.sd-btns{display:flex;gap:8px;margin-top:16px}' +
-    '.sd-btns button{flex:1;padding:9px 0;border:1px solid #ddd;border-radius:6px;' +
-    'background:#fff;cursor:pointer;font-size:14px}' +
-    '.sd-btns button:hover{background:#f6f6f6}' +
+    '.sd-btns button{flex:1;padding:9px 0;border:1px solid var(--border-strong,#ddd);border-radius:6px;' +
+    'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:14px}' +
+    '.sd-btns button:hover{background:var(--hover,#f6f6f6)}' +
     '@media (max-width:768px){' +
     '#sd-panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;height:auto;' +
-    'max-height:62vh;border-radius:14px 14px 0 0;box-shadow:0 -2px 12px rgba(0,0,0,.18);' +
+    'max-height:62vh;border-radius:14px 14px 0 0;box-shadow:var(--shadow-lg,0 -2px 12px rgba(0,0,0,.18));' +
     'transform:translateY(105%)}' +
     '#sd-panel.sd-open{transform:translateY(0)}' +
     '}';

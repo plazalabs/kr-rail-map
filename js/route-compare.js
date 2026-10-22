@@ -36,11 +36,28 @@ const RouteCompare = (() => {
     return RF.edgeMinutes(e);
   }
 
-  // 요금 (app.js와 동일 공식: 수도권 전철, 2024년 인상 후)
+  // 요금 (수도권 전철 기준, 2024년 인상 후)
   function calcFare(distKm) {
     let fare = 1400;
     if (distKm > 10) fare += Math.ceil(Math.min(distKm - 10, 40) / 5) * 100;
     if (distKm > 50) fare += Math.ceil((distKm - 50) / 8) * 100;
+    return fare;
+  }
+
+  // KTX 는 거리비례 수도권 요금제가 아니다. 서울→부산 417km 에 수도권 공식을
+  // 그대로 대면 6,800원이 나온다(실제 59,800원). KTX 구간은 따로 계산한다.
+  const KTX_BASE = 8000;
+  const KTX_PER_KM = 120;
+
+  // legs 를 보면서 KTX 구간 거리를 뽑아 요금을 합산한다.
+  function calcFareOfRoute(r, distKm) {
+    let ktxKm = 0;
+    (r.legs || []).forEach(l => {
+      if (l.lineId && RF.categoryOf(l.lineId) === 'ktx') ktxKm += (l.distKm || 0);
+    });
+    const metroKm = Math.max(0, distKm - ktxKm);
+    let fare = calcFare(metroKm);
+    if (ktxKm > 0) fare += KTX_BASE + Math.round(KTX_PER_KM * ktxKm / 100) * 100;
     return fare;
   }
   function routeDistance(path) {
@@ -88,15 +105,18 @@ const RouteCompare = (() => {
     const legs = [];
     let legStart = 0, curLine = edges[0].lineId;
     let minutes = 0;
+    // leg 별 거리도 남긴다 — 요금 계산에서 KTX 구간만 따로 떼어내야 한다
+    let km = 0;
     edges.forEach((e, i) => {
       minutes += edgeMinutes(e);
       if (e.lineId !== curLine) {
-        legs.push({ lineId: curLine, from: stations[legStart], to: stations[i], walk: curLine === null });
+        legs.push({ lineId: curLine, from: stations[legStart], to: stations[i], walk: curLine === null, distKm: km });
         if (curLine !== null && e.lineId !== null) minutes += RF.TRANSFER_MIN;
-        legStart = i; curLine = e.lineId;
+        legStart = i; curLine = e.lineId; km = 0;
       }
+      km += e.distKm;
     });
-    legs.push({ lineId: curLine, from: stations[legStart], to: stations[stations.length - 1], walk: curLine === null });
+    legs.push({ lineId: curLine, from: stations[legStart], to: stations[stations.length - 1], walk: curLine === null, distKm: km });
     const transfers = Math.max(0, legs.filter(l => !l.walk && l.lineId !== null).length - 1);
     return { legs, minutes: Math.round(minutes), transfers };
   }
@@ -171,7 +191,10 @@ const RouteCompare = (() => {
       for (const e of (RF.adjacency().get(u) || [])) {
         const nl = e.walk ? null : e.lineId;
         const transfer = !e.walk && cl !== null && cl !== nl;
-        const nkm = km + e.distKm + (transfer ? TRANSFER_KM : 0);
+        // KTX 는 km당 요금이 수도권 전철의 6배쯤 된다. 같은 거리라도 훨씬 비싸므로
+        // '최소요금' 탐색에서는 KTX 구간을 6배로 세야 무궁화·ITX 경로가 이긴다.
+        const w = (!e.walk && RF.categoryOf(nl) === 'ktx') ? 6 : 1;
+        const nkm = km + e.distKm * w + (transfer ? TRANSFER_KM : 0);
         const nm = m + edgeMinutes(e);
         const vk = skey(e.to, nl);
         const vd = dist.get(vk);
@@ -210,7 +233,7 @@ const RouteCompare = (() => {
   function enrich(r) {
     if (!r) return null;
     const distKm = routeDistance(r.path);
-    return markUnopened({ ...r, distKm, fare: calcFare(distKm) });
+    return markUnopened({ ...r, distKm, fare: calcFareOfRoute(r, distKm) });
   }
 
   function findAll(fromId, toId) {

@@ -166,5 +166,54 @@ check('상봉→종합운동장 경유역이 장한평·성수·청담',
   r && r.path.map(nameOf).join(',') === '상봉,장한평,성수,청담,종합운동장',
   r && r.path.map(nameOf).join(','));
 
+console.log('\n[GTX-D/E/F] chul.mom 좌표 기준 — 역이 실제 위치에 있고 직결로 이어져야 함');
+// 좌표는 전부 chul.mom(https://chul.mom) 기준. 보간으로 만든 가짜 좌표는 쓰지 않는다.
+const GTX_COORD_SRC = [
+  ['영종국제도시', 126.56558, 37.49474],
+  ['청라국제업무단지', 126.62522, 37.5292],
+  ['광명시흥', 126.84717, 37.46868],
+  ['교산', 127.2035, 37.52612],
+  ['일패', 127.18059, 37.61457],
+  ['풍양', 127.17191, 37.6973],
+];
+const realCoord = GTX_COORD_SRC.every(([n, lng, lat]) => {
+  const c = S.filter(s => s.n === n);
+  return c.some(s => Math.abs(s.c[0] - lng) < 1e-4 && Math.abs(s.c[1] - lat) < 1e-4);
+});
+check('GTX 신설역이 chul.mom 실제 좌표를 가짐', realCoord, '좌표 불일치 역 있음');
+
+r = route(['인천공항1터미널', 126.4528, 37.4472], ['강남', 127.0276, 37.4980]);
+check('인천공항1터미널→강남 GTX-D 직결', r && r.transfers === 0, r && `${r.transfers}회`);
+check('인천공항1터미널→강남이 영종국제도시를 경유',
+  r && r.path.map(nameOf).includes('영종국제도시'), r && r.path.map(nameOf).join(','));
+
+// 강남→원주: GTX-C+KTX 3회환승(49분) 우회가 아니라 GTX-D 직결이어야 한다.
+r = route(['강남', 127.0276, 37.4980], ['원주', 127.9228, 37.3164]);
+check('강남→원주 GTX-D 직결(환승 0회)', r && r.transfers === 0, r && `${r.transfers}회`);
+check('강남→원주가 여주·서원주를 경유',
+  r && r.path.map(nameOf).includes('여주') && r.path.map(nameOf).includes('서원주'),
+  r && r.path.map(nameOf).join(','));
+
+r = route(['인천공항1터미널', 126.4528, 37.4472], ['덕소', 127.2088, 37.5869]);
+check('인천공항1터미널→덕소 GTX-E 직결', r && r.transfers === 0, r && `${r.transfers}회`);
+check('GTX-E가 연신내·광운대를 경유',
+  r && r.path.map(nameOf).includes('연신내') && r.path.map(nameOf).includes('광운대'),
+  r && r.path.map(nameOf).join(','));
+
+r = route(['교산', 127.2035, 37.5261], ['덕소', 127.2088, 37.5869]);
+check('교산→덕소 GTX-F 직결', r && r.transfers === 0, r && `${r.transfers}회`);
+
+console.log('\n[환승 페널티] 2분 아끼려고 3번 갈아타는 경로를 고르면 안 됨');
+// transferPenalty 는 '경로 선택'에만 쓰이고 표시 시간에는 영향이 없다.
+const gangnam = pick('강남', 127.0276, 37.4980);
+const wonju = pick('원주', 127.9228, 37.3164);
+const cheap = RF.findRoute(gangnam.id, wonju.id, { transferPenalty: 4 });
+const sane = RF.findRoute(gangnam.id, wonju.id, { transferPenalty: 8 });
+check('페널티 4분이면 3회환승 우회가 뽑힘(문제 재현)', cheap && cheap.transfers >= 2,
+  cheap && `${cheap.transfers}회`);
+check('페널티 8분이면 0회환승 직결이 뽑힘', sane && sane.transfers === 0, sane && `${sane.transfers}회`);
+check('페널티를 올려도 표시 시간은 실제값', sane && sane.minutes >= 40 && sane.minutes <= 70,
+  sane && `${sane.minutes}분`);
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

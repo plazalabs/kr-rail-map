@@ -350,18 +350,19 @@ const RouteFinder = (() => {
     // leg 분해 (노선 바뀌면 환승)
     const legs = [];
     let legStart = 0, curLine = edges[0] ? (edges[0].lineId || null) : null;
-    let minutes = 0;
+    let minutes = 0, legKm = 0;
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
       minutes += edgeMinutes(e);
       const lid = e.lineId || null;
       if (lid !== curLine) {
-        legs.push({ lineId: curLine, from: path[legStart], to: path[i], walk: curLine === null });
+        legs.push({ lineId: curLine, from: path[legStart], to: path[i], walk: curLine === null, distKm: legKm });
         if (curLine !== null && lid !== null) minutes += TRANSFER_MIN;
-        legStart = i; curLine = lid;
+        legStart = i; curLine = lid; legKm = 0;
       }
+      legKm += e.distKm;
     }
-    legs.push({ lineId: curLine, from: path[legStart], to: path[path.length - 1], walk: curLine === null });
+    legs.push({ lineId: curLine, from: path[legStart], to: path[path.length - 1], walk: curLine === null, distKm: legKm });
 
     // 각 leg 에 개통 상태를 실어 보낸다 → 화면에서 '미개통' 배지로 표시.
     const unopenedNames = [];

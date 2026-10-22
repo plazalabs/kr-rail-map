@@ -9,6 +9,20 @@
 const UI = (() => {
   const isMobile = () => window.matchMedia('(max-width: 980px)').matches;
 
+  /* ---------- 데이터 로더 (한 번만 받는다) ---------- */
+  // ui.js 가 먼저 파싱되므로 여기서 요청을 일찍 띄우고, app.js 는 같은 약속을 기다린다.
+  // 같은 URL 을 두 번 fetch 하면 브라우저가 합쳐주지 않는다 — 974KB 를 두 번 받던 원인.
+  const dataPromises = new Map();
+  function loadGeoJSON(url) {
+    if (!dataPromises.has(url)) {
+      dataPromises.set(url, fetch(url).then((r) => {
+        if (!r.ok) throw new Error(url);
+        return r.json();
+      }));
+    }
+    return dataPromises.get(url);
+  }
+
   /* ---------- 토스트 ---------- */
   let toastTimer = null;
   function setStatus(msg) {
@@ -264,10 +278,12 @@ const UI = (() => {
   }
 
   function boot() {
-    // 데이터를 미리 받아 캐시를 데운다 (app.js 는 이 fetch 를 재사용)
-    ['data/lines.geojson', 'data/stations.geojson'].forEach(u => {
-      try { fetch(u).catch(() => {}); } catch (e) {}
-    });
+    // 데이터를 미리 받아 캐시를 데운다.
+    // 예전에는 fetch(u) 를 그냥 한 번 더 던지고 "app.js 가 재사용한다"고 적어뒀는데,
+    // 브라우저는 별개의 fetch() 를 합쳐주지 않는다. 그래서 lines.geojson 974KB 를
+    // 두 번 내려받았다(전체 전송량의 35%). 이제는 '약속(promise)' 자체를 공유한다.
+    loadGeoJSON('data/lines.geojson').catch(() => {});
+    loadGeoJSON('data/stations.geojson').catch(() => {});
     watchStatus();
     watchModals();
     initKeys();
@@ -291,7 +307,7 @@ const UI = (() => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  return { setStatus, closeModals, closeDropdowns, openDrawer, closeDrawer, isMobile };
+  return { setStatus, closeModals, closeDropdowns, openDrawer, closeDrawer, isMobile, loadGeoJSON };
 })();
 
 window.UI = UI;

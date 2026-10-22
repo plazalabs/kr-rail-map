@@ -1,39 +1,22 @@
 /* 대체 경로 3종 비교: 최단시간 / 최소환승 / 최소요금
- * - 최단시간: 기존 RouteFinder.findRoute 그대로 사용
+ * - 최단시간: RouteFinder.findRoute (환승 페널티 8분)
  * - 최소환승: (역,노선) 상태 다익스트라, 비용=(환승횟수, 분) 사전식
  * - 최소요금: 거리 기준 다익스트라 (요금은 거리의 단조함수)
- * 주의: js/route.js의 상수(SPEEDS/TRANSFER_MIN/GTX_TIMES)를 복사함. route.js 변경 시 동기화 필요.
+ *
+ * 중요: 그래프는 RouteFinder가 만든 것을 그대로 쓴다.
+ * 예전에는 여기서 그래프를 따로 만들었는데(상수까지 복사), 그 사본은
+ *  (1) MultiLineString 조각을 이어붙여 평탄화 → GTX-D 분기(팔당↔삼성)에 없는 엣지 생성
+ *  (2) GTX 속도 보정(110km/h) 누락 → 같은 구간인데 탭마다 소요시간이 다름
+ *  (3) 순환선 폐합 누락 → 2호선이 한 곳에서 끊김
+ * 같은 실수를 반복하지 않도록 '한 개의 그래프'만 존재하게 만든다.
  */
 'use strict';
 
 const RouteCompare = (() => {
-  // ---- route.js와 동일한 상수 (복사본) ----
-  const SPEEDS = { ktx: 180, metro: 32, urban: 45, conventional: 55, etc: 40 };
-  const TRANSFER_MIN = 4;
-  const WALK_KMH = 4;
   // '최단시간' 경로를 고를 때만 쓰는 환승 페널티 (표시 시간에는 영향 없음)
   const TIME_TRANSFER_PENALTY = 8;
 
-  // GTX 공식 역간 소요시간 (route.js의 GTX_TIMES와 동일 — 복사본)
-  const GTX_TIMES = {
-    'great-train-express-line-a': [
-      ['운정중앙',4],['킨텍스',5],['대곡',4],['창릉',3],['연신내',6],
-      ['서울역',6],['삼성',3],['수서',7],['성남',7],['구성',7],['동탄',null]],
-    'gtx-b': [
-      ['인천대입구',6],['인천시청',4],['부평',5],['부천종합운동장',5],['신도림',4],
-      ['여의도',3],['용산',3],['서울역',5],['청량리',4],['상봉',5],
-      ['별내',4],['왕숙',5],['평내호평',5],['마석',null]],
-    'gtx-c': [
-      ['덕정',9],['의정부',8],['창동',3],['광운대',4],['청량리',3],
-      ['왕십리',2],['삼성',3],['양재',5],['과천청사',3],['인덕원',4],
-      ['금정',6],['의왕',6],['수원',null]],
-  };
-  const GTX_NAME_ALIAS = { '과천청사': '정부과천청사' };
-
-  let RF = null;                 // RouteFinder (최단시간용)
-  let adj = new Map();           // stationId -> [{to, lineId, distKm, walk, officialMin}]
-  let lineCat = new Map();
-  let stationsById = new Map();
+  let RF = null;                 // RouteFinder — 그래프·시간모델의 유일한 출처
   let lineNameOf = new Map();
 
   function hav(ax, ay, bx, by) {
@@ -42,130 +25,15 @@ const RouteCompare = (() => {
     const h = Math.sin(dLat / 2) ** 2 + Math.cos(ay * r) * Math.cos(by * r) * Math.sin(dLon / 2) ** 2;
     return 6371 * 2 * Math.asin(Math.sqrt(h));
   }
-  function flatCoords(geom) {
-    if (geom.type === 'LineString') return geom.coordinates;
-    return geom.coordinates.flat(1);
-  }
-  function project(p, coords) {
-    let best = { alongKm: 0, distKm: Infinity };
-    let acc = 0;
-    for (let i = 0; i < coords.length - 1; i++) {
-      const [ax, ay] = coords[i], [bx, by] = coords[i + 1];
-      const segLen = hav(ax, ay, bx, by);
-      const dx = bx - ax, dy = by - ay;
-      const len2 = dx * dx + dy * dy;
-      let t = len2 ? ((p[0] - ax) * dx + (p[1] - ay) * dy) / len2 : 0;
-      t = Math.max(0, Math.min(1, t));
-      const d = hav(p[0], p[1], ax + t * dx, ay + t * dy);
-      if (d < best.distKm) best = { alongKm: acc + t * segLen, distKm: d };
-      acc += segLen;
-    }
-    return best;
-  }
-
-  // route.js buildGraph와 동일한 그래프 구축 (단, GTX 공식 엣지의 distKm은 역 좌표로 추정)
-  function buildAdj(lines, stations) {
-    adj = new Map(); lineCat = new Map(); stationsById = new Map();
-    const lineGeom = new Map();
-    // route.js buildGraph 와 같은 기준: 미개통 노선도 포함한다.
-    // (여기서만 걸러내면 '최단시간'은 GTX-B 를 쓰고 '최소환승'은 못 쓰는 모순이 생긴다)
-    const activeLines = lines;
-    activeLines.forEach(f => {
-      lineCat.set(f.properties.id, f.properties.category || 'etc');
-      lineGeom.set(f.properties.id, flatCoords(f.geometry));
-    });
-    stations.forEach(s => stationsById.set(s.properties.id, s));
-    const nameOf = new Map();
-    stations.forEach(s => nameOf.set(s.properties.id, s.properties.name_ko));
-    lineNameOf = new Map();
-    lines.forEach(f => lineNameOf.set(f.properties.id, f.properties.name_ko));
-
-    const addEdge = (a, b, lineId, walk, officialMin) => {
-      if (!adj.has(a)) adj.set(a, []);
-      if (!adj.has(b)) adj.set(b, []);
-      let distKm;
-      if (officialMin != null) {
-        // GTX 공식 엣지: 역 좌표 기반 거리 추정 (요금 계산용)
-        const ca = stationsById.get(a).geometry.coordinates;
-        const cb = stationsById.get(b).geometry.coordinates;
-        distKm = hav(ca[0], ca[1], cb[0], cb[1]);
-      } else {
-        const ca = stationsById.get(a).geometry.coordinates;
-        const cb = stationsById.get(b).geometry.coordinates;
-        distKm = hav(ca[0], ca[1], cb[0], cb[1]);
-      }
-      adj.get(a).push({ to: b, lineId, distKm, walk: !!walk, officialMin: officialMin ?? null });
-      adj.get(b).push({ to: a, lineId, distKm, walk: !!walk, officialMin: officialMin ?? null });
-    };
-
-    const perLine = new Map();
-    stations.forEach(s => {
-      const p = s.geometry.coordinates;
-      (s.properties.lines || []).forEach(lid => {
-        const coords = lineGeom.get(lid);
-        if (!coords || coords.length < 2) return;
-        const pr = project(p, coords);
-        if (pr.distKm > 1.5) return;
-        if (!perLine.has(lid)) perLine.set(lid, []);
-        perLine.get(lid).push({ id: s.properties.id, along: pr.alongKm });
-      });
-    });
-    perLine.forEach((list, lid) => {
-      list.sort((a, b) => a.along - b.along);
-      for (let i = 0; i < list.length - 1; i++) {
-        if (list[i].id === list[i + 1].id) continue;
-        addEdge(list[i].id, list[i + 1].id, lid, false, null);
-      }
-    });
-
-    const byName = new Map();
-    stations.forEach(s => {
-      const n = s.properties.name_ko;
-      if (!byName.has(n)) byName.set(n, []);
-      byName.get(n).push(s.properties.id);
-    });
-    byName.forEach(ids => {
-      if (ids.length < 2) return;
-      for (let i = 0; i < ids.length; i++)
-        for (let j = i + 1; j < ids.length; j++) {
-          // 데이터 오류 방지: 동명이역이 2km 넘게 떨어져 있으면 도보 연결 제외
-          // (예: 서울 '종합운동장' ↔ 부산 '종합운동장' 325km 오연결)
-          const ca = stationsById.get(ids[i]).geometry.coordinates;
-          const cb = stationsById.get(ids[j]).geometry.coordinates;
-          if (hav(ca[0], ca[1], cb[0], cb[1]) > 2) continue;
-          addEdge(ids[i], ids[j], null, true, null);
-        }
-    });
-
-    // GTX 공식 엣지
-    const nameToId = new Map();
-    stationsById.forEach((s, id) => {
-      const n = s.properties.name_ko;
-      if (!nameToId.has(n)) nameToId.set(n, id);
-    });
-    const resolve = n => nameToId.get(n) || nameToId.get(GTX_NAME_ALIAS[n]);
-    Object.entries(GTX_TIMES).forEach(([lid, seq]) => {
-      for (let i = 0; i < seq.length - 1; i++) {
-        const a = resolve(seq[i][0]), b = resolve(seq[i + 1][0]);
-        const min = seq[i][1];
-        if (!a || !b || min == null) continue;
-        addEdge(a, b, lid, false, min);
-      }
-    });
-
-    return nameOf;
-  }
 
   let stationNameOf = new Map();
   function sname(id) {
     return stationNameOf.get(id) || id;
   }
 
+  // 시간 모델도 RouteFinder 것을 그대로 쓴다 (GTX 110km/h 보정 포함).
   function edgeMinutes(e) {
-    if (e.walk) return e.distKm / WALK_KMH * 60 + 2;
-    if (e.officialMin != null) return e.officialMin;
-    const v = SPEEDS[lineCat.get(e.lineId)] || 40;
-    return e.distKm / v * 60;
+    return RF.edgeMinutes(e);
   }
 
   // 요금 (app.js와 동일 공식: 수도권 전철, 2024년 인상 후)
@@ -176,14 +44,9 @@ const RouteCompare = (() => {
     return fare;
   }
   function routeDistance(path) {
-    let km = 0;
-    for (let i = 0; i < path.length - 1; i++) {
-      const c1 = stationsById.get(path[i])?.geometry.coordinates;
-      const c2 = stationsById.get(path[i + 1])?.geometry.coordinates;
-      if (!c1 || !c2) continue;
-      km += hav(c1[0], c1[1], c2[0], c2[1]);
-    }
-    return km;
+    // 선로를 따라간 실제 거리. 예전에는 역 좌표끼리 직선거리를 더해서
+    // 곡선 구간이 실제보다 짧게 나왔다 (강남→원주 93km, 실제 107km).
+    return RF.pathDistance(path);
   }
 
   // 이진 힙 (비용 비교함수 주입)
@@ -229,7 +92,7 @@ const RouteCompare = (() => {
       minutes += edgeMinutes(e);
       if (e.lineId !== curLine) {
         legs.push({ lineId: curLine, from: stations[legStart], to: stations[i], walk: curLine === null });
-        if (curLine !== null && e.lineId !== null) minutes += TRANSFER_MIN;
+        if (curLine !== null && e.lineId !== null) minutes += RF.TRANSFER_MIN;
         legStart = i; curLine = e.lineId;
       }
     });
@@ -240,7 +103,7 @@ const RouteCompare = (() => {
 
   // 최소환승: (역,노선) 상태 다익스트라, 비용=(환승,분) 사전식
   function findMinTransfer(fromId, toId) {
-    if (!stationsById.has(fromId) || !stationsById.has(toId)) return null;
+    if (!RF.hasStation(fromId) || !RF.hasStation(toId)) return null;
     if (fromId === toId) return { path: [fromId], legs: [], minutes: 0, transfers: 0 };
     const skey = (s, l) => s + '|' + (l ?? '');
     const startK = skey(fromId, null);
@@ -255,7 +118,7 @@ const RouteCompare = (() => {
       const d = dist.get(uk);
       if (!d || t !== d[0] || m !== d[1]) continue;
       if (u === toId) { bestK = uk; break; }
-      for (const e of (adj.get(u) || [])) {
+      for (const e of (RF.adjacency().get(u) || [])) {
         let nt, nl;
         if (e.walk) { nt = t + 1; nl = null; }
         else if (cl === null || cl === e.lineId) { nt = t; nl = e.lineId; }
@@ -282,39 +145,50 @@ const RouteCompare = (() => {
     return { path: stations, legs, minutes, transfers };
   }
 
-  // 최소요금: 거리 기준 다익스트라 (타이브레이커: 시간)
+  // 최소요금: (역,노선) 상태 다익스트라, 비용 = 거리 + 환승거리벌점
+  //
+  // 왜 상태를 (역,노선) 으로 두나: 환승을 '거리' 로 환산해야 하기 때문이다.
+  // 예전엔 역 단위로만 돌아서, 100원(≈2km) 아끼자고 4번 갈아타는 경로가 나왔다
+  // (강남→원주: 2호선→경의중앙선→… 로 팔당을 돌아가는 경로).
+  // 환승 1회를 1.5km 로 매기면 '요금은 최소' 라는 성격은 유지하면서 그런 경로는 사라진다.
+  const TRANSFER_KM = 1.5;
   function findMinFare(fromId, toId) {
-    if (!stationsById.has(fromId) || !stationsById.has(toId)) return null;
+    if (!RF.hasStation(fromId) || !RF.hasStation(toId)) return null;
     if (fromId === toId) return { path: [fromId], legs: [], minutes: 0, transfers: 0 };
-    const dist = new Map([[fromId, [0, 0]]]); // [km, min]
-    const prev = new Map(); // id -> {from, edge}
+    const skey = (s, l) => s + '|' + (l ?? '');
+    const startK = skey(fromId, null);
+    const dist = new Map([[startK, [0, 0]]]); // [km, min]
+    const prev = new Map(); // key -> {pk, edge, station}
     const heap = makeHeap((a, b) => a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]));
-    heap.push([0, 0, fromId]);
+    heap.push([0, 0, fromId, null]);
+    let bestK = null;
     while (heap.size()) {
-      const [km, m, u] = heap.pop();
-      const d = dist.get(u);
+      const [km, m, u, cl] = heap.pop();
+      const uk = skey(u, cl);
+      const d = dist.get(uk);
       if (!d || km !== d[0] || m !== d[1]) continue;
-      if (u === toId) break;
-      for (const e of (adj.get(u) || [])) {
-        const nkm = km + e.distKm;
+      if (u === toId) { bestK = uk; break; }
+      for (const e of (RF.adjacency().get(u) || [])) {
+        const nl = e.walk ? null : e.lineId;
+        const transfer = !e.walk && cl !== null && cl !== nl;
+        const nkm = km + e.distKm + (transfer ? TRANSFER_KM : 0);
         const nm = m + edgeMinutes(e);
-        const vd = dist.get(e.to);
+        const vk = skey(e.to, nl);
+        const vd = dist.get(vk);
         if (!vd || nkm < vd[0] - 1e-9 || (Math.abs(nkm - vd[0]) < 1e-9 && nm < vd[1])) {
-          dist.set(e.to, [nkm, nm]);
-          prev.set(e.to, { from: u, edge: e });
-          heap.push([nkm, nm, e.to]);
+          dist.set(vk, [nkm, nm]);
+          prev.set(vk, { pk: uk, edge: e, station: e.to });
+          heap.push([nkm, nm, e.to, nl]);
         }
       }
     }
-    if (!prev.has(toId)) return null;
-    const stations = [toId], edges = [];
-    let cur = toId;
-    while (cur !== fromId) {
-      const p = prev.get(cur);
-      edges.unshift(p.edge);
-      stations.unshift(p.from);
-      cur = p.from;
-    }
+    if (!bestK) return null;
+    const chain = [];
+    let ck = bestK;
+    while (ck !== startK) { const p = prev.get(ck); chain.unshift(p); ck = p.pk; }
+    const stations = [fromId];
+    const edges = chain.map(p => p.edge);
+    for (const p of chain) stations.push(p.station);
     const { legs, minutes, transfers } = buildLegs(stations, edges);
     return { path: stations, legs, minutes, transfers };
   }
@@ -473,7 +347,9 @@ const RouteCompare = (() => {
 
   function init(routeFinder, stations, lines) {
     RF = routeFinder;
-    stationNameOf = buildAdj(lines, stations);
+    // 그래프는 RouteFinder 것을 빌려 쓴다 (여기서 다시 만들지 않는다)
+    stationNameOf = new Map(stations.map(s => [s.properties.id, s.properties.name_ko]));
+    lineNameOf = new Map(lines.map(f => [f.properties.id, f.properties.name_ko]));
   }
 
   return { init, findAll, show, hide };

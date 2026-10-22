@@ -149,9 +149,10 @@ async function loadData() {
     return;
   }
   try {
+    // ui.js 가 이미 띄워둔 요청을 그대로 기다린다 (중복 다운로드 방지)
     const [l, s] = await Promise.all([
-      fetch('data/lines.geojson').then(r => { if (!r.ok) throw new Error('lines'); return r.json(); }),
-      fetch('data/stations.geojson').then(r => { if (!r.ok) throw new Error('stations'); return r.json(); })
+      UI.loadGeoJSON('data/lines.geojson'),
+      UI.loadGeoJSON('data/stations.geojson')
     ]);
     LINES = l.features; STATIONS = s.features;
     setStatus(`노선 ${LINES.length}개 · 역 ${STATIONS.length}개 로드됨`);

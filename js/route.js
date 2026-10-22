@@ -87,12 +87,17 @@ const RouteFinder = (() => {
     return best;
   }
 
-  function addEdge(a, b, lineId, walk) {
+  // distKm 를 넘기지 않으면 두 역의 직선거리를 쓴다(도보 환승).
+  // 선로 엣지는 '선형을 따라간 거리'를 넘긴다 — 직선거리는 곡선 구간에서 실제보다
+  // 짧아서, 요금·거리 계산이 지그재그 우회를 싸게 착각했다.
+  function addEdge(a, b, lineId, walk, distKm) {
     if (!adj.has(a)) adj.set(a, []);
     if (!adj.has(b)) adj.set(b, []);
-    const distKm = hav(
-      stationsById.get(a).geometry.coordinates[0], stationsById.get(a).geometry.coordinates[1],
-      stationsById.get(b).geometry.coordinates[0], stationsById.get(b).geometry.coordinates[1]);
+    if (distKm == null) {
+      distKm = hav(
+        stationsById.get(a).geometry.coordinates[0], stationsById.get(a).geometry.coordinates[1],
+        stationsById.get(b).geometry.coordinates[0], stationsById.get(b).geometry.coordinates[1]);
+    }
     adj.get(a).push({ to: b, lineId, distKm, walk: !!walk });
     adj.get(b).push({ to: a, lineId, distKm, walk: !!walk });
   }
@@ -150,7 +155,8 @@ const RouteFinder = (() => {
         seq.forEach(s => ord.push({ id: s.id, piece: pieceIdx, along: s.along }));
         for (let i = 0; i < seq.length - 1; i++) {
           if (seq[i].id === seq[i + 1].id) continue;
-          addEdge(seq[i].id, seq[i + 1].id, lid, false);
+          // 선형을 따라간 거리 (직선거리가 아님)
+          addEdge(seq[i].id, seq[i + 1].id, lid, false, seq[i + 1].along - seq[i].along);
           geomAdjacent.add(lid + ':' + pairKey(seq[i].id, seq[i + 1].id));
           edgeCount++;
         }
@@ -159,7 +165,10 @@ const RouteFinder = (() => {
         const a = coords[0], b = coords[coords.length - 1];
         if (seq.length > 2 && seq[0].id !== seq[seq.length - 1].id &&
             hav(a[0], a[1], b[0], b[1]) <= CLOSED_TOL_KM) {
-          addEdge(seq[seq.length - 1].id, seq[0].id, lid, false);
+          let total = 0;
+          for (let i = 0; i < coords.length - 1; i++) total += hav(coords[i][0], coords[i][1], coords[i + 1][0], coords[i + 1][1]);
+          addEdge(seq[seq.length - 1].id, seq[0].id, lid, false,
+            Math.max(0.01, total - seq[seq.length - 1].along + seq[0].along));
           geomAdjacent.add(lid + ':' + pairKey(seq[0].id, seq[seq.length - 1].id));
           edgeCount++; loopEdges++;
         }
@@ -221,8 +230,13 @@ const RouteFinder = (() => {
         };
         strip(a, b); strip(b, a);
         // 공식 시간 엣지 (기하 기반 엣지보다 우선)
-        const edge = { to: b, lineId: lid, distKm: 0, officialMin: min };
-        const rev = { to: a, lineId: lid, distKm: 0, officialMin: min };
+        // distKm 을 0 으로 두면 '최소요금' 탐색에서 GTX 구간이 공짜가 되어
+        // 요금 계산이 엉터리가 된다. 두 역 사이 직선거리라도 넣어둔다.
+        const gkm = hav(
+          stationsById.get(a).geometry.coordinates[0], stationsById.get(a).geometry.coordinates[1],
+          stationsById.get(b).geometry.coordinates[0], stationsById.get(b).geometry.coordinates[1]);
+        const edge = { to: b, lineId: lid, distKm: gkm, officialMin: min };
+        const rev = { to: a, lineId: lid, distKm: gkm, officialMin: min };
         if (!adj.has(a)) adj.set(a, []);
         if (!adj.has(b)) adj.set(b, []);
         adj.get(a).push(edge);
@@ -372,6 +386,35 @@ const RouteFinder = (() => {
   function lineIsUnopened(lineId) { return isUnopened(lineId); }
   function statusOf(lineId) { return lineStatus.get(lineId) || 'open'; }
 
-  return { buildGraph, findRoute, lineIsUnopened, statusOf };
+  // 경로의 실제 이동거리(km) — 역 사이 간선의 distKm 을 더한다.
+  // 역 좌표끼리 직선거리를 더하면 곡선 구간에서 실제보다 짧게 나온다.
+  function pathDistance(path) {
+    let km = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+      const list = adj.get(path[i]) || [];
+      let best = null;
+      for (const e of list) {
+        if (e.to !== path[i + 1]) continue;
+        if (!best || e.distKm > best.distKm) best = e;   // 같은 쌍에 여러 노선이면 긴 쪽(보수적)
+      }
+      if (best) km += best.distKm;
+    }
+    return km;
+  }
+
+  return {
+    buildGraph, findRoute, lineIsUnopened, statusOf, pathDistance,
+    // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
+    // 예전에는 route-compare 가 그래프를 따로 만들었는데, 그쪽은 선형 조각을 이어붙여
+    // 평탄화하는 바람에 GTX-D 분기(팔당 ↔ 삼성)에 없는 엣지가 생겼다.
+    // 게다가 GTX 속도 보정(110km/h)이 빠져 두 탭의 소요시간이 서로 달랐다.
+    adjacency: () => adj,
+    stationById: (id) => stationsById.get(id),
+    hasStation: (id) => stationsById.has(id),
+    edgeMinutes,
+    categoryOf: (lineId) => lineCat.get(lineId),
+    TRANSFER_MIN,
+    WALK_KMH,
+  };
 })();
 

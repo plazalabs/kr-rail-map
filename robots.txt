@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://wondk850.github.io/kr-rail-map/sitemap.xml
+Sitemap: https://plazalabs.github.io/kr-rail-map/sitemap.xml

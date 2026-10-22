@@ -7,6 +7,11 @@ const RouteFinder = (() => {
   const TRANSFER_MIN = 4;   // 환승 1회당 추가 시간 (추론)
   const WALK_KMH = 4;
 
+  // --- 그래프 구성 상수 -------------------------------------------------
+  const ATTACH_MAX_KM = 1.5;   // 역을 선형에 귀속시키는 최대 거리
+  const WALK_MAX_KM = 0.5;     // 도보 환승으로 인정하는 최대 거리 (같은 이름이라도 이보다 멀면 별개 역)
+  const CLOSED_TOL_KM = 0.05;  // 순환선 폐합 판정 (조각의 시작점과 끝점이 사실상 동일)
+
   // GTX 공식 역간 소요시간 (분) — 국토부 공시 자료 기반 (apt84rank.com/gtx 정리값)
   // 형식: [역명, 다음역까지 분]. 마지막역은 null.
   const GTX_TIMES = {
@@ -34,12 +39,6 @@ const RouteFinder = (() => {
     const dLat = (by - ay) * r, dLon = (bx - ax) * r;
     const h = Math.sin(dLat / 2) ** 2 + Math.cos(ay * r) * Math.cos(by * r) * Math.sin(dLon / 2) ** 2;
     return 6371 * 2 * Math.asin(Math.sqrt(h));
-  }
-
-  // 선형 좌표열을 평탄화
-  function flatCoords(geom) {
-    if (geom.type === 'LineString') return geom.coordinates;
-    return geom.coordinates.flat(1);
   }
 
   // 점 p를 선형 위에 투영 → {alongKm, distKm}
@@ -73,7 +72,7 @@ const RouteFinder = (() => {
 
   function buildGraph(lines, stations) {
     adj = new Map(); lineCat = new Map(); stationsById = new Map();
-    const lineGeom = new Map();
+    const activeIds = new Set();
     // 공사중/계획 노선은 길찾기에서 제외 (운행 중인 노선만)
     const activeLines = lines.filter(f => {
       const st = (f.properties.status || '').toLowerCase();
@@ -81,54 +80,89 @@ const RouteFinder = (() => {
     });
     activeLines.forEach(f => {
       lineCat.set(f.properties.id, f.properties.category || 'etc');
-      lineGeom.set(f.properties.id, flatCoords(f.geometry));
+      activeIds.add(f.properties.id);
     });
     stations.forEach(s => stationsById.set(s.properties.id, s));
 
-    // 노선별: 역을 선형 위에 투영 → along 순 정렬 → 연속역 연결
-    const perLine = new Map();
+    // 노선 → 그 노선에 귀속된 역
+    const stationsByLine = new Map();
     stations.forEach(s => {
-      const p = s.geometry.coordinates;
       (s.properties.lines || []).forEach(lid => {
-        const coords = lineGeom.get(lid);
-        if (!coords || coords.length < 2) return;
-        const pr = project(p, coords);
-        if (pr.distKm > 1.5) return; // 엉뚱한 귀속 방지
-        if (!perLine.has(lid)) perLine.set(lid, []);
-        perLine.get(lid).push({ id: s.properties.id, along: pr.alongKm });
+        if (!activeIds.has(lid)) return;
+        if (!stationsByLine.has(lid)) stationsByLine.set(lid, []);
+        stationsByLine.get(lid).push(s);
       });
     });
-    let edgeCount = 0;
-    perLine.forEach((list, lid) => {
-      list.sort((a, b) => a.along - b.along);
-      for (let i = 0; i < list.length - 1; i++) {
-        if (list[i].id === list[i + 1].id) continue;
-        addEdge(list[i].id, list[i + 1].id, lid, false);
-        edgeCount++;
-      }
+
+    let edgeCount = 0, loopEdges = 0;
+
+    // 조각(LineString) 단위로 투영한다.
+    // 조각을 이어붙여 평탄화하면 (a) 순환선이 한 곳에서 끊기고
+    // (b) 분기 경계에서 서로 다른 지선의 역이 '인접역'으로 잘못 연결된다.
+    activeLines.forEach(f => {
+      const lid = f.properties.id;
+      const sts = stationsByLine.get(lid);
+      if (!sts || sts.length < 2) return;
+      const pieces = f.geometry.type === 'LineString'
+        ? [f.geometry.coordinates]
+        : (f.geometry.coordinates || []);
+
+      pieces.forEach(coords => {
+        if (!coords || coords.length < 2) return;
+        const seq = [];
+        sts.forEach(s => {
+          const pr = project(s.geometry.coordinates, coords);
+          if (pr.distKm > ATTACH_MAX_KM) return;   // 엉뚱한 귀속 방지
+          seq.push({ id: s.properties.id, along: pr.alongKm });
+        });
+        if (seq.length < 2) return;
+        seq.sort((a, b) => a.along - b.along);
+        for (let i = 0; i < seq.length - 1; i++) {
+          if (seq[i].id === seq[i + 1].id) continue;
+          addEdge(seq[i].id, seq[i + 1].id, lid, false);
+          edgeCount++;
+        }
+        // 순환선 폐합: 조각의 시작점과 끝점이 사실상 같으면 마지막 역 → 첫 역을 잇는다.
+        // (2호선이 당산에서 끊겨 당산→합정이 29분/3회환승으로 계산되던 원인)
+        const a = coords[0], b = coords[coords.length - 1];
+        if (seq.length > 2 && seq[0].id !== seq[seq.length - 1].id &&
+            hav(a[0], a[1], b[0], b[1]) <= CLOSED_TOL_KM) {
+          addEdge(seq[seq.length - 1].id, seq[0].id, lid, false);
+          edgeCount++; loopEdges++;
+        }
+      });
     });
 
-    // 동명역 도보 환승 연결 (이격 유지된 38그룹 등)
+    // 동명역 도보 환승: 이름이 같아도 실제로 걸어갈 수 있는 거리만 연결한다.
+    // (서울 '시청'과 부산 '시청'을 잇던 325km 도보 엣지 제거)
     const byName = new Map();
     stations.forEach(s => {
       const n = s.properties.name_ko;
       if (!byName.has(n)) byName.set(n, []);
-      byName.get(n).push(s.properties.id);
+      byName.get(n).push(s);
     });
-    byName.forEach(ids => {
-      if (ids.length < 2) return;
-      for (let i = 0; i < ids.length; i++)
-        for (let j = i + 1; j < ids.length; j++)
-          addEdge(ids[i], ids[j], null, true);
+    let walkEdges = 0, walkRejected = 0;
+    byName.forEach(list => {
+      if (list.length < 2) return;
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const pa = list[i].geometry.coordinates, pb = list[j].geometry.coordinates;
+          if (hav(pa[0], pa[1], pb[0], pb[1]) > WALK_MAX_KM) { walkRejected++; continue; }
+          addEdge(list[i].properties.id, list[j].properties.id, null, true);
+          walkEdges++;
+        }
+      }
     });
 
-    addGtxOfficialEdges();
+    addGtxOfficialEdges(activeIds);
 
-    return { stations: stationsById.size, edges: edgeCount };
+    return { stations: stationsById.size, edges: edgeCount, loopEdges, walkEdges, walkRejected };
   }
 
   // GTX 공식 소요시간 엣지 추가: 공식 역 순서대로 인접역 연결
-  function addGtxOfficialEdges() {
+  // activeIds 를 반드시 확인한다 — 이 필터가 없으면 공사중·계획 노선이
+  // buildGraph 의 status 필터를 우회해 경로에 다시 등장한다.
+  function addGtxOfficialEdges(activeIds) {
     const nameToId = new Map();
     stationsById.forEach((s, id) => {
       const n = s.properties.name_ko;
@@ -136,6 +170,7 @@ const RouteFinder = (() => {
     });
     const resolve = n => nameToId.get(n) || nameToId.get(GTX_NAME_ALIAS[n]);
     Object.entries(GTX_TIMES).forEach(([lid, seq]) => {
+      if (activeIds && !activeIds.has(lid)) return;   // 미개통 노선 제외
       for (let i = 0; i < seq.length - 1; i++) {
         const a = resolve(seq[i][0]), b = resolve(seq[i + 1][0]);
         const min = seq[i][1];
@@ -154,8 +189,10 @@ const RouteFinder = (() => {
   // GTX·고속 계통은 category 가 urban 이라 표의 속도(45km/h)를 쓰면
   // 일반철도(55km/h)보다 느려져 엉뚱한 우회 경로가 잡힌다. 따로 처리한다.
   function speedOf(lineId) {
-    if (/^gtx|great-train-express|^ktx|^srt/.test(lineId || '')) return 110;
-    return SPEEDS[lineCat.get(lineId)] || 40;
+    const cat = lineCat.get(lineId);
+    if (cat === 'ktx') return SPEEDS.ktx;
+    if (/^gtx|great-train-express/.test(lineId || '')) return 110;
+    return SPEEDS[cat] || 40;
   }
 
   function edgeMinutes(e) {
@@ -164,49 +201,97 @@ const RouteFinder = (() => {
     return e.distKm / speedOf(e.lineId) * 60;
   }
 
+  // 최소 힙 (다익스트라용)
+  function heapPush(h, item) {
+    h.push(item);
+    let i = h.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (h[p][0] <= h[i][0]) break;
+      [h[p], h[i]] = [h[i], h[p]];
+      i = p;
+    }
+  }
+  function heapPop(h) {
+    const top = h[0], last = h.pop();
+    if (h.length) {
+      h[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = i * 2 + 1, r = l + 1;
+        let m = i;
+        if (l < h.length && h[l][0] < h[m][0]) m = l;
+        if (r < h.length && h[r][0] < h[m][0]) m = r;
+        if (m === i) break;
+        [h[m], h[i]] = [h[i], h[m]];
+        i = m;
+      }
+    }
+    return top;
+  }
+
+  // 상태 = (역, 현재 노선). 환승 비용을 탐색 '안에서' 지불해야
+  // 반환된 경로가 실제로 보고하는 지표 기준 최적이 된다.
+  const START = '\u0000start';
+  const skey = (id, line) => id + '\u0001' + (line || '');
+
   function findRoute(fromId, toId) {
     if (!stationsById.has(fromId) || !stationsById.has(toId)) return null;
     if (fromId === toId) return { path: [fromId], legs: [], minutes: 0, transfers: 0 };
 
-    const dist = new Map([[fromId, 0]]);
-    const prev = new Map(); // id -> {from, edge}
-    const visited = new Set();
-    // 단순 우선순위 큐 (역 1200개 규모에 충분)
-    const pq = [[0, fromId]];
+    const dist = new Map([[skey(fromId, START), 0]]);
+    const prev = new Map();      // key -> {fromKey, fromId, edge}
+    const pq = [];
+    heapPush(pq, [0, fromId, START]);
+
+    let endKey = null;
     while (pq.length) {
-      pq.sort((a, b) => a[0] - b[0]);
-      const [d, u] = pq.shift();
-      if (visited.has(u)) continue;
-      visited.add(u);
-      if (u === toId) break;
+      const [d, u, line] = heapPop(pq);
+      const k = skey(u, line);
+      if (d > (dist.get(k) ?? Infinity)) continue;   // 낡은 항목
+      if (u === toId) { endKey = k; break; }
+
       for (const e of (adj.get(u) || [])) {
-        const nd = d + edgeMinutes(e);
-        if (nd < (dist.get(e.to) ?? Infinity)) {
-          dist.set(e.to, nd);
-          prev.set(e.to, { from: u, edge: e });
-          pq.push([nd, e.to]);
+        const nl = e.lineId || null;
+        let cost = edgeMinutes(e);
+        // 환승 비용: 앞뒤 모두 노선이 있고 서로 다를 때만
+        if (line !== START && line !== null && nl !== null && nl !== line) cost += TRANSFER_MIN;
+        const nk = skey(e.to, nl);
+        const nd = d + cost;
+        if (nd < (dist.get(nk) ?? Infinity)) {
+          dist.set(nk, nd);
+          prev.set(nk, { fromKey: k, fromId: u, edge: e });
+          heapPush(pq, [nd, e.to, nl]);
         }
       }
     }
-    if (!prev.has(toId)) return null;
+    if (!endKey) return null;
 
     // 경로 복원
-    const path = [toId];
-    let cur = toId;
-    while (cur !== fromId) { cur = prev.get(cur).from; path.unshift(cur); }
+    const revPath = [toId], revEdges = [];
+    let cur = endKey;
+    const startKey = skey(fromId, START);
+    while (cur !== startKey) {
+      const p = prev.get(cur);
+      revPath.push(p.fromId);
+      revEdges.push(p.edge);
+      cur = p.fromKey;
+    }
+    const path = revPath.reverse();
+    const edges = revEdges.reverse();   // edges[i] : path[i] → path[i+1]
 
     // leg 분해 (노선 바뀌면 환승)
     const legs = [];
-    let legStart = 0, curLine = prev.get(path[1]).edge.lineId;
+    let legStart = 0, curLine = edges[0] ? (edges[0].lineId || null) : null;
     let minutes = 0;
-    for (let i = 1; i < path.length; i++) {
-      const e = prev.get(path[i]).edge;
+    for (let i = 0; i < edges.length; i++) {
+      const e = edges[i];
       minutes += edgeMinutes(e);
-      const lid = e.lineId;
+      const lid = e.lineId || null;
       if (lid !== curLine) {
-        legs.push({ lineId: curLine, from: path[legStart], to: path[i - 1], walk: curLine === null });
+        legs.push({ lineId: curLine, from: path[legStart], to: path[i], walk: curLine === null });
         if (curLine !== null && lid !== null) minutes += TRANSFER_MIN;
-        legStart = i - 1; curLine = lid;
+        legStart = i; curLine = lid;
       }
     }
     legs.push({ lineId: curLine, from: path[legStart], to: path[path.length - 1], walk: curLine === null });

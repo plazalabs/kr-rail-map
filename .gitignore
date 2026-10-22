@@ -4,3 +4,6 @@ dist/
 qa/
 qa_shots.py
 qa-style.json
+
+# 로컬 백업/격리 (커밋 금지)
+_backup/

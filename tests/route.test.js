@@ -215,5 +215,18 @@ check('페널티 8분이면 0회환승 직결이 뽑힘', sane && sane.transfers
 check('페널티를 올려도 표시 시간은 실제값', sane && sane.minutes >= 40 && sane.minutes <= 70,
   sane && `${sane.minutes}분`);
 
+console.log('\n[GTX-G/H] 2기 GTX 구상안도 지도와 길찾기에 있어야 함');
+r = route(['송우', 127.14953, 37.82846], ['숭의', 126.63823, 37.46079]);
+check('송우→숭의 GTX-G 직결', r && r.transfers === 0, r && `${r.transfers}회`);
+check('GTX-G 구간이 chul.mom 과 같은 82.1km',
+  r && Math.abs(RF.pathDistance(r.path) - 82.1) < 1.5,
+  r && `${RF.pathDistance(r.path).toFixed(1)}km`);
+
+r = route(['문산', 126.78790, 37.85445], ['위례역사공원', 127.14196, 37.47057]);
+check('문산→위례역사공원 GTX-H 직결', r && r.transfers === 0, r && `${r.transfers}회`);
+check('GTX-H 구간이 chul.mom 과 같은 65.2km',
+  r && Math.abs(RF.pathDistance(r.path) - 65.2) < 1.5,
+  r && `${RF.pathDistance(r.path).toFixed(1)}km`);
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

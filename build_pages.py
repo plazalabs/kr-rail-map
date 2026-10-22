@@ -15,7 +15,10 @@ import html
 from datetime import date
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SITE = "https://wondk850.github.io/kr-rail-map"
+# 배포 도메인은 한 곳에서만 정의한다. canonical·og:url·JSON-LD·sitemap·robots 가
+# 전부 이 값에서 파생되므로, 손으로 고칠 곳이 없다.
+# 다른 도메인으로 배포할 때는 SITE_URL 환경변수로 덮어쓴다.
+SITE = os.environ.get("SITE_URL", "https://plazalabs.github.io/kr-rail-map").rstrip("/")
 OUT = os.path.join(HERE, "line")
 TODAY = date.today().isoformat()
 

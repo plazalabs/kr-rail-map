@@ -11,6 +11,8 @@ const RouteCompare = (() => {
   const SPEEDS = { ktx: 180, metro: 32, urban: 45, conventional: 55, etc: 40 };
   const TRANSFER_MIN = 4;
   const WALK_KMH = 4;
+  // '최단시간' 경로를 고를 때만 쓰는 환승 페널티 (표시 시간에는 영향 없음)
+  const TIME_TRANSFER_PENALTY = 8;
 
   // GTX 공식 역간 소요시간 (route.js의 GTX_TIMES와 동일 — 복사본)
   const GTX_TIMES = {
@@ -338,7 +340,10 @@ const RouteCompare = (() => {
   }
 
   function findAll(fromId, toId) {
-    const time = RF ? enrich(RF.findRoute(fromId, toId)) : null;
+    // 최단시간 탐색에는 환승 페널티를 더 세게 준다.
+    // 표시 시간은 route.js가 TRANSFER_MIN(4분) 기준으로 다시 계산하므로 그대로다.
+    // (환승 3회로 2분 아끼는 경로가 '최단시간'으로 뽑히던 문제)
+    const time = RF ? enrich(RF.findRoute(fromId, toId, { transferPenalty: TIME_TRANSFER_PENALTY })) : null;
     const transfer = enrich(findMinTransfer(fromId, toId));
     const fare = enrich(findMinFare(fromId, toId));
     return { time, transfer, fare };

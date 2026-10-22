@@ -5,6 +5,9 @@ const RouteFinder = (() => {
   // 노선별 평균 속도 (km/h) — 실측 시각표가 아닌 어림 추정치 (추론)
   const SPEEDS = { ktx: 180, metro: 32, urban: 45, conventional: 55, etc: 40 };
   const TRANSFER_MIN = 4;   // 환승 1회당 추가 시간 (추론)
+  // 경로를 '고를 때' 매기는 환승 비용. 표시 시간(TRANSFER_MIN)보다 비싸다.
+  // 실제 여행자는 2분 아끼자고 3번 갈아타지 않는다.
+  const TRANSFER_DECISION_MIN = 8;
   const WALK_KMH = 4;
 
   // --- 그래프 구성 상수 -------------------------------------------------
@@ -277,9 +280,17 @@ const RouteFinder = (() => {
   const START = '\u0000start';
   const skey = (id, line) => id + '\u0001' + (line || '');
 
-  function findRoute(fromId, toId) {
+  // opts.transferPenalty : 탐색 비용에만 쓰는 환승 페널티.
+  // 표시되는 소요시간은 실제 TRANSFER_MIN 기준으로 다시 계산한다.
+  //
+  // 왜 필요한가: 환승 3회 우회가 직통보다 2분 빠르다는 이유로 선택되면
+  // 사용자 입장에서는 '더 나쁜 경로'다 (강남→원주: GTX-C+KTX 3회환승 49분
+  // vs GTX-D 직통 0회환승 56분). 실제 여행자는 2분 때문에 3번 갈아타지 않는다.
+  // 그래서 경로 선택에서만 환승을 비싸게 매기고, 표시 시간은 그대로 둔다.
+  function findRoute(fromId, toId, opts) {
     if (!stationsById.has(fromId) || !stationsById.has(toId)) return null;
     if (fromId === toId) return { path: [fromId], legs: [], minutes: 0, transfers: 0 };
+    const penalty = (opts && opts.transferPenalty != null) ? opts.transferPenalty : TRANSFER_DECISION_MIN;
 
     const dist = new Map([[skey(fromId, START), 0]]);
     const prev = new Map();      // key -> {fromKey, fromId, edge}
@@ -297,7 +308,7 @@ const RouteFinder = (() => {
         const nl = e.lineId || null;
         let cost = edgeMinutes(e);
         // 환승 비용: 앞뒤 모두 노선이 있고 서로 다를 때만
-        if (line !== START && line !== null && nl !== null && nl !== line) cost += TRANSFER_MIN;
+        if (line !== START && line !== null && nl !== null && nl !== line) cost += penalty;
         const nk = skey(e.to, nl);
         const nd = d + cost;
         if (nd < (dist.get(nk) ?? Infinity)) {

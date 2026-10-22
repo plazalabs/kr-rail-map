@@ -32,7 +32,31 @@ const RouteFinder = (() => {
 
   let adj = new Map();      // stationId -> [{to, lineId, distKm, walk}]
   let lineCat = new Map();  // lineId -> category
+  let lineStatus = new Map(); // lineId -> status (open / construction / planned / proposed)
   let stationsById = new Map();
+  let geomAdjacent = new Set(); // '노선:역A|역B' — 선형에서 바로 이웃한 역 쌍
+  let orderByLine = new Map();  // lineId -> [{id, piece, along}] 선형 순서
+
+  function pairKey(a, b) { return a < b ? a + '|' + b : b + '|' + a; }
+
+  // 공식 소요시간표의 두 역 사이에 '다른 정차역'이 끼어 있는지.
+  // 끼어 있으면 그 공식값은 더 이상 이 구간의 시간이 아니다 (예: GTX-B 청학 신설).
+  function hasStationBetween(lid, a, b) {
+    const list = orderByLine.get(lid);
+    if (!list) return false;
+    const ea = list.find(x => x.id === a);
+    const eb = list.find(x => x.id === b);
+    if (!ea || !eb || ea.piece !== eb.piece) return false;
+    const lo = Math.min(ea.along, eb.along), hi = Math.max(ea.along, eb.along);
+    return list.some(x => x.piece === ea.piece && x.id !== a && x.id !== b &&
+      x.along > lo + 1e-9 && x.along < hi - 1e-9);
+  }
+
+  // 미개통 = 운행 중이 아닌 모든 노선. 결과 화면에서 '미개통' 배지로 알린다.
+  const UNOPENED = new Set(['construction', 'planned', 'proposed']);
+  function isUnopened(lineId) {
+    return UNOPENED.has(lineStatus.get(lineId) || 'open');
+  }
 
   function hav(ax, ay, bx, by) {
     const r = Math.PI / 180;
@@ -72,14 +96,15 @@ const RouteFinder = (() => {
 
   function buildGraph(lines, stations) {
     adj = new Map(); lineCat = new Map(); stationsById = new Map();
+    lineStatus = new Map(); geomAdjacent = new Set(); orderByLine = new Map();
     const activeIds = new Set();
-    // 공사중/계획 노선은 길찾기에서 제외 (운행 중인 노선만)
-    const activeLines = lines.filter(f => {
-      const st = (f.properties.status || '').toLowerCase();
-      return st !== 'construction' && st !== 'planned' && st !== 'proposed';
-    });
+    // 미개통(착공·계획·구상) 노선도 전부 그래프에 넣는다.
+    // 이 지도는 '지금 운행 중인 노선'이 아니라 '앞으로 존재할 노선'을 그리는 지도다.
+    // 다만 결과 화면에서 미개통 구간을 명시적으로 표시해 오해를 막는다.
+    const activeLines = lines;
     activeLines.forEach(f => {
       lineCat.set(f.properties.id, f.properties.category || 'etc');
+      lineStatus.set(f.properties.id, (f.properties.status || 'open').toLowerCase());
       activeIds.add(f.properties.id);
     });
     stations.forEach(s => stationsById.set(s.properties.id, s));
@@ -107,7 +132,7 @@ const RouteFinder = (() => {
         ? [f.geometry.coordinates]
         : (f.geometry.coordinates || []);
 
-      pieces.forEach(coords => {
+      pieces.forEach((coords, pieceIdx) => {
         if (!coords || coords.length < 2) return;
         const seq = [];
         sts.forEach(s => {
@@ -117,9 +142,13 @@ const RouteFinder = (() => {
         });
         if (seq.length < 2) return;
         seq.sort((a, b) => a.along - b.along);
+        if (!orderByLine.has(lid)) orderByLine.set(lid, []);
+        const ord = orderByLine.get(lid);
+        seq.forEach(s => ord.push({ id: s.id, piece: pieceIdx, along: s.along }));
         for (let i = 0; i < seq.length - 1; i++) {
           if (seq[i].id === seq[i + 1].id) continue;
           addEdge(seq[i].id, seq[i + 1].id, lid, false);
+          geomAdjacent.add(lid + ':' + pairKey(seq[i].id, seq[i + 1].id));
           edgeCount++;
         }
         // 순환선 폐합: 조각의 시작점과 끝점이 사실상 같으면 마지막 역 → 첫 역을 잇는다.
@@ -128,6 +157,7 @@ const RouteFinder = (() => {
         if (seq.length > 2 && seq[0].id !== seq[seq.length - 1].id &&
             hav(a[0], a[1], b[0], b[1]) <= CLOSED_TOL_KM) {
           addEdge(seq[seq.length - 1].id, seq[0].id, lid, false);
+          geomAdjacent.add(lid + ':' + pairKey(seq[0].id, seq[seq.length - 1].id));
           edgeCount++; loopEdges++;
         }
       });
@@ -159,9 +189,8 @@ const RouteFinder = (() => {
     return { stations: stationsById.size, edges: edgeCount, loopEdges, walkEdges, walkRejected };
   }
 
-  // GTX 공식 소요시간 엣지 추가: 공식 역 순서대로 인접역 연결
-  // activeIds 를 반드시 확인한다 — 이 필터가 없으면 공사중·계획 노선이
-  // buildGraph 의 status 필터를 우회해 경로에 다시 등장한다.
+  // GTX 공식 소요시간 엣지 추가: 공식 역 순서대로 인접역 연결.
+  // 미개통 노선(GTX-B/C 등)도 포함한다 — 이 지도는 개통 예정 노선까지 그린다.
   function addGtxOfficialEdges(activeIds) {
     const nameToId = new Map();
     stationsById.forEach((s, id) => {
@@ -170,11 +199,24 @@ const RouteFinder = (() => {
     });
     const resolve = n => nameToId.get(n) || nameToId.get(GTX_NAME_ALIAS[n]);
     Object.entries(GTX_TIMES).forEach(([lid, seq]) => {
-      if (activeIds && !activeIds.has(lid)) return;   // 미개통 노선 제외
+      if (activeIds && !activeIds.has(lid)) return;   // 데이터에 없는 노선만 건너뜀
       for (let i = 0; i < seq.length - 1; i++) {
         const a = resolve(seq[i][0]), b = resolve(seq[i + 1][0]);
         const min = seq[i][1];
         if (!a || !b || min == null) continue;
+        // 공식 소요시간은 '표에 적힌 두 역 사이' 시간이다.
+        // 그 사이에 역이 새로 끼어들었으면(예: GTX-B 청학) 그 구간은 공식값을 쓰면 안 된다.
+        // 아니면 역을 건너뛰는 지름길이 생겨 경유역 목록과 소요시간이 어긋난다.
+        if (hasStationBetween(lid, a, b)) continue;
+        // 기하 기반 엣지가 같은 역 쌍에 이미 있으면 걷어낸다.
+        // 남겨두면 다익스트라가 '직선거리÷110km/h' 로 계산한 더 짧은 값을 골라
+        // 공식 소요시간이 무시된다 (광운대→삼성이 9분이 아니라 6분으로 나오던 원인).
+        const strip = (from, to) => {
+          const list = adj.get(from);
+          if (!list) return;
+          adj.set(from, list.filter(e => !(e.to === to && e.lineId === lid && e.officialMin == null)));
+        };
+        strip(a, b); strip(b, a);
         // 공식 시간 엣지 (기하 기반 엣지보다 우선)
         const edge = { to: b, lineId: lid, distKm: 0, officialMin: min };
         const rev = { to: a, lineId: lid, distKm: 0, officialMin: min };
@@ -295,10 +337,30 @@ const RouteFinder = (() => {
       }
     }
     legs.push({ lineId: curLine, from: path[legStart], to: path[path.length - 1], walk: curLine === null });
+
+    // 각 leg 에 개통 상태를 실어 보낸다 → 화면에서 '미개통' 배지로 표시.
+    const unopenedNames = [];
+    legs.forEach(l => {
+      if (!l.lineId) return;
+      l.status = lineStatus.get(l.lineId) || 'open';
+      l.unopened = isUnopened(l.lineId);
+      if (l.unopened) unopenedNames.push(l.lineId);
+    });
+
     const transfers = legs.filter(l => !l.walk && l.lineId !== null).length - 1;
 
-    return { path, legs, minutes: Math.round(minutes), transfers: Math.max(0, transfers) };
+    return {
+      path, legs,
+      minutes: Math.round(minutes),
+      transfers: Math.max(0, transfers),
+      unopenedLines: Array.from(new Set(unopenedNames)),
+    };
   }
 
-  return { buildGraph, findRoute };
+  // 이 노선이 미개통인지 (UI 에서 노선 범례·상세에 배지로 쓴다)
+  function lineIsUnopened(lineId) { return isUnopened(lineId); }
+  function statusOf(lineId) { return lineStatus.get(lineId) || 'open'; }
+
+  return { buildGraph, findRoute, lineIsUnopened, statusOf };
 })();
+

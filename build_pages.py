@@ -135,10 +135,9 @@ def main():
         mine = by_line.get(lid, [])
         if len(mine) < 3:
             continue
-        # 수도권 노선만
-        if not any(METRO[0] <= s["geometry"]["coordinates"][0] <= METRO[2] and
-                   METRO[1] <= s["geometry"]["coordinates"][1] <= METRO[3] for s in mine):
-            continue
+        # 예전에는 수도권 bbox 안에 역이 있는 노선만 페이지를 만들었다.
+        # 그런데 지도는 부산·대구·광주·대전 노선과 전국 KTX 를 이미 그린다.
+        # 지도에 있는데 페이지가 없는 상태는 색인 측면에서도 일관성이 없어 필터를 없앴다.
 
         km = length_km(f["geometry"])
         lat0 = sum(s["geometry"]["coordinates"][1] for s in mine) / len(mine)

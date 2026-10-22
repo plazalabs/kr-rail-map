@@ -65,10 +65,9 @@ const RouteCompare = (() => {
   function buildAdj(lines, stations) {
     adj = new Map(); lineCat = new Map(); stationsById = new Map();
     const lineGeom = new Map();
-    const activeLines = lines.filter(f => {
-      const st = (f.properties.status || '').toLowerCase();
-      return st !== 'construction' && st !== 'planned' && st !== 'proposed';
-    });
+    // route.js buildGraph 와 같은 기준: 미개통 노선도 포함한다.
+    // (여기서만 걸러내면 '최단시간'은 GTX-B 를 쓰고 '최소환승'은 못 쓰는 모순이 생긴다)
+    const activeLines = lines;
     activeLines.forEach(f => {
       lineCat.set(f.properties.id, f.properties.category || 'etc');
       lineGeom.set(f.properties.id, flatCoords(f.geometry));
@@ -318,10 +317,24 @@ const RouteCompare = (() => {
     return { path: stations, legs, minutes, transfers };
   }
 
+  // 최소환승·최소요금 경로는 자체 탐색을 쓰므로 leg 에 개통 상태가 없다.
+  // 화면에 '미개통' 배지를 붙이려면 여기서 한 번 채워준다.
+  function markUnopened(r) {
+    if (!r) return r;
+    const un = [];
+    (r.legs || []).forEach(l => {
+      if (!l.lineId) { l.unopened = false; return; }
+      l.unopened = !!(RF && RF.lineIsUnopened && RF.lineIsUnopened(l.lineId));
+      if (l.unopened) un.push(l.lineId);
+    });
+    r.unopenedLines = Array.from(new Set(un));
+    return r;
+  }
+
   function enrich(r) {
     if (!r) return null;
     const distKm = routeDistance(r.path);
-    return { ...r, distKm, fare: calcFare(distKm) };
+    return markUnopened({ ...r, distKm, fare: calcFare(distKm) });
   }
 
   function findAll(fromId, toId) {
@@ -354,6 +367,13 @@ const RouteCompare = (() => {
 
   function variantHtml(r, tabId, badge) {
     let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분 · 환승 ${r.transfers}회 · 예상 요금 ${r.fare.toLocaleString()}원 · ${r.distKm.toFixed(1)}km</div>`;
+    // 미개통 노선을 지나는 경로는 명시한다.
+    // 이 지도는 착공·계획 노선까지 그리므로 '지금 갈 수 있는 길'로 오해하면 안 된다.
+    if (r.unopenedLines && r.unopenedLines.length) {
+      const names = r.unopenedLines.map(id => lineNameOf.get(id) || id).join(', ');
+      html += `<div class="unopened-notice">⚠ 미개통 구간 포함 — ${escapeHtml(names)}` +
+        `<span class="unopened-sub">개통 전이므로 실제로는 이용할 수 없습니다.</span></div>`;
+    }
     r.legs.forEach(leg => {
       const a = escapeHtml(sname(leg.from)), b = escapeHtml(sname(leg.to));
       const i1 = r.path.indexOf(leg.from), i2 = r.path.indexOf(leg.to);
@@ -369,7 +389,8 @@ const RouteCompare = (() => {
         for (let i = i1; i !== i2; i += step) segStations.push(escapeHtml(sname(r.path[i])));
         segStations.push(escapeHtml(sname(r.path[i2])));
         const viaId = `rc-via-${tabId}-${leg.from}-${leg.to}`;
-        html += `<div class="leg">${a} → <b>${ln}</b> <button class="via-toggle" data-target="${viaId}">${n}개역</button> → ${b}\n` +
+        const un = leg.unopened ? ` <span class="badge-unopened">미개통</span>` : '';
+        html += `<div class="leg${leg.unopened ? ' leg-unopened' : ''}">${a} → <b>${ln}</b>${un} <button class="via-toggle" data-target="${viaId}">${n}개역</button> → ${b}\n` +
           `<div class="via-list" id="${viaId}" hidden>${segStations.join(' → ')}</div></div>`;
       }
     });

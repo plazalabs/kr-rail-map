@@ -586,6 +586,13 @@ document.getElementById('route-go').addEventListener('click', () => {
   const distKm = routeDistance(r.path);
   const fare = calcFare(distKm);
   html += ` · 예상 요금 ${fare.toLocaleString()}원</div>`;
+  // 미개통 노선을 지나는 경로는 명시적으로 알린다.
+  // (이 지도는 착공·계획 노선까지 그리므로, 지금 갈 수 있는 길로 오해하면 안 된다)
+  if (r.unopenedLines && r.unopenedLines.length) {
+    const names = r.unopenedLines.map(id => lineNameOf.get(id) || id).join(', ');
+    html += `<div class="unopened-notice">⚠ 미개통 구간 포함 — ${names}
+      <span class="unopened-sub">개통 전이므로 실제로는 이용할 수 없습니다.</span></div>`;
+  }
   r.legs.forEach(leg => {
     const a = sname(leg.from), b = sname(leg.to);
     const i1 = r.path.indexOf(leg.from), i2 = r.path.indexOf(leg.to);
@@ -597,13 +604,14 @@ document.getElementById('route-go').addEventListener('click', () => {
     } else {
       const ln = lineNameOf.get(leg.lineId) || leg.lineId;
       const lineColor = (LINES.find(l => l.properties.id === leg.lineId)?.properties.color) || '#888';
+      const badge = leg.unopened ? ` <span class="badge-unopened">미개통</span>` : '';
       // 경유역 목록 (네이버 스타일: 세로 타임라인, 전부 표시)
       const segStations = [];
       const step = i2 > i1 ? 1 : -1;
       for (let i = i1; i !== i2; i += step) segStations.push({ id: r.path[i], name: sname(r.path[i]) });
       segStations.push({ id: r.path[i2], name: sname(r.path[i2]) });
-      html += `<div class="leg" style="border-left: 4px solid ${lineColor}; padding-left: 8px; margin: 8px 0;">
-        <div class="leg-header"><b>${a}</b> → <b style="color:${lineColor}">${ln}</b> → <b>${b}</b> (${n}개역)</div>
+      html += `<div class="leg${leg.unopened ? ' leg-unopened' : ''}" style="border-left: 4px solid ${lineColor}; padding-left: 8px; margin: 8px 0;">
+        <div class="leg-header"><b>${a}</b> → <b style="color:${lineColor}">${ln}</b>${badge} → <b>${b}</b> (${n}개역)</div>
         <div class="station-timeline">` +
         segStations.map((s, idx) => {
           const isFirst = idx === 0, isLast = idx === segStations.length - 1;

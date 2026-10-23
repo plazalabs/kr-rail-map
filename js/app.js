@@ -470,6 +470,10 @@ function renderSearch(raw) {
 }
 
 searchInput.addEventListener('input', () => renderSearch(searchInput.value.trim()));
+// 검색창을 다시 눌렀을 때, 글자가 남아 있으면 결과를 다시 띄운다
+searchInput.addEventListener('focus', () => {
+  if (searchInput.value.trim() && !searchHits.length) renderSearch(searchInput.value.trim());
+});
 
 searchInput.addEventListener('keydown', e => {
   if (!searchHits.length) {
@@ -491,9 +495,14 @@ document.addEventListener('click', e => {
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === '/' && document.activeElement !== searchInput) {
-    e.preventDefault(); searchInput.focus();
-  }
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+  // 다른 입력창에 커서가 있으면 '/' 는 글자다. 가로채면 안 된다.
+  const el = document.activeElement;
+  const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ||
+    el.tagName === 'SELECT' || el.isContentEditable);
+  if (typing) return;
+  e.preventDefault();
+  searchInput.focus();
 });
 
 /* ---------- 이미지 저장 ---------- */

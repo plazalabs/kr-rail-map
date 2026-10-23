@@ -359,33 +359,137 @@ function focusLineFromUrl() {
   return true;
 }
 
-/* ---------- 검색 (한/영) ---------- */
+/* ---------- 검색 (한/영/초성/오타) ----------
+ * 순위 매기기는 js/search.js 가 한다. 여기서는 결과를 그리고 키보드를 붙인다.
+ *   ↑ ↓   결과 이동
+ *   Enter 선택
+ *   Esc   닫기
+ */
 const searchInput = document.getElementById('search');
 const searchBox = document.getElementById('search-results');
-searchInput.addEventListener('input', () => {
-  const raw = searchInput.value.trim();
-  const q = raw.toLowerCase();
+let searchHits = [];      // 현재 그려진 결과 (feature 배열)
+let searchCursor = -1;    // 키보드로 고른 위치
+
+function lineMetaOf(id) {
+  const l = LINES.find(x => x.properties.id === id);
+  return l ? { name: l.properties.name_ko, color: l.properties.color || '#888888' }
+           : { name: id, color: '#888888' };
+}
+
+function closeSearch() {
   searchBox.innerHTML = '';
-  if (!q) return;
-  const hits = STATIONS.filter(f => {
-    const p = f.properties;
-    return (p.name_ko || '').includes(raw) || (p.name_en || '').toLowerCase().includes(q);
-  }).slice(0, 30);
-  hits.forEach(f => {
-    const d = document.createElement('div');
-    d.className = 'hit';
-    d.textContent = `${f.properties.name_ko}${f.properties.name_en ? ' (' + f.properties.name_en + ')' : ''}`;
-    d.addEventListener('click', () => {
-      const c = f.geometry.coordinates;
-      map.flyTo({ center: c, zoom: 14 });
-      searchBox.innerHTML = '';
-      searchInput.blur();
-      // 역 상세 팝업까지 열어준다
-      setTimeout(() => openStationPopup(f, { lng: c[0], lat: c[1] }), 720);
-    });
-    searchBox.appendChild(d);
+  searchHits = [];
+  searchCursor = -1;
+  searchInput.setAttribute('aria-expanded', 'false');
+  searchInput.removeAttribute('aria-activedescendant');
+}
+
+function pickSearchHit(f) {
+  const c = f.geometry.coordinates;
+  map.flyTo({ center: c, zoom: 14 });
+  closeSearch();
+  searchInput.blur();
+  // 역 상세 팝업까지 열어준다
+  setTimeout(() => openStationPopup(f, { lng: c[0], lat: c[1] }), 720);
+}
+
+function markCursor(i) {
+  const rows = searchBox.querySelectorAll('.hit');
+  if (!rows.length) return;
+  searchCursor = (i + rows.length) % rows.length;
+  rows.forEach((r, k) => {
+    const on = k === searchCursor;
+    r.classList.toggle('active', on);
+    r.setAttribute('aria-selected', on ? 'true' : 'false');
   });
+  const cur = rows[searchCursor];
+  searchInput.setAttribute('aria-activedescendant', cur.id);
+  // 목록이 넘칠 때 고른 항목이 보이도록
+  const top = cur.offsetTop, bot = top + cur.offsetHeight;
+  if (top < searchBox.scrollTop) searchBox.scrollTop = top;
+  else if (bot > searchBox.scrollTop + searchBox.clientHeight) searchBox.scrollTop = bot - searchBox.clientHeight;
+}
+
+function renderSearch(raw) {
+  searchBox.innerHTML = '';
+  searchCursor = -1;
+  searchHits = [];
+  if (!raw) { closeSearch(); return; }
+
+  const found = (window.StationSearch
+    ? window.StationSearch.search(STATIONS, raw, { limit: 12 })
+    : STATIONS.filter(f => (f.properties.name_ko || '').includes(raw))
+        .slice(0, 12).map(feature => ({ feature }))
+  ).map(h => h.feature);
+
+  if (!found.length) {
+    searchHits = [];
+    const none = document.createElement('div');
+    none.className = 'hit-none';
+    none.textContent = `'${raw}' 에 해당하는 역이 없습니다`;
+    searchBox.appendChild(none);
+    searchInput.setAttribute('aria-expanded', 'true');
+    return;
+  }
+
+  searchHits = found;
+  found.forEach((f, i) => {
+    const p = f.properties;
+    const row = document.createElement('div');
+    row.className = 'hit';
+    row.id = `search-hit-${i}`;
+    row.setAttribute('role', 'option');
+    row.setAttribute('aria-selected', 'false');
+
+    const name = document.createElement('span');
+    name.className = 'hit-name';
+    name.textContent = p.name_ko || p.name_en || '(이름 없음)';
+    row.appendChild(name);
+
+    // 노선 점 + 이름. 환승역은 점이 여러 개다.
+    const lines = document.createElement('span');
+    lines.className = 'hit-lines';
+    const ids = (p.lines && p.lines.length ? p.lines : [p.line_id]).filter(Boolean).slice(0, 3);
+    ids.forEach(id => {
+      const m = lineMetaOf(id);
+      const dot = document.createElement('i');
+      dot.className = 'hit-dot';
+      dot.style.background = m.color;
+      lines.appendChild(dot);
+    });
+    const label = document.createElement('span');
+    label.textContent = ids.map(id => lineMetaOf(id).name).join(' · ');
+    lines.appendChild(label);
+    row.appendChild(lines);
+
+    row.addEventListener('mouseenter', () => markCursor(i));
+    row.addEventListener('click', () => pickSearchHit(f));
+    searchBox.appendChild(row);
+  });
+  searchInput.setAttribute('aria-expanded', 'true');
+}
+
+searchInput.addEventListener('input', () => renderSearch(searchInput.value.trim()));
+
+searchInput.addEventListener('keydown', e => {
+  if (!searchHits.length) {
+    if (e.key === 'Escape') closeSearch();
+    return;
+  }
+  if (e.key === 'ArrowDown') { e.preventDefault(); markCursor(searchCursor + 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); markCursor(searchCursor - 1); }
+  else if (e.key === 'Enter') {
+    e.preventDefault();
+    pickSearchHit(searchHits[searchCursor >= 0 ? searchCursor : 0]);
+  } else if (e.key === 'Escape') {
+    e.preventDefault(); closeSearch();
+  }
 });
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) closeSearch();
+});
+
 document.addEventListener('keydown', e => {
   if (e.key === '/' && document.activeElement !== searchInput) {
     e.preventDefault(); searchInput.focus();

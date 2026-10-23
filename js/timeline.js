@@ -241,7 +241,11 @@
     // 테스트/디버깅용
     _debug: {
       targetCount: function () { return targetLines().length; },
-      entries: buildEntries
+      entries: buildEntries,
+      extractOpeningYear: extractOpeningYear,
+      fmtYear: fmtYear,
+      lineLengthKm: lineLengthKm,
+      stationCount: stationCount
     }
   };
 })();

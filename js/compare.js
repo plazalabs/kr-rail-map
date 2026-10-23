@@ -223,5 +223,9 @@
     render();
   }
 
-  global.LineCompare = { init, show, hide, setLine };
+  global.LineCompare = {
+    init, show, hide, setLine,
+    // 테스트용 — 화면 없이 계산만 검사한다
+    _debug: { lineLengthKm, lineStations, transferCount, stats, STATUS_KO, CAT_KO },
+  };
 })(typeof window !== 'undefined' ? window : this);

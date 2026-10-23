@@ -299,5 +299,9 @@ background:var(--bg,#fff);color:var(--text,#222);font-size:13px;margin-bottom:10
     map.on('style.load', () => { if (active && curLineId) render(); });
   }
 
-  window.CoverageMap = { init, show, hide, isActive };
+  window.CoverageMap = {
+    init, show, hide, isActive,
+    // 테스트용 — 지도 없이 계산만 검사한다
+    _debug: { hav, circlePoly, unionAreaKm2, otherLineStationsIn, lineStations, statusLabel },
+  };
 })();

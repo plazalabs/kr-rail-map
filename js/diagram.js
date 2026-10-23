@@ -660,7 +660,11 @@ const DiagramMode = (() => {
     }
   }
 
-  return { init, enter, exit, isActive };
+  return {
+    init, enter, exit, isActive,
+    // 테스트용 — 좌표 변환만 검사한다
+    _debug: { mercY, flatCoords, planar, projectAlong },
+  };
 })();
 
 if (typeof window !== 'undefined') window.DiagramMode = DiagramMode;

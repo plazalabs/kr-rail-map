@@ -103,7 +103,7 @@ console.log('\n[데이터] FRDB 반영 확인');
 const dongbu = lines.features.find(f => f.properties.id === 'dongbu-line');
 check('동부선에 FRDB 출처가 기록됨', !!dongbu.properties.frdb_url, dongbu.properties.frdb_url);
 const dongbuSt = stations.features.filter(f => (f.properties.lines || []).includes('dongbu-line'));
-check('동부선 역이 FRDB 16역과 일치', dongbuSt.length === 16, `${dongbuSt.length}개`);
+check('동부선 역이 FRDB 15역과 일치', dongbuSt.length === 15, `${dongbuSt.length}개`);
 check('동부선에 FRDB 역명이 전부 존재',
   (dongbu.properties.frdb_stations || []).every(n =>
     dongbuSt.some(s => s.properties.name_ko === n ||
@@ -159,12 +159,32 @@ check('광운대→삼성 GTX-C 9분', r && r.minutes === 9, r && `${r.minutes}�
 check('광운대→삼성 경유역이 청량리·왕십리',
   r && r.path.length === 4, r && r.path.map(nameOf).join('→'));
 
-console.log('\n[동부선] FRDB 순서대로 종합운동장까지 이어져야 함');
-r = route(['상봉', 127.0856, 37.5961], ['종합운동장', 127.0737, 37.5111]);
-check('상봉→종합운동장 동부선 직결', r && r.transfers === 0, r && `${r.transfers}회`);
-check('상봉→종합운동장 경유역이 장한평·성수·청담',
-  r && r.path.map(nameOf).join(',') === '상봉,장한평,성수,청담,종합운동장',
+console.log('\n[동부선] 한천로 선형 — 신이문에서 장한평·성수·청담을 거쳐 종합운동장까지');
+r = route(['신이문', 127.0673, 37.6016], ['종합운동장', 127.0737, 37.5111]);
+check('신이문→종합운동장 동부선 직결', r && r.transfers === 0, r && `${r.transfers}회`);
+check('신이문→종합운동장 경유역이 장한평·성수·청담',
+  r && r.path.map(nameOf).join(',') === '신이문,장한평,성수,청담,종합운동장',
   r && r.path.map(nameOf).join(','));
+
+// 상봉은 동부선 위가 아니다. FRDB 해설에도 신강북선 계획에서 상봉 경유가 빠졌다고 적혀 있다.
+check('상봉이 동부선에 없음',
+  !stations.features.find(f => f.properties.name_ko === '상봉')
+    .properties.lines.includes('dongbu-line'));
+
+// 월계2교는 동부선·동북선 환승역이다 (FRDB 동부선 '월계2교 교차로' = 동북선 '110정거장').
+const wolgye = stations.features.filter(f => f.properties.name_ko === '월계2교');
+check('월계2교가 동부선·동북선 공용 역 1개로 합쳐짐', wolgye.length === 1,
+  `${wolgye.length}개`);
+check('월계2교가 두 노선에 모두 속함',
+  wolgye.length === 1 && wolgye[0].properties.lines.includes('dongbu-line') &&
+  wolgye[0].properties.lines.includes('dongbuk-line'),
+  wolgye.length ? wolgye[0].properties.lines.join('+') : '없음');
+check('월계2교 환승이 실제로 성립(동북선 전용역↔동부선 전용역)',
+  (() => {
+    const r2 = route(['북서울꿈의숲(가칭)', 127.0452, 37.6202], ['광운대학교', 127.0568, 37.6195]);
+    return r2 && r2.path.map(nameOf).join(',') === '북서울꿈의숲(가칭),월계2교,광운대학교' &&
+      r2.transfers === 1;
+  })());
 
 console.log('\n[GTX-D/E/F] chul.mom 좌표 기준 — 역이 실제 위치에 있고 직결로 이어져야 함');
 // 좌표는 전부 chul.mom(https://chul.mom) 기준. 보간으로 만든 가짜 좌표는 쓰지 않는다.

@@ -248,5 +248,97 @@ check('GTX-H 구간이 chul.mom 과 같은 65.2km',
   r && Math.abs(RF.pathDistance(r.path) - 65.2) < 1.5,
   r && `${RF.pathDistance(r.path).toFixed(1)}km`);
 
+console.log('\n[데이터 무결성] 역은 자기 노선 선형 위에 있어야 함');
+// 좌표가 보간으로 만들어진 역이 섞여 있으면 지도에서 동그라미가 선 밖에 뜬다.
+// 동부선에서 실제로 그런 일이 있었다 (coord_source: interpolated 8개).
+const byId = new Map(stations.features.map(f => [f.properties.id, f]));
+function flatCoords(f) {
+  const g = f.geometry;
+  return g.type === 'LineString' ? [g.coordinates] : g.coordinates;
+}
+function distToLine(p, coords) {
+  let best = Infinity;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const a = [coords[i][1], coords[i][0]], b = [coords[i + 1][1], coords[i + 1][0]];
+    const ax = a[1] * 88.5, ay = a[0] * 111, bx = b[1] * 88.5, by = b[0] * 111;
+    const px = p[1] * 88.5, py = p[0] * 111;
+    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+    const t = l2 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l2)) : 0;
+    const d = Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+    if (d < best) best = d;
+  }
+  return best;
+}
+const lineById = new Map(lines.features.map(f => [f.properties.id, f]));
+
+// 1) 보간 좌표가 남아 있으면 안 된다
+const interp = stations.features.filter(f => f.properties.coord_source === 'interpolated');
+check('보간으로 만든 좌표가 없음', interp.length === 0,
+  interp.map(f => f.properties.name_ko).join(','));
+
+// 2) 역이 자기 노선에서 너무 멀면 귀속이 틀린 것.
+//    도시철도는 선형이 정확하니 1.5km, KTX·일반철도는 선형이 고속선/개략이라 6km.
+const TOL = { metro: 1.5, urban: 1.5, ktx: 6, conventional: 6 };
+const stray = [];
+for (const s of stations.features) {
+  const p = s.geometry.coordinates;
+  for (const lid of (s.properties.lines || [])) {
+    const lf = lineById.get(lid);
+    if (!lf) continue;
+    const tol = TOL[lf.properties.category] ?? 1.5;
+    const d = Math.min(...flatCoords(lf).map(c => distToLine([p[1], p[0]], c)));
+    if (d > tol) stray.push(`${s.properties.name_ko}/${lid} ${(d * 1000).toFixed(0)}m>${tol * 1000}m`);
+  }
+}
+check('자기 노선에서 너무 떨어진 역이 없음', stray.length === 0, stray.join(', '));
+
+// 2-1) KTX 호남선에 일반선 경유역이 섞여 있으면 안 된다
+const honamKtx = lineById.get('honam-line-ktx');
+const honamBad = ['서대전', '계룡', '연산', '논산', '함열', '백양사', '신태인', '장성']
+  .filter(nm => stations.features.some(f =>
+    f.properties.name_ko === nm && f.properties.lines.includes('honam-line-ktx')));
+check('KTX 호남선에 일반선 경유역이 없음', honamBad.length === 0, honamBad.join(','));
+check('KTX 호남선 정차 순서가 용산→목포', honamKtx.properties.stops[0] === '용산' &&
+  honamKtx.properties.stops[honamKtx.properties.stops.length - 1] === '목포',
+  (honamKtx.properties.stops || []).join('→'));
+
+// 3) GTX-A 는 서울역~삼성~수서, 동탄~평택지제 구간이 선형에 있어야 한다
+const gtxa = lineById.get('great-train-express-line-a');
+const gtxaPieces = flatCoords(gtxa).length;
+check('GTX-A 선형이 4구간으로 이어짐', gtxaPieces === 4, `${gtxaPieces}조각`);
+for (const nm of ['삼성', '평택지제']) {
+  const s = stations.features.find(f => f.properties.name_ko === nm &&
+    f.properties.lines.includes('great-train-express-line-a'));
+  const d = s ? Math.min(...flatCoords(gtxa).map(c => distToLine(
+    [s.geometry.coordinates[1], s.geometry.coordinates[0]], c))) : Infinity;
+  check(`GTX-A ${nm}역이 선형 위에 있음`, d < 0.15, `${(d * 1000).toFixed(0)}m`);
+}
+
+// 4) 동북선 신설역에 기존 노선이 잘못 붙어 있으면 안 된다
+//    (붙어 있으면 존재하지 않는 역에서 공짜 환승이 생긴다)
+const fakeTransfer = [
+  ['동명초교(가칭)', 'suin-bundang-line'],
+  ['종암이육사(가칭)', 'seoul-subway-line-6'],
+  ['종암사거리(가칭)', 'seoul-metropolitan-subway-line-4'],
+  ['하월곡(가칭)', 'seoul-metropolitan-subway-line-4'],
+  ['115정거장(중계주공)', 'seoul-metropolitan-subway-line-4'],
+];
+const stillFake = fakeTransfer.filter(([nm, lid]) => {
+  const s = stations.features.find(f => f.properties.name_ko === nm);
+  return s && s.properties.lines.includes(lid);
+});
+check('동북선 신설역에 없는 환승이 붙어 있지 않음', stillFake.length === 0,
+  stillFake.map(x => x.join('/')).join(', '));
+
+// 5) 진짜 환승역은 남아 있어야 한다
+for (const [nm, lid] of [['왕십리', 'seoul-subway-line-2'], ['제기동', 'seoul-metropolitan-subway-line-1'],
+  ['고려대', 'seoul-subway-line-6'], ['미아사거리', 'seoul-metropolitan-subway-line-4'],
+  ['월계', 'seoul-metropolitan-subway-line-1'], ['하계', 'seoul-subway-line-7'],
+  ['상계', 'seoul-metropolitan-subway-line-4']]) {
+  const s = stations.features.find(f => f.properties.name_ko === nm);
+  check(`${nm} 은 동북선·${lid} 환승역`, s && s.properties.lines.includes('dongbuk-line') &&
+    s.properties.lines.includes(lid), s && s.properties.lines.join('+'));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -133,14 +133,17 @@ const UI = (() => {
     }
   }
   function initDrawer() {
-    // app.js 가 같은 버튼에 접기 핸들러를 걸어두므로 노드를 교체해 리스너를 비운다
-    const old = document.getElementById('sidebar-toggle');
-    if (old) {
-      const btn = old.cloneNode(true);
-      old.replaceWith(btn);
+    const btn = document.getElementById('sidebar-toggle');
+    if (btn && !btn.dataset.bound) {
+      btn.dataset.bound = '1';
+      btn.setAttribute('aria-expanded', 'true');
       btn.addEventListener('click', () => {
         if (isMobile()) { openDrawer(); return; }
-        document.body.classList.toggle('sidebar-hidden');
+        const hidden = document.body.classList.toggle('sidebar-hidden');
+        // 아이콘은 그대로 둔다. 접기/펼치기 모두 '패널 토글'이라 메뉴 아이콘이 맞다.
+        btn.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+        btn.setAttribute('aria-label', hidden ? '패널 펼치기' : '패널 접기');
+        btn.title = hidden ? '패널 펼치기' : '패널 접기';
         setTimeout(() => { try { map.resize(); } catch (e) {} }, 60);
       });
     }

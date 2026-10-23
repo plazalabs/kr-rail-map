@@ -645,13 +645,9 @@ function attachAutocomplete(input) {
     input.focus();
   });
 }
-/* 사이드바 토글 */
-document.getElementById('sidebar-toggle').addEventListener('click', () => {
-  const hidden = document.body.classList.toggle('sidebar-hidden');
-  document.getElementById('sidebar-toggle').textContent = hidden ? '▶' : '◀';
-  document.getElementById('sidebar-toggle').title = hidden ? '사이드바 펼치기' : '사이드바 접기';
-  if (window.map) setTimeout(() => map.resize(), 50);
-});
+/* 사이드바 토글은 ui.js 가 맡는다.
+ * 여기서도 리스너를 달면 같은 버튼에 두 개가 붙어서, 클릭 한 번에
+ * sidebar-hidden 이 두 번 토글되고 결과적으로 아무 일도 안 일어난다. */
 function resolveStation(name) {
   name = (name || '').trim();
   return STATIONS.find(s => s.properties.name_ko === name) || null;

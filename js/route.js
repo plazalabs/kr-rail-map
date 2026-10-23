@@ -9,6 +9,13 @@ const RouteFinder = (() => {
   // 실제 여행자는 2분 아끼자고 3번 갈아타지 않는다.
   const TRANSFER_DECISION_MIN = 8;
   const WALK_KMH = 4;
+  // KTX 탑승 1회당 붙는 접근 시간 (분). 좌석 지정·개찰·승강장 이동.
+  //
+  // 왜 필요한가: 이 값이 없으면 '상봉→청량리 3.8km 를 KTX 로' 같은 경로가
+  // 최단시간으로 뽑힌다. 3.8km 구간이 1분이라 도시철도(6분)를 이기기 때문이다.
+  // 실제로는 그렇게 타는 사람이 없고, 요금도 8,250원부터 시작한다.
+  // 도시철도·GTX 는 바로 타므로 0 이다.
+  const RAIL_ACCESS_MIN = 12;
 
   // --- 그래프 구성 상수 -------------------------------------------------
   const ATTACH_MAX_KM = 1.5;   // 역을 선형에 귀속시키는 최대 거리
@@ -98,8 +105,11 @@ const RouteFinder = (() => {
         stationsById.get(a).geometry.coordinates[0], stationsById.get(a).geometry.coordinates[1],
         stationsById.get(b).geometry.coordinates[0], stationsById.get(b).geometry.coordinates[1]);
     }
-    adj.get(a).push({ to: b, lineId, distKm, walk: !!walk });
-    adj.get(b).push({ to: a, lineId, distKm, walk: !!walk });
+    // 지금 다닐 수 있는 간선인지. '현재 vs 개통 후' 비교에서 이 값으로 걸러낸다.
+    // 도보 환승은 노선이 없으니 언제나 가능하다.
+    const open = walk ? true : !isUnopened(lineId);
+    adj.get(a).push({ to: b, lineId, distKm, walk: !!walk, open });
+    adj.get(b).push({ to: a, lineId, distKm, walk: !!walk, open });
   }
 
   function buildGraph(lines, stations) {
@@ -235,8 +245,8 @@ const RouteFinder = (() => {
         const gkm = hav(
           stationsById.get(a).geometry.coordinates[0], stationsById.get(a).geometry.coordinates[1],
           stationsById.get(b).geometry.coordinates[0], stationsById.get(b).geometry.coordinates[1]);
-        const edge = { to: b, lineId: lid, distKm: gkm, officialMin: min };
-        const rev = { to: a, lineId: lid, distKm: gkm, officialMin: min };
+        const edge = { to: b, lineId: lid, distKm: gkm, officialMin: min, open: !isUnopened(lid) };
+        const rev = { to: a, lineId: lid, distKm: gkm, officialMin: min, open: !isUnopened(lid) };
         if (!adj.has(a)) adj.set(a, []);
         if (!adj.has(b)) adj.set(b, []);
         adj.get(a).push(edge);
@@ -258,6 +268,12 @@ const RouteFinder = (() => {
     if (e.walk) return e.distKm / WALK_KMH * 60 + 2;
     if (e.officialMin != null) return e.officialMin;  // GTX 공식 소요시간 우선
     return e.distKm / speedOf(e.lineId) * 60;
+  }
+
+  // 이 노선에 '탈 때' 붙는 접근 시간. KTX 만 해당한다.
+  // route-compare.js 가 같은 값을 쓰도록 노출한다 (두 탭의 소요시간이 갈라지면 안 된다).
+  function accessMinutes(lineId) {
+    return lineId && lineCat.get(lineId) === 'ktx' ? RAIL_ACCESS_MIN : 0;
   }
 
   // 최소 힙 (다익스트라용)
@@ -305,6 +321,8 @@ const RouteFinder = (() => {
     if (!stationsById.has(fromId) || !stationsById.has(toId)) return null;
     if (fromId === toId) return { path: [fromId], legs: [], minutes: 0, transfers: 0 };
     const penalty = (opts && opts.transferPenalty != null) ? opts.transferPenalty : TRANSFER_DECISION_MIN;
+    // openOnly: 지금 운행 중인 노선만 쓴다. '지금 vs 개통 후' 비교의 '지금' 쪽.
+    const openOnly = !!(opts && opts.openOnly);
 
     const dist = new Map([[skey(fromId, START), 0]]);
     const prev = new Map();      // key -> {fromKey, fromId, edge}
@@ -319,10 +337,15 @@ const RouteFinder = (() => {
       if (u === toId) { endKey = k; break; }
 
       for (const e of (adj.get(u) || [])) {
+        // 미개통 노선은 지금 탈 수 없다. 도보 환승은 언제나 열려 있다.
+        if (openOnly && !e.open) continue;
         const nl = e.lineId || null;
         let cost = edgeMinutes(e);
         // 환승 비용: 앞뒤 모두 노선이 있고 서로 다를 때만
         if (line !== START && line !== null && nl !== null && nl !== line) cost += penalty;
+        // KTX 로 새로 탈 때는 접근 시간이 든다. 탐색 비용에도 넣어야
+        // '3.8km KTX' 같은 경로가 애초에 후보로 뽑히지 않는다.
+        if (nl !== line) cost += accessMinutes(nl);
         const nk = skey(e.to, nl);
         const nd = d + cost;
         if (nd < (dist.get(nk) ?? Infinity)) {
@@ -351,6 +374,8 @@ const RouteFinder = (() => {
     const legs = [];
     let legStart = 0, curLine = edges[0] ? (edges[0].lineId || null) : null;
     let minutes = 0, legKm = 0;
+    // 첫 구간부터 KTX 면 접근 시간을 붙인다
+    minutes += accessMinutes(curLine);
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
       minutes += edgeMinutes(e);
@@ -358,6 +383,7 @@ const RouteFinder = (() => {
       if (lid !== curLine) {
         legs.push({ lineId: curLine, from: path[legStart], to: path[i], walk: curLine === null, distKm: legKm });
         if (curLine !== null && lid !== null) minutes += TRANSFER_MIN;
+        minutes += accessMinutes(lid);
         legStart = i; curLine = lid; legKm = 0;
       }
       legKm += e.distKm;
@@ -413,6 +439,7 @@ const RouteFinder = (() => {
     stationById: (id) => stationsById.get(id),
     hasStation: (id) => stationsById.has(id),
     edgeMinutes,
+    accessMinutes,
     categoryOf: (lineId) => lineCat.get(lineId),
     TRANSFER_MIN,
     WALK_KMH,

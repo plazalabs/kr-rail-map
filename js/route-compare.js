@@ -38,6 +38,7 @@ const RouteCompare = (() => {
 
   // 요금 (수도권 전철 기준, 2024년 인상 후)
   function calcFare(distKm) {
+    if (distKm <= 0) return 0;
     let fare = 1400;
     if (distKm > 10) fare += Math.ceil(Math.min(distKm - 10, 40) / 5) * 100;
     if (distKm > 50) fare += Math.ceil((distKm - 50) / 8) * 100;
@@ -46,18 +47,44 @@ const RouteCompare = (() => {
 
   // KTX 는 거리비례 수도권 요금제가 아니다. 서울→부산 417km 에 수도권 공식을
   // 그대로 대면 6,800원이 나온다(실제 59,800원). KTX 구간은 따로 계산한다.
-  const KTX_BASE = 8000;
-  const KTX_PER_KM = 120;
+  // KTX 요금은 km당 단가가 일정하지 않다. 고속선 사용 비중이 커질수록 비싸진다.
+  //   서울→강릉  215km  27,600원  (km당 91원)
+  //   서울→부산  423.8km 59,800원  (km당 122원)
+  // 두 실측값을 지나는 2구간 직선: 기본 8,250원 + 250km까지 90원/km + 그 이후 163원/km
+  //   215km → 8,250 + 19,350 = 27,600원
+  //   428km → 8,250 + 22,500 + 29,014 = 59,764원
+  const KTX_BASE = 8250;
+  const KTX_KM1 = 250, KTX_R1 = 90, KTX_R2 = 163;
+  function calcKtxFare(distKm) {
+    if (distKm <= 0) return 0;
+    const tier1 = Math.min(distKm, KTX_KM1);
+    const tier2 = Math.max(0, distKm - KTX_KM1);
+    return KTX_BASE + Math.round((KTX_R1 * tier1 + KTX_R2 * tier2) / 100) * 100;
+  }
 
-  // legs 를 보면서 KTX 구간 거리를 뽑아 요금을 합산한다.
+  // 일반철도(무궁화·ITX-새마을)도 수도권 요금제가 아니다.
+  // 서울→부산 무궁화는 441.7km 에 28,600원인데, 수도권 공식으로는 7,200원이 나왔다.
+  // 기본 2,600원 + 10km 초과분 60원/km 로 맞춘다 → 2,600 + 60×431.7 ≈ 28,500원.
+  const CONV_BASE = 2600;
+  const CONV_PER_KM = 60;
+  function calcConvFare(distKm) {
+    if (distKm <= 0) return 0;
+    return CONV_BASE + Math.round(CONV_PER_KM * Math.max(0, distKm - 10) / 100) * 100;
+  }
+
+  // legs 를 보면서 구간 종류별 거리를 뽑아 요금을 합산한다.
+  // 수도권 전철은 거리비례, KTX·일반철도는 각자의 요금표를 쓴다.
   function calcFareOfRoute(r, distKm) {
-    let ktxKm = 0;
+    let ktxKm = 0, convKm = 0;
     (r.legs || []).forEach(l => {
-      if (l.lineId && RF.categoryOf(l.lineId) === 'ktx') ktxKm += (l.distKm || 0);
+      const cat = l.lineId && RF.categoryOf(l.lineId);
+      if (cat === 'ktx') ktxKm += (l.distKm || 0);
+      else if (cat === 'conventional') convKm += (l.distKm || 0);
     });
-    const metroKm = Math.max(0, distKm - ktxKm);
+    const metroKm = Math.max(0, distKm - ktxKm - convKm);
     let fare = calcFare(metroKm);
-    if (ktxKm > 0) fare += KTX_BASE + Math.round(KTX_PER_KM * ktxKm / 100) * 100;
+    if (convKm > 0) fare += calcConvFare(convKm);
+    if (ktxKm > 0) fare += calcKtxFare(ktxKm);
     return fare;
   }
   function routeDistance(path) {
@@ -375,5 +402,7 @@ const RouteCompare = (() => {
     lineNameOf = new Map(lines.map(f => [f.properties.id, f.properties.name_ko]));
   }
 
-  return { init, findAll, show, hide };
+  // 테스트에서 요금표를 직접 검증할 수 있도록 노출한다.
+  // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
+  return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute };
 })();

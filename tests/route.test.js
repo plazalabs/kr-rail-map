@@ -147,6 +147,9 @@ check('KTX 강릉선에 시청·종로5가·신설동이 없음',
 check('KTX 강릉선 정차역이 15개 이하', gangneung.length <= 15, `${gangneung.length}개`);
 check('KTX 강릉선에 강릉·진부·평창이 있음',
   ['강릉', '진부', '평창'].every(n => gangneung.includes(n)), gangneung.join(','));
+// 상봉은 KTX 정차역이 아니다. 중앙선 선로가 옆을 지나갈 뿐이다.
+// 이게 들어 있으면 '상봉→청량리 3.8km 를 KTX 로' 타는 경로가 최단시간이 된다.
+check('KTX 강릉선에 상봉이 없음', !gangneung.includes('상봉'), gangneung.join(','));
 
 const gtxA = stationsOf('great-train-express-line-a');
 check('GTX-A에 시청·경복궁·광화문이 없음',
@@ -229,11 +232,25 @@ const gangnam = pick('강남', 127.0276, 37.4980);
 const wonju = pick('원주', 127.9228, 37.3164);
 const cheap = RF.findRoute(gangnam.id, wonju.id, { transferPenalty: 4 });
 const sane = RF.findRoute(gangnam.id, wonju.id, { transferPenalty: 8 });
-check('페널티 4분이면 3회환승 우회가 뽑힘(문제 재현)', cheap && cheap.transfers >= 2,
+// 예전에는 페널티를 낮추면 GTX-C+KTX 3회환승 우회가 뽑혔다.
+// KTX 접근시간(12분)을 넣은 뒤로는 그 우회가 성립하지 않는다 — 그래서 이 단언은
+// '문제 재현' 이 아니라 '이제 재현되지 않는다' 를 고정한다.
+check('페널티 4분이어도 KTX 편승 우회가 안 뽑힘', cheap && cheap.transfers <= 1,
   cheap && `${cheap.transfers}회`);
 check('페널티 8분이면 0회환승 직결이 뽑힘', sane && sane.transfers === 0, sane && `${sane.transfers}회`);
-check('페널티를 올려도 표시 시간은 실제값', sane && sane.minutes >= 40 && sane.minutes <= 70,
+check('페널티를 올려도 표시 시간은 실제값', sane && sane.minutes >= 40 && sane.minutes <= 80,
   sane && `${sane.minutes}분`);
+
+console.log('\n[KTX 접근시간] 도시 구간을 KTX 로 때우면 안 됨');
+// 상봉→종합운동장 14km 짜리 도시 이동. KTX 가 끼면 요금이 8,250원부터 뛴다.
+const sangbong = pick('상봉', 127.0850, 37.5966);
+const jyd = pick('종합운동장', 127.0736, 37.5110);
+const shortHop = RF.findRoute(sangbong.id, jyd.id, { transferPenalty: 8 });
+check('상봉→종합운동장 경로에 KTX 가 없음',
+  shortHop && !shortHop.legs.some(l => l.lineId && RF.categoryOf(l.lineId) === 'ktx'),
+  shortHop && shortHop.legs.map(l => l.lineId || '도보').join(' → '));
+check('상봉→종합운동장 이 30분 이내', shortHop && shortHop.minutes <= 30,
+  shortHop && `${shortHop.minutes}분`);
 
 console.log('\n[GTX-G/H] 2기 GTX 구상안도 지도와 길찾기에 있어야 함');
 r = route(['송우', 127.14953, 37.82846], ['숭의', 126.63823, 37.46079]);

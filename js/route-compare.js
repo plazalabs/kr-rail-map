@@ -131,7 +131,7 @@ const RouteCompare = (() => {
     if (stations.length <= 1) return { legs: [], minutes: 0, transfers: 0 };
     const legs = [];
     let legStart = 0, curLine = edges[0].lineId;
-    let minutes = 0;
+    let minutes = RF.accessMinutes(curLine);   // 첫 구간이 KTX 면 접근 시간
     // leg 별 거리도 남긴다 — 요금 계산에서 KTX 구간만 따로 떼어내야 한다
     let km = 0;
     edges.forEach((e, i) => {
@@ -139,6 +139,7 @@ const RouteCompare = (() => {
       if (e.lineId !== curLine) {
         legs.push({ lineId: curLine, from: stations[legStart], to: stations[i], walk: curLine === null, distKm: km });
         if (curLine !== null && e.lineId !== null) minutes += RF.TRANSFER_MIN;
+        minutes += RF.accessMinutes(e.lineId);
         legStart = i; curLine = e.lineId; km = 0;
       }
       km += e.distKm;
@@ -149,8 +150,11 @@ const RouteCompare = (() => {
   }
 
   // 최소환승: (역,노선) 상태 다익스트라, 비용=(환승,분) 사전식
-  function findMinTransfer(fromId, toId) {
-    if (!RF.hasStation(fromId) || !RF.hasStation(toId)) return null;
+  // openOnly 면 미개통 노선 간선을 건너뛴다 ('지금' 경로).
+  function findMinTransfer(fromId, toId, openOnly) {
+    // init 전에 호출되면(지도 로드 실패 등) 조용히 '경로 없음' 으로 둔다.
+    // 여기서 던지면 경로 패널 전체가 죽는다.
+    if (!RF || !RF.hasStation(fromId) || !RF.hasStation(toId)) return null;
     if (fromId === toId) return { path: [fromId], legs: [], minutes: 0, transfers: 0 };
     const skey = (s, l) => s + '|' + (l ?? '');
     const startK = skey(fromId, null);
@@ -166,6 +170,7 @@ const RouteCompare = (() => {
       if (!d || t !== d[0] || m !== d[1]) continue;
       if (u === toId) { bestK = uk; break; }
       for (const e of (RF.adjacency().get(u) || [])) {
+        if (openOnly && !e.open) continue;
         let nt, nl;
         if (e.walk) { nt = t + 1; nl = null; }
         else if (cl === null || cl === e.lineId) { nt = t; nl = e.lineId; }
@@ -199,8 +204,10 @@ const RouteCompare = (() => {
   // (강남→원주: 2호선→경의중앙선→… 로 팔당을 돌아가는 경로).
   // 환승 1회를 1.5km 로 매기면 '요금은 최소' 라는 성격은 유지하면서 그런 경로는 사라진다.
   const TRANSFER_KM = 1.5;
-  function findMinFare(fromId, toId) {
-    if (!RF.hasStation(fromId) || !RF.hasStation(toId)) return null;
+  function findMinFare(fromId, toId, openOnly) {
+    // init 전에 호출되면(지도 로드 실패 등) 조용히 '경로 없음' 으로 둔다.
+    // 여기서 던지면 경로 패널 전체가 죽는다.
+    if (!RF || !RF.hasStation(fromId) || !RF.hasStation(toId)) return null;
     if (fromId === toId) return { path: [fromId], legs: [], minutes: 0, transfers: 0 };
     const skey = (s, l) => s + '|' + (l ?? '');
     const startK = skey(fromId, null);
@@ -216,6 +223,7 @@ const RouteCompare = (() => {
       if (!d || km !== d[0] || m !== d[1]) continue;
       if (u === toId) { bestK = uk; break; }
       for (const e of (RF.adjacency().get(u) || [])) {
+        if (openOnly && !e.open) continue;
         const nl = e.walk ? null : e.lineId;
         const transfer = !e.walk && cl !== null && cl !== nl;
         // KTX 는 km당 요금이 수도권 전철의 6배쯤 된다. 같은 거리라도 훨씬 비싸므로
@@ -264,13 +272,43 @@ const RouteCompare = (() => {
   }
 
   function findAll(fromId, toId) {
+    if (!RF) return { time: null, transfer: null, fare: null, now: null };
     // 최단시간 탐색에는 환승 페널티를 더 세게 준다.
     // 표시 시간은 route.js가 TRANSFER_MIN(4분) 기준으로 다시 계산하므로 그대로다.
     // (환승 3회로 2분 아끼는 경로가 '최단시간'으로 뽑히던 문제)
     const time = RF ? enrich(RF.findRoute(fromId, toId, { transferPenalty: TIME_TRANSFER_PENALTY })) : null;
     const transfer = enrich(findMinTransfer(fromId, toId));
     const fare = enrich(findMinFare(fromId, toId));
-    return { time, transfer, fare };
+    // '지금' — 미개통 노선을 한 개도 쓰지 않는 가장 빠른 경로.
+    // 부동산에서 이게 핵심이다: 개통 전에 그 집에 살면 실제로 몇 분 걸리는가.
+    // 목적지가 미개통 노선에만 있는 역이면 null 이 된다 (지금은 갈 수 없다).
+    const now = RF ? enrich(RF.findRoute(fromId, toId, {
+      transferPenalty: TIME_TRANSFER_PENALTY, openOnly: true,
+    })) : null;
+    return { time, transfer, fare, now };
+  }
+
+  // '지금 vs 개통 후' 요약. 화면과 테스트가 같은 판단을 쓰도록 여기 한 곳에 모은다.
+  //   status: 'same'      — 개통 예정 노선이 도움 안 됨 (지금 경로가 이미 최선)
+  //           'better'    — 개통 후 더 빨라짐
+  //           'new'       — 지금은 갈 수 없고 개통 후에만 갈 수 있음
+  //           'worse'     — 개통 후가 오히려 느림(데이터 이상 신호)
+  function compareNowFuture(fromId, toId, pre) {
+    const all = pre || findAll(fromId, toId);
+    const fut = all.time;
+    const now = all.now;
+    if (!fut) return { status: 'none', now: null, future: null, savedMin: 0, lines: [] };
+    const lines = (fut.unopenedLines || []);
+    if (!now) {
+      return { status: 'new', now: null, future: fut, savedMin: 0, lines };
+    }
+    const saved = now.minutes - fut.minutes;
+    let status = 'same';
+    if (saved > 0) status = 'better';
+    else if (saved < 0) status = 'worse';
+    // 개통 후 경로가 미개통 노선을 안 쓰면 '달라진 게 없다' 로 본다.
+    if (status === 'better' && lines.length === 0) status = 'same';
+    return { status, now, future: fut, savedMin: saved, lines };
   }
 
   // ---------- UI ----------
@@ -279,19 +317,94 @@ const RouteCompare = (() => {
     const st = document.createElement('style');
     st.id = 'rc-style';
     st.textContent = `
-      .rc-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
-      .rc-tab { flex: 1; padding: 8px 4px; border: 1px solid var(--border, #ddd); background: var(--panel-bg, #fff);
-        color: var(--text, #222); border-radius: 8px; cursor: pointer; font-size: 13px; }
+      .rc-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+      /* 탭이 4개(지금 탭 포함)면 한 줄에 넣을 때 글자가 잘린다.
+         그때만 2x2 로 접어 이름이 온전히 보이게 한다. */
+      .rc-tabs.four { display: grid; grid-template-columns: 1fr 1fr; }
+      .rc-tab { flex: 1 1 0; min-width: 0; padding: 8px 4px; border: 1px solid var(--border, #ddd);
+        background: var(--panel-bg, #fff); color: var(--text, #222); border-radius: 8px;
+        cursor: pointer; font-size: 12px; line-height: 1.25; letter-spacing: -.01em;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .rc-tab.active { background: var(--accent, #3388ff); color: #fff; border-color: var(--accent, #3388ff); font-weight: bold; }
       .rc-badge { display: inline-block; font-size: 11px; background: var(--accent, #3388ff); color: #fff;
         border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
       .rc-insight { font-size: 12px; color: var(--muted, #666); margin: 8px 0; line-height: 1.6; }
+      /* '지금 vs 개통 후' 비교 */
+      .rc-nf { border: 1px solid var(--border, #e3e6ea); border-radius: 10px; padding: 10px 12px;
+        margin-bottom: 10px; background: var(--surface, #f6f7f9); }
+      .rc-nf.hot { border-color: var(--accent, #0b57d0); background: var(--accent-weak, #e8f0fe); }
+      .rc-nf-row { display: flex; align-items: flex-end; gap: 8px; }
+      .rc-nf-col { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+      .rc-nf-label { font-size: 11px; color: var(--muted, #6b7280); letter-spacing: .02em; }
+      .rc-nf-time { font-size: 21px; font-weight: 700; line-height: 1.1; color: var(--text, #16191d);
+        font-variant-numeric: tabular-nums; }
+      .rc-nf-time small { font-size: 12px; font-weight: 600; margin-left: 1px; }
+      .rc-nf-sub { font-size: 11px; color: var(--muted, #6b7280); }
+      .rc-nf-arrow { font-size: 15px; color: var(--muted, #6b7280); padding-bottom: 14px; }
+      .rc-nf-delta { margin-left: auto; text-align: right; font-size: 13px; font-weight: 700;
+        color: var(--accent, #0b57d0); padding-bottom: 2px; white-space: nowrap; }
+      .rc-nf-why { font-size: 11.5px; color: var(--muted, #6b7280); margin-top: 7px; line-height: 1.5; }
+      .rc-nf-why b { color: var(--text, #16191d); font-weight: 600; }
+      .rc-nf.flat .rc-nf-time { font-size: 15px; font-weight: 600; }
     `;
     document.head.appendChild(st);
   }
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // '지금 vs 개통 후' 비교 카드.
+  // 부동산에서 실제로 묻는 것은 "지금 사면 몇 분이냐" 이고, 그 다음이
+  // "개통되면 얼마나 좋아지냐" 다. 두 값을 나란히 놓고 차이를 숫자로 보여준다.
+  function nowFutureHtml(cmp) {
+    if (!cmp || cmp.status === 'none' || !cmp.future) return '';
+    const names = (cmp.lines || []).map(id => lineNameOf.get(id) || id);
+    const lineTxt = names.length ? `<b>${escapeHtml(names.join(' · '))}</b> ` : '';
+    const f = cmp.future;
+
+    if (cmp.status === 'new') {
+      return `<div class="rc-nf hot"><div class="rc-nf-row">` +
+        `<div class="rc-nf-col"><span class="rc-nf-label">지금</span>` +
+        `<span class="rc-nf-time">갈 수 없음</span>` +
+        `<span class="rc-nf-sub">운행 중인 노선 없음</span></div>` +
+        `<div class="rc-nf-arrow">→</div>` +
+        `<div class="rc-nf-col"><span class="rc-nf-label">개통 후</span>` +
+        `<span class="rc-nf-time">${f.minutes}<small>분</small></span>` +
+        `<span class="rc-nf-sub">환승 ${f.transfers}회</span></div>` +
+        `<div class="rc-nf-delta">신규 연결</div></div>` +
+        `<div class="rc-nf-why">${lineTxt}개통 전에는 이 역에 철도로 닿을 수 없습니다.</div></div>`;
+    }
+
+    const now = cmp.now;
+    if (cmp.status === 'better') {
+      const pct = now.minutes > 0 ? Math.round(cmp.savedMin / now.minutes * 100) : 0;
+      const dTrans = now.transfers - f.transfers;
+      const transTxt = dTrans > 0 ? ` · 환승 ${dTrans}회 감소` : (dTrans < 0 ? ` · 환승 ${-dTrans}회 증가` : '');
+      return `<div class="rc-nf hot"><div class="rc-nf-row">` +
+        `<div class="rc-nf-col"><span class="rc-nf-label">지금</span>` +
+        `<span class="rc-nf-time">${now.minutes}<small>분</small></span>` +
+        `<span class="rc-nf-sub">환승 ${now.transfers}회</span></div>` +
+        `<div class="rc-nf-arrow">→</div>` +
+        `<div class="rc-nf-col"><span class="rc-nf-label">개통 후</span>` +
+        `<span class="rc-nf-time">${f.minutes}<small>분</small></span>` +
+        `<span class="rc-nf-sub">환승 ${f.transfers}회</span></div>` +
+        `<div class="rc-nf-delta">−${cmp.savedMin}분</div></div>` +
+        `<div class="rc-nf-why">${lineTxt}개통으로 <b>${cmp.savedMin}분(${pct}%)</b> 단축${transTxt}</div></div>`;
+    }
+
+    // 변화 없음(또는 개통 후가 더 느림) — 이득이 없다고 솔직히 말한다.
+    // 부동산 도구에서 '조용히 넘어가기'는 곧 잘못된 판단으로 이어진다.
+    const dTrans = now.transfers - f.transfers;
+    const note = dTrans > 0
+      ? `시간은 그대로지만 환승이 ${dTrans}회 줄어듭니다.`
+      : '이 구간은 개통 예정 노선으로 얻는 이득이 없습니다.';
+    return `<div class="rc-nf flat"><div class="rc-nf-row">` +
+      `<div class="rc-nf-col"><span class="rc-nf-label">지금 = 개통 후</span>` +
+      `<span class="rc-nf-time">${now.minutes}<small>분</small></span>` +
+      `<span class="rc-nf-sub">환승 ${now.transfers}회</span></div>` +
+      `<div class="rc-nf-delta">변화 없음</div></div>` +
+      `<div class="rc-nf-why">${note}</div></div>`;
   }
 
   function variantHtml(r, tabId, badge) {
@@ -335,8 +448,12 @@ const RouteCompare = (() => {
       box.innerHTML = '경로를 찾을 수 없습니다.';
       return;
     }
+    const cmp = compareNowFuture(fromId, toId, all);
     const tabs = [
       { id: 'time', label: '⚡ 최단시간', r: all.time },
+      // 개통 예정 노선을 안 쓰는 경로가 따로 있을 때만 '지금' 탭을 붙인다.
+      // 늘 붙이면 최단시간 탭과 같은 내용이 두 번 나와 헷갈린다.
+      ...(cmp.status === 'better' ? [{ id: 'now', label: '🕐 지금 바로', r: all.now }] : []),
       { id: 'transfer', label: '🔄 최소환승', r: all.transfer },
       { id: 'fare', label: '💰 최소요금', r: all.fare },
     ].filter(t => t.r);
@@ -352,11 +469,13 @@ const RouteCompare = (() => {
       insight += `💰 최소요금은 ${(all.time.fare - all.fare.fare).toLocaleString()}원 절약${dm > 0 ? ` (${dm}분 더 소요)` : ''}`;
     }
 
-    let html = `<div class="rc-tabs">` + tabs.map((t, i) =>
+    let html = nowFutureHtml(cmp);
+    html += `<div class="rc-tabs${tabs.length > 3 ? ' four' : ''}">` + tabs.map((t, i) =>
       `<button class="rc-tab${i === 0 ? ' active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('') + `</div>`;
     if (insight) html += `<div class="rc-insight">${insight}</div>`;
     html += tabs.map((t, i) => {
       const isBest =
+        (t.id === 'now') ? '지금 이용 가능' :
         (t.id === 'time' && all.time && (!all.transfer || all.time.minutes <= all.transfer.minutes) && (!all.fare || all.time.minutes <= all.fare.minutes)) ? '가장 빠름' :
         (t.id === 'transfer' && all.transfer && (!all.time || all.transfer.transfers < all.time.transfers)) ? '환승 최소' :
         (t.id === 'fare' && all.fare && all.time && all.fare.fare < all.time.fare) ? '요금 최소' : '';
@@ -404,5 +523,8 @@ const RouteCompare = (() => {
 
   // 테스트에서 요금표를 직접 검증할 수 있도록 노출한다.
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
-  return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute };
+  return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute,
+    // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
+    compareNowFuture, nowFutureHtml,
+    _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich } };
 })();

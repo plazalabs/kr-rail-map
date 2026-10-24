@@ -116,6 +116,18 @@ section('주변 시세 — 출처와 한계');
     /국토교통부 아파트 매매 실거래가[\s\S]{0,120}이용허락범위 제한 없음/.test(dataPage));
 }
 
+section('배경 지도 제공자');
+{
+  // CARTO 는 키 없이 요청하면 HTTP 200 으로 'API KEY REQUIRED' 워터마크
+  // 타일을 돌려준다. 상태코드가 200 이라 오류도 안 뜨고, 다크·이클립스·네온
+  // 테마 사용자는 지도가 워터마크로 덮인 걸 봤다. 조용히 깨지는 유형이라
+  // 네트워크 없이 잡을 수 있는 여기서 막는다.
+  const appJs = read('js/app.js');
+  check('키 필요 타일 제공자를 쓰지 않는다', !/cartocdn/.test(appJs));
+  check('다크 베이스맵이 정의돼 있다', /dark:\s*'https?:\/\//.test(appJs));
+  check('다크 테마가 그 스타일을 쓴다', /DARK_THEMES[\s\S]{0,200}STYLES\.dark/.test(appJs));
+}
+
 section('배포·캐시');
 check('서비스워커 앱 셸에 data.html', /'\.\/data\.html'/.test(sw));
 {

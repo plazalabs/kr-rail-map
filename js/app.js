@@ -425,8 +425,8 @@ function pickSearchHit(f) {
   map.flyTo({ center: c, zoom: 14 });
   closeSearch();
   searchInput.blur();
-  // 역 상세 팝업까지 열어준다
-  setTimeout(() => openStationPopup(f, { lng: c[0], lat: c[1] }), 720);
+  // 역 상세 패널까지 열어준다 (지도가 이동한 뒤에)
+  setTimeout(() => showStation(f, { lng: c[0], lat: c[1] }), 720);
 }
 
 function markCursor(i) {
@@ -1210,7 +1210,7 @@ function renderFavorites() {
         const s = STATIONS.find(x => x.properties.name_ko === name);
         if (s) {
           map.flyTo({ center: s.geometry.coordinates, zoom: 14 });
-          openStationPopup(s, { lng: s.geometry.coordinates[0], lat: s.geometry.coordinates[1] });
+          showStation(s, { lng: s.geometry.coordinates[0], lat: s.geometry.coordinates[1] });
         }
       };
       const del = document.createElement('button'); del.textContent = '✕'; del.className = 'memo-del';
@@ -1245,6 +1245,20 @@ let stationPopup = null;
 function closeStationPopup() {
   if (stationPopup) { stationPopup.remove(); stationPopup = null; }
 }
+// 역을 골랐을 때 여는 화면.
+// 예전에는 지도 위 작은 팝업만 띄웠는데, 팝업에는 노선 이름만 있고
+// 인접역·출구·환승 정보가 없었다. 그걸 다 담은 역 상세 패널이 따로 있는데
+// **아무도 그 패널을 열어주지 않아서** 한 번도 화면에 나온 적이 없었다.
+// 이제 선택은 패널로 통일하고, 패널 모듈을 못 불러왔을 때만 팝업으로 물러난다.
+function showStation(feature, lngLat) {
+  closeStationPopup();
+  if (typeof StationDetail !== 'undefined' && StationDetail.show) {
+    StationDetail.show(feature);
+    return;
+  }
+  openStationPopup(feature, lngLat);
+}
+
 function openStationPopup(feature, lngLat) {
   closeStationPopup();
   const p = feature.properties;
@@ -1301,7 +1315,7 @@ map.on('click', e => {
     feats = map.queryRenderedFeatures([[p.x - r, p.y - r], [p.x + r, p.y + r]], { layers: ['rail-stations'] });
   } catch (_) { return; }
   if (!feats.length) return;
-  openStationPopup(feats[0], e.lngLat);
+  showStation(feats[0], e.lngLat);
 });
 map.on('mouseenter', 'rail-stations', () => { map.getCanvas().style.cursor = 'pointer'; });
 map.on('mouseleave', 'rail-stations', () => { map.getCanvas().style.cursor = ''; });

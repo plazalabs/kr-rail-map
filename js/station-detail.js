@@ -279,6 +279,8 @@
 
   function show(feature) {
     if (!feature || !feature.properties) return;
+    // 지도 load 전에 클릭이 들어올 수 있다. 패널이 없으면 여기서 만든다.
+    if (!panel) { injectCSS(); buildPanel(); }
     var p = feature.properties;
     var st = stationById(p.id) || feature;   // 원본 우선 (lines 배열 문자열화 방지)
     var sp = st.properties;

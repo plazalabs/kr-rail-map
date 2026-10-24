@@ -55,9 +55,14 @@
     '.sd-note{font-size:12px;color:var(--muted,#6b7280);margin-top:4px}' +
     // 시세는 이 패널에서 유일하게 '돈'을 말하는 숫자라 크게 보여준다.
     '.sd-price{display:flex;align-items:baseline;gap:3px;margin-top:2px}' +
-    '.sd-price b{font-size:20px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}' +
+    '.sd-price b{font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}' +
     '.sd-price span{font-size:12px;color:var(--muted,#6b7280)}' +
     '.sd-price-sub{font-weight:400;font-size:11px;color:var(--muted,#6b7280)}' +
+    // 시세는 패널 맨 위에 온다. 배경색 대신 테두리로 구분해 테마 7종에서
+    // 색이 깨지지 않게 한다 (다크 테마에서 흰 카드가 뜨는 사고를 피한다).
+    '.sd-price-sec{margin-top:12px;padding:10px 0 12px;' +
+    'border-top:1px solid var(--border,#eee);border-bottom:1px solid var(--border,#eee)}' +
+    '.sd-price-sec h3{margin-bottom:2px}' +
     '.sd-exits{display:flex;flex-wrap:wrap;gap:6px}' +
     '.sd-exit{min-width:38px;padding:6px 8px;border:1px solid var(--border-strong,#ddd);border-radius:6px;' +
     'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:12px;font-weight:600}' +
@@ -285,6 +290,32 @@
     } catch (e) { /* 스타일 로드 전이면 무시 */ }
   }
 
+  // 주변 시세 — 국토교통부 아파트 매매 실거래가를 법정동 단위로 묶은 값.
+  // 단지 단위가 아니라 법정동 단위라는 사실을 화면에 밝힌다. 부동산 판단에
+  // 쓰는 숫자라서, 무엇을 근거로 한 값인지 숨기면 안 된다.
+  //
+  // 패널 맨 위에 놓는다. 이 앱을 부동산 판단에 쓰기 때문에, 출구 12개와
+  // 인접역을 지나 스크롤해야 시세가 나오면 순서가 거꾸로다.
+  function priceSection(nameKo) {
+    var price = (typeof StationPrice !== 'undefined' && StationPrice.isReady())
+      ? StationPrice.of(nameKo) : null;
+    if (!price || !price.medianPerPyeong) return '';
+
+    var pm = StationPrice.meta() || {};
+    var h = '<div class="sd-sec sd-price-sec"><h3>주변 시세 · ' + esc(price.dong) +
+      ' <span class="sd-price-sub">최근 6개월 ' + price.deals + '건</span></h3>';
+    h += '<div class="sd-price"><b>' + StationPrice.won(price.medianPerPyeong) +
+      '</b><span>/평</span></div>';
+    if (price.medianPrice) {
+      h += '<div class="sd-note">중위 거래금액 ' + StationPrice.won(price.medianPrice) + '</div>';
+    }
+    h += '<div class="sd-note">※ 아파트 매매 실거래 중위값입니다. ' +
+      '실거래가는 좌표를 주지 않아 <b>법정동 단위</b>로 묶었습니다 — ' +
+      '같은 법정동이라도 단지·층·연식에 따라 차이가 큽니다.' +
+      (pm.updated ? ' (기준 ' + esc(pm.updated) + ')' : '') + '</div>';
+    return h + '</div>';
+  }
+
   function show(feature) {
     if (!feature || !feature.properties) return;
     // 지도 load 전에 클릭이 들어올 수 있다. 패널이 없으면 여기서 만든다.
@@ -300,6 +331,9 @@
 
     var html = '<div><b style="font-size:17px">' + esc(nameKo) + '</b>' +
       (nameEn ? '<div class="sd-en">' + esc(nameEn) + '</div>' : '') + '</div>';
+
+    // 시세를 먼저. 없으면 빈 문자열이라 자연스럽게 노선부터 시작한다.
+    html += priceSection(nameKo);
 
     // 경유 노선
     html += '<div class="sd-sec"><h3>경유 노선 · ' + lineIds.length + '개 (환승 ' +
@@ -346,27 +380,6 @@
       html += '출구</h3><div class="sd-note">이 역은 출구 좌표가 없어 역 중심점으로 거리를 잽니다.</div>';
     }
     html += '</div>';
-
-    // 주변 시세 — 국토교통부 아파트 매매 실거래가를 법정동 단위로 묶은 값.
-    // 단지 단위가 아니라 법정동 단위라는 사실을 화면에 밝힌다. 부동산 판단에
-    // 쓰는 숫자라서, 무엇을 근거로 한 값인지 숨기면 안 된다.
-    var price = (typeof StationPrice !== 'undefined' && StationPrice.isReady())
-      ? StationPrice.of(nameKo) : null;
-    if (price && price.medianPerPyeong) {
-      var pm = StationPrice.meta() || {};
-      html += '<div class="sd-sec"><h3>주변 시세 · ' + esc(price.dong) +
-        ' <span class="sd-price-sub">최근 6개월 ' + price.deals + '건</span></h3>';
-      html += '<div class="sd-price"><b>' + StationPrice.won(price.medianPerPyeong) +
-        '</b><span>/평</span></div>';
-      if (price.medianPrice) {
-        html += '<div class="sd-note">중위 거래금액 ' + StationPrice.won(price.medianPrice) + '</div>';
-      }
-      html += '<div class="sd-note">※ 아파트 매매 실거래 중위값입니다. ' +
-        '실거래가는 좌표를 주지 않아 <b>법정동 단위</b>로 묶었습니다 — ' +
-        '같은 법정동이라도 단지·층·연식에 따라 차이가 큽니다.' +
-        (pm.updated ? ' (기준 ' + esc(pm.updated) + ')' : '') + '</div>';
-      html += '</div>';
-    }
 
     // 시간표
     html += '<div class="sd-sec"><h3>첫차 / 막차</h3><div class="sd-note">시간표 데이터 없음</div></div>';

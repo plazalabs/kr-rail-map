@@ -49,6 +49,9 @@ SGG = {
 
 M2_PER_PYEONG = 3.305785
 
+# 법정동코드 → 구 이름 (역 주소데이터의 구 이름과 맞추기 위해)
+SGG_NAME = {v: k for k, v in SGG.items()}
+
 
 def load_key():
     k = os.environ.get("DATA_GO_KR_KEY", "").strip()
@@ -122,37 +125,61 @@ def num(s):
         return None
 
 
+def pick(r, *keys):
+    """여러 후보 키 중 처음으로 값이 있는 것을 쓴다.
+
+    실제 응답은 영어 태그(dealAmount)로 오는데, 문서의 항목 표는 한국어
+    (거래금액)로 적혀 있다. 문서만 보고 만들면 전부 빈 값이 된다 —
+    실제로 그렇게 만들었다가 121건이 전부 공란이었다. 둘 다 받아 둔다.
+    """
+    for k in keys:
+        v = r.get(k)
+        if v is not None and str(v).strip():
+            return str(v).strip()
+    return ""
+
+
 def to_record(r):
     """평당가(만원/평)를 붙인다. 한국 부동산에서 가장 많이 쓰는 지표다."""
-    price = num(r.get("거래금액"))          # 만원 단위
-    area = num(r.get("전용면적"))           # m²
+    price = num(pick(r, "dealAmount", "거래금액"))     # 만원 단위
+    area = num(pick(r, "excluUseAr", "전용면적"))       # m²
     per = None
     if price and area and area > 0:
         pyeong = area / M2_PER_PYEONG
         per = round(price / pyeong, 1) if pyeong else None
     return {
-        "apt": r.get("아파트", ""),
-        "dong": r.get("아파트동", ""),
-        "umd": r.get("법정동", ""),
-        "jibun": r.get("지번", ""),
+        "apt": pick(r, "aptNm", "아파트"),
+        "dong": pick(r, "aptDong", "아파트동"),
+        "umd": pick(r, "umdNm", "법정동"),
+        "jibun": pick(r, "jibun", "지번"),
         "area": area,
-        "floor": int(num(r.get("층")) or 0),
-        "buildYear": int(num(r.get("건축년도")) or 0),
+        "floor": int(num(pick(r, "floor", "층")) or 0),
+        "buildYear": int(num(pick(r, "buildYear", "건축년도")) or 0),
         "price": price,
         "perPyeong": per,
-        "year": int(num(r.get("년")) or 0),
-        "month": int(num(r.get("월")) or 0),
-        "day": int(num(r.get("일")) or 0),
-        "cancelled": (r.get("계약해제여부") or "").strip() == "O",
-        "seller": r.get("매도자", ""),
-        "buyer": r.get("매수자", ""),
-        "rgstDate": r.get("등기일자", ""),
+        "year": int(num(pick(r, "dealYear", "년")) or 0),
+        "month": int(num(pick(r, "dealMonth", "월")) or 0),
+        "day": int(num(pick(r, "dealDay", "일")) or 0),
+        # 계약해제는 'O' 일 때만 참이다. 공백(' ')이 정상값이라 strip 이 필수.
+        "cancelled": pick(r, "cdealType", "계약해제여부").upper() == "O",
+        # 직거래/중개거래 구분 — 직거래가 섞이면 시세가 왜곡될 수 있다
+        "dealType": pick(r, "dealingGbn"),
+        "seller": pick(r, "slerGbn", "매도자"),
+        "buyer": pick(r, "buyerGbn", "매수자"),
+        "rgstDate": pick(r, "rgstDate", "등기일자"),
+        # 토지임대부 여부 — Y 면 건물만 거래된 것이라 평당가가 낮게 보인다
+        "landLease": pick(r, "landLeaseholdGbn").upper() == "Y",
     }
 
 
 def summarize(recs):
+    # 해제와 '가격 없음'은 다르다. 예전에 둘을 같이 세서 121건이 전부
+    # 해제로 보고된 적이 있다. 따로 센다.
+    cancelled = [r for r in recs if r["cancelled"]]
+    noprice = [r for r in recs if not r["cancelled"] and not r["price"]]
     live = [r for r in recs if not r["cancelled"] and r["price"]]
-    out = {"total": len(recs), "cancelled": len(recs) - len(live), "used": len(live)}
+    out = {"total": len(recs), "cancelled": len(cancelled),
+           "noprice": len(noprice), "used": len(live)}
     if not live:
         return out
     prices = [r["price"] for r in live]
@@ -160,6 +187,7 @@ def summarize(recs):
     out["medianPrice"] = round(statistics.median(prices), 0)
     out["medianPerPyeong"] = round(statistics.median(pers), 1) if pers else None
     out["avgArea"] = round(statistics.mean([r["area"] for r in live if r["area"]]), 1)
+    out["direct"] = sum(1 for r in live if r.get("dealType") == "직거래")
     # 단지별 건수 상위 — 어느 단지가 활발히 거래되는지
     by_apt = {}
     for r in live:
@@ -193,16 +221,23 @@ def selftest():
     ck("연도 넘김", months("202511", "202602") == ["202511", "202512", "202601", "202602"])
     ck("한 달", months("202606", "202606") == ["202606"])
 
-    print("\n[XML 파싱]")
+    print("\n[XML 파싱 — 실제 응답 형식]")
+    # 실제 응답을 그대로 옮긴 것. 태그가 영어다(dealAmount).
+    # 처음엔 문서의 항목명(거래금액)만 보고 만들었다가 121건이 전부 공란이었다.
     xml = """<response><header><resultCode>000</resultCode>
     <resultMsg>OK</resultMsg></header><body><items>
-    <item><거래금액> 120,000</거래금액><건축년도>2015</건축년도><년>2026</년>
-    <월>9</월><일>12</일><전용면적>84.99</전용면적><층>12</층>
-    <법정동>역삼동</법정동><지번>123-45</지번><아파트>래미안역삼</아파트>
-    <아파트동>101</아파트동><계약해제여부></계약해제여부></item>
-    <item><거래금액> 90,000</거래금액><년>2026</년><월>9</월><일>3</일>
-    <전용면적>59.9</전용면적><층>3</층><법정동>역삼동</법정동>
-    <아파트>역삼자이</아파트><계약해제여부>O</계약해제여부></item>
+    <item><aptDong> </aptDong><aptNm>개포주공5단지</aptNm><buildYear>1983</buildYear>
+    <buyerGbn>개인</buyerGbn><cdealDay> </cdealDay><cdealType> </cdealType>
+    <dealAmount>420,000</dealAmount><dealDay>29</dealDay><dealMonth>9</dealMonth>
+    <dealYear>2026</dealYear><dealingGbn>중개거래</dealingGbn>
+    <excluUseAr>83.17</excluUseAr><floor>13</floor><jibun>187</jibun>
+    <landLeaseholdGbn>N</landLeaseholdGbn><rgstDate> </rgstDate><sggCd>11680</sggCd>
+    <slerGbn>개인</slerGbn><umdNm>개포동</umdNm></item>
+    <item><aptNm>역삼자이</aptNm><buildYear>2010</buildYear><cdealType>O</cdealType>
+    <dealAmount>90,000</dealAmount><dealDay>3</dealDay><dealMonth>9</dealMonth>
+    <dealYear>2026</dealYear><dealingGbn>직거래</dealingGbn><excluUseAr>59.9</excluUseAr>
+    <floor>3</floor><jibun>16-2</jibun><landLeaseholdGbn>N</landLeaseholdGbn>
+    <umdNm>역삼동</umdNm></item>
     </items><numOfRows>10</numOfRows><pageNo>1</pageNo>
     <totalCount>2</totalCount></body></response>"""
     root = ET.fromstring(xml)
@@ -212,22 +247,31 @@ def selftest():
     ck("item 2건", len(items) == 2, f"{len(items)}건")
 
     recs = [to_record(r) for r in items]
-    ck("거래금액 120,000", recs[0]["price"] == 120000)
-    ck("아파트명", recs[0]["apt"] == "래미안역삼")
-    ck("동(aptDong)", recs[0]["dong"] == "101")
+    ck("거래금액 420,000", recs[0]["price"] == 420000, str(recs[0]["price"]))
+    ck("아파트명", recs[0]["apt"] == "개포주공5단지")
+    ck("법정동", recs[0]["umd"] == "개포동")
+    ck("전용면적", recs[0]["area"] == 83.17)
+    ck("층", recs[0]["floor"] == 13)
+    ck("계약년월일", (recs[0]["year"], recs[0]["month"], recs[0]["day"]) == (2026, 9, 29))
+    ck("공백 동은 빈 문자열", recs[0]["dong"] == "")
     ck("정상 거래는 해제 아님", recs[0]["cancelled"] is False)
     ck("계약해제 O 를 잡아낸다", recs[1]["cancelled"] is True)
+    ck("직거래 구분", recs[1]["dealType"] == "직거래")
+    ck("토지임대부 N", recs[0]["landLease"] is False)
 
-    # 84.99㎡ = 25.71평. 120,000만원 / 25.71평 ≈ 4,667만원/평
+    # 83.17㎡ = 25.16평. 420,000만원 / 25.16평 ≈ 16,693만원/평
     p = recs[0]["perPyeong"]
-    ck("평당가 계산", p is not None and 4600 < p < 4740, f"{p}만원/평")
-    ck("면적 없으면 평당가 None", to_record({"거래금액": "1000"})["perPyeong"] is None)
+    ck("평당가 계산", p is not None and 16500 < p < 16900, f"{p}만원/평")
+    ck("면적 없으면 평당가 None", to_record({"dealAmount": "1000"})["perPyeong"] is None)
 
     print("\n[요약]")
     s = summarize(recs)
     ck("전체 2건", s["total"] == 2)
-    ck("해제 1건 제외", s["cancelled"] == 1 and s["used"] == 1, f"사용 {s['used']}건")
-    ck("해제 거래는 통계에서 빠짐", s["medianPrice"] == 120000)
+    ck("해제 1건", s["cancelled"] == 1, f"해제 {s['cancelled']}건")
+    ck("사용 1건", s["used"] == 1, f"사용 {s['used']}건")
+    ck("해제 거래는 통계에서 빠짐", s["medianPrice"] == 420000)
+    ck("가격 없는 거래는 해제로 세지 않는다",
+       summarize([{"cancelled": False, "price": None}])["cancelled"] == 0)
 
     print("\n[빈 응답]")
     empty = ET.fromstring("<response><header><resultCode>000</resultCode></header>"
@@ -287,6 +331,10 @@ def main():
                 print(f"{ym}: 실패 {type(e).__name__} {str(e)[:100]}")
                 continue
             recs = [to_record(r) for r in items]
+            # 구 이름을 붙인다. 실거래가는 법정동 이름만 주기 때문에
+            # 같은 이름의 법정동(신사동: 강남구/은평구)을 구분할 수 없다.
+            for r in recs:
+                r["sgg"] = SGG_NAME.get(lawd, args.lawd)
             path.write_text(json.dumps(recs, ensure_ascii=False), "utf8")
             print(f"{ym}: {len(recs)}건 (totalCount {total})")
             time.sleep(0.25)

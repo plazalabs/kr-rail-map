@@ -1085,9 +1085,21 @@ const dataPromise = loadData().then(() => {
   // 출구 좌표는 부동산 거리 계산의 기준점이다(역 중심점은 최대 300m 틀린다).
   // 역 데이터와 함께 받아 두되, 실패해도 앱은 계속 돈다 — 출구가 없으면
   // StationExits 가 조용히 역 중심점으로 물러난다.
+  //
+  // 두 개를 다 받는다. 예전엔 여기서 return 으로 빠져나가서 아래 시세 로드가
+  // 아예 실행되지 않았다 — 시세 섹션이 영원히 안 떴다. 병렬로 띄우고 둘 다 기다린다.
+  const extra = [];
   if (typeof StationExits !== 'undefined') {
-    return StationExits.load('data/exits.geojson').catch(() => null);
+    extra.push(StationExits.load('data/exits.geojson').catch(() => null));
   }
+  // 시세는 없어도 지도는 그대로 쓸 수 있다. 조용히 실패하고 넘어간다.
+  if (typeof StationPrice !== 'undefined') {
+    extra.push(StationPrice.load('data/station-price.json').then(() => {
+      // 데이터가 늦게 도착했을 수 있다. 그 사이 역을 열어 뒀으면 다시 그린다.
+      if (typeof StationDetail !== 'undefined') StationDetail.refresh();
+    }).catch(() => null));
+  }
+  return Promise.all(extra);
 });
 map.on('load', async () => {
   await dataPromise;

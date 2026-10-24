@@ -94,6 +94,28 @@ check('미개통 노선 포함을 적는다', /미개통/.test(dataPage));
 check('상업적 이용 미확인을 경고한다', /상업적 이용은 아직 확인되지 않았습니다/.test(dataPage));
 check('공공데이터 전환 계획을 적는다', /data\.go\.kr/.test(dataPage));
 
+section('주변 시세 — 출처와 한계');
+{
+  const price = readJson('data/station-price.json');
+  const nSt = Object.keys(price.stations).length;
+  const nDong = price.districts.length;
+  const nDeals = price.districts.reduce((a, d) => a + d.deals, 0);
+  const nLinked = price.districts.reduce((a, d) => a + (d.stations.length ? d.deals : 0), 0);
+  check('시세 역 수가 페이지와 일치', dataPage.includes('<b>' + nSt + '</b>역 시세'), nSt + '곳');
+  check('법정동 수가 페이지와 일치', dataPage.includes('<b>' + nDong + '</b>개 법정동'), nDong + '곳');
+  check('총 거래 수가 페이지와 일치',
+    dataPage.includes('<b>' + fmt(nDeals) + '건</b>'), fmt(nDeals) + '건');
+  check('역 연결 거래 수가 페이지와 일치',
+    dataPage.includes('<b>' + fmt(nLinked) + '건</b>'), fmt(nLinked) + '건');
+  // 부동산 판단에 쓰는 숫자다. 방법과 한계를 안 적으면 안 된다.
+  check('법정동 단위임을 밝힌다', /법정동 단위/.test(dataPage));
+  check('신고 지연을 밝힌다', /30일 내 신고/.test(dataPage));
+  check('서울만 수집했음을 밝힌다', /서울 25개 구만/.test(dataPage));
+  check('해제 거래 제외를 밝힌다', /해제된 거래는 뺐습니다/.test(dataPage));
+  check('시세 출처 라이선스를 적는다',
+    /국토교통부 아파트 매매 실거래가[\s\S]{0,120}이용허락범위 제한 없음/.test(dataPage));
+}
+
 section('배포·캐시');
 check('서비스워커 앱 셸에 data.html', /'\.\/data\.html'/.test(sw));
 {

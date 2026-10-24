@@ -20,7 +20,9 @@
   var panel = null;
   var orderCache = {};   // lineId -> { chains: [[역명...], ...] }
 
-  var STATUS_LABEL = { open: '운행중', construction: '공사중', proposed: '계획' };
+  // 앱 전체 표기와 맞춘다 (compare/stats/timeline 과 같은 낱말).
+  // 'planned' 를 빼먹어서 배지에 영어 원문이 그대로 나온 적이 있다.
+  var STATUS_LABEL = { open: '운행중', construction: '공사중', planned: '계획중', proposed: '구상중' };
 
   /* ---------- CSS (동적 삽입) ---------- */
   var CSS =
@@ -43,6 +45,7 @@
     '.sd-badge{margin-left:auto;font-size:11px;padding:2px 8px;border-radius:10px;flex:none}' +
     '.sd-badge.open{background:#e6f4ea;color:#137333}' +
     '.sd-badge.construction{background:#fef7e0;color:#b06000}' +
+    '.sd-badge.planned{background:#f3e8fd;color:#6b21a8}' +
     '.sd-badge.proposed{background:#f1f3f4;color:#5f6368}' +
     '.sd-adj{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--border,#f4f4f4);font-size:13px}' +
     '.sd-adj .sd-lname{font-weight:600;white-space:nowrap}' +
@@ -50,6 +53,11 @@
     '.sd-st.sd-none{color:var(--muted,#6b7280);text-decoration:none;cursor:default}' +
     '.sd-arrow{color:var(--muted,#6b7280)}' +
     '.sd-note{font-size:12px;color:var(--muted,#6b7280);margin-top:4px}' +
+    // 시세는 이 패널에서 유일하게 '돈'을 말하는 숫자라 크게 보여준다.
+    '.sd-price{display:flex;align-items:baseline;gap:3px;margin-top:2px}' +
+    '.sd-price b{font-size:20px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}' +
+    '.sd-price span{font-size:12px;color:var(--muted,#6b7280)}' +
+    '.sd-price-sub{font-weight:400;font-size:11px;color:var(--muted,#6b7280)}' +
     '.sd-exits{display:flex;flex-wrap:wrap;gap:6px}' +
     '.sd-exit{min-width:38px;padding:6px 8px;border:1px solid var(--border-strong,#ddd);border-radius:6px;' +
     'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:12px;font-weight:600}' +
@@ -281,6 +289,7 @@
     if (!feature || !feature.properties) return;
     // 지도 load 전에 클릭이 들어올 수 있다. 패널이 없으면 여기서 만든다.
     if (!panel) { injectCSS(); buildPanel(); }
+    current = feature;
     var p = feature.properties;
     var st = stationById(p.id) || feature;   // 원본 우선 (lines 배열 문자열화 방지)
     var sp = st.properties;
@@ -337,6 +346,27 @@
       html += '출구</h3><div class="sd-note">이 역은 출구 좌표가 없어 역 중심점으로 거리를 잽니다.</div>';
     }
     html += '</div>';
+
+    // 주변 시세 — 국토교통부 아파트 매매 실거래가를 법정동 단위로 묶은 값.
+    // 단지 단위가 아니라 법정동 단위라는 사실을 화면에 밝힌다. 부동산 판단에
+    // 쓰는 숫자라서, 무엇을 근거로 한 값인지 숨기면 안 된다.
+    var price = (typeof StationPrice !== 'undefined' && StationPrice.isReady())
+      ? StationPrice.of(nameKo) : null;
+    if (price && price.medianPerPyeong) {
+      var pm = StationPrice.meta() || {};
+      html += '<div class="sd-sec"><h3>주변 시세 · ' + esc(price.dong) +
+        ' <span class="sd-price-sub">최근 6개월 ' + price.deals + '건</span></h3>';
+      html += '<div class="sd-price"><b>' + StationPrice.won(price.medianPerPyeong) +
+        '</b><span>/평</span></div>';
+      if (price.medianPrice) {
+        html += '<div class="sd-note">중위 거래금액 ' + StationPrice.won(price.medianPrice) + '</div>';
+      }
+      html += '<div class="sd-note">※ 아파트 매매 실거래 중위값입니다. ' +
+        '실거래가는 좌표를 주지 않아 <b>법정동 단위</b>로 묶었습니다 — ' +
+        '같은 법정동이라도 단지·층·연식에 따라 차이가 큽니다.' +
+        (pm.updated ? ' (기준 ' + esc(pm.updated) + ')' : '') + '</div>';
+      html += '</div>';
+    }
 
     // 시간표
     html += '<div class="sd-sec"><h3>첫차 / 막차</h3><div class="sd-note">시간표 데이터 없음</div></div>';
@@ -405,6 +435,15 @@
     if (panel) panel.classList.remove('sd-open');
   }
 
+  // 시세처럼 '나중에 도착하는' 데이터가 있다. 사용자가 데이터보다 먼저 역을
+  // 열면 시세 칸이 없는 패널이 뜨고, 그 뒤로는 다시 그릴 계기가 없다.
+  // 마지막으로 연 역을 기억해 두고, 데이터가 도착하면 스스로 다시 그린다.
+  var current = null;
+
+  function refresh() {
+    if (current && panel && panel.classList.contains('sd-open')) show(current);
+  }
+
   function init(m, lines, stations) {
     map = m || null;
     LINES = lines || [];
@@ -412,12 +451,18 @@
     orderCache = {};
     injectCSS();
     buildPanel();
+    // init 은 지도 스타일이 다 뜬 뒤에 불린다. 그 전에 검색으로 역을 열면
+    // LINES/STATIONS 가 비어 있어 노선 이름이 'seoul-subway-line-2' 같은
+    // 원본 id 로 나오고 인접역이 '—' 가 된다. 느린 회선에서 실제로 그랬다.
+    // 데이터가 갖춰졌으니 열려 있는 패널을 다시 그린다.
+    refresh();
   }
 
   var api = {
     init: init,
     show: show,
     hide: hide,
+    refresh: refresh,
     onAction: null,   // (action, stationName) => void — 호스트가 주입 가능
     // 테스트/디버깅용
     _lineOrder: lineOrder,

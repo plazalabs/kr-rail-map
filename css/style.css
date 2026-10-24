@@ -337,6 +337,10 @@ body.sidebar-hidden #sidebar { display: none; }
   margin-top: auto; padding-top: 14px;
   font-size: 10px; color: var(--muted); line-height: 1.6;
 }
+/* 출처 페이지 링크. 기본 파란 링크색을 그대로 두면 10px 글자에서
+   혼자만 튀어서 푸터가 지저분해진다. 같은 회색에 밑줄로만 구분한다. */
+.attrib a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.attrib a:hover { color: var(--text-2); }
 
 /* 테마 */
 .theme-row { display: flex; flex-wrap: wrap; gap: 5px; }

@@ -28,6 +28,13 @@ STATIONS = ROOT / "data" / "stations.geojson"
 
 PAREN = re.compile(r"^(?P<main>.+?)\((?P<sub>[^)]+)\)$")
 
+# 공식 자료가 아직 옛 이름인 역. 괄호 부기가 아니라 이름 자체가 바뀐 경우라
+# 위의 A(B) 규칙으로는 안 잡힌다. 좌표와 영문명으로 동일 역임을 확인한 것만 넣는다.
+#   용인중앙시장: 공식 '운동장·송담대' 와 16m 차이, 영문명이 옛 이름 그대로다.
+RENAMED = [
+    ("용인중앙시장", ["운동장·송담대", "운동장", "송담대"], "Yongin Jungang Market"),
+]
+
 
 def official_names():
     """공식 역명 집합. 'A(B)' 형태를 그대로 모은다."""
@@ -69,6 +76,23 @@ def main(dry=True):
         elif sub in ours and main_name not in ours:
             additions.setdefault(sub, set()).add(main_name)
 
+    # 이름 자체가 바뀐 역 — 별칭이 이미 있어도 합친다 (사람이 넣은 값은 남긴다).
+    renamed = 0
+    for name, olds, new_en in RENAMED:
+        f = ours.get(name)
+        if not f:
+            print(f"  없음(건너뜀) {name}")
+            continue
+        cur = list(f["properties"].get("aliases") or [])
+        merged = cur + [o for o in olds if o not in cur and o != name]
+        if merged != cur:
+            f["properties"]["aliases"] = merged
+            renamed += 1
+        if new_en and f["properties"].get("name_en") != new_en:
+            print(f"  {name} 영문명 {f['properties'].get('name_en')!r} → {new_en!r}")
+            f["properties"]["name_en"] = new_en
+            renamed += 1
+
     changed = 0
     for name, al in sorted(additions.items()):
         f = ours.get(name)
@@ -85,8 +109,9 @@ def main(dry=True):
         changed += 1
         print(f"  {name} ← {', '.join(new)}")
 
-    print(f"\n별칭 {changed}곳 " + ("(미리보기 — 저장 안 함)" if dry else "저장"))
-    if changed and not dry:
+    print(f"\n별칭 {changed}곳 · 개명 {renamed}건 "
+          + ("(미리보기 — 저장 안 함)" if dry else "저장"))
+    if (changed or renamed) and not dry:
         STATIONS.write_text(
             json.dumps(data, ensure_ascii=False, separators=(",", ":")), "utf8")
         print(f"저장: {STATIONS.relative_to(ROOT)}")

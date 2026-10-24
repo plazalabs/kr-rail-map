@@ -357,5 +357,36 @@ for (const [nm, lid] of [['왕십리', 'seoul-subway-line-2'], ['제기동', 'se
     s.properties.lines.includes(lid), s && s.properties.lines.join('+'));
 }
 
+// 6) 2026-10-25 에 공식 좌표로 채운 역들이 실제로 길찾기에 잡히는가
+//    데이터에 넣기만 하고 노선 선형과 안 맞으면 경로가 안 나온다.
+console.log('\n[새로 채운 역] 부천시청·구리·박촌·임학');
+{
+  const cases = [
+    ['부천시청', 126.763561, 37.504611, 'seoul-subway-line-7'],
+    ['구리', 127.14073, 37.60256, 'seoul-subway-line-8'],
+    ['박촌', 126.744946, 37.553525, 'incheon-subway-line-1'],
+    ['임학', 126.738642, 37.545058, 'incheon-subway-line-1'],
+  ];
+  for (const [nm, lng, lat, lid] of cases) {
+    const s = pick(nm, lng, lat);
+    check(`${nm} 이 ${lid} 역으로 있음`, s && s.n === nm, s && s.n);
+  }
+  // 7호선 안에서 앞뒤가 맞아야 한다 (상동 → 부천시청 → 신중동)
+  const r7 = route(['상동', 126.753081, 37.505769], ['부천시청', 126.763561, 37.504611]);
+  check('상동→부천시청 7호선 직결',
+    r7 && r7.transfers === 0 && r7.legs[0].lineId === 'seoul-subway-line-7',
+    r7 && JSON.stringify(r7.legs));
+  // 구리~별내는 GTX-G(계획선) 직결도 있어서 8호선이 뽑히지 않는다.
+  // 8호선만 지나는 구간으로 확인한다.
+  const r8 = route(['구리', 127.14073, 37.60256], ['동구릉', 127.135056, 37.610556]);
+  check('구리→동구릉 8호선 직결',
+    r8 && r8.transfers === 0 && r8.legs[0].lineId === 'seoul-subway-line-8',
+    r8 && JSON.stringify(r8.legs));
+  const r1 = route(['박촌', 126.744946, 37.553525], ['계양', 126.736319, 37.571539]);
+  check('박촌→계양 인천1호선 직결',
+    r1 && r1.transfers === 0 && r1.legs[0].lineId === 'incheon-subway-line-1',
+    r1 && JSON.stringify(r1.legs));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

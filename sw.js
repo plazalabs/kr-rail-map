@@ -4,8 +4,8 @@
  *  - GeoJSON 데이터: Cache First (최초 로드 후 캐시)
  *  - 지도 타일: Network First (오프라인이면 캐시된 타일만, 최대 200개)
  */
-const APP_CACHE = 'kr-rail-map-app-v25';
-const DATA_CACHE = 'kr-rail-map-data-v25';
+const APP_CACHE = 'kr-rail-map-app-v26';
+const DATA_CACHE = 'kr-rail-map-data-v26';
 const TILE_CACHE = 'kr-rail-map-tiles-v1';
 const MAX_TILE_ENTRIES = 200;
 
@@ -57,7 +57,8 @@ self.addEventListener('activate', (event) => {
 
 function isTileRequest(url) {
   // OpenFreeMap / Esri 타일 패턴
-  return /tiles\.openfreemap\.org|server\.arcgisonline\.com|basemaps\.cartocdn\.com|tile\.openstreetmap\.org/.test(url.hostname);
+  // (basemaps.cartocdn.com 은 다크 베이스맵에서 뺐다 — 키 없이는 워터마크만 준다)
+  return /tiles\.openfreemap\.org|server\.arcgisonline\.com|tile\.openstreetmap\.org/.test(url.hostname);
 }
 
 function isDataRequest(url) {

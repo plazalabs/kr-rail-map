@@ -3,21 +3,13 @@
 
 const STYLES = {
   normal: 'https://tiles.openfreemap.org/styles/bright',
-  dark: {
-    version: 8,
-    glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-    sources: {
-      carto: {
-        type: 'raster',
-        tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-                'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-                'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
-        tileSize: 256, maxzoom: 20,
-        attribution: '© OpenStreetMap contributors © CARTO'
-      }
-    },
-    layers: [{ id: 'carto', type: 'raster', source: 'carto' }]
-  },
+  // 다크는 OpenFreeMap 자체 스타일을 쓴다.
+  //
+  // 예전엔 CARTO dark_all 래스터를 썼는데, 지금은 키 없이 요청하면
+  // HTTP 200 으로 'API KEY REQUIRED' 워터마크 타일을 돌려준다. 상태코드가
+  // 200 이라 오류도 안 뜨고, 다크·이클립스·네온 테마 사용자는 지도 전체가
+  // 워터마크로 덮인 화면을 봤다. 조용히 깨지는 유형이라 눈으로 봐야 알았다.
+  dark: 'https://tiles.openfreemap.org/styles/dark',
   satellite: {
     version: 8,
     sources: {

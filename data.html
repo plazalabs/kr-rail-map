@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>데이터 출처와 이용 조건 | 한국철도맵</title>
+<meta name="description" content="한국철도맵이 쓰는 노선·역·출구 데이터의 출처와 라이선스, 정확성의 한계, 상업적 이용 시 확인해야 할 사항을 밝힙니다.">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="canonical" href="https://plazalabs.github.io/kr-rail-map/data.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="한국철도맵">
+<meta property="og:title" content="데이터 출처와 이용 조건 | 한국철도맵">
+<meta property="og:description" content="노선·역·출구 데이터의 출처와 라이선스, 정확성의 한계, 상업적 이용 시 확인해야 할 사항.">
+<meta property="og:url" content="https://plazalabs.github.io/kr-rail-map/data.html">
+<meta property="og:image" content="https://plazalabs.github.io/kr-rail-map/image/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b57d0">
+<style>
+:root{--bg:#fff;--surface:#f6f7f9;--text:#16191d;--text2:#4a5158;--muted:#868e96;--border:#e3e6ea;--accent:#0b57d0;--warn:#8a5300;--warnbg:#fff8e6}
+@media(prefers-color-scheme:dark){
+:root{--bg:#14171a;--surface:#1c2024;--text:#e8eaed;--text2:#b3bac1;--muted:#8b939b;--border:#2c3238;--accent:#7aa7ff;--warn:#e0b060;--warnbg:#2a2416}
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+color:var(--text);background:var(--bg);line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px 80px}
+header{border-bottom:1px solid var(--border);background:var(--surface)}
+header .wrap{padding:14px 20px;display:flex;align-items:center;gap:10px}
+.logo{font-weight:700;font-size:16px;text-decoration:none;letter-spacing:-.02em}
+.logo i{display:inline-block;width:4px;height:15px;border-radius:2px;margin-right:7px;vertical-align:-2px;
+background:linear-gradient(180deg,#0052a4 0 33%,#00a84d 33% 66%,#ef7c1c 66% 100%)}
+header nav{margin-left:auto;font-size:13px;color:var(--muted)}
+h1{font-size:28px;line-height:1.3;letter-spacing:-.03em;margin:28px 0 8px}
+.lede{color:var(--text2);font-size:15px;margin:0 0 22px}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 26px;padding:0;list-style:none}
+.stats li{background:var(--surface);border-radius:9px;padding:10px 14px;font-size:13px;color:var(--text2)}
+.stats b{display:block;font-size:19px;color:var(--text);font-variant-numeric:tabular-nums}
+h2{font-size:16px;margin:34px 0 10px;letter-spacing:-.02em}
+p{font-size:14.5px;color:var(--text2);margin:0 0 12px}
+ul.plain{padding-left:18px;margin:0 0 12px}
+ul.plain li{font-size:14px;color:var(--text2);margin-bottom:6px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:0 0 8px}
+.tbl th,.tbl td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.tbl th{color:var(--muted);font-weight:600;font-size:12px;background:var(--surface)}
+.tbl td:first-child{font-weight:600;color:var(--text);white-space:nowrap}
+.warn{background:var(--warnbg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:14px 0 0}
+.warn p{color:var(--warn);margin:0;font-size:13.5px}
+.note{margin-top:38px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--surface);
+padding:1px 5px;border-radius:4px}
+@media(max-width:560px){h1{font-size:23px}.stats li{padding:8px 11px}
+.tbl th,.tbl td{padding:8px 6px;font-size:12.5px}.tbl td:first-child{white-space:normal}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><a class="logo" href="./"><i></i>한국철도맵</a>
+<nav>데이터 출처</nav></div></header>
+<main class="wrap">
+<nav aria-label="위치" style="font-size:12px;color:var(--muted);margin-top:18px">
+<a href="./" style="text-decoration:none">홈</a> › 데이터 출처와 이용 조건</nav>
+
+<h1>데이터 출처와 이용 조건</h1>
+<p class="lede">이 지도는 여러 공개 자료를 대조해 다시 만든 것입니다. 어디서 왔고, 어디까지 믿을 수 있고,
+어디에 쓸 수 있는지를 여기 적어 둡니다.</p>
+
+<ul class="stats">
+<li><b>84</b>노선</li>
+<li><b>1,246</b>역</li>
+<li><b>4,306</b>출구</li>
+<li><b>2026-10</b>기준</li>
+</ul>
+
+<h2>항목별 출처</h2>
+<table class="tbl">
+<thead><tr><th>항목</th><th>출처</th><th>라이선스</th></tr></thead>
+<tbody>
+<tr>
+<td>노선 목록·역 목록</td>
+<td>미래철도DB(FRDB) 공개 목록을 기준으로 정리</td>
+<td>출처 사이트 이용 조건</td>
+</tr>
+<tr>
+<td>역 좌표·노선 선형</td>
+<td>철도맘(chul.mom) 표시 좌표를 참고하고, 어긋나는 구간은 공개 노선도를 보고 다시 그림</td>
+<td>출처 사이트 이용 조건</td>
+</tr>
+<tr>
+<td>역 출구 좌표</td>
+<td>© OpenStreetMap contributors (<code>railway=subway_entrance</code>)</td>
+<td>ODbL 1.0</td>
+</tr>
+<tr>
+<td>배경 지도</td>
+<td>© OpenStreetMap · OpenFreeMap / 위성 © Esri</td>
+<td>각 제공자 조건</td>
+</tr>
+<tr>
+<td>소요 시간·환승 시간</td>
+<td>공개된 공식 소요 시간을 기준으로 구간별 추정</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+
+<h2>정확성의 한계</h2>
+<p>아래는 지금 확인된 오차입니다. 숨기지 않고 적습니다.</p>
+<ul class="plain">
+<li><b>KTX·일반철도 선형은 개략선입니다.</b> 역 위치가 실제와 최대 6km 어긋나는 구간이 있습니다
+(서대전·계룡·연산 등). 수도권 도시철도는 100m 이내로 맞습니다.</li>
+<li><b>노선 연장은 선형을 따라 잰 값</b>이라 공식 영업거리와 조금 다릅니다.
+인천공항철도는 69.5km로 계산되는데 공식은 63.8km입니다(약 9% 초과).</li>
+<li><b>출구 좌표는 역의 75%(938/1,246)에만 있습니다.</b> KTX·일반철도역은 대부분 없어서
+그 경우 역 중심점으로 거리를 잽니다.</li>
+<li><b>미개통·계획 노선이 포함돼 있습니다</b>(GTX A~H, 동북선, 동부선 등).
+지도에서 개통 여부를 구분해 표시하지만, 계획은 바뀔 수 있습니다.</li>
+<li>역 출구 번호가 중간에 비는 경우가 있습니다(공사·폐쇄·미등록). 그 사실은 역 정보에 적어 둡니다.</li>
+</ul>
+
+<h2>이용 조건</h2>
+<p>개인적인 열람, 학습, 연구 목적의 이용은 자유롭게 하셔도 됩니다. 출처를 밝혀 주시면 좋습니다.</p>
+<div class="warn">
+<p><b>상업적 이용은 아직 확인되지 않았습니다.</b> 노선·역·선형 데이터를 참고한 원본 사이트
+(미래철도DB·철도맘)의 상업적 재사용 허락을 확인하지 못한 상태입니다. 이 지도나 여기서 뽑은 데이터를
+유료 서비스·제품에 넣으실 계획이라면, 먼저 아래 전환 작업이 끝난 뒤에 쓰시는 것이 안전합니다.</p>
+</div>
+
+<h2>앞으로 할 일 — 공공데이터로 전환</h2>
+<p>위 제약을 없애기 위해 노선·역 데이터를 국가철도공단·한국철도공사의 공공데이터
+(공공데이터포털, <code>data.go.kr</code>)로 옮길 예정입니다. 공공데이터는 대체로 출처 표기 조건으로
+상업적 이용이 허용됩니다. 전환이 끝나면 이 페이지에 바뀐 출처와 조건을 다시 적습니다.</p>
+
+<h2>정정 요청</h2>
+<p>역 위치가 틀렸거나 빠진 역이 있으면 알려 주세요. 확인해서 고치겠습니다.</p>
+
+<p class="note">최종 수정 2026-10-24 · 데이터 기준 2026-10<br>
+노선·역 데이터는 미래철도DB(FRDB)·철도맘(chul.mom) 공개 자료를 참고해 재구성했습니다.
+출구 좌표 © OpenStreetMap contributors (ODbL) · 지도 © OpenStreetMap · OpenFreeMap · 위성 © Esri<br>
+표시된 연장은 선형 데이터 기준이며 실제 영업거리와 다를 수 있습니다.</p>
+
+<a class="cta" href="./" style="display:inline-flex;align-items:center;gap:8px;margin:30px 0 0;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 22px;border-radius:11px">지도로 돌아가기 →</a>
+</main>
+</body>
+</html>

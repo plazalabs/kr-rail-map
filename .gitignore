@@ -18,3 +18,10 @@ data/_line_assign_check.json
 data/.secrets.json
 # 실거래가 캐시
 data/_rtms/
+# 역 주소 원본(28개 CSV, 373K)과 그 중간산출물
+# 역위치 CSV(data/_gov/*역위치*.csv)는 테스트가 정답지로 쓰므로 추적한다.
+# 주소 CSV 는 build_station_dong.py 가 필요할 때 다시 받는다.
+# 반드시 하위 폴더에 둔다 — _gov 에 두면 official.test.js 가 정답지로 읽어서
+# '1호선' 하나에 전국 1호선이 섞인다 (실제로 그렇게 깨졌다).
+data/_gov/addr/
+data/_station_dong.json

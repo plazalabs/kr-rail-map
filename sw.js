@@ -4,8 +4,8 @@
  *  - GeoJSON 데이터: Cache First (최초 로드 후 캐시)
  *  - 지도 타일: Network First (오프라인이면 캐시된 타일만, 최대 200개)
  */
-const APP_CACHE = 'kr-rail-map-app-v22';
-const DATA_CACHE = 'kr-rail-map-data-v22';
+const APP_CACHE = 'kr-rail-map-app-v24';
+const DATA_CACHE = 'kr-rail-map-data-v24';
 const TILE_CACHE = 'kr-rail-map-tiles-v1';
 const MAX_TILE_ENTRIES = 200;
 
@@ -20,6 +20,7 @@ const APP_SHELL = [
   './js/ui.js',
   './js/search.js',
   './js/exits.js',
+  './js/price.js',
   './js/app.js',
   './js/route.js',
   './js/draw.js',
@@ -60,7 +61,10 @@ function isTileRequest(url) {
 }
 
 function isDataRequest(url) {
-  return url.pathname.endsWith('.geojson');
+  // 데이터는 geojson 뿐 아니라 data/ 아래 json 도 있다 (station-price.json).
+  // 예전엔 .geojson 만 잡아서 시세 json 이 앱 셸 캐시로 들어갔다.
+  if (url.pathname.endsWith('.geojson')) return true;
+  return url.pathname.includes('/data/') && url.pathname.endsWith('.json');
 }
 
 // 타일 캐시 개수 제한 (오래된 것부터 삭제)

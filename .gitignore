@@ -7,3 +7,9 @@ qa-style.json
 
 # 로컬 백업/격리 (커밋 금지)
 _backup/
+
+# OSM 원본 덤프 — 다시 받을 수 있는 캐시 (876K)
+data/_osm_stations_raw.json
+data/_osm_compare.json
+data/_gov_compare.json
+data/_line_assign_check.json

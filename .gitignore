@@ -13,3 +13,8 @@ data/_osm_stations_raw.json
 data/_osm_compare.json
 data/_gov_compare.json
 data/_line_assign_check.json
+
+# 공공데이터포털 인증키 — 절대 깃허브에 올리지 않는다
+data/.secrets.json
+# 실거래가 캐시
+data/_rtms/

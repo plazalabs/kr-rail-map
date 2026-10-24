@@ -43,7 +43,9 @@ const LINE_MAP = {
   '공항철도': 'arex',
   '수인분당': 'suin-bundang-line',
   '신분당선': 'seoul-metropolitan-subway-shinbundang-line',
-  '용인에버라인': 'everline',
+  // 노선 id 는 'everline' 이 아니라 이것이다. 예전에 잘못 적어서
+  // 에버라인 15역이 전부 누락으로 보고됐다 (있는데 없다고 나왔다).
+  '용인에버라인': 'yongin-light-rail-transit',
   '의정부': 'uijeongbu-lrt',
   '우이신설': 'ui-sinseol-line',
   '인천1호선': 'incheon-subway-line-1',
@@ -55,18 +57,14 @@ const LINE_MAP = {
 const VARIANTS = {
   '이수': ['총신대입구'],
   '서해구청': ['서구청'],
+  // 공식 CSV 는 옛 이름, 우리 데이터는 개명된 이름 (같은 역, 16m 차이)
+  '용인중앙시장': ['운동장송담대'],
 };
 
 // 남은 차이 중 '알고 있는 것'만 적는다. 여기에 없는 차이가 생기면 실패한다.
 const KNOWN = {
-  // 부천시청 역 자체가 우리 데이터에 없다 (7호선). 별도 보충 과제.
-  'seoul-subway-line-7': { extra: [], missing: ['부천시청'] },
-  // 8호선 별내선 연장(2024) 구간의 구리역이 우리 데이터에 없다.
-  'seoul-subway-line-8': { extra: [], missing: ['구리'] },
-  // 인천1호선 박촌·임학 역이 우리 데이터에 없다.
-  'incheon-subway-line-1': { extra: [], missing: ['박촌', '임학'] },
-  // 용인에버라인은 노선만 있고 역이 하나도 붙어 있지 않다 (15개 전부 미배정).
-  'everline': { extra: [], missing: 'ALL' },
+  // 부천시청(7호선)·구리(8호선)·박촌·임학(인천1)은 2026-10-25 에 채웠다.
+  // data/fix_missing_stations.py 가 공식 좌표로 추가한다.
   // 우리 동해선은 부전~삼척 전 구간, 공식 CSV 는 부산 구간(부전~태화강)만.
   // 범위 차이라 오류가 아니다.
   'donghae-line': { extra: 'ALL', missing: [] },

@@ -84,5 +84,23 @@ const jong = SS.search(stations.features, '종합운동장', { limit: 5 })
   .filter(h => h.feature.properties.name_ko === '종합운동장');
 check('종합운동장(서울·부산) 2건', jong.length === 2, `${jong.length}건`);
 
+console.log('\n[개명·부기 별칭] 공식 표기 A(B) 에서 뽑은 것');
+// 공식 자료는 '불암산(당고개)' 처럼 적는다. 우리 지도는 '불암산' 만 쓴다.
+// 별칭이 없으면 '당고개' 검색이 신림선 '당곡' 을 1순위로 냈다 — 틀린 답이다.
+check('당고개 → 불암산', name('당고개') === '불암산', name('당고개'));
+check('송파구청 → 잠실', name('송파구청') === '잠실', name('송파구청'));
+check('총신대입구 → 이수 계열', /총신대입구|이수/.test(name('총신대입구')), name('총신대입구'));
+check('남대문시장 → 회현', name('남대문시장') === '회현', name('남대문시장'));
+check('별칭이 이름을 이기지 않는다',
+  name('불암산') === '불암산', name('불암산'));
+{
+  const aliased = stations.features.filter(f => f.properties.aliases);
+  check('별칭 보유 역 80곳 이상', aliased.length >= 80, aliased.length + '곳');
+  const dup = aliased.filter(f =>
+    (f.properties.aliases || []).includes(f.properties.name_ko));
+  check('자기 이름을 별칭으로 갖지 않음', dup.length === 0,
+    dup.map(f => f.properties.name_ko).join(',') || '0건');
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

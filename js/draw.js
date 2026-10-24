@@ -61,12 +61,16 @@ const DrawTools = (() => {
       paint: { 'line-color': color, 'line-width': 4, 'line-dasharray': DASHES[dashKey] } });
     map.addLayer({ id: 'draw-preview-pts', type: 'circle', source: 'draw-preview',
       paint: { 'circle-radius': 5, 'circle-color': '#fff', 'circle-stroke-color': color, 'circle-stroke-width': 2 } });
-    // 메모 핀 레이어
+    // 메모 핀 레이어 — 이모지(📌)를 심볼 텍스트로 쓰면 배경지도 글꼴 서버에
+    // 그 글리프가 없어 아무것도 안 그려진다. 글꼴이 필요 없는 원으로 찍는다.
     if (!map.getSource('memos')) {
       map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addLayer({
-        id: 'memo-pins', type: 'symbol', source: 'memos',
-        layout: { 'text-field': '📌', 'text-size': 24, 'text-allow-overlap': true }
+        id: 'memo-pins', type: 'circle', source: 'memos',
+        paint: {
+          'circle-radius': 7, 'circle-color': '#f59e0b',
+          'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2.5
+        }
       });
     }
   }

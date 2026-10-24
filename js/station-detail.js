@@ -50,6 +50,11 @@
     '.sd-st.sd-none{color:var(--muted,#6b7280);text-decoration:none;cursor:default}' +
     '.sd-arrow{color:var(--muted,#6b7280)}' +
     '.sd-note{font-size:12px;color:var(--muted,#6b7280);margin-top:4px}' +
+    '.sd-exits{display:flex;flex-wrap:wrap;gap:6px}' +
+    '.sd-exit{min-width:38px;padding:6px 8px;border:1px solid var(--border-strong,#ddd);border-radius:6px;' +
+    'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:12px;font-weight:600}' +
+    '.sd-exit:hover{background:var(--hover,#f6f6f6);border-color:var(--accent,#1a73e8)}' +
+    '.sd-exit.sd-exit-center{border-style:dashed;font-weight:400;color:var(--muted,#6b7280)}' +
     '.sd-btns{display:flex;gap:8px;margin-top:16px}' +
     '.sd-btns button{flex:1;padding:9px 0;border:1px solid var(--border-strong,#ddd);border-radius:6px;' +
     'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:14px}' +
@@ -243,6 +248,35 @@
       '<b>현재역</b>' + '<span class="sd-arrow">→</span>' + cell(a.next) + '</div>';
   }
 
+  // 출구 하나를 지도에 찍는다. 레이어는 한 번만 만들고 데이터만 갈아 끼운다.
+  function showExitPin(lng, lat) {
+    if (!map) return;
+    try {
+      if (!map.getSource('sd-exit-pt')) {
+        map.addSource('sd-exit-pt', {
+          type: 'geojson', data: { type: 'FeatureCollection', features: [] }
+        });
+        map.addLayer({
+          id: 'sd-exit-halo', type: 'circle', source: 'sd-exit-pt',
+          paint: {
+            'circle-radius': 16, 'circle-color': '#1a73e8', 'circle-opacity': 0.18
+          }
+        });
+        map.addLayer({
+          id: 'sd-exit-dot', type: 'circle', source: 'sd-exit-pt',
+          paint: {
+            'circle-radius': 6, 'circle-color': '#1a73e8',
+            'circle-stroke-color': '#fff', 'circle-stroke-width': 2.5
+          }
+        });
+      }
+      map.getSource('sd-exit-pt').setData({
+        type: 'FeatureCollection',
+        features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [lng, lat] } }]
+      });
+    } catch (e) { /* 스타일 로드 전이면 무시 */ }
+  }
+
   function show(feature) {
     if (!feature || !feature.properties) return;
     var p = feature.properties;
@@ -268,6 +302,40 @@
       : '<div class="sd-note">노선 정보 없음</div>';
     html += '<div class="sd-note">※ 인접역 순서는 역 좌표 간 거리로 추론한 것으로, 실제 운행 순서와 다를 수 있습니다.</div></div>';
 
+    // 출구 — 부동산에서 '역까지 몇 분'은 중심점이 아니라 출구까지의 거리다.
+    // 출구 좌표가 없는 역(주로 KTX·일반철도)은 없다고 밝히고 중심점으로 물러난다.
+    var exits = (typeof StationExits !== 'undefined' && StationExits.isReady())
+      ? StationExits.exitsOf(sid) : [];
+    html += '<div class="sd-sec"><h3>';
+    if (exits.length) {
+      var sm = StationExits.summary(sid);
+      var nums = exits.map(function (e) { return parseInt(e.no, 10) || 0; })
+        .filter(function (n) { return n > 0; });
+      var maxNo = nums.length ? Math.max.apply(null, nums) : 0;
+      html += '출구 · ' + exits.length + '개';
+      if (sm.spreadKm > 0.05) html += ' (최대 ' + Math.round(sm.spreadKm * 1000) + 'm 떨어짐)';
+      html += '</h3><div class="sd-exits">';
+      html += exits.slice().sort(function (a, b) {
+        return (parseInt(a.no, 10) || 999) - (parseInt(b.no, 10) || 999);
+      }).map(function (e) {
+        return '<button class="sd-exit" data-lng="' + e.c[0] + '" data-lat="' + e.c[1] +
+          '" title="' + esc(nameKo) + ' ' + esc(e.no || '') + '번 출구로 이동">' +
+          esc(e.no || '·') + '</button>';
+      }).join('');
+      html += '</div>';
+      // 번호가 중간에 비면(공사·폐쇄) 그 사실을 적어 둔다. 조용히 넘기면
+      // '출구가 12개인데 왜 8번이 없지' 로 오해받는다.
+      if (maxNo && exits.length < maxNo) {
+        html += '<div class="sd-note">1~' + maxNo + '번 중 ' + exits.length +
+          '개만 확인됨 (나머지는 미개설·미등록)</div>';
+      }
+      html += '<div class="sd-note">출구를 누르면 지도가 그 출구로 이동합니다. ' +
+        '출구 좌표 © OpenStreetMap (ODbL)</div>';
+    } else {
+      html += '출구</h3><div class="sd-note">이 역은 출구 좌표가 없어 역 중심점으로 거리를 잽니다.</div>';
+    }
+    html += '</div>';
+
     // 시간표
     html += '<div class="sd-sec"><h3>첫차 / 막차</h3><div class="sd-note">시간표 데이터 없음</div></div>';
 
@@ -288,6 +356,20 @@
           if (STATIONS[i].properties.name_ko === el.getAttribute('data-st')) { target = STATIONS[i]; break; }
         }
         if (target) show(target);
+      });
+    });
+
+    // 출구 클릭 → 그 출구로 지도 이동. 역 상세는 열어 둔 채로 둔다.
+    // (닫으면 사용자가 방금 누른 출구를 어디서 봤는지 잃는다)
+    body.querySelectorAll('.sd-exit[data-lng]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var lng = parseFloat(el.getAttribute('data-lng'));
+        var lat = parseFloat(el.getAttribute('data-lat'));
+        if (!map || !isFinite(lng) || !isFinite(lat)) return;
+        try {
+          map.flyTo({ center: [lng, lat], zoom: 18, duration: 700 });
+          showExitPin(lng, lat);
+        } catch (e) { /* 지도 준비 전이면 무시 */ }
       });
     });
 

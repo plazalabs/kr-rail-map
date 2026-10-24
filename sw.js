@@ -4,8 +4,8 @@
  *  - GeoJSON 데이터: Cache First (최초 로드 후 캐시)
  *  - 지도 타일: Network First (오프라인이면 캐시된 타일만, 최대 200개)
  */
-const APP_CACHE = 'kr-rail-map-app-v17';
-const DATA_CACHE = 'kr-rail-map-data-v17';
+const APP_CACHE = 'kr-rail-map-app-v18';
+const DATA_CACHE = 'kr-rail-map-data-v18';
 const TILE_CACHE = 'kr-rail-map-tiles-v1';
 const MAX_TILE_ENTRIES = 200;
 
@@ -17,6 +17,8 @@ const APP_SHELL = [
   './vendor/maplibre-gl.css',
   './vendor/maplibre-gl.js',
   './js/ui.js',
+  './js/search.js',
+  './js/exits.js',
   './js/app.js',
   './js/route.js',
   './js/draw.js',

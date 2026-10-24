@@ -22,14 +22,35 @@
     return R_KM * 2 * Math.asin(Math.sqrt(h));
   }
 
+  // 직선거리 → 실제 보행거리 보정. 도심 격자형 가로망에서 우회율은 대략 1.2~1.4다.
+  // 1.25는 보수적인 중간값이다. 이걸 안 곱하면 '도보 4분'이 실제 5~6분이 된다.
+  const DETOUR = 1.25;
+  const WALK_KMH = 4;
+
   function fmtDist(km) {
     const m = km * 1000;
     return m < 1000 ? Math.round(m) + 'm' : (km).toFixed(2) + 'km';
   }
-  function walkMin(km) { return Math.round(km / 4 * 60); } // 도보 4km/h
+  function walkMin(km) { return Math.round(km / WALK_KMH * 60); } // km 는 보행거리
   function fmtWalk(km) {
     const m = walkMin(km);
     return m >= 60 ? Math.floor(m / 60) + '시간 ' + (m % 60) + '분' : m + '분';
+  }
+
+  // 한 역까지의 보행거리. 출구 좌표가 있으면 '가장 가까운 출구'까지 잰다.
+  // 역 중심점으로 재면 강남역처럼 긴 역에서 300m 넘게 틀린다.
+  //   { km(보행), straightKm(직선), exitNo, kind: 'exit' | 'center' }
+  function accessOf(feature, lng, lat) {
+    let km = null, exitNo = '', kind = 'center';
+    if (typeof StationExits !== 'undefined' && StationExits.isReady()) {
+      const d = StationExits.distanceTo(feature, lng, lat);
+      if (d) { km = d.km; exitNo = d.exitNo; kind = d.kind; }
+    }
+    if (km == null) {
+      const c = feature.geometry.coordinates;
+      km = hav(lng, lat, c[0], c[1]);
+    }
+    return { km: km * DETOUR, straightKm: km, exitNo: exitNo, kind: kind };
   }
 
   function isGtxLine(lid) { return GTX_RE.test(lid); }
@@ -53,15 +74,14 @@
 
   // 역명 기준 중복 제거 후 거리순 정렬
   function nearestStations(lng, lat, n) {
-    const seen = new Map(); // name -> {feature, dist}
+    const seen = new Map(); // name -> {feature, dist, exitNo, kind}
     for (const s of ST) {
       const p = s.properties;
       const nm = p.name_ko;
       if (!nm) continue;
-      const c = s.geometry.coordinates;
-      const d = hav(lng, lat, c[0], c[1]);
-      if (!seen.has(nm) || d < seen.get(nm).dist) {
-        seen.set(nm, { feature: s, dist: d });
+      const a = accessOf(s, lng, lat);
+      if (!seen.has(nm) || a.km < seen.get(nm).dist) {
+        seen.set(nm, { feature: s, dist: a.km, straight: a.straightKm, exitNo: a.exitNo, kind: a.kind });
       }
     }
     return [...seen.values()].sort((a, b) => a.dist - b.dist).slice(0, n);
@@ -73,10 +93,9 @@
       const lines = s.properties.lines || [];
       if (!lines.some(isGtxLine)) continue;
       const nm = s.properties.name_ko;
-      const c = s.geometry.coordinates;
-      const d = hav(lng, lat, c[0], c[1]);
-      if (!seen.has(nm) || d < seen.get(nm).dist) {
-        seen.set(nm, { feature: s, dist: d });
+      const a = accessOf(s, lng, lat);
+      if (!seen.has(nm) || a.km < seen.get(nm).dist) {
+        seen.set(nm, { feature: s, dist: a.km, straight: a.straightKm, exitNo: a.exitNo, kind: a.kind });
       }
     }
     const arr = [...seen.values()].sort((a, b) => a.dist - b.dist);
@@ -88,8 +107,7 @@
     for (const s of ST) {
       const nm = s.properties.name_ko;
       if (!nm || seen.has(nm)) continue;
-      const c = s.geometry.coordinates;
-      if (hav(lng, lat, c[0], c[1]) <= radiusKm) seen.set(nm, s);
+      if (accessOf(s, lng, lat).km <= radiusKm) seen.set(nm, s);
     }
     return [...seen.values()];
   }
@@ -105,19 +123,20 @@
       let p = 0;
       if (wm <= 5) p = 30; else if (wm <= 10) p = 20; else if (wm <= 15) p = 10;
       score += p;
-      parts.push(`가장 가까운 역 도보 ${wm}분 (+${p})`);
+      parts.push(`가장 가까운 역(${top.feature.properties.name_ko}` +
+        (top.kind === 'exit' ? ` ${top.exitNo}번 출구` : '') + `) 도보 ${wm}분 (+${p})`);
     }
 
     const near = stationsWithin(lng, lat, 0.5);
     const sp = Math.min(near.length * 5, 15);
     score += sp;
-    parts.push(`반경 500m 내 역 ${near.length}개 (+${sp})`);
+    parts.push(`도보 500m 내 역 ${near.length}개 (+${sp})`);
 
     const lineSet = new Set();
     near.forEach(s => (s.properties.lines || []).forEach(l => lineSet.add(l)));
     const lp = Math.min(lineSet.size * 3, 9);
     score += lp;
-    parts.push(`반경 500m 내 노선 ${lineSet.size}개 (+${lp})`);
+    parts.push(`도보 500m 내 노선 ${lineSet.size}개 (+${lp})`);
 
     const g = nearestGtx(lng, lat);
     if (g) {
@@ -181,17 +200,33 @@ padding:2px 10px;font-weight:700;margin-left:8px}
   }
 
   function ensureMarkerLayer() {
-    if (map.getSource('iv-point')) return;
-    map.addSource('iv-point', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    map.addLayer({
-      id: 'iv-point', type: 'circle', source: 'iv-point',
-      paint: { 'circle-radius': 8, 'circle-color': '#c026d3', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 }
-    });
-    map.addSource('iv-circle', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    map.addLayer({
-      id: 'iv-circle', type: 'line', source: 'iv-circle',
-      paint: { 'line-color': '#c026d3', 'line-width': 2, 'line-dasharray': [4, 4] }
-    });
+    if (!map.getSource('iv-point')) {
+      map.addSource('iv-point', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'iv-point', type: 'circle', source: 'iv-point',
+        paint: { 'circle-radius': 8, 'circle-color': '#c026d3', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 }
+      });
+      map.addSource('iv-circle', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'iv-circle', type: 'line', source: 'iv-circle',
+        paint: { 'line-color': '#c026d3', 'line-width': 2, 'line-dasharray': [4, 4] }
+      });
+    }
+    // 가장 가까운 출구 — 이 지점에서 실제로 걸어갈 문이 어디인지 보여준다.
+    if (!map.getSource('iv-exit')) {
+      map.addSource('iv-exit', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'iv-exit-halo', type: 'circle', source: 'iv-exit',
+        paint: { 'circle-radius': 18, 'circle-color': '#1a73e8', 'circle-opacity': 0.16 }
+      });
+      map.addLayer({
+        id: 'iv-exit', type: 'circle', source: 'iv-exit',
+        paint: {
+          'circle-radius': 6, 'circle-color': '#1a73e8',
+          'circle-stroke-color': '#fff', 'circle-stroke-width': 2.5
+        }
+      });
+    }
   }
 
   function circlePoly(lng, lat, radiusKm, steps) {
@@ -232,7 +267,10 @@ padding:2px 10px;font-weight:700;margin-left:8px}
       const nm = g.feature.properties.name_ko;
       const gLines = (g.feature.properties.lines || []).filter(isGtxLine);
       h += `<div class="iv-card iv-gtx"><h4>🚄 가장 가까운 GTX역</h4>
-        <div class="iv-row"><b>${esc(nm)}</b><span>${fmtDist(g.dist)} · 도보 ${fmtWalk(g.dist)}</span></div>
+        <div class="iv-row"><b>${esc(nm)}</b><span>도보 ${fmtWalk(g.dist)}</span></div>
+        <div class="iv-reason">${g.kind === 'exit'
+          ? `${esc(g.exitNo)}번 출구까지 ${fmtDist(g.dist)}`
+          : `역 중심점까지 ${fmtDist(g.dist)} (출구 좌표 없음)`}</div>
         <div class="iv-row"><span>${gLines.map(l =>
           `<span class="iv-dot" style="background:${esc(lineColor(l))}"></span>${esc(lineName(l))}(${statusLabel(lineStatus(l))})`
         ).join(' ')}</span></div>
@@ -250,17 +288,21 @@ padding:2px 10px;font-weight:700;margin-left:8px}
         <span style="font-size:11px">${lines.map(l =>
           `<span class="iv-dot" style="background:${esc(lineColor(l))}"></span>${esc(lineName(l))}`
         ).join(' ')}</span></span>
-        <span style="white-space:nowrap">${fmtDist(t.dist)}<br><span style="font-size:11px">도보 ${fmtWalk(t.dist)}</span></span></div>`;
+        <span style="white-space:nowrap">도보 ${fmtWalk(t.dist)}<br>
+        <span style="font-size:11px">${t.kind === 'exit'
+          ? esc(t.exitNo) + '번 출구 ' + fmtDist(t.dist)
+          : fmtDist(t.dist) + ' (중심점)'}</span></span></div>`;
     });
     h += `</div>`;
 
     // 반경 500m
-    h += `<div class="iv-card"><h4>📍 반경 500m 내</h4>
+    h += `<div class="iv-card"><h4>📍 도보 500m 내</h4>
       <div class="iv-row"><span>역 개수</span><b>${near.length}개</b></div>
       <div class="iv-row"><span>노선 수</span><b>${lineSet.size}개</b></div>
     </div>`;
 
-    h += `<div class="iv-note">⚠️ 추론 기반 분석입니다. 거리는 직선거리 기준이며 실제 도보 시간과 다를 수 있습니다.
+    h += `<div class="iv-note">⚠️ 추론 기반 분석입니다. 거리는 가장 가까운 <b>출구</b>까지의 직선거리에
+      우회계수 ${DETOUR}를 곱한 보행거리 추정치입니다. 실제 도보 경로·경사·신호 대기와 다를 수 있습니다.
       점수는 자체 가중치 모델로 산출한 참고용 수치입니다.</div>`;
 
     body.innerHTML = h;
@@ -278,6 +320,19 @@ padding:2px 10px;font-weight:700;margin-left:8px}
         type: 'Feature', properties: {},
         geometry: { type: 'Polygon', coordinates: [circlePoly(lng, lat, 0.5)] }
       }]
+    });
+
+    // 가장 가까운 출구에 표시 — '어느 문으로 나가야 가까운지' 를 지도에서 바로 본다
+    let nearest = null;
+    if (top3.length && typeof StationExits !== 'undefined' && StationExits.isReady()) {
+      nearest = StationExits.nearestExit(top3[0].feature.properties.id, lng, lat);
+    }
+    map.getSource('iv-exit').setData({
+      type: 'FeatureCollection',
+      features: nearest ? [{
+        type: 'Feature', properties: {},
+        geometry: { type: 'Point', coordinates: nearest.exit.c }
+      }] : []
     });
   }
 
@@ -301,6 +356,9 @@ padding:2px 10px;font-weight:700;margin-left:8px}
       if (map && map.getSource('iv-point')) {
         map.getSource('iv-point').setData({ type: 'FeatureCollection', features: [] });
         map.getSource('iv-circle').setData({ type: 'FeatureCollection', features: [] });
+      }
+      if (map && map.getSource('iv-exit')) {
+        map.getSource('iv-exit').setData({ type: 'FeatureCollection', features: [] });
       }
       InvestAnalyzer.setMode(false);
     },

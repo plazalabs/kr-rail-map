@@ -204,9 +204,45 @@ function addDataLayers() {
   });
   map.addLayer({
     id: 'station-labels', type: 'symbol', source: 'stations', minzoom: 11,
-    layout: { 'text-field': ['get', 'name_ko'], 'text-size': 11, 'text-offset': [0, 1.2] },
+    // 글꼴을 지정하지 않으면 MapLibre 기본값(Open Sans)을 요청하는데,
+    // 배경지도 글꼴 서버(OpenFreeMap)에는 Noto Sans 만 있다. 404 가 나고
+    // 라벨이 통째로 사라진다 — 실제로 역 이름이 안 보이고 있었다.
+    layout: {
+      'text-field': ['get', 'name_ko'], 'text-size': 11, 'text-offset': [0, 1.2],
+      'text-font': ['Noto Sans Regular']
+    },
     paint: { 'text-halo-color': '#ffffff', 'text-halo-width': 1 }
   });
+}
+
+// 출구 레이어 — 확대했을 때만 보인다. 전국 단위에서 4,300개를 그리면
+// 노선을 가려서 지도가 안 읽힌다. 16레벨부터 역 단위로 내려다볼 때 켠다.
+function addExitLayers() {
+  if (!map || map.getSource('station-exits')) return;
+  if (typeof StationExits === 'undefined' || !StationExits.isReady()) return;
+  try {
+    map.addSource('station-exits', { type: 'geojson', data: StationExits.geojson() });
+    map.addLayer({
+      id: 'station-exits', type: 'circle', source: 'station-exits', minzoom: 16,
+      paint: {
+        // 17레벨부터 번호가 안에 들어가므로 원을 키운다 (배지처럼 읽히게).
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 16, 5, 17, 10, 18, 12],
+        'circle-color': '#1a73e8', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2,
+        'circle-opacity': 0.95
+      }
+    });
+    map.addLayer({
+      id: 'station-exit-labels', type: 'symbol', source: 'station-exits', minzoom: 17,
+      layout: {
+        'text-field': ['get', 'no'], 'text-size': 10, 'text-offset': [0, 0],
+        'text-font': ['Noto Sans Regular'],
+        // 출구는 20~40m 간격으로 붙어 있다. 충돌 회피를 켜면 대부분 사라져서
+        // '몇 번 출구' 를 지도에서 못 읽는다. 겹쳐도 보이게 둔다.
+        'text-allow-overlap': true, 'text-ignore-placement': true
+      },
+      paint: { 'text-color': '#ffffff', 'text-halo-width': 0 }
+    });
+  } catch (e) { /* 스타일 교체 중이면 다음 기회에 */ }
 }
 
 function updateFilters() {
@@ -1046,11 +1082,18 @@ const dataPromise = loadData().then(() => {
   const sc = document.getElementById('scope-count');
   if (sc) sc.textContent = scopeLines().length + '개 노선';
   setupRouteFinder();
+  // 출구 좌표는 부동산 거리 계산의 기준점이다(역 중심점은 최대 300m 틀린다).
+  // 역 데이터와 함께 받아 두되, 실패해도 앱은 계속 돈다 — 출구가 없으면
+  // StationExits 가 조용히 역 중심점으로 물러난다.
+  if (typeof StationExits !== 'undefined') {
+    return StationExits.load('data/exits.geojson').catch(() => null);
+  }
 });
 map.on('load', async () => {
   await dataPromise;
   dataReady = true;
   addDataLayers(); updateFilters();
+  addExitLayers();
   DrawTools.setStations(STATIONS);
   DrawTools.refreshMyLines(); DrawTools.renderMyLineList();
   DrawTools.refreshMemos();
@@ -1084,6 +1127,7 @@ map.on('load', async () => {
 function restoreCustomLayers() {
   if (dataReady && map.isStyleLoaded() && !map.getSource('lines')) {
     addDataLayers(); updateFilters(); DrawTools.restyle();
+    addExitLayers();
   }
 }
 map.on('style.load', restoreCustomLayers);

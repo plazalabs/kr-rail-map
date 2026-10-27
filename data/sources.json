@@ -64,9 +64,22 @@
       "obtained": "공개 목록을 옮겨 정리",
       "snapshot": "2026-10",
       "used_for": "노선 이름·색·구분·개통 상태, 역 이름과 노선 배정",
-      "feeds": ["data/frdb_lines.json"],
-      "affects": ["data/lines.geojson", "data/stations.geojson"],
-      "fields": ["lines[].id", "lines[].name_ko", "lines[].color", "lines[].category", "lines[].status", "stations[].name_ko", "stations[].lines"],
+      "feeds": [
+        "data/frdb_lines.json"
+      ],
+      "affects": [
+        "data/lines.geojson",
+        "data/stations.geojson"
+      ],
+      "fields": [
+        "lines[].id",
+        "lines[].name_ko",
+        "lines[].color",
+        "lines[].category",
+        "lines[].status",
+        "stations[].name_ko",
+        "stations[].lines"
+      ],
       "commercial": "unverified",
       "caveat": "이 사이트에서 유일하게 남은 미확인 원천이다. 이름·순서 같은 사실 정보라 저작권 대상이 아니라는 견해가 일반적이지만 확인된 것은 아니다."
     },
@@ -81,8 +94,14 @@
       "snapshot": "2026-10",
       "used_for": "역 좌표 대조, OSM 선로가 끊긴 16개 노선의 선형",
       "feeds": [],
-      "affects": ["data/stations.geojson", "data/lines.geojson"],
-      "fields": ["stations[].geometry", "lines[].geometry"],
+      "affects": [
+        "data/stations.geojson",
+        "data/lines.geojson"
+      ],
+      "fields": [
+        "stations[].geometry",
+        "lines[].geometry"
+      ],
       "commercial": "unverified",
       "caveat": "선형 41개는 OSM 으로 옮겼다. 남은 16개(KTX 강릉선·중부내륙선, 호남선·장항선 계통)가 아직 이 원천이다."
     },
@@ -97,9 +116,16 @@
       "obtained_url": "https://download.geofabrik.de/asia/south-korea-latest.osm.pbf",
       "snapshot": "2026-10-27",
       "used_for": "노선 선형. 역 좌표에서 가장 가까운 선로 점을 찾아 선로를 따라 잇는다",
-      "feeds": ["data/lines.geojson"],
+      "feeds": [
+        "data/lines.geojson"
+      ],
       "affects": [],
-      "fields": ["lines[].geometry", "lines[].coord_source", "lines[].coord_method", "lines[].coord_relations"],
+      "fields": [
+        "lines[].geometry",
+        "lines[].coord_source",
+        "lines[].coord_method",
+        "lines[].coord_relations"
+      ],
       "commercial": "allowed",
       "caveat": "반영한 노선은 coord_source=osm 과 근거 관계 id 를 남긴다. 공식 영업거리 ±8%, 역 이탈 400m 이내일 때만 반영했다."
     },
@@ -115,7 +141,10 @@
       "used_for": "우리 역 좌표가 OSM 철도역과 같은 위치인지 대조 (1,202/1,247, 차이 중앙값 0m)",
       "feeds": [],
       "affects": [],
-      "intermediate": ["data/_osm_stations_raw.json", "data/_osm_compare.json"],
+      "intermediate": [
+        "data/_osm_stations_raw.json",
+        "data/_osm_compare.json"
+      ],
       "fields": [],
       "commercial": "allowed",
       "caveat": "대조만 하고 좌표를 가져다 쓰지는 않는다. 결과는 data.html 에 수치로 적어 두었다."
@@ -130,9 +159,16 @@
       "obtained": "Overpass API — railway=subway_entrance",
       "snapshot": "2026-10",
       "used_for": "출구 4,306개. '역까지 몇 분' 을 역 중심점이 아니라 가까운 출구 기준으로 재기 위해",
-      "feeds": ["data/_exits_raw.json", "data/exits.geojson"],
+      "feeds": [
+        "data/_exits_raw.json",
+        "data/exits.geojson"
+      ],
       "affects": [],
-      "fields": ["exits[].no", "exits[].geometry", "exits[].osm"],
+      "fields": [
+        "exits[].no",
+        "exits[].geometry",
+        "exits[].osm"
+      ],
       "commercial": "allowed",
       "caveat": "역의 75%(938/1,247)에만 있다. KTX·일반철도역은 대부분 없다."
     },
@@ -146,8 +182,12 @@
       "obtained": "공공데이터포털 파일데이터 (18개 노선 CSV)",
       "snapshot": "2022-11 ~ 2026-06 (노선마다 다름)",
       "used_for": "역 누락 0건 검증의 정답지. tests/official.test.js 가 매번 다시 대조한다",
-      "feeds": ["data/_gov/"],
-      "affects": ["data/stations.geojson"],
+      "feeds": [
+        "data/_gov/"
+      ],
+      "affects": [
+        "data/stations.geojson"
+      ],
       "fields": [],
       "commercial": "allowed",
       "caveat": "수도권 도시철도 위주다. KTX·일반철도 역위치가 없다."
@@ -161,11 +201,20 @@
       "licence": "data-go-kr-open",
       "obtained": "공공데이터포털 파일데이터 (28개 CSV)",
       "snapshot": "2026-10",
-      "used_for": "역의 법정동을 지번주소에서 뽑아 실거래가와 잇는다. 지오코딩을 쓰지 않기 위한 우회로",
+      "used_for": "역의 법정동을 지번주소에서 뽑아 실거래가와 잇는다. 시군구는 (시도, 시군구코드) 로 구분한다 — 중구가 서울에도 인천에도 있다",
       "feeds": [],
-      "affects": ["data/station-price.json", "data/station-complex.json"],
-      "intermediate": ["data/_gov/addr/", "data/_station_dong.json"],
-      "fields": ["station_dong[].sgg", "station_dong[].dong"],
+      "affects": [
+        "data/station-price.json",
+        "data/station-complex.json"
+      ],
+      "intermediate": [
+        "data/_gov/addr/",
+        "data/_station_dong.json"
+      ],
+      "fields": [
+        "station_dong[].sgg",
+        "station_dong[].dong"
+      ],
       "commercial": "allowed",
       "caveat": "실거래가 API 는 좌표를 주지 않고, 지오코더 API 는 좌표 저장을 금지한다. 그래서 주소데이터로 이름을 잇는다."
     },
@@ -178,13 +227,24 @@
       "licence": "data-go-kr-open",
       "obtained": "공공데이터포털 오픈API (RTMSDataSvcAptTrade)",
       "snapshot": "2026-04 ~ 2026-09",
-      "used_for": "법정동 중위 평당가 238역, 단지 3,452곳의 평당가·준공연도·전용면적",
-      "feeds": ["data/station-price.json", "data/station-complex.json"],
+      "used_for": "법정동 중위 평당가 463역, 단지 5,301곳의 평당가·준공연도·전용면적 (서울 25 + 경기 47 + 인천 12 시군구)",
+      "feeds": [
+        "data/station-price.json",
+        "data/station-complex.json"
+      ],
       "affects": [],
-      "intermediate": ["data/_rtms/"],
-      "fields": ["stations[].medianPerPyeong", "stations[].medianPrice", "complexes[].pp", "complexes[].year", "complexes[].area"],
+      "intermediate": [
+        "data/_rtms/"
+      ],
+      "fields": [
+        "stations[].medianPerPyeong",
+        "stations[].medianPrice",
+        "complexes[].pp",
+        "complexes[].year",
+        "complexes[].area"
+      ],
       "commercial": "allowed",
-      "caveat": "좌표가 없다. 법정동 단위까지만 정확하고, 단지-역 도보 거리는 알 수 없다. 서울 25개 구만 수집했다."
+      "caveat": "좌표가 없다. 법정동 단위까지만 정확하고, 단지-역 도보 거리는 알 수 없다. 수도권만 수집했다(82개 시군구에서 거래가 있었다). 인천 중구 원도심은 6개월간 아파트 거래가 0건이라 시세가 없다."
     },
     {
       "id": "openfreemap",
@@ -229,8 +289,12 @@
       "snapshot": "2026-10",
       "used_for": "역 사이 소요 시간, 환승 횟수, 노선 연장",
       "feeds": [],
-      "affects": ["data/lines.geojson"],
-      "fields": ["lines[].length_km"],
+      "affects": [
+        "data/lines.geojson"
+      ],
+      "fields": [
+        "lines[].length_km"
+      ],
       "commercial": "allowed",
       "caveat": "실제 시간표가 아니라 추정값이다. 연장은 선형을 따라 잰 값이라 공식 영업거리와 조금 다르다(인천공항철도 +9%)."
     }

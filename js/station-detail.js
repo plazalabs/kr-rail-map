@@ -318,8 +318,12 @@
     if (!price || !price.medianPerPyeong) return '';
 
     var pm = StationPrice.meta() || {};
+    // '강남구 역삼동' 처럼 시군구를 같이 적는다. 동 이름만으로는 '중구'
+    // 처럼 여러 시도에 있는 곳을 구분할 수 없다.
+    var where = [price.sido, price.sgg].filter(Boolean).join(' ');
     var h = '<div class="sd-sec sd-price-sec"><h3>주변 시세 · ' + esc(price.dong) +
-      ' <span class="sd-price-sub">최근 6개월 ' + price.deals + '건</span></h3>';
+      ' <span class="sd-price-sub">' + (where ? '· ' + esc(where) + ' · ' : '') +
+      '최근 6개월 ' + price.deals + '건</span></h3>';
     h += '<div class="sd-price"><b>' + StationPrice.pp(price.medianPerPyeong) +
       '</b><span>/평</span></div>';
     if (price.medianPrice) {

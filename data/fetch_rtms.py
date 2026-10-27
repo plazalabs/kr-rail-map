@@ -36,21 +36,17 @@ CACHE = ROOT / "data" / "_rtms"
 SECRET = ROOT / "data" / ".secrets.json"
 BASE = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"
 
-# 서울 25개 구. 다른 지역은 법정동코드 5자리를 직접 넣으면 된다.
-SGG = {
-    "종로구": "11110", "중구": "11140", "용산구": "11170", "성동구": "11200",
-    "광진구": "11215", "동대문구": "11230", "중랑구": "11260", "성북구": "11290",
-    "강북구": "11305", "도봉구": "11320", "노원구": "11350", "은평구": "11380",
-    "서대문구": "11410", "마포구": "11440", "양천구": "11470", "강서구": "11500",
-    "구로구": "11530", "금천구": "11545", "영등포구": "11560", "동작구": "11590",
-    "관악구": "11620", "서초구": "11650", "강남구": "11680", "송파구": "11710",
-    "강동구": "11740",
-}
+# 시군구 코드표는 data/lawd.py 한 곳에만 둔다. 여기서 또 관리하면 반드시
+# 어긋난다 — 실제로 서울 표를 따로 들고 있다가, 경기·인천을 넣으려니
+# '중구'가 서울에도 인천에도 있어서 막혔다.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import lawd as LAWD  # noqa: E402
+
+# '강남구' 처럼 이름으로도 부를 수 있게 (서울만 — 다른 지역은 동명 구가 있다)
+SGG = {n: c for (c, sd, n, _p) in LAWD.ROWS if sd == "서울특별시"}
+SGG_NAME = {v: k for k, v in SGG.items()}
 
 M2_PER_PYEONG = 3.305785
-
-# 법정동코드 → 구 이름 (역 주소데이터의 구 이름과 맞추기 위해)
-SGG_NAME = {v: k for k, v in SGG.items()}
 
 
 def load_key():
@@ -288,10 +284,48 @@ def selftest():
     return 1 if bad else 0
 
 
+def fetch_one(code, a, b, key, quiet=False):
+    """한 시군구의 기간 거래를 모아 캐시에 쓰고 레코드를 돌려준다."""
+    sd, sgg, _parent = LAWD.CODE.get(code, (None, None, ""))
+    recs_all = []
+    for ym in months(a, b):
+        path = CACHE / f"{code}_{ym}.json"
+        if path.exists():
+            recs = json.loads(path.read_text("utf8"))
+            if not quiet:
+                print(f"  {ym}: 캐시 {len(recs)}건")
+        else:
+            try:
+                items, total = fetch(code, ym, key)
+            except SystemExit:
+                raise
+            except Exception as e:        # noqa: BLE001
+                print(f"  {ym}: 실패 {type(e).__name__} {str(e)[:80]}")
+                continue
+            recs = [to_record(r) for r in items]
+            # 시군구를 붙인다. 실거래가는 법정동 이름만 주기 때문에 같은
+            # 이름의 법정동(중구: 서울/인천, 서구: 인천/대구/광주/부산)을
+            # 구분할 수 없다. 코드까지 넣어야 나중에 안 섞인다.
+            for r in recs:
+                r["lawd"] = code
+                r["sido"] = sd
+                r["sgg"] = sgg
+            path.write_text(json.dumps(recs, ensure_ascii=False), "utf8")
+            if not quiet:
+                print(f"  {ym}: {len(recs)}건 (totalCount {total})")
+            time.sleep(0.25)
+        recs_all.extend(recs)
+    out = CACHE / f"{code}_{a}_{b}.json"
+    out.write_text(json.dumps(recs_all, ensure_ascii=False, indent=1), "utf8")
+    return recs_all
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--selftest", action="store_true", help="키 없이 파서만 검증")
     ap.add_argument("--lawd", help="법정동코드 5자리 또는 서울 구 이름")
+    ap.add_argument("--metro", action="store_true",
+                    help="수도권(서울·경기·인천) 시군구 전체를 받는다")
     ap.add_argument("--from", dest="a", help="시작 계약년월 YYYYMM")
     ap.add_argument("--to", dest="b", help="끝 계약년월 YYYYMM")
     ap.add_argument("--summary", action="store_true")
@@ -299,12 +333,16 @@ def main():
 
     if args.selftest:
         return selftest()
-    if not (args.lawd and args.a and args.b):
-        ap.error("--lawd --from --to 가 필요합니다 (또는 --selftest)")
+    if not (args.a and args.b) or not (args.lawd or args.metro):
+        ap.error("--lawd 또는 --metro 와 --from --to 가 필요합니다 (또는 --selftest)")
 
-    lawd = SGG.get(args.lawd, args.lawd)
-    if not (lawd.isdigit() and len(lawd) == 5):
-        raise SystemExit("법정동코드는 5자리 숫자이거나 서울 구 이름이어야 합니다: " + args.lawd)
+    if args.metro:
+        targets = LAWD.codes()
+    else:
+        code = SGG.get(args.lawd, args.lawd)
+        if not (code.isdigit() and len(code) == 5):
+            raise SystemExit("법정동코드는 5자리 숫자이거나 서울 구 이름이어야 합니다: " + args.lawd)
+        targets = [code]
 
     key = load_key()
     if not key:
@@ -316,33 +354,23 @@ def main():
         return 2
 
     CACHE.mkdir(parents=True, exist_ok=True)
-    allrecs = []
-    for ym in months(args.a, args.b):
-        path = CACHE / f"{lawd}_{ym}.json"
-        if path.exists():
-            recs = json.loads(path.read_text("utf8"))
-            print(f"{ym}: 캐시 {len(recs)}건")
-        else:
-            try:
-                items, total = fetch(lawd, ym, key)
-            except SystemExit:
-                raise
-            except Exception as e:        # noqa: BLE001
-                print(f"{ym}: 실패 {type(e).__name__} {str(e)[:100]}")
-                continue
-            recs = [to_record(r) for r in items]
-            # 구 이름을 붙인다. 실거래가는 법정동 이름만 주기 때문에
-            # 같은 이름의 법정동(신사동: 강남구/은평구)을 구분할 수 없다.
-            for r in recs:
-                r["sgg"] = SGG_NAME.get(lawd, args.lawd)
-            path.write_text(json.dumps(recs, ensure_ascii=False), "utf8")
-            print(f"{ym}: {len(recs)}건 (totalCount {total})")
-            time.sleep(0.25)
-        allrecs.extend(recs)
+    if args.metro:
+        allrecs = []
+        done = 0
+        for code in targets:
+            sd, sgg, _p = LAWD.CODE[code]
+            n_before = len(allrecs)
+            print(f"[{done + 1}/{len(targets)}] {code} {sd} {sgg}")
+            allrecs.extend(fetch_one(code, args.a, args.b, key, quiet=True))
+            got = len(allrecs) - n_before
+            if not got:
+                print("  → 0건")
+            done += 1
+        print(f"\n수도권 {len(targets)}개 시군구 · 거래 {len(allrecs):,}건")
+        return 0
 
-    out = CACHE / f"{lawd}_{args.a}_{args.b}.json"
-    out.write_text(json.dumps(allrecs, ensure_ascii=False, indent=1), "utf8")
-    print(f"\n저장: {out.relative_to(ROOT)}  ({len(allrecs)}건)")
+    allrecs = fetch_one(targets[0], args.a, args.b, key)
+    print(f"\n저장: data/_rtms/{targets[0]}_{args.a}_{args.b}.json  ({len(allrecs)}건)")
 
     if args.summary:
         s = summarize(allrecs)

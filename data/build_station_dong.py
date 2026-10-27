@@ -27,6 +27,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 GOV = ROOT / "data" / "_gov"
 ADDR = GOV / "addr"
 INDEX = ADDR / "_addr_index.json"
+RTMS = ROOT / "data" / "_rtms"
+sys.path.insert(0, str(ROOT / "data"))
+import lawd as LAWD  # noqa: E402
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
 
@@ -66,7 +69,9 @@ def _norm(addr):
     # 앞 토큰과 붙여야 법정동이 된다.
     out = []
     for t in toks:
-        if re.fullmatch(r"\d+가", t) and out:
+        # '안양6동' 처럼 법정동 이름 자체에 숫자가 들어간다. 숫자+동/가 를
+        # 앞 토큰과 붙이지 않으면 '6동' 이라는 없는 법정동이 생긴다.
+        if re.fullmatch(r"\d+(동|읍|면|리|가)", t) and out:
             out[-1] += t
         else:
             out.append(t)
@@ -74,35 +79,57 @@ def _norm(addr):
 
 
 def split_addr(addr):
-    """지번주소 → (시군구, 법정동). 못 찾으면 (None, None)."""
+    """지번주소 → (시군구, 법정동). 못 찾으면 (None, None).
+
+    법정동은 **'읍면 리' 형태로 돌려준다**('매송면 어천리'). 실거래가 API 가
+    법정동을 그 형태로 주기 때문이다. 리 이름만 쓰면 '중리'처럼 같은
+    시군구 안에 여러 번 나오는 이름이 하나로 합쳐진다.
+    """
     toks = _norm(addr)
     if not toks:
         return None, None
 
     dong = None
-    cut = len(toks)
+    didx = None
     # 1) 번지 앞 토큰이 법정동
     for i, t in enumerate(toks):
         if BUNJI.match(t) and i > 0:
             cand = toks[i - 1]
             if cand.endswith(DONG_END) and cand not in NOT_DONG and not cand.endswith(ROAD_END):
-                dong = cand
-                cut = i
+                dong, didx = cand, i - 1
                 break
     # 2) 번지가 없거나 앞 토큰이 도로명이면, 뒤에서부터 '동/읍/면/리' 를 찾는다
     if dong is None:
         for i in range(len(toks) - 1, -1, -1):
             t = toks[i]
             if t.endswith(DONG_END) and t not in NOT_DONG and not t.endswith(ROAD_END):
-                dong = t
-                cut = i
+                dong, didx = t, i
                 break
 
-    # 시군구: 법정동 앞에서 '구/시/군' 으로 끝나는 가장 가까운 토큰
+    # 리 앞에 읍·면이 있으면 붙인다. 실거래가는 '읍면 리' 로 주고, 리 이름만
+    # 으로는 같은 시군구 안의 동명 리를 구분할 수 없다.
+    if dong and dong.endswith("리") and didx and didx > 0:
+        prev = toks[didx - 1]
+        if prev.endswith(("읍", "면")):
+            dong = prev + " " + dong
+            didx -= 1
+
+    # '안양6동' 은 행정동 이름이고 법정동은 '안양동' 이다. 실거래가는
+    # 법정동을 주므로 숫자를 떼야 맞는다.
+    if dong:
+        dong = re.sub(r"\d+(?=동$)", "", dong)
+
+    # 시군구: 법정동 앞에서 '구/시/군' 으로 끝나는 가장 가까운 토큰.
+    # 시도('서울특별시')도 '시' 로 끝나므로 건너뛴다 — 안 그러면
+    # '서울특별시 신촌동' 의 시군구가 '서울특별시' 가 된다.
     sgg = ""
-    for j in range(cut - 1, -1, -1):
-        if toks[j].endswith(("구", "시", "군")):
-            sgg = toks[j]
+    start = didx if didx is not None else len(toks)
+    for j in range(start - 1, -1, -1):
+        t = toks[j]
+        if t.endswith(("도", "특별시", "광역시", "특별자치시")):
+            continue
+        if t.endswith(("구", "시", "군")):
+            sgg = t
             break
     return sgg or None, dong
 
@@ -143,23 +170,112 @@ def download():
     print(f"새로 받은 파일 {ok}개")
 
 
+def sido_of(jibun):
+    """지번주소 → 시도. 주소가 '노원구 월계동 85' 처럼 시도 없이 시작해도
+    두 번째 토큰까지 본다."""
+    toks = _norm(jibun)
+    for t in toks[:2]:
+        sd = LAWD.norm_sido(t)
+        if sd:
+            return sd
+    return None
+
+
+def dong_index():
+    """법정동 이름 → 그 법정동이 실제로 거래된 시군구 코드 집합.
+
+    '경기도 고양시 백석동' 처럼 구가 빠진 주소가 있다. 백석동은 일산동구에만
+    있으므로, 실거래가 응답에 나온 법정동 목록을 뒤지면 어느 구인지 알 수
+    있다. 지도 경계를 따로 받을 필요가 없다.
+    """
+    idx = {}
+    for f in glob.glob(str(RTMS / "*_*.json")):
+        stem = pathlib.Path(f).stem
+        code = stem.split("_")[0]
+        if len(code) != 5 or not code.isdigit():
+            continue
+        try:
+            recs = json.loads(pathlib.Path(f).read_text("utf8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(recs, list):
+            continue
+        for r in recs:
+            d = r.get("umd")
+            if not d:
+                continue
+            # '매송면 어천리' 는 그대로도, 리 이름만으로도 찾을 수 있게 둔다.
+            # 여기서는 어느 시군구인지만 알면 되므로, 리 이름이 같은 시군구
+            # 안에서 겹쳐도 문제가 되지 않는다.
+            for k in (d, d.split()[-1]):
+                idx.setdefault(k, set()).add(code)
+    return idx
+
+
+def resolve_lawd(sido, sgg, dong, index):
+    """(시도, 시군구, 법정동) → 시군구 코드. 못 정하면 None."""
+    code = LAWD.resolve(sido, sgg)
+    if code:
+        return code
+    if not sgg and not dong:
+        return None
+
+    # 구가 빠진 주소: 같은 시(또는 같은 시도) 안에서 법정동으로 찾는다.
+    cand = set(LAWD.CODE)
+    if sgg:
+        cand = {c for c in cand if LAWD.CODE[c][2] == sgg or LAWD.CODE[c][1] == sgg}
+    if sido:
+        cand = {c for c in cand if LAWD.CODE[c][0] == sido}
+    if not cand or not dong:
+        return None
+    hits = cand & index.get(dong, set())
+    if not hits and " " in dong:
+        hits = cand & index.get(dong.split()[-1], set())
+    # 둘 이상이면 포기한다. 억지로 하나를 고르면 엉뚱한 동네 시세가 붙는다.
+    return hits.pop() if len(hits) == 1 else None
+
+
+def parse(jibun):
+    """주소 → (시도, 시군구, 법정동)."""
+    sgg, dong = split_addr(jibun)
+    return sido_of(jibun), sgg, dong
+
+
+PAREN = re.compile(r"\s*\([^)]*\)\s*")
+
+
 def build():
+    index = dong_index()
+    if not index:
+        print("주의: 실거래가 캐시가 없다. 구가 빠진 주소는 코드를 못 붙인다.\n"
+              "      python data/fetch_rtms.py --metro --from 202604 --to 202609")
     rows = []
     for f in sorted(glob.glob(str(ADDR / "주소_*.csv"))):
         rd = list(csv.DictReader(pathlib.Path(f).read_text("utf-8").splitlines()))
         for r in rd:
             name = (r.get("역명") or "").strip()
             jibun = (r.get("지번주소") or "").strip()
+            road = (r.get("도로명주소") or "").strip()
             if not name or not jibun:
                 continue
-            sgg, dong = split_addr(jibun)
+            sido, sgg, dong = parse(jibun)
+            # 지번주소가 '서울특별시 신촌동 74-12' 처럼 구를 빼먹은 경우가
+            # 있다. 도로명주소에는 구가 있어서, 모자란 것만 그쪽에서 채운다.
+            if not (sido and sgg and dong):
+                rsido, rsgg, rdong = parse(PAREN.sub(" ", road))
+                sido = sido or rsido
+                sgg = sgg or rsgg
+                dong = dong or rdong
+            code = resolve_lawd(sido, sgg, dong, index) if dong else None
             rows.append({
                 "name": name,
                 "line": (r.get("선명") or "").strip(),
+                "sido": sido or "",
                 "sgg": sgg or "",
+                "lawd": code or "",
                 "dong": dong or "",
                 "jibun": jibun,
-                "road": (r.get("도로명주소") or "").strip(),
+                "road": road,
             })
 
     total = len(rows)
@@ -170,18 +286,31 @@ def build():
     for r in bad[:8]:
         print(f"  파싱 실패: {r['name']:<10} {r['jibun']}")
 
+    # 시군구 코드를 못 붙인 역은 시세를 붙일 수 없다. 조용히 넘어가면
+    # '이 역은 원래 시세가 없다' 와 구분이 안 되므로 숫자로 남긴다.
+    nocode = [r for r in parsed if not r["lawd"]]
+    by_sido = {}
+    for r in nocode:
+        by_sido[r["sido"] or "(시도 불명)"] = by_sido.get(r["sido"] or "(시도 불명)", 0) + 1
+    print(f"시군구 코드를 못 붙인 역 {len(nocode)}곳 "
+          + (", ".join(f"{k} {v}" for k, v in sorted(by_sido.items())) if by_sido else ""))
+    for r in nocode[:6]:
+        print(f"  코드 없음: {r['name']:<10} {r['jibun']}")
+
     out = ROOT / "data" / "_station_dong.json"
     out.write_text(json.dumps(parsed, ensure_ascii=False, indent=1), "utf8")
     print(f"\n저장: {out.relative_to(ROOT)} ({len(parsed)}행)")
 
-    # (시군구, 법정동) → 역 목록
+    # (시도, 시군구코드, 법정동) → 역 목록. 이름만 쓰면 '중구'가 섞인다.
     by_dong = {}
     for r in parsed:
-        by_dong.setdefault((r["sgg"], r["dong"]), []).append(r["name"])
+        if not r["lawd"]:
+            continue
+        by_dong.setdefault((r["lawd"], r["dong"]), []).append(r["name"])
     print(f"법정동 {len(by_dong)}곳에 역이 배정됨")
-    sample = list(by_dong.items())[:5]
-    for (sgg, dong), names in sample:
-        print(f"  {sgg} {dong}: {', '.join(names[:4])}")
+    for (code, dong), names in list(by_dong.items())[:5]:
+        sd, sg, _p = LAWD.CODE.get(code, ("", "", ""))
+        print(f"  {sd} {sg} {dong}: {', '.join(names[:4])}")
     return 0
 
 

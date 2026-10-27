@@ -128,6 +128,28 @@ section('배경 지도 제공자');
   check('다크 테마가 그 스타일을 쓴다', /DARK_THEMES[\s\S]{0,200}STYLES\.dark/.test(appJs));
 }
 
+section('선형 출처 — OSM 선로에서 다시 그림');
+{
+  const osmLines = lines.features.filter(f => (f.properties || {}).coord_source === 'osm');
+  check('OSM 선형 노선이 40개 이상', osmLines.length >= 40, osmLines.length + '개');
+  check('data.html 에 OSM 선형 노선 수를 적는다',
+    dataPage.includes(osmLines.length + '개 노선'), osmLines.length + '개 노선');
+  check('선형 라이선스를 ODbL 로 적는다',
+    /노선 선형[\s\S]{0,400}ODbL/.test(dataPage));
+  check('상업적 이용이 허용된다는 점을 적는다', /상업적 이용이 허용/.test(dataPage));
+  check('결과물(Produced Work) 임을 밝힌다', /Produced Work/.test(dataPage));
+  // 철도맘 화면을 옮겨 그린 선형이 남아 있으면 그 노선은 출처를 OSM 이라
+  // 적을 수 없다. 반영된 노선은 반드시 '어떻게 만들었는지' 가 남아 있어야 한다.
+  const noSource = osmLines.filter(f => !f.properties.coord_method
+    && !(f.properties.coord_relations || []).length);
+  check('OSM 노선마다 만든 방법이 남아 있다', noSource.length === 0,
+    noSource.length ? noSource.slice(0, 3).map(f => f.properties.id).join(', ') : '전부');
+  const byMethod = {};
+  osmLines.forEach(f => { byMethod[f.properties.coord_method] = (byMethod[f.properties.coord_method] || 0) + 1; });
+  check('만든 방법이 relation / graph 둘 중 하나', Object.keys(byMethod).every(m => m === 'relation' || m === 'graph'),
+    JSON.stringify(byMethod));
+}
+
 section('배포·캐시');
 check('서비스워커 앱 셸에 data.html', /'\.\/data\.html'/.test(sw));
 {

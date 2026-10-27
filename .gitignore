@@ -16,6 +16,13 @@ data/_line_assign_check.json
 
 # 공공데이터포털 인증키 — 절대 깃허브에 올리지 않는다
 data/.secrets.json
+# OSM 원본 덤프와 pyosmium 산출물 — 다시 받을 수 있는 캐시 (284M)
+# 남한 전체 pbf 는 저장소에 넣을 수 없다. rail_ways/route_rels 는 이걸
+# 다시 풀어서 만든다(data/osm_pbf_extract.py).
+data/_osm/
+data/_osm_routes_tags.json
+# 선형 후보 — 위 캐시에서 다시 계산한다 (1.3M)
+data/_osm_align/
 # 실거래가 캐시
 data/_rtms/
 # 역 주소 원본(28개 CSV, 373K)과 그 중간산출물

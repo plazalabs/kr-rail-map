@@ -44,6 +44,16 @@ ul.plain li{font-size:14px;color:var(--text2);margin-bottom:6px}
 .tbl th,.tbl td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
 .tbl th{color:var(--muted);font-weight:600;font-size:12px;background:var(--surface)}
 .tbl td:first-child{font-weight:600;color:var(--text);white-space:nowrap}
+h3{font-size:13.5px;margin:22px 0 8px;color:var(--text);letter-spacing:-.01em}
+.badge{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.badge.ok{background:#e6f4ea;color:#1e6b34}
+.badge.cond{background:#fff3d6;color:#7a5200}
+.badge.unv{background:#fde8e8;color:#9b1c1c}
+@media(prefers-color-scheme:dark){
+.badge.ok{background:#14301d;color:#7ddb9a}
+.badge.cond{background:#332a12;color:#e0b060}
+.badge.unv{background:#3a1618;color:#f0a0a0}
+}
 .warn{background:var(--warnbg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:14px 0 0}
 .warn p{color:var(--warn);margin:0;font-size:13.5px}
 .note{margin-top:38px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
@@ -73,51 +83,98 @@ padding:1px 5px;border-radius:4px}
 </ul>
 
 <h2>항목별 출처</h2>
+<!-- sources:begin · data/build_sources.py 가 만든다. 손으로 고치지 말 것 -->
 <table class="tbl">
-<thead><tr><th>항목</th><th>출처</th><th>라이선스</th></tr></thead>
+<thead><tr><th>항목</th><th>출처</th><th>라이선스</th><th>상업적 이용</th></tr></thead>
 <tbody>
-<tr>
-<td>노선 목록·역 목록</td>
-<td>미래철도DB(FRDB) 공개 목록을 기준으로 정리</td>
-<td>출처 사이트 이용 조건</td>
+<tr data-src="frdb">
+<td>노선·역 목록</td>
+<td><a href="https://frdb2.ivyro.net/" rel="noopener">미래철도DB (FRDB)</a></td>
+<td>출처 사이트 이용 조건 — 상업적 재사용 미확인</td>
+<td><span class="badge unv">미확인</span></td>
 </tr>
-<tr>
-<td>역 좌표</td>
-<td>© OpenStreetMap contributors (<code>railway=station</code>) 와 국가철도공단 역위치를 대조</td>
-<td>ODbL 1.0 / 이용허락범위 제한 없음</td>
+<tr data-src="chulmom">
+<td>역 좌표·노선 선형 (16개 노선)</td>
+<td><a href="https://chul.mom/" rel="noopener">철도맘 (chul.mom)</a></td>
+<td>출처 사이트 이용 조건 — 상업적 재사용 미확인</td>
+<td><span class="badge unv">미확인</span></td>
 </tr>
-<tr>
-<td>노선 선형</td>
-<td>© OpenStreetMap contributors (<code>railway=rail</code> 선로 중심선, 경로 관계) — 41개 노선</td>
-<td>ODbL 1.0</td>
+<tr data-src="osm-rails">
+<td>노선 선형 (41개 노선)</td>
+<td><a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap contributors</a></td>
+<td>Open Database License 1.0</td>
+<td><span class="badge ok">가능</span></td>
 </tr>
-<tr>
+<tr data-src="osm-stations">
+<td>역 좌표 대조</td>
+<td><a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap contributors</a></td>
+<td>Open Database License 1.0</td>
+<td><span class="badge ok">가능</span></td>
+</tr>
+<tr data-src="osm-exits">
 <td>역 출구 좌표</td>
-<td>© OpenStreetMap contributors (<code>railway=subway_entrance</code>)</td>
-<td>ODbL 1.0</td>
+<td><a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap contributors</a></td>
+<td>Open Database License 1.0</td>
+<td><span class="badge ok">가능</span></td>
 </tr>
-<tr>
+<tr data-src="korail-stations">
 <td>역·노선 배정 검증</td>
-<td>국가철도공단 노선별 역위치 (공공데이터포털)</td>
-<td>이용허락범위 제한 없음</td>
+<td><a href="https://www.data.go.kr/" rel="noopener">국가철도공단 — 노선별 역위치</a></td>
+<td>공공데이터포털 — 이용허락범위 제한 없음</td>
+<td><span class="badge ok">가능</span></td>
 </tr>
-<tr>
+<tr data-src="korail-addr">
+<td>역 ↔ 법정동 연결</td>
+<td><a href="https://www.data.go.kr/" rel="noopener">국가철도공단 — 역 주소데이터</a></td>
+<td>공공데이터포털 — 이용허락범위 제한 없음</td>
+<td><span class="badge ok">가능</span></td>
+</tr>
+<tr data-src="molit-rtms">
 <td>주변 시세</td>
-<td>국토교통부 아파트 매매 실거래가 (공공데이터포털 오픈API)</td>
-<td>이용허락범위 제한 없음</td>
+<td><a href="https://www.data.go.kr/data/15126469/openapi.do" rel="noopener">국토교통부 — 아파트 매매 실거래가</a></td>
+<td>공공데이터포털 — 이용허락범위 제한 없음</td>
+<td><span class="badge ok">가능</span></td>
 </tr>
-<tr>
-<td>배경 지도</td>
-<td>© OpenStreetMap · OpenFreeMap / 위성 © Esri</td>
-<td>각 제공자 조건</td>
+<tr data-src="openfreemap">
+<td>배경 지도 (일반·다크·흑백)</td>
+<td><a href="https://openfreemap.org/" rel="noopener">OpenFreeMap</a></td>
+<td>OpenFreeMap 이용 조건</td>
+<td><span class="badge ok">가능</span></td>
 </tr>
-<tr>
-<td>소요 시간·환승 시간</td>
-<td>공개된 공식 소요 시간을 기준으로 구간별 추정</td>
-<td>—</td>
+<tr data-src="esri-imagery">
+<td>위성 배경</td>
+<td><a href="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" rel="noopener">Esri</a></td>
+<td>Esri World Imagery 이용 조건</td>
+<td><span class="badge cond">조건부</span></td>
+</tr>
+<tr data-src="derived">
+<td>소요 시간·환승·연장</td>
+<td>자체 계산</td>
+<td>자체 계산 — 저작권 주장 없음</td>
+<td><span class="badge ok">가능</span></td>
 </tr>
 </tbody>
 </table>
+<p class="note">이 표는 <a href="data/sources.json"><code>data/sources.json</code></a> 에서 자동으로 만듭니다. 기계가 읽는 형식이 필요하면 그 파일을 쓰세요. 손으로 고치면 테스트가 실패합니다.</p>
+
+<h3>표시해야 하는 출처 문구</h3>
+<ul class="plain">
+<li>미래철도DB(FRDB) 공개 목록 — <a href="https://frdb2.ivyro.net/" rel="noopener">원문</a></li>
+<li>철도맘(chul.mom) 표시 좌표 — <a href="https://chul.mom/" rel="noopener">원문</a></li>
+<li>© OpenStreetMap contributors — <a href="https://www.openstreetmap.org/copyright" rel="noopener">원문</a></li>
+<li>© OpenStreetMap contributors — <a href="https://www.openstreetmap.org/copyright" rel="noopener">원문</a></li>
+<li>© OpenStreetMap contributors — <a href="https://www.openstreetmap.org/copyright" rel="noopener">원문</a></li>
+<li>© OpenStreetMap · OpenFreeMap — <a href="https://openfreemap.org/" rel="noopener">원문</a></li>
+<li>위성 © Esri — <a href="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" rel="noopener">원문</a></li>
+</ul>
+
+<h3>상업적 이용 — 지금 상태</h3>
+<ul class="plain">
+<li><b>바로 쓸 수 있음 (8개)</b> — 노선 선형 (41개 노선), 역 좌표 대조, 역 출구 좌표, 역·노선 배정 검증, 역 ↔ 법정동 연결, 주변 시세, 배경 지도 (일반·다크·흑백), 소요 시간·환승·연장</li>
+<li><b>조건 확인 필요 (1개)</b> — 위성 배경</li>
+<li><b>아직 미확인 (2개)</b> — 노선·역 목록, 역 좌표·노선 선형 (16개 노선)</li>
+</ul>
+<!-- sources:end -->
 
 <h2>노선 선형은 OSM 선로에서 다시 그렸습니다</h2>
 <p>초기 버전의 노선 선형은 공개 지도 화면을 보고 손으로 옮겨 그린 것이었습니다. 화면을
@@ -213,9 +270,11 @@ KTX 강릉선·중부내륙선과 호남선·장항선 계통이 여기 해당�
 <h2>이용 조건</h2>
 <p>개인적인 열람, 학습, 연구 목적의 이용은 자유롭게 하셔도 됩니다. 출처를 밝혀 주시면 좋습니다.</p>
 <div class="warn">
-<p><b>상업적 이용은 아직 확인되지 않았습니다.</b> 노선·역·선형 데이터를 참고한 원본 사이트
-(미래철도DB·철도맘)의 상업적 재사용 허락을 확인하지 못한 상태입니다. 이 지도나 여기서 뽑은 데이터를
-유료 서비스·제품에 넣으실 계획이라면, 먼저 아래 전환 작업이 끝난 뒤에 쓰시는 것이 안전합니다.</p>
+<p><b>상업적 이용은 원천별로 다릅니다.</b> 위 표의 <b>상업적 이용</b> 열이 답입니다.
+11개 원천 중 <b>8개는 바로 쓸 수 있고</b>(ODbL·공공데이터), <b>1개는 조건 확인이 필요하며</b>(위성 배경),
+<b>2개는 아직 확인되지 않았습니다</b> — 미래철도DB의 노선·역 목록과 철도맘의 16개 노선 선형입니다.
+이 둘은 공개돼 있지만 상업적 재사용 허락을 받지 못했습니다. 유료 서비스에 넣을 계획이라면
+이 둘을 대체하는 작업(아래)이 끝난 뒤에 쓰시는 것이 안전합니다.</p>
 </div>
 
 <h2>앞으로 할 일 — 공공데이터 전환</h2>
@@ -228,13 +287,15 @@ KTX 강릉선·중부내륙선과 호남선·장항선 계통이 여기 해당�
 </ul>
 <p>그래서 좌표와 선형은 OSM(ODbL)을 쓰고, 역·노선 배정과 역번호 같은 속성은 공공데이터로
 검증하는 방식으로 갑니다. ODbL은 상업적 이용을 허용하며, 지도로 보여주는 것은
-파생물 배포가 아니라 결과물 표시로 보아 전염되지 않습니다. 전환이 끝나면 이 페이지에
-바뀐 출처와 조건을 다시 적습니다.</p>
+파생물 배포가 아니라 결과물 표시로 보아 전염되지 않습니다.</p>
+<p><b>2026-10-27 현재.</b> 선형은 84개 중 <b>41개를 OSM 선로에서 다시 그려</b> 상업 이용이
+가능한 상태로 바꿨습니다. 역 좌표·출구·시세·검증 자료는 모두 OSM과 공공데이터라 문제가 없습니다.
+남은 것은 <b>노선·역 목록의 출처(미래철도DB)</b>와 <b>16개 노선의 선형(철도맘)</b>입니다.</p>
 
 <h2>정정 요청</h2>
 <p>역 위치가 틀렸거나 빠진 역이 있으면 알려 주세요. 확인해서 고치겠습니다.</p>
 
-<p class="note">최종 수정 2026-10-24 · 데이터 기준 2026-10<br>
+<p class="note">최종 수정 2026-10-27 · 데이터 기준 2026-10<br>
 노선·역 데이터는 미래철도DB(FRDB)·철도맘(chul.mom) 공개 자료를 참고해 재구성했습니다.
 역·노선 배정은 국가철도공단 자료로 검증했습니다.<br>
 출구 좌표 © OpenStreetMap contributors (ODbL) · 주변 시세 국토교통부 아파트 매매 실거래가 ·

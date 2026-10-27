@@ -31,6 +31,15 @@ jobs:
           done
           exit $fail
 
+      # 라이선스 표는 손으로 고치지 않는다. data/sources.json 이 원본이고
+      # data.html 의 표는 거기서 만든다. 둘이 어긋나면 잘못된 이용 조건이
+      # 배포되므로 여기서 막는다.
+      - name: 출처 표가 sources.json 과 같은지
+        run: |
+          set -e
+          if command -v python3 >/dev/null 2>&1; then PY=python3; else PY=python; fi
+          $PY data/build_sources.py --check
+
       # 데이터가 서로 어긋나지 않는지 — 역 id 참조, 좌표 범위, JSON 유효성.
       # 테스트가 이미 대부분 덮지만, 여기서는 파일 자체가 열리는지만 본다.
       - name: 데이터 파일 무결성

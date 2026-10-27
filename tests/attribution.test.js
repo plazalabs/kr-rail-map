@@ -91,7 +91,11 @@ section('한계를 숨기지 않는다');
 check('KTX 개략선 오차를 적는다', /최대 6km/.test(dataPage));
 check('인천공항철도 연장 초과를 적는다', /69\.5km[\s\S]{0,60}63\.8km/.test(dataPage));
 check('미개통 노선 포함을 적는다', /미개통/.test(dataPage));
-check('상업적 이용 미확인을 경고한다', /상업적 이용은 아직 확인되지 않았습니다/.test(dataPage));
+// 원천별로 상업적 이용 가능 여부가 다르다. 한 문장으로 '아직 확인 안 됨' 이라고
+// 뭉뚱그리면, 실제로는 쓸 수 있는 OSM·공공데이터까지 못 쓴다고 읽힌다.
+check('상업적 이용을 원천별로 나눠 적는다', /상업적 이용은 원천별로 다릅니다/.test(dataPage));
+check('미확인 원천을 이름으로 짚는다',
+  /미래철도DB/.test(dataPage) && /철도맘/.test(dataPage));
 check('공공데이터 전환 계획을 적는다', /data\.go\.kr/.test(dataPage));
 
 section('주변 시세 — 출처와 한계');
@@ -112,8 +116,11 @@ section('주변 시세 — 출처와 한계');
   check('신고 지연을 밝힌다', /30일 내 신고/.test(dataPage));
   check('서울만 수집했음을 밝힌다', /서울 25개 구만/.test(dataPage));
   check('해제 거래 제외를 밝힌다', /해제된 거래는 뺐습니다/.test(dataPage));
-  check('시세 출처 라이선스를 적는다',
-    /국토교통부 아파트 매매 실거래가[\s\S]{0,120}이용허락범위 제한 없음/.test(dataPage));
+  // 출처 표는 data/sources.json 에서 자동 생성된다. 시세 행에 라이선스가
+  // 비어 있으면 '이용 조건이 뭔지 모르는 데이터' 를 배포하는 셈이다.
+  const row = (dataPage.match(/<tr data-src="molit-rtms">([\s\S]*?)<\/tr>/) || [])[1] || '';
+  check('시세 행에 국토교통부 출처가 있다', /국토교통부/.test(row));
+  check('시세 행에 이용허락범위 제한 없음이 있다', /이용허락범위 제한 없음/.test(row));
 }
 
 section('배경 지도 제공자');

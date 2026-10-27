@@ -30,10 +30,14 @@ MIN_DEALS = 5
 
 
 def load_sgg_name():
-    """법정동코드 → 구 이름. fetch_rtms.py 의 표를 그대로 쓴다."""
-    sys.path.insert(0, str(ROOT / "data"))
-    from fetch_rtms import SGG  # noqa: E402
-    return {v: k for k, v in SGG.items()}
+    """법정동코드 → (짧은 시도, 시군구 이름). 표는 lawd.py 한 곳에만 둔다.
+
+    '성남시 분당구' 처럼 시 이름을 붙인다. '분당구' 만 보여주면 어느 도시
+    인지 모르고, 시도까지 붙이면 화면이 길어진다.
+    """
+    import lawd
+    return {c: (lawd.short_sido(lawd.CODE[c][0]), lawd.label_of(c))
+            for c in lawd.codes()}
 
 
 def main():
@@ -48,12 +52,18 @@ def main():
     # 실제로 서울역과 이수역이 그랬다. 데이터가 없어서가 아니라 이름이
     # 달라서 없었다.
     import station_names  # noqa: E402  (같은 폴더)
+    import dong_match  # noqa: E402
 
-    # (구, 법정동) → 역 이름들
+    # (시군구코드, 법정동) → 역 이름들
+    #
+    # 예전엔 (구 이름, 법정동) 이었다. 그런데 '중구'는 서울에도 인천에도
+    # 있고 '서구'는 인천·대구·광주·부산에 다 있다. 이름으로 묶으면 서울
+    # 중구 아파트가 인천 중구 역에 붙는다. 경기·인천을 넣으려면 코드가
+    # 필요했다.
     dong2st = {}
     unmatched = set()
     for s in stations:
-        if not s["dong"]:
+        if not s["dong"] or not s.get("lawd"):
             continue
         # resolve_all 을 쓴다. 이수역처럼 같은 역이 지도에 두 이름으로 들어
         # 있는 경우가 있어, 한쪽만 고르면 나머지 한쪽은 시세가 안 뜬다.
@@ -61,7 +71,7 @@ def main():
         if not names:
             unmatched.add(s["name"])
             continue
-        dong2st.setdefault((s["sgg"], s["dong"]), set()).update(names)
+        dong2st.setdefault((s["lawd"], s["dong"]), set()).update(names)
     if unmatched:
         print("이름을 못 맞춘 역 %d곳: %s" % (len(unmatched), ", ".join(sorted(unmatched)[:8])))
 
@@ -71,10 +81,12 @@ def main():
         code = pathlib.Path(f).name.split("_")[0]
         if not code.isdigit():
             continue
-        sgg = sgg_name.get(code, "")
+        sido, sgg = sgg_name.get(code, ("", ""))
         for r in json.loads(pathlib.Path(f).read_text("utf8")):
             if r.get("cancelled") or not r.get("price") or not r.get("umd"):
                 continue
+            r["lawd"] = code
+            r["sido"] = sido
             r["sgg"] = sgg
             deals.append(r)
 
@@ -83,22 +95,24 @@ def main():
         print("받은 데이터가 없습니다. fetch_rtms.py 로 먼저 받으세요.")
         return 1
 
-    # 법정동별 집계
+    # 법정동별 집계 — 키는 (시군구코드, 법정동)
     by_dong = {}
     for r in deals:
-        key = (r["sgg"], r["umd"])
+        key = (r["lawd"], r["umd"])
         by_dong.setdefault(key, []).append(r)
 
     out = []
     matched = 0
-    for (sgg, umd), rows in by_dong.items():
+    for (code, umd), rows in by_dong.items():
         pers = [x["perPyeong"] for x in rows if x.get("perPyeong")]
         prices = [x["price"] for x in rows if x.get("price")]
-        st_names = sorted(dong2st.get((sgg, umd), []))
+        st_names = sorted(dong_match.stations_in(code, umd, dong2st))
         if st_names:
             matched += len(rows)
         out.append({
-            "sgg": sgg,
+            "lawd": code,
+            "sido": rows[0]["sido"],
+            "sgg": rows[0]["sgg"],
             "dong": umd,
             "deals": len(rows),
             "medianPerPyeong": round(statistics.median(pers), 1) if pers else None,
@@ -142,7 +156,8 @@ def main():
             cur = by_station.get(name)
             if cur is None or d["deals"] > cur["deals"]:
                 by_station[name] = {
-                    "sgg": d["sgg"], "dong": d["dong"], "deals": d["deals"],
+                    "lawd": d["lawd"], "sido": d["sido"], "sgg": d["sgg"],
+                    "dong": d["dong"], "deals": d["deals"],
                     "medianPerPyeong": d["medianPerPyeong"],
                     "medianPrice": d["medianPrice"],
                     }

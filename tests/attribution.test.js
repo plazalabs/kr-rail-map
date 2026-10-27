@@ -106,7 +106,7 @@ section('주변 시세 — 출처와 한계');
   const nDeals = price.districts.reduce((a, d) => a + d.deals, 0);
   const nLinked = price.districts.reduce((a, d) => a + (d.stations.length ? d.deals : 0), 0);
   check('시세 역 수가 페이지와 일치', dataPage.includes('<b>' + nSt + '</b>역 시세'), nSt + '곳');
-  check('법정동 수가 페이지와 일치', dataPage.includes('<b>' + nDong + '</b>개 법정동'), nDong + '곳');
+  check('법정동 수가 페이지와 일치', dataPage.includes('<b>' + fmt(nDong) + '</b>개 법정동'), nDong + '곳');
   check('총 거래 수가 페이지와 일치',
     dataPage.includes('<b>' + fmt(nDeals) + '건</b>'), fmt(nDeals) + '건');
   check('역 연결 거래 수가 페이지와 일치',
@@ -114,7 +114,12 @@ section('주변 시세 — 출처와 한계');
   // 부동산 판단에 쓰는 숫자다. 방법과 한계를 안 적으면 안 된다.
   check('법정동 단위임을 밝힌다', /법정동 단위/.test(dataPage));
   check('신고 지연을 밝힌다', /30일 내 신고/.test(dataPage));
-  check('서울만 수집했음을 밝힌다', /서울 25개 구만/.test(dataPage));
+  // 범위를 밝히지 않으면 '전국 시세'로 읽힌다. 지금은 수도권만 받았다.
+  check('수집 범위를 밝힌다', /수도권만 있습니다/.test(dataPage)
+    && /부산·대전 등 나머지 지역은 아직/.test(dataPage));
+  // 시도·시군구를 붙였는지. '중구'가 서울에도 인천에도 있어서 이게 빠지면
+  // 화면에서 어느 중구인지 알 수 없다.
+  check('시군구를 함께 적는다', /시군구코드, 법정동/.test(dataPage));
   check('해제 거래 제외를 밝힌다', /해제된 거래는 뺐습니다/.test(dataPage));
   // 출처 표는 data/sources.json 에서 자동 생성된다. 시세 행에 라이선스가
   // 비어 있으면 '이용 조건이 뭔지 모르는 데이터' 를 배포하는 셈이다.

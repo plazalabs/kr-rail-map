@@ -98,8 +98,11 @@
     if (!d || !d.complexes || !d.complexes.length) return null;
     var list = d.complexes;
     return {
+      // 키는 시군구 코드다('중구'가 서울에도 인천에도 있어서 이름으로는
+      // 구분이 안 된다). 화면에 쓸 이름은 자료 안에 따로 들어 있다.
       dong: key.split('|')[1] || '',
-      sgg: key.split('|')[0] || '',
+      sgg: d.sgg || '',
+      sido: d.sido || '',
       deals: d.deals,
       total: list.length,
       items: limit ? list.slice(0, limit) : list

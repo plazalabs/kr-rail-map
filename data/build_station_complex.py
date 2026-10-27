@@ -58,9 +58,11 @@ def band_label(area):
 
 
 def load_sgg_name():
+    """법정동코드 → (짧은 시도, 시군구 이름). 표는 lawd.py 한 곳에만 둔다."""
     sys.path.insert(0, str(ROOT / "data"))
-    from fetch_rtms import SGG  # noqa: E402
-    return {v: k for k, v in SGG.items()}
+    import lawd  # noqa: E402
+    return {c: (lawd.short_sido(lawd.CODE[c][0]), lawd.label_of(c))
+            for c in lawd.codes()}
 
 
 def norm_name(n):
@@ -82,12 +84,14 @@ def collect_deals(sgg_name):
         if not code.isdigit():
             continue
         seen_file += 1
-        sgg = sgg_name.get(code, "")
+        sido, sgg = sgg_name.get(code, ("", ""))
         for r in json.loads(pathlib.Path(f).read_text("utf8")):
             if r.get("cancelled") or not r.get("price") or not r.get("umd"):
                 continue
             if not r.get("apt"):
                 continue
+            r["lawd"] = code
+            r["sido"] = sido
             r["sgg"] = sgg
             deals.append(r)
     return deals, seen_file
@@ -142,11 +146,12 @@ def main():
     # 공식 주소데이터는 '서울역'·'총신대입구' 처럼 부르고, 지도는 '서울'·'이수'
     # 라고 부른다. 이걸 안 맞추면 그 역은 시세가 통째로 사라진다.
     import station_names  # noqa: E402  (같은 폴더)
+    import dong_match  # noqa: E402
 
     dong2st = {}
     unmatched = set()
     for s in stations:
-        if not s["dong"]:
+        if not s["dong"] or not s.get("lawd"):
             continue
         # resolve_all 을 쓴다. 이수역처럼 같은 역이 지도에 두 이름으로 들어
         # 있는 경우가 있어, 한쪽만 고르면 나머지 한쪽은 시세가 안 뜬다.
@@ -154,7 +159,7 @@ def main():
         if not names:
             unmatched.add(s["name"])
             continue
-        dong2st.setdefault((s["sgg"], s["dong"]), set()).update(names)
+        dong2st.setdefault((s["lawd"], s["dong"]), set()).update(names)
     if unmatched:
         print("이름을 못 맞춘 역 %d곳: %s" % (len(unmatched), ", ".join(sorted(unmatched)[:8])))
 
@@ -164,16 +169,16 @@ def main():
         print("받은 데이터가 없습니다. fetch_rtms.py 로 먼저 받으세요.")
         return 1
 
-    # (구, 법정동) → (단지명, 지번) → 거래들
+    # (시군구코드, 법정동) → (단지명, 지번) → 거래들
     grouped = {}
     for r in deals:
-        grouped.setdefault((r["sgg"], r["umd"]), {}).setdefault(
+        grouped.setdefault((r["lawd"], r["umd"]), {}).setdefault(
             (r["apt"], r.get("jibun", "")), []).append(r)
 
     districts = {}
     total_cx = 0
     kept = 0
-    for (sgg, umd), by_cx in grouped.items():
+    for (code, umd), by_cx in grouped.items():
         rows_all = [x for rs in by_cx.values() for x in rs]
         cxs = []
         for _, rs in by_cx.items():
@@ -185,7 +190,11 @@ def main():
         kept += len(cxs)
         pers = [x.get("perPyeong") for x in rows_all if x.get("perPyeong")]
         prices = [x.get("price") for x in rows_all if x.get("price")]
-        districts["%s|%s" % (sgg, umd)] = {
+        districts["%s|%s" % (code, umd)] = {
+            # 키는 코드다. '중구'가 서울에도 인천에도 있어서 이름으로는
+            # 구분이 안 된다. 화면에 쓸 이름은 따로 넣어 준다.
+            "sido": rows_all[0]["sido"],
+            "sgg": rows_all[0]["sgg"],
             "deals": len(rows_all),
             "pp": round(statistics.median(pers), 1) if pers else None,
             "p": round(statistics.median(prices), 0) if prices else None,
@@ -194,15 +203,24 @@ def main():
         }
 
     st_map = {}
-    for key, st_names in dong2st.items():
-        dk = "%s|%s" % key
-        if dk not in districts:
-            continue
-        for nm in st_names:
+    # 실거래가 법정동마다 그 안에 있는 역을 찾는다. 두 자료의 표기가 달라
+    # (역 주소는 '부발읍', 실거래가는 '부발읍 아리미') dong_match 가
+    # 범위를 넓혀 가며 맞춘다.
+    for dk, d in districts.items():
+        code, umd = dk.split("|", 1)
+        for nm in dong_match.stations_in(code, umd, dong2st):
             cur = st_map.get(nm)
             # 같은 이름의 역이 둘이면 거래가 많은 쪽을 쓴다 (중구 충돌 대비)
-            if cur is None or districts[dk]["deals"] > districts[cur]["deals"]:
+            if cur is None or d["deals"] > districts[cur]["deals"]:
                 st_map[nm] = dk
+
+    # 역이 하나도 없는 법정동은 버린다. 수도권 전체를 넣으면 단지가 9,300곳,
+    # 파일이 2MB 를 넘는다. 이 파일은 역 정보 패널에서 쓰는 것이라, 역과
+    # 이어지지 않는 법정동은 받아도 쓸 데가 없다. 1/3 로 줄어든다.
+    used = set(st_map.values())
+    dropped = [k for k in districts if k not in used]
+    for k in dropped:
+        del districts[k]
 
     months = sorted({"%d-%02d" % (x["year"], x["month"]) for x in deals if x.get("year")})
     payload = {

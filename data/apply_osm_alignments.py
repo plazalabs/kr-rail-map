@@ -17,6 +17,7 @@
   python data/apply_osm_alignments.py --apply   # 반영
 """
 import json
+import re
 import sys
 
 from osm_align import CACHE, ROOT, length_km, pt_to_chains, score
@@ -38,11 +39,19 @@ OFFICIAL = {
     "wolmi-sea-train": 6.1,
 }
 TOL_OFFICIAL = 0.08
+# 새 선형과 지금 선형의 길이가 이만큼 넘게 어긋나면 반영하지 않는다.
+#
+# 둘은 서로 독립된 자료다(철도맘 화면 vs OSM 선로). 길이가 15% 넘게 다르면
+# 둘 중 하나는 틀린 것인데, 어느 쪽인지 자동으로 알 수 없다. 길이만 보고
+# 'OSM 이 맞다' 고 넘기면 엉뚱한 선로를 탄 선형이 그대로 들어온다 —
+# 중부내륙선이 83km(실제 135km), 장항선이 114km(실제 154km)로 나왔다.
+# 둘이 맞아떨어질 때만 바꾼다. 어긋나면 지금 선형을 두고 따로 확인한다.
+AGREE = 0.15
 # 역이 선에서 이만큼 떨어지면 눈에 띈다. 300m 를 넘으면 지도에서
 # 아이콘이 선 밖에 뜨므로 그 노선은 반영하지 않는다.
 MAX_DEV = 0.40
 
-SOURCE_CAVEAT = ("chul.mom", "추론 선형", "개략 선형", "개략선")
+SEP = " · "
 
 
 def station_points():
@@ -62,26 +71,49 @@ def current_chains(feat):
     return [g["coordinates"]] if g["type"] == "LineString" else g["coordinates"]
 
 
+def _strip_align(text):
+    """note 에서 '선형이 어디서 왔는지' 를 말하는 문장을 걷어낸다.
+
+    예전 note 는 형식이 제각각이었다 — '[선형: chul.mom 데이터 기반]',
+    '개략 선형: 역간 직선 연결 (추론) — 실제 선로와 다름'. 그런 문장은 이제
+    사실이 아니므로(선형이 OSM 으로 바뀌었으므로) 통째로 버린다. 다만 같은
+    note 안에 섞여 있는 다른 정보('2026-10-14 apt84rank.com/gtx 공식 소요시간
+    반영')는 남긴다.
+    """
+    out = []
+    for sent in re.split(r"(?<=\.)\s+| · ", text or ""):
+        s = sent.strip()
+        if not s:
+            continue
+        if re.match(r"^\[?\s*(?:개략\s*)?선형\s*:", s):
+            continue
+        s = re.sub(r"\[?\s*선형\s*:[^\]]*\]?", "", s).strip(" .·")
+        if s:
+            out.append(s)
+    return out
+
+
 def new_note(old, med_m, via="relation"):
+    """선형 출처 문장을 새로 쓴다. 여러 번 돌려도 문장이 쌓이지 않는다.
+
+    예전에는 '지금 note 에 출처 문장이 있으면 뒤에 붙인다' 였는데, apply 를
+    돌릴 때마다 같은 문장이 하나씩 늘어 노선 정보 패널에 세 번씩 반복됐다.
+    선형을 설명하는 문장은 전부 걷어내고 하나만 새로 붙인다.
+    """
     how = "선로를 따라 이음" if via == "graph" else "노선 relation"
     base = f"선형: OpenStreetMap(ODbL) {how} — 역 대조 중앙 오차 {med_m:.0f}m"
-    if not old:
-        return base
-    # 지금 note 가 '출처를 밝히는 문장' 뿐이면 통째로 바꾼다. 그 밖의 정보
-    # (예: 'FRDB 역 11')는 남기고 뒤에 붙인다.
-    if any(k in old for k in SOURCE_CAVEAT):
-        return base
-    return f"{old} · {base}"
+    return SEP.join(_strip_align(old) + [base])
 
 
 def main(argv):
     apply = "--apply" in argv
     cands = json.loads(CANDS.read_text("utf8"))
-    # 그래프 방식 후보는 relation 후보가 없거나 보류된 노선에만 쓴다.
+    # 그래프 방식(역→역 선로 탐색)은 역 좌표를 그대로 지나가므로 relation 보다
+    # 역 이탈이 작다. 채택된 그래프 후보가 있으면 그쪽을 쓴다.
     if GRAPH.exists():
         for lid, g in json.loads(GRAPH.read_text("utf8")).items():
             cur = cands.get(lid)
-            if cur is None or not cur.get("accept"):
+            if g.get("accept") or cur is None or not cur.get("accept"):
                 cands[lid] = g
     data = json.loads(LINES.read_text("utf8"))
     pts = station_points()
@@ -107,6 +139,8 @@ def main(argv):
             off = OFFICIAL[lid]
             if abs(new_km - off) / off > TOL_OFFICIAL:
                 why.append(f"공식 {off}km 대비 {new_km:.1f}km")
+        if cur_km > 1.0 and abs(new_km - cur_km) / cur_km > AGREE:
+            why.append(f"지금 {cur_km:.0f}km ↔ OSM {new_km:.0f}km")
         # 지금 선형의 커버율과 비교하지 않는다. 지금 선형은 역을 이어서 그린
         # 것이라 정의상 100% 가 나온다 — 기준으로 쓸 수 없는 숫자다.
         # 대신 '역이 선에서 얼마나 떨어지는가'를 절대값으로 본다. 사용자가

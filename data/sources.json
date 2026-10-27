@@ -85,14 +85,14 @@
     },
     {
       "id": "chulmom",
-      "title": "역 좌표·노선 선형 (16개 노선)",
+      "title": "역 좌표·노선 선형 (32개 노선)",
       "provider": "철도맘 (chul.mom)",
       "attribution": "철도맘(chul.mom) 표시 좌표",
       "url": "https://chul.mom/",
       "licence": "site-terms-unverified",
       "obtained": "표시 좌표를 참고하고, 어긋나는 구간은 공개 노선도를 보고 다시 그림",
       "snapshot": "2026-10",
-      "used_for": "역 좌표 대조, OSM 선로가 끊긴 16개 노선의 선형",
+      "used_for": "역 좌표 대조, OSM 선로가 이어지지 않는 32개 노선의 선형",
       "feeds": [],
       "affects": [
         "data/stations.geojson",
@@ -103,11 +103,11 @@
         "lines[].geometry"
       ],
       "commercial": "unverified",
-      "caveat": "선형 41개는 OSM 으로 옮겼다. 남은 16개(KTX 강릉선·중부내륙선, 호남선·장항선 계통)가 아직 이 원천이다."
+      "caveat": "선형 52개는 OSM 으로 옮겼다. 남은 32개는 OSM 쪽 선로가 끊겼거나(동해선 포항~삼척, 태백선 고한~갈래호), 아직 지어지지 않았거나(GTX-D~H, 동북선, 대전·광주 2호선), 길이가 지금 선형과 15% 넘게어긋나 어느 쪽이 맞는지 확인 중인 노선이다."
     },
     {
       "id": "osm-rails",
-      "title": "노선 선형 (41개 노선)",
+      "title": "노선 선형 (52개 노선)",
       "provider": "OpenStreetMap contributors",
       "attribution": "© OpenStreetMap contributors",
       "url": "https://www.openstreetmap.org/copyright",
@@ -115,7 +115,7 @@
       "obtained": "Geofabrik south-korea-latest.osm.pbf → pyosmium 으로 railway=rail 선로 25,233개·노선 관계 318개 추출",
       "obtained_url": "https://download.geofabrik.de/asia/south-korea-latest.osm.pbf",
       "snapshot": "2026-10-27",
-      "used_for": "노선 선형. 역 좌표에서 가장 가까운 선로 점을 찾아 선로를 따라 잇는다",
+      "used_for": "노선 선형. 역 좌표에서 가장 가까운 선로 점을 찾아 선로를 따라 잇거나, 노선 경로 관계의 선로를 순서대로 이어붙인다",
       "feeds": [
         "data/lines.geojson"
       ],
@@ -127,7 +127,7 @@
         "lines[].coord_relations"
       ],
       "commercial": "allowed",
-      "caveat": "반영한 노선은 coord_source=osm 과 근거 관계 id 를 남긴다. 공식 영업거리 ±8%, 역 이탈 400m 이내일 때만 반영했다."
+      "caveat": "반영한 노선은 coord_source=osm 과 만든 방법(coord_method: relation|graph), 근거 관계 id 를 남긴다. 역의 90% 이상이 300m 안에 있고, 역 이탈 400m 이내이며, 지금 선형과 길이가 15% 안에서 맞을 때만 반영했다."
     },
     {
       "id": "osm-stations",

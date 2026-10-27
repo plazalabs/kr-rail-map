@@ -88,7 +88,9 @@ check('출구 수', dataPage.includes('<b>' + fmt(exits.features.length) + '</b>
 }
 
 section('한계를 숨기지 않는다');
-check('KTX 개략선 오차를 적는다', /최대 6km/.test(dataPage));
+// 숫자는 2026-10-27 에 남은 32개 노선의 선형을 OSM 선로와 대조해 잰 값이다.
+// 선형을 옮길 때마다 줄어들므로, 줄면 이 테스트도 같이 고쳐야 한다.
+check('개략선이 실제 선로에서 벗어난 거리를 적는다', /실제 선로에서[\s\S]{0,20}최대 5km/.test(dataPage));
 check('인천공항철도 연장 초과를 적는다', /69\.5km[\s\S]{0,60}63\.8km/.test(dataPage));
 check('미개통 노선 포함을 적는다', /미개통/.test(dataPage));
 // 원천별로 상업적 이용 가능 여부가 다르다. 한 문장으로 '아직 확인 안 됨' 이라고
@@ -160,6 +162,16 @@ section('선형 출처 — OSM 선로에서 다시 그림');
   osmLines.forEach(f => { byMethod[f.properties.coord_method] = (byMethod[f.properties.coord_method] || 0) + 1; });
   check('만든 방법이 relation / graph 둘 중 하나', Object.keys(byMethod).every(m => m === 'relation' || m === 'graph'),
     JSON.stringify(byMethod));
+  // 반영 스크립트를 다시 돌릴 때마다 note 뒤에 출처 문장이 하나씩 붙어,
+  // 노선 정보 패널에 같은 문장이 세 번 반복된 적이 있다. 사용자에게 보이는
+  // 글이라 '한 번만' 을 테스트로 잠근다.
+  const dupNote = osmLines.filter(f =>
+    ((f.properties.note || '').match(/선형:/g) || []).length > 1);
+  check('선형 출처 문장이 한 번만 들어 있다', dupNote.length === 0,
+    dupNote.length ? dupNote.slice(0, 3).map(f => f.properties.id).join(', ') : '전부 한 번');
+  const noOsm = osmLines.filter(f => !/OpenStreetMap/.test(f.properties.note || ''));
+  check('선형 note 에 OpenStreetMap 을 적는다', noOsm.length === 0,
+    noOsm.length ? noOsm.slice(0, 3).map(f => f.properties.id).join(', ') : '전부');
 }
 
 section('배포·캐시');

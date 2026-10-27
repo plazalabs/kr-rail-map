@@ -34,6 +34,10 @@ SNAP_KM = 1.0        # 역에서 이 안의 선로 점에 붙인다
 CORRIDOR_MIN = 2.0   # 두 역을 잇는 직선에서 이만큼까지 벗어나도 된다
 CORRIDOR_FRAC = 0.35 # 먼 구간은 직선거리의 이 비율까지 허용 (곡선 노선 배려)
 
+# 경로를 못 찾았을 때 복도를 넓혀 다시 찾는 순서. 지하 구간은 선로가 크게
+# 휘어서 좁은 복도로는 길이 없다 — 경의선 효창공원앞~공덕이 그랬다.
+RETRY = ((CORRIDOR_FRAC, CORRIDOR_MIN), (0.9, 6.0), (2.5, 20.0))
+
 # 측선·기지선은 본선 경로를 흐리므로 '가중치'로 누른다. 아예 빼면 안 된다 —
 # 고속철도와 지상역을 잇는 연결선이 대부분 service=spur 라서, 빼버리면
 # 서울~광명 경로가 아예 없어진다 (실제로 그랬다).
@@ -96,6 +100,14 @@ class Grid:
 LINK_KM = 0.015   # 이만큼 떨어진 선로 점끼리 잇는다 (약 15m)
 LINK_COST = 2.0   # 잇는 데 드는 값을 비싸게 매겨 본선을 우선하게 한다
 
+# 그래도 안 붙는 곳이 있다. 터널 입·출구나 편집 경계에서 way 가 50m 쯤
+# 끊겨 있기 때문이다 — 경의선 효창공원앞~공덕이 그랬다. 15m 만 쓰면 그 구간에
+# 경로가 없어서 12km 를 돌아가거나(그러면 엉뚱한 선로를 그린다) 직선을 긋게 된다.
+# 넓게 잇되 값을 6배로 매긴다. 실제 선로로 갈 수 있으면 절대 쓰이지 않고,
+# 갈 수 없을 때만 마지막 수단으로 쓰인다.
+LINK_KM_FAR = 0.060
+LINK_COST_FAR = 6.0
+
 
 def link_parallel_tracks(adj):
     """상행·하행 선로를 잇는다.
@@ -106,9 +118,9 @@ def link_parallel_tracks(adj):
     기흥~강남대가 그랬다. 실제로는 사람이 타고 지나가는 구간이다.
 
     15m 안의 점끼리 양방향으로 잇되, 값을 2배로 매겨 가까운 쪽이 아니면
-    쓰지 않게 한다.
+    쓰지 않게 한다. 60m 까지는 6배를 매겨 잇는다 (LINK_KM_FAR 설명 참고).
     """
-    CELL = 0.0005
+    CELL = 0.001          # 약 110m. 3x3 칸이면 ±110m 를 다 본다.
     grid = {}
     for n in adj:
         grid.setdefault((int(n[0] / CELL), int(n[1] / CELL)), []).append(n)
@@ -123,6 +135,9 @@ def link_parallel_tracks(adj):
                     d = hav(n, m)
                     if d <= LINK_KM:
                         adj[n].append((m, d * LINK_COST))
+                        added += 1
+                    elif d <= LINK_KM_FAR:
+                        adj[n].append((m, d * LINK_COST_FAR))
                         added += 1
     return added
 
@@ -145,15 +160,19 @@ def seg_km_pt(p, a, b):
     return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
 
 
-def astar(adj, start, goal):
+def astar(adj, start, goal, frac=CORRIDOR_FRAC, min_km=CORRIDOR_MIN):
     """선로 그래프에서 최단경로. 두 역을 잇는 직선에서 너무 벗어나면 가지 않는다.
 
     복도(corridor) 제한이 없으면 경부선 역 사이를 KTX 선로로 가로지르는 식으로
     엉뚱한 길이 나온다. 직선거리에 비례해 허용폭을 준다 — 곡선 구간은 넓게,
     짧은 구간은 좁게.
+
+    frac·min_km 을 인자로 받는 이유: 좁은 복도로 길을 못 찾았을 때 넓혀서
+    다시 찾기 위해서다. 좁은 값만 쓰면 지하 구간처럼 선로가 크게 휘는 곳에서
+    '경로없음' 이 나고, 그 자리에 직선을 그으면 실제와 다른 선형이 된다.
     """
     direct = hav(start, goal)
-    corridor = max(CORRIDOR_MIN, direct * CORRIDOR_FRAC)
+    corridor = max(min_km, direct * frac)
     openq = [(direct, 0.0, start, None)]
     came = {}
     best = {start: 0.0}
@@ -243,20 +262,34 @@ def main(argv):
             cands_a = nearest_nodes(grid, coords[a])
             cands_b = nearest_nodes(grid, coords[b])
             if not cands_a or not cands_b:
+                # 역에서 1km 안에 선로 점이 없다. 계획 노선의 역처럼 선로가
+                # 아직 없는 경우도 있지만, 스냅 반경이 좁아 놓친 경우도 있다.
+                # 반경을 넓혀 한 번 더 본다.
+                cands_a = cands_a or nearest_nodes(grid, coords[a], SNAP_KM * 2.5)
+                cands_b = cands_b or nearest_nodes(grid, coords[b], SNAP_KM * 2.5)
+            if not cands_a or not cands_b:
                 fail.append(f"{a}~{b}(스냅실패)")
                 continue
+
+            direct = hav(coords[a], coords[b])
+            # 복도를 좁게 시작해 넓혀 간다. 넓힌 경로는 '직선거리의 3배' 를
+            # 넘으면 엉뚱한 선로를 탄 것으로 보고 버린다.
             path, best_km = None, None
-            for na in cands_a:
-                for nb in cands_b:
-                    if na == nb:
-                        continue
-                    got = astar(adj, na, nb)
-                    if got:
+            for frac, min_km in RETRY:
+                for na in cands_a:
+                    for nb in cands_b:
+                        if na == nb:
+                            continue
+                        got = astar(adj, na, nb, frac, min_km)
+                        if not got:
+                            continue
                         km_ = sum(hav(u, v) for u, v in zip(got, got[1:]))
+                        if km_ > max(direct * 3.0, direct + 5.0):
+                            continue
                         if best_km is None or km_ < best_km:
                             path, best_km = got, km_
-                if path and best_km is not None and best_km < SNAP_KM:
-                    break          # 충분히 짧은 길을 찾았으면 더 볼 필요 없다
+                if path:
+                    break
             if not path:
                 # 선로 그래프에 길이 없으면 역 사이를 직선으로 잇는다.
                 # 선이 끊겨 보이는 것보다 낫고, 우리 역 좌표끼리 이은
@@ -276,10 +309,32 @@ def main(argv):
         # 지선(도라산 등)이 있으면 역 순서가 '나갔다 돌아오는' 꼴이 되어
         # 같은 선로를 두 번 지난다. 그대로 더하면 문산~지평이 192km 로 나온다
         # (실제 128km). 지나간 구간을 집합으로 모아 한 번만 센다.
-        km = sum(edges.values())
-        # 직선으로 메운 구간이 많으면 그 노선은 OSM 선형이라고 부를 수 없다.
-        ok = (cov >= 0.90 and med <= 0.15
-              and len(straight) <= max(1, len(seq) // 8))
+        km = sum(edges.values()) + sum(hav(c[0], c[1]) for c in straight)
+        # 선형은 역을 순서대로 지나는 직선보다 짧을 수 없다 (삼각부등식).
+        # 짧게 나왔다면 그 선은 역을 지나지 않았다는 뜻이다 — 실제로 중부내륙선이
+        # 83km(직선 합 100km)로 나왔다. 스냅이 역에서 최대 1km 떨어진 점에
+        # 붙으므로 그만큼은 봐준다.
+        #
+        # 지선(도라산 등)은 같은 구간을 두 번 지나므로 직선 합이 부풀려진다.
+        # 같은 역 쌍은 한 번만 세고, 그래도 남는 어긋남을 위해 10% 여유를 둔다.
+        min_km, seen_pair = 0.0, set()
+        for u, v in zip(seq, seq[1:]):
+            k = frozenset((u, v))
+            if k in seen_pair:
+                continue
+            seen_pair.add(k)
+            min_km += hav(coords[u], coords[v])
+        too_short = km < min_km * 0.90 - 2.0
+        # 직선으로 메운 구간은 **한 곳이라도 있으면 안 된다.**
+        #
+        # 예전에는 '역 수의 1/8 까지' 허용했다. 그런데 직선은 그 구간의 실제
+        # 선로 모양을 지어내는 것이다 — 경부선 역 사이를 20km 직선으로 가로지른
+        # GTX-A 가 그렇게 '채택' 으로 통과했다. 커버율도 속는다: 직선은 양 끝
+        # 역을 반드시 지나므로 그 두 역은 자동으로 '선 위에 있다' 가 된다.
+        # 검증에 쓰는 숫자가 검증 대상에 의해 좋아지는 셈이라 기준으로 못 쓴다.
+        ok = cov >= 0.90 and med <= 0.15 and not straight and not too_short
+        if too_short:
+            fail.append(f"직선합 {min_km:.0f}km 보다 짧음")
         print(f"{lid:34s} 커버 {cov*100:3.0f}% 중앙 {med*1000:4.0f}m {km:7.1f}km  "
               f"{'채택' if ok else '보류'} {' '.join(fail[:3])}")
         out[lid] = {"chains": merged, "coverage": round(cov, 4),

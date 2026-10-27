@@ -63,6 +63,22 @@
     '.sd-price-sec{margin-top:12px;padding:10px 0 12px;' +
     'border-top:1px solid var(--border,#eee);border-bottom:1px solid var(--border,#eee)}' +
     '.sd-price-sec h3{margin-bottom:2px}' +
+    // 단지 목록 — 법정동 중위값 아래에 붙는다. 표(table) 대신 목록을 쓰는 건
+    // 좁은 패널에서 열이 뭉개지지 않게 하기 위해서다.
+    '.sd-cx-wrap{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border,#eee)}' +
+    '.sd-cx-wrap h4{font-size:12px;font-weight:600;margin-bottom:4px}' +
+    '.sd-cx-list{list-style:none;margin:0;padding:0}' +
+    '.sd-cx{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:5px 0;' +
+    'border-bottom:1px solid var(--border,#eee)}' +
+    '.sd-cx:last-child{border-bottom:0}' +
+    '.sd-cx-n{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.sd-cx-p{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}' +
+    '.sd-cx-m{grid-column:1/-1;font-size:11px;color:var(--muted,#6b7280);' +
+    'font-variant-numeric:tabular-nums}' +
+    '.sd-cx-more{margin-top:6px;width:100%;padding:6px 0;border:1px solid var(--border-strong,#ddd);' +
+    'border-radius:6px;background:var(--btn-bg,#fff);color:var(--btn-text,#222);' +
+    'cursor:pointer;font-size:12px}' +
+    '.sd-cx-more:hover{background:var(--hover,#f6f6f6)}' +
     '.sd-exits{display:flex;flex-wrap:wrap;gap:6px}' +
     '.sd-exit{min-width:38px;padding:6px 8px;border:1px solid var(--border-strong,#ddd);border-radius:6px;' +
     'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:12px;font-weight:600}' +
@@ -304,7 +320,7 @@
     var pm = StationPrice.meta() || {};
     var h = '<div class="sd-sec sd-price-sec"><h3>주변 시세 · ' + esc(price.dong) +
       ' <span class="sd-price-sub">최근 6개월 ' + price.deals + '건</span></h3>';
-    h += '<div class="sd-price"><b>' + StationPrice.won(price.medianPerPyeong) +
+    h += '<div class="sd-price"><b>' + StationPrice.pp(price.medianPerPyeong) +
       '</b><span>/평</span></div>';
     if (price.medianPrice) {
       h += '<div class="sd-note">중위 거래금액 ' + StationPrice.won(price.medianPrice) + '</div>';
@@ -313,7 +329,43 @@
       '실거래가는 좌표를 주지 않아 <b>법정동 단위</b>로 묶었습니다 — ' +
       '같은 법정동이라도 단지·층·연식에 따라 차이가 큽니다.' +
       (pm.updated ? ' (기준 ' + esc(pm.updated) + ')' : '') + '</div>';
+    h += complexBlock(nameKo);
     return h + '</div>';
+  }
+
+  /* 단지 목록 — 법정동 하나에 평당가 하나로는 판단이 안 된다.
+   *
+   * 같은 잠실동에서도 1979년 5층과 2008년 33층이 같은 값을 받지 않는다.
+   * 실거래가 응답에 단지명·지번·건축년도·전용면적이 다 들어 있으므로,
+   * 좌표 없이도 단지 단위까지는 갈 수 있다. 기본 3곳만 보이고 나머지는
+   * 펼친다 — 패널 첫 화면을 목록으로 채우면 시세가 안 보인다.
+   */
+  function complexBlock(nameKo) {
+    if (typeof StationPrice === 'undefined' || !StationPrice.isComplexReady) return '';
+    var c = StationPrice.complexes(nameKo, 3);
+    if (!c) return '';
+
+    function row(x, i) {
+      var meta = [];
+      if (x.y) meta.push(x.y + '년');
+      if (x.a) meta.push(Math.round(x.a) + '㎡');
+      meta.push(x.n_deals + '건');
+      return '<li class="sd-cx"><span class="sd-cx-n">' + esc(x.n) + '</span>' +
+        '<span class="sd-cx-p">' + StationPrice.pp(x.pp) + '/평</span>' +
+        '<span class="sd-cx-m">' + esc(meta.join(' · ')) + '</span></li>';
+    }
+
+    var h = '<div class="sd-cx-wrap"><h4>이 법정동 단지 ' + c.total + '곳' +
+      '<span class="sd-price-sub"> 평당가 높은 순</span></h4><ul class="sd-cx-list">';
+    h += c.items.map(row).join('');
+    h += '</ul>';
+    if (c.total > c.items.length) {
+      h += '<button type="button" class="sd-cx-more" data-more="1">' +
+        '나머지 ' + (c.total - c.items.length) + '곳 보기</button>';
+    }
+    h += '<div class="sd-note">※ 단지 좌표가 없어 <b>역에서의 거리는 알 수 없습니다.</b> ' +
+      '역이 속한 법정동에 있는 단지 목록입니다. 거래 2건 미만 단지는 뺐습니다.</div></div>';
+    return h;
   }
 
   function show(feature) {
@@ -415,6 +467,26 @@
           map.flyTo({ center: [lng, lat], zoom: 18, duration: 700 });
           showExitPin(lng, lat);
         } catch (e) { /* 지도 준비 전이면 무시 */ }
+      });
+    });
+
+    // 단지 목록 펼치기. 처음 3곳만 보여주고 나머지는 눌렀을 때 그린다 —
+    // 역을 눌러볼 때마다 30줄짜리 목록이 먼저 뜨면 시세가 안 보인다.
+    body.querySelectorAll('.sd-cx-more[data-more]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var full = StationPrice.complexes(nameKo);
+        if (!full) return;
+        var ul = btn.parentNode.querySelector('.sd-cx-list');
+        ul.innerHTML = full.items.map(function (x) {
+          var m = [];
+          if (x.y) m.push(x.y + '년');
+          if (x.a) m.push(Math.round(x.a) + '㎡');
+          m.push(x.n_deals + '건');
+          return '<li class="sd-cx"><span class="sd-cx-n">' + esc(x.n) + '</span>' +
+            '<span class="sd-cx-p">' + StationPrice.pp(x.pp) + '/평</span>' +
+            '<span class="sd-cx-m">' + esc(m.join(' · ')) + '</span></li>';
+        }).join('');
+        btn.remove();
       });
     });
 

@@ -187,8 +187,8 @@
    "medianPrice": 285000.0,
    "avgArea": 87.1,
    "stations": [
-    "몽촌토성(평화의문)",
-    "잠실(송파구청)",
+    "몽촌토성",
+    "잠실",
     "잠실나루"
    ],
    "months": [
@@ -209,9 +209,9 @@
    "avgArea": 89.6,
    "stations": [
     "강남구청",
-    "삼성(무역센터)",
+    "삼성",
     "선릉",
-    "선정릉(한국과학창의재단)"
+    "선정릉"
    ],
    "months": [
     "2026-04",
@@ -404,8 +404,7 @@
    "medianPrice": 375000.0,
    "avgArea": 122.8,
    "stations": [
-    "이촌",
-    "이촌(국립중앙박물관)"
+    "이촌"
    ],
    "months": [
     "2026-04",
@@ -569,7 +568,7 @@
    "medianPrice": 205000.0,
    "avgArea": 69.8,
    "stations": [
-    "대흥(서강대앞)"
+    "대흥"
    ],
    "months": [
     "2026-04",
@@ -746,7 +745,8 @@
    "medianPrice": 198500.0,
    "avgArea": 83.9,
    "stations": [
-    "광나루(장신대)"
+    "광나루",
+    "장신대"
    ],
    "months": [
     "2026-04",
@@ -1028,10 +1028,10 @@
    "medianPrice": 210000.0,
    "avgArea": 84.8,
    "stations": [
-    "교대(법원.검찰청)",
-    "남부터미널(예술의전당)",
+    "교대",
+    "남부터미널",
     "서초",
-    "양재(서초구청)"
+    "양재"
    ],
    "months": [
     "2026-04",
@@ -1101,7 +1101,6 @@
    "avgArea": 44.9,
    "stations": [
     "복정",
-    "복정(동서울대학)",
     "장지"
    ],
    "months": [
@@ -1195,7 +1194,7 @@
    "avgArea": 90.2,
    "stations": [
     "방이",
-    "올림픽공원(한국체대)"
+    "올림픽공원"
    ],
    "months": [
     "2026-04",
@@ -1336,7 +1335,7 @@
    "avgArea": 85.7,
    "stations": [
     "목동",
-    "오목교(목동운동장앞)"
+    "오목교"
    ],
    "months": [
     "2026-04",
@@ -1440,7 +1439,7 @@
    "medianPrice": 156000.0,
    "avgArea": 80.7,
    "stations": [
-    "자양(뚝섬한강공원)"
+    "자양"
    ],
    "months": [
     "2026-04",
@@ -1476,7 +1475,7 @@
    "medianPrice": 175000.0,
    "avgArea": 80.9,
    "stations": [
-    "굽은다리(강동구민회관앞)",
+    "굽은다리",
     "명일"
    ],
    "months": [
@@ -1706,6 +1705,7 @@
    "stations": [
     "남성",
     "사당",
+    "이수",
     "총신대입구(이수)"
    ],
    "months": [
@@ -1859,7 +1859,7 @@
    "medianPrice": 157500.0,
    "avgArea": 80.9,
    "stations": [
-    "숭실대입구(살피재)",
+    "숭실대입구",
     "장승배기"
    ],
    "months": [
@@ -1879,7 +1879,7 @@
    "medianPrice": 153000.0,
    "avgArea": 76.1,
    "stations": [
-    "광흥창(서강)"
+    "광흥창"
    ],
    "months": [
     "2026-04",
@@ -1999,7 +1999,8 @@
    "medianPrice": 170000.0,
    "avgArea": 90.3,
    "stations": [
-    "동작(현충원)"
+    "동작",
+    "현충원"
    ],
    "months": [
     "2026-04",
@@ -2052,8 +2053,8 @@
    "medianPrice": 129000.0,
    "avgArea": 62.4,
    "stations": [
-    "강변(동서울터미널)",
-    "구의(광진구청)"
+    "강변",
+    "구의"
    ],
    "months": [
     "2026-04",
@@ -2414,8 +2415,7 @@
    "medianPrice": 123150.0,
    "avgArea": 80.3,
    "stations": [
-    "청량리",
-    "청량리(서울시립대입구)"
+    "청량리"
    ],
    "months": [
     "2026-04",
@@ -2483,7 +2483,7 @@
    "medianPrice": 240000.0,
    "avgArea": 148.5,
    "stations": [
-    "서울역"
+    "서울"
    ],
    "months": [
     "2026-04"
@@ -2530,7 +2530,7 @@
    "medianPrice": 138350.0,
    "avgArea": 67.1,
    "stations": [
-    "용두(동대문구청)"
+    "용두"
    ],
    "months": [
     "2026-04",
@@ -2633,7 +2633,7 @@
    "avgArea": 71.8,
    "stations": [
     "디지털미디어시티",
-    "증산(명지대앞)"
+    "증산"
    ],
    "months": [
     "2026-04",
@@ -2756,7 +2756,7 @@
    "avgArea": 68.9,
    "stations": [
     "마포구청",
-    "월드컵경기장(성산)"
+    "월드컵경기장"
    ],
    "months": [
     "2026-04",
@@ -2856,7 +2856,7 @@
    "medianPrice": 105600.0,
    "avgArea": 77.5,
    "stations": [
-    "신정(은행정)",
+    "신정",
     "신정네거리",
     "양천구청"
    ],
@@ -3078,7 +3078,7 @@
    "medianPrice": 191125.0,
    "avgArea": 139.1,
    "stations": [
-    "서울역"
+    "서울"
    ],
    "months": [
     "2026-05",
@@ -3096,7 +3096,7 @@
    "stations": [
     "낙성대",
     "봉천",
-    "서울대입구(관악구청)"
+    "서울대입구"
    ],
    "months": [
     "2026-04",
@@ -3217,7 +3217,7 @@
    "medianPrice": 104500.0,
    "avgArea": 79.0,
    "stations": [
-    "고려대(종암)"
+    "고려대"
    ],
    "months": [
     "2026-04",
@@ -3542,7 +3542,7 @@
    "medianPrice": 84750.0,
    "avgArea": 75.6,
    "stations": [
-    "상월곡(한국과학기술연구원)"
+    "상월곡"
    ],
    "months": [
     "2026-04",
@@ -3626,7 +3626,7 @@
    "medianPrice": 97500.0,
    "avgArea": 79.9,
    "stations": [
-    "월곡(동덕여대)"
+    "월곡"
    ],
    "months": [
     "2026-04",
@@ -3765,7 +3765,7 @@
    "avgArea": 70.5,
    "stations": [
     "강동",
-    "천호(풍납토성)"
+    "천호"
    ],
    "months": [
     "2026-04",
@@ -3812,7 +3812,7 @@
    "medianPrice": 56800.0,
    "avgArea": 59.1,
    "stations": [
-    "충정로(경기대입구)"
+    "충정로"
    ],
    "months": [
     "2026-04",
@@ -4114,7 +4114,7 @@
    "avgArea": 46.6,
    "stations": [
     "건대입구",
-    "어린이대공원(세종대)"
+    "어린이대공원"
    ],
    "months": [
     "2026-04",
@@ -4184,7 +4184,6 @@
    "stations": [
     "개화산",
     "김포공항",
-    "김포공항역",
     "방화"
    ],
    "months": [
@@ -4285,8 +4284,7 @@
    "avgArea": 60.0,
    "stations": [
     "망우",
-    "상봉",
-    "상봉(시외버스터미널)"
+    "상봉"
    ],
    "months": [
     "2026-04",
@@ -4359,7 +4357,7 @@
    "stations": [
     "노원",
     "마들",
-    "불암산(당고개)",
+    "불암산",
     "상계",
     "수락산"
    ],
@@ -4380,7 +4378,7 @@
    "medianPrice": 80000.0,
    "avgArea": 71.5,
    "stations": [
-    "대림(구로구청)"
+    "대림"
    ],
    "months": [
     "2026-04",
@@ -4539,7 +4537,7 @@
     "구로",
     "구로디지털단지",
     "남구로",
-    "대림(구로구청)"
+    "대림"
    ],
    "months": [
     "2026-04",
@@ -4558,9 +4556,9 @@
    "medianPrice": 65000.0,
    "avgArea": 65.9,
    "stations": [
-    "공릉(서울과학기술대)",
+    "공릉",
     "태릉입구",
-    "화랑대(서울여대입구)"
+    "화랑대"
    ],
    "months": [
     "2026-04",
@@ -4752,7 +4750,7 @@
    "medianPrice": 64500.0,
    "avgArea": 68.0,
    "stations": [
-    "성신여대입구(돈암)"
+    "성신여대입구"
    ],
    "months": [
     "2026-05",
@@ -4767,8 +4765,8 @@
    "medianPrice": 74300.0,
    "avgArea": 79.0,
    "stations": [
-    "군자(능동)",
-    "아차산(어린이대공원후문)"
+    "군자",
+    "아차산"
    ],
    "months": [
     "2026-04"
@@ -4782,8 +4780,7 @@
    "medianPrice": 79250.0,
    "avgArea": 81.9,
    "stations": [
-    "온수",
-    "온수(성공회대입구)"
+    "온수"
    ],
    "months": [
     "2026-04",
@@ -4852,7 +4849,7 @@
    "medianPrice": 62000.0,
    "avgArea": 68.9,
    "stations": [
-    "봉화산(서울의료원)",
+    "봉화산",
     "신내"
    ],
    "months": [
@@ -5040,7 +5037,7 @@
    "avgArea": 74.4,
    "stations": [
     "신내",
-    "양원(서울시북부병원)"
+    "양원"
    ],
    "months": [
     "2026-04",
@@ -5088,7 +5085,7 @@
    "medianPrice": 54900.0,
    "avgArea": 68.9,
    "stations": [
-    "수유(강북구청)"
+    "수유"
    ],
    "months": [
     "2026-04",
@@ -5126,7 +5123,8 @@
    "medianPrice": 60000.0,
    "avgArea": 75.6,
    "stations": [
-    "새절(신사)",
+    "새절",
+    "신사",
     "응암"
    ],
    "months": [
@@ -5146,7 +5144,7 @@
    "medianPrice": 28900.0,
    "avgArea": 36.6,
    "stations": [
-    "회현(남대문시장)"
+    "회현"
    ],
    "months": [
     "2026-04"
@@ -5506,21 +5504,7 @@
    "medianPerPyeong": 11457.1,
    "medianPrice": 257000.0
   },
-  "몽촌토성(평화의문)": {
-   "sgg": "송파구",
-   "dong": "신천동",
-   "deals": 190,
-   "medianPerPyeong": 11415.5,
-   "medianPrice": 285000.0
-  },
   "몽촌토성": {
-   "sgg": "송파구",
-   "dong": "신천동",
-   "deals": 190,
-   "medianPerPyeong": 11415.5,
-   "medianPrice": 285000.0
-  },
-  "잠실(송파구청)": {
    "sgg": "송파구",
    "dong": "신천동",
    "deals": 190,
@@ -5548,13 +5532,6 @@
    "medianPerPyeong": 11346.3,
    "medianPrice": 281500.0
   },
-  "삼성(무역센터)": {
-   "sgg": "강남구",
-   "dong": "삼성동",
-   "deals": 134,
-   "medianPerPyeong": 11346.3,
-   "medianPrice": 281500.0
-  },
   "삼성": {
    "sgg": "강남구",
    "dong": "삼성동",
@@ -5563,13 +5540,6 @@
    "medianPrice": 281500.0
   },
   "선릉": {
-   "sgg": "강남구",
-   "dong": "삼성동",
-   "deals": 134,
-   "medianPerPyeong": 11346.3,
-   "medianPrice": 281500.0
-  },
-  "선정릉(한국과학창의재단)": {
    "sgg": "강남구",
    "dong": "삼성동",
    "deals": 134,
@@ -5646,13 +5616,6 @@
    "medianPerPyeong": 9648.8,
    "medianPrice": 375000.0
   },
-  "이촌(국립중앙박물관)": {
-   "sgg": "용산구",
-   "dong": "용산동5가",
-   "deals": 12,
-   "medianPerPyeong": 9648.8,
-   "medianPrice": 375000.0
-  },
   "가락시장": {
    "sgg": "송파구",
    "dong": "가락동",
@@ -5723,13 +5686,6 @@
    "medianPerPyeong": 8947.2,
    "medianPrice": 205000.0
   },
-  "대흥(서강대앞)": {
-   "sgg": "마포구",
-   "dong": "대흥동",
-   "deals": 45,
-   "medianPerPyeong": 8947.2,
-   "medianPrice": 205000.0
-  },
   "이대": {
    "sgg": "마포구",
    "dong": "염리동",
@@ -5765,7 +5721,7 @@
    "medianPerPyeong": 8406.6,
    "medianPrice": 198500.0
   },
-  "광나루(장신대)": {
+  "장신대": {
    "sgg": "광진구",
    "dong": "광장동",
    "deals": 94,
@@ -5829,11 +5785,11 @@
    "medianPrice": 175000.0
   },
   "신사": {
-   "sgg": "강남구",
+   "sgg": "은평구",
    "dong": "신사동",
-   "deals": 18,
-   "medianPerPyeong": 7802.3,
-   "medianPrice": 155250.0
+   "deals": 150,
+   "medianPerPyeong": 2617.8,
+   "medianPrice": 60000.0
   },
   "압구정": {
    "sgg": "강남구",
@@ -5841,13 +5797,6 @@
    "deals": 18,
    "medianPerPyeong": 7802.3,
    "medianPrice": 155250.0
-  },
-  "교대(법원.검찰청)": {
-   "sgg": "서초구",
-   "dong": "서초동",
-   "deals": 385,
-   "medianPerPyeong": 7705.1,
-   "medianPrice": 210000.0
   },
   "교대": {
    "sgg": "서초구",
@@ -5863,21 +5812,7 @@
    "medianPerPyeong": 7705.1,
    "medianPrice": 210000.0
   },
-  "남부터미널(예술의전당)": {
-   "sgg": "서초구",
-   "dong": "서초동",
-   "deals": 385,
-   "medianPerPyeong": 7705.1,
-   "medianPrice": 210000.0
-  },
   "서초": {
-   "sgg": "서초구",
-   "dong": "서초동",
-   "deals": 385,
-   "medianPerPyeong": 7705.1,
-   "medianPrice": 210000.0
-  },
-  "양재(서초구청)": {
    "sgg": "서초구",
    "dong": "서초동",
    "deals": 385,
@@ -5892,13 +5827,6 @@
    "medianPrice": 210000.0
   },
   "복정": {
-   "sgg": "송파구",
-   "dong": "장지동",
-   "deals": 313,
-   "medianPerPyeong": 7635.8,
-   "medianPrice": 42000.0
-  },
-  "복정(동서울대학)": {
    "sgg": "송파구",
    "dong": "장지동",
    "deals": 313,
@@ -5941,13 +5869,6 @@
    "medianPrice": 158000.0
   },
   "방이": {
-   "sgg": "송파구",
-   "dong": "방이동",
-   "deals": 136,
-   "medianPerPyeong": 7438.1,
-   "medianPrice": 217750.0
-  },
-  "올림픽공원(한국체대)": {
    "sgg": "송파구",
    "dong": "방이동",
    "deals": 136,
@@ -6003,13 +5924,6 @@
    "medianPerPyeong": 7182.4,
    "medianPrice": 173750.0
   },
-  "오목교(목동운동장앞)": {
-   "sgg": "양천구",
-   "dong": "목동",
-   "deals": 348,
-   "medianPerPyeong": 7182.4,
-   "medianPrice": 173750.0
-  },
   "신용산": {
    "sgg": "용산구",
    "dong": "한강로2가",
@@ -6031,21 +5945,7 @@
    "medianPerPyeong": 6963.9,
    "medianPrice": 156000.0
   },
-  "자양(뚝섬한강공원)": {
-   "sgg": "광진구",
-   "dong": "자양동",
-   "deals": 169,
-   "medianPerPyeong": 6963.9,
-   "medianPrice": 156000.0
-  },
   "굽은다리": {
-   "sgg": "강동구",
-   "dong": "명일동",
-   "deals": 159,
-   "medianPerPyeong": 6912.7,
-   "medianPrice": 175000.0
-  },
-  "굽은다리(강동구민회관앞)": {
    "sgg": "강동구",
    "dong": "명일동",
    "deals": 159,
@@ -6192,14 +6092,14 @@
    "medianPerPyeong": 6443.1,
    "medianPrice": 146000.0
   },
-  "총신대입구(이수)": {
+  "이수": {
    "sgg": "동작구",
    "dong": "사당동",
    "deals": 339,
    "medianPerPyeong": 6443.1,
    "medianPrice": 146000.0
   },
-  "총신대입구": {
+  "총신대입구(이수)": {
    "sgg": "동작구",
    "dong": "사당동",
    "deals": 339,
@@ -6227,13 +6127,6 @@
    "medianPerPyeong": 6314.2,
    "medianPrice": 135900.0
   },
-  "숭실대입구(살피재)": {
-   "sgg": "동작구",
-   "dong": "상도동",
-   "deals": 267,
-   "medianPerPyeong": 6267.5,
-   "medianPrice": 157500.0
-  },
   "숭실대입구": {
    "sgg": "동작구",
    "dong": "상도동",
@@ -6255,13 +6148,6 @@
    "medianPerPyeong": 6263.8,
    "medianPrice": 153000.0
   },
-  "광흥창(서강)": {
-   "sgg": "마포구",
-   "dong": "창전동",
-   "deals": 57,
-   "medianPerPyeong": 6263.8,
-   "medianPrice": 153000.0
-  },
   "삼각지": {
    "sgg": "용산구",
    "dong": "한강로1가",
@@ -6276,14 +6162,14 @@
    "medianPerPyeong": 6188.9,
    "medianPrice": 137000.0
   },
-  "동작(현충원)": {
+  "동작": {
    "sgg": "동작구",
    "dong": "동작동",
    "deals": 17,
    "medianPerPyeong": 6031.7,
    "medianPrice": 170000.0
   },
-  "동작": {
+  "현충원": {
    "sgg": "동작구",
    "dong": "동작동",
    "deals": 17,
@@ -6297,21 +6183,7 @@
    "medianPerPyeong": 5983.3,
    "medianPrice": 129000.0
   },
-  "강변(동서울터미널)": {
-   "sgg": "광진구",
-   "dong": "구의동",
-   "deals": 201,
-   "medianPerPyeong": 5983.3,
-   "medianPrice": 129000.0
-  },
   "구의": {
-   "sgg": "광진구",
-   "dong": "구의동",
-   "deals": 201,
-   "medianPerPyeong": 5983.3,
-   "medianPrice": 129000.0
-  },
-  "구의(광진구청)": {
    "sgg": "광진구",
    "dong": "구의동",
    "deals": 201,
@@ -6409,14 +6281,7 @@
    "medianPerPyeong": 5472.6,
    "medianPrice": 123150.0
   },
-  "청량리(서울시립대입구)": {
-   "sgg": "동대문구",
-   "dong": "전농동",
-   "deals": 232,
-   "medianPerPyeong": 5472.6,
-   "medianPrice": 123150.0
-  },
-  "서울역": {
+  "서울": {
    "sgg": "용산구",
    "dong": "동자동",
    "deals": 4,
@@ -6424,13 +6289,6 @@
    "medianPrice": 191125.0
   },
   "용두": {
-   "sgg": "동대문구",
-   "dong": "용두동",
-   "deals": 134,
-   "medianPerPyeong": 5328.4,
-   "medianPrice": 138350.0
-  },
-  "용두(동대문구청)": {
    "sgg": "동대문구",
    "dong": "용두동",
    "deals": 134,
@@ -6452,13 +6310,6 @@
    "medianPrice": 123000.0
   },
   "증산": {
-   "sgg": "은평구",
-   "dong": "증산동",
-   "deals": 70,
-   "medianPerPyeong": 5242.0,
-   "medianPrice": 105500.0
-  },
-  "증산(명지대앞)": {
    "sgg": "은평구",
    "dong": "증산동",
    "deals": 70,
@@ -6493,13 +6344,6 @@
    "medianPerPyeong": 4994.8,
    "medianPrice": 121500.0
   },
-  "월드컵경기장(성산)": {
-   "sgg": "마포구",
-   "dong": "성산동",
-   "deals": 66,
-   "medianPerPyeong": 4994.8,
-   "medianPrice": 121500.0
-  },
   "마곡": {
    "sgg": "강서구",
    "dong": "마곡동",
@@ -6515,13 +6359,6 @@
    "medianPrice": 121900.0
   },
   "신정": {
-   "sgg": "양천구",
-   "dong": "신정동",
-   "deals": 476,
-   "medianPerPyeong": 4860.2,
-   "medianPrice": 105600.0
-  },
-  "신정(은행정)": {
    "sgg": "양천구",
    "dong": "신정동",
    "deals": 476,
@@ -6563,13 +6400,6 @@
    "medianPerPyeong": 4594.9,
    "medianPrice": 110000.0
   },
-  "서울대입구(관악구청)": {
-   "sgg": "관악구",
-   "dong": "봉천동",
-   "deals": 678,
-   "medianPerPyeong": 4594.9,
-   "medianPrice": 110000.0
-  },
   "서울대입구": {
    "sgg": "관악구",
    "dong": "봉천동",
@@ -6578,13 +6408,6 @@
    "medianPrice": 110000.0
   },
   "고려대": {
-   "sgg": "성북구",
-   "dong": "종암동",
-   "deals": 179,
-   "medianPerPyeong": 4474.1,
-   "medianPrice": 104500.0
-  },
-  "고려대(종암)": {
    "sgg": "성북구",
    "dong": "종암동",
    "deals": 179,
@@ -6675,13 +6498,6 @@
    "medianPerPyeong": 4181.1,
    "medianPrice": 96750.0
   },
-  "상월곡(한국과학기술연구원)": {
-   "sgg": "성북구",
-   "dong": "상월곡동",
-   "deals": 44,
-   "medianPerPyeong": 4149.4,
-   "medianPrice": 84750.0
-  },
   "상월곡": {
    "sgg": "성북구",
    "dong": "상월곡동",
@@ -6702,13 +6518,6 @@
    "deals": 127,
    "medianPerPyeong": 4141.5,
    "medianPrice": 100000.0
-  },
-  "월곡(동덕여대)": {
-   "sgg": "성북구",
-   "dong": "하월곡동",
-   "deals": 234,
-   "medianPerPyeong": 4093.9,
-   "medianPrice": 97500.0
   },
   "월곡": {
    "sgg": "성북구",
@@ -6745,26 +6554,12 @@
    "medianPerPyeong": 4024.7,
    "medianPrice": 82000.0
   },
-  "천호(풍납토성)": {
-   "sgg": "강동구",
-   "dong": "천호동",
-   "deals": 201,
-   "medianPerPyeong": 4024.7,
-   "medianPrice": 82000.0
-  },
   "천호": {
    "sgg": "강동구",
    "dong": "천호동",
    "deals": 201,
    "medianPerPyeong": 4024.7,
    "medianPrice": 82000.0
-  },
-  "충정로(경기대입구)": {
-   "sgg": "서대문구",
-   "dong": "충정로3가",
-   "deals": 15,
-   "medianPerPyeong": 3948.7,
-   "medianPrice": 56800.0
   },
   "충정로": {
    "sgg": "서대문구",
@@ -6857,13 +6652,6 @@
    "medianPerPyeong": 3704.4,
    "medianPrice": 68350.0
   },
-  "어린이대공원(세종대)": {
-   "sgg": "광진구",
-   "dong": "화양동",
-   "deals": 32,
-   "medianPerPyeong": 3704.4,
-   "medianPrice": 68350.0
-  },
   "중계": {
    "sgg": "노원구",
    "dong": "중계동",
@@ -6886,13 +6674,6 @@
    "medianPrice": 64000.0
   },
   "김포공항": {
-   "sgg": "강서구",
-   "dong": "방화동",
-   "deals": 457,
-   "medianPerPyeong": 3640.0,
-   "medianPrice": 64000.0
-  },
-  "김포공항역": {
    "sgg": "강서구",
    "dong": "방화동",
    "deals": 457,
@@ -6928,13 +6709,6 @@
    "medianPrice": 66750.0
   },
   "상봉": {
-   "sgg": "중랑구",
-   "dong": "상봉동",
-   "deals": 194,
-   "medianPerPyeong": 3529.1,
-   "medianPrice": 66750.0
-  },
-  "상봉(시외버스터미널)": {
    "sgg": "중랑구",
    "dong": "상봉동",
    "deals": 194,
@@ -6990,13 +6764,6 @@
    "medianPerPyeong": 3490.8,
    "medianPrice": 59800.0
   },
-  "불암산(당고개)": {
-   "sgg": "노원구",
-   "dong": "상계동",
-   "deals": 1806,
-   "medianPerPyeong": 3490.8,
-   "medianPrice": 59800.0
-  },
   "상계": {
    "sgg": "노원구",
    "dong": "상계동",
@@ -7012,13 +6779,6 @@
    "medianPrice": 59800.0
   },
   "대림": {
-   "sgg": "구로구",
-   "dong": "구로동",
-   "deals": 753,
-   "medianPerPyeong": 3336.9,
-   "medianPrice": 64500.0
-  },
-  "대림(구로구청)": {
    "sgg": "구로구",
    "dong": "구로동",
    "deals": 753,
@@ -7081,13 +6841,6 @@
    "medianPerPyeong": 3336.9,
    "medianPrice": 64500.0
   },
-  "공릉(서울과학기술대)": {
-   "sgg": "노원구",
-   "dong": "공릉동",
-   "deals": 583,
-   "medianPerPyeong": 3328.0,
-   "medianPrice": 65000.0
-  },
   "공릉": {
    "sgg": "노원구",
    "dong": "공릉동",
@@ -7103,13 +6856,6 @@
    "medianPrice": 65000.0
   },
   "화랑대": {
-   "sgg": "노원구",
-   "dong": "공릉동",
-   "deals": 583,
-   "medianPerPyeong": 3328.0,
-   "medianPrice": 65000.0
-  },
-  "화랑대(서울여대입구)": {
    "sgg": "노원구",
    "dong": "공릉동",
    "deals": 583,
@@ -7151,28 +6897,7 @@
    "medianPerPyeong": 3134.2,
    "medianPrice": 64500.0
   },
-  "성신여대입구(돈암)": {
-   "sgg": "성북구",
-   "dong": "동선동4가",
-   "deals": 2,
-   "medianPerPyeong": 3134.2,
-   "medianPrice": 64500.0
-  },
-  "군자(능동)": {
-   "sgg": "광진구",
-   "dong": "능동",
-   "deals": 1,
-   "medianPerPyeong": 3109.1,
-   "medianPrice": 74300.0
-  },
   "군자": {
-   "sgg": "광진구",
-   "dong": "능동",
-   "deals": 1,
-   "medianPerPyeong": 3109.1,
-   "medianPrice": 74300.0
-  },
-  "아차산(어린이대공원후문)": {
    "sgg": "광진구",
    "dong": "능동",
    "deals": 1,
@@ -7193,13 +6918,6 @@
    "medianPerPyeong": 3102.7,
    "medianPrice": 79250.0
   },
-  "온수(성공회대입구)": {
-   "sgg": "구로구",
-   "dong": "온수동",
-   "deals": 42,
-   "medianPerPyeong": 3102.7,
-   "medianPrice": 79250.0
-  },
   "홍대입구": {
    "sgg": "마포구",
    "dong": "동교동",
@@ -7213,13 +6931,6 @@
    "deals": 42,
    "medianPerPyeong": 3068.6,
    "medianPrice": 77850.0
-  },
-  "봉화산(서울의료원)": {
-   "sgg": "중랑구",
-   "dong": "신내동",
-   "deals": 457,
-   "medianPerPyeong": 3047.1,
-   "medianPrice": 62000.0
   },
   "봉화산": {
    "sgg": "중랑구",
@@ -7291,26 +7002,12 @@
    "medianPerPyeong": 2746.4,
    "medianPrice": 25250.0
   },
-  "양원(서울시북부병원)": {
-   "sgg": "중랑구",
-   "dong": "망우동",
-   "deals": 91,
-   "medianPerPyeong": 2714.2,
-   "medianPrice": 63000.0
-  },
   "양원": {
    "sgg": "중랑구",
    "dong": "망우동",
    "deals": 91,
    "medianPerPyeong": 2714.2,
    "medianPrice": 63000.0
-  },
-  "수유(강북구청)": {
-   "sgg": "강북구",
-   "dong": "수유동",
-   "deals": 123,
-   "medianPerPyeong": 2643.4,
-   "medianPrice": 54900.0
   },
   "수유": {
    "sgg": "강북구",
@@ -7326,13 +7023,6 @@
    "medianPerPyeong": 2623.4,
    "medianPrice": 59000.0
   },
-  "새절(신사)": {
-   "sgg": "은평구",
-   "dong": "신사동",
-   "deals": 150,
-   "medianPerPyeong": 2617.8,
-   "medianPrice": 60000.0
-  },
   "새절": {
    "sgg": "은평구",
    "dong": "신사동",
@@ -7346,13 +7036,6 @@
    "deals": 150,
    "medianPerPyeong": 2617.8,
    "medianPrice": 60000.0
-  },
-  "회현(남대문시장)": {
-   "sgg": "중구",
-   "dong": "남창동",
-   "deals": 1,
-   "medianPerPyeong": 2611.7,
-   "medianPrice": 28900.0
   },
   "회현": {
    "sgg": "중구",

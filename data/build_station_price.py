@@ -43,12 +43,27 @@ def main():
     sgg_name = load_sgg_name()
     stations = json.loads(DONG.read_text("utf8"))
 
+    # 공식 주소데이터는 '서울역'·'총신대입구' 라고 부르고 지도는 '서울'·'이수'
+    # 라고 부른다. 이름을 안 맞추면 그 역은 시세가 통째로 사라진다 —
+    # 실제로 서울역과 이수역이 그랬다. 데이터가 없어서가 아니라 이름이
+    # 달라서 없었다.
+    import station_names  # noqa: E402  (같은 폴더)
+
     # (구, 법정동) → 역 이름들
     dong2st = {}
+    unmatched = set()
     for s in stations:
         if not s["dong"]:
             continue
-        dong2st.setdefault((s["sgg"], s["dong"]), set()).add(s["name"])
+        # resolve_all 을 쓴다. 이수역처럼 같은 역이 지도에 두 이름으로 들어
+        # 있는 경우가 있어, 한쪽만 고르면 나머지 한쪽은 시세가 안 뜬다.
+        names = station_names.resolve_all(s["name"])
+        if not names:
+            unmatched.add(s["name"])
+            continue
+        dong2st.setdefault((s["sgg"], s["dong"]), set()).update(names)
+    if unmatched:
+        print("이름을 못 맞춘 역 %d곳: %s" % (len(unmatched), ", ".join(sorted(unmatched)[:8])))
 
     # 실거래가 모으기 — 파일명 앞 5자리가 법정동코드다
     deals = []
@@ -121,13 +136,15 @@ def main():
     by_station = {}
     for d in out:
         for name in d["stations"]:
-            for key in {name, norm_name(name)}:
-                cur = by_station.get(key)
-                if cur is None or d["deals"] > cur["deals"]:
-                    by_station[key] = {
-                        "sgg": d["sgg"], "dong": d["dong"], "deals": d["deals"],
-                        "medianPerPyeong": d["medianPerPyeong"],
-                        "medianPrice": d["medianPrice"],
+            # 이름은 이미 station_names.resolve 를 거친 지도 이름이다.
+            # 예전엔 괄호 부기를 뗀 이름까지 같이 등록해서 키가 부풀었다
+            # (283개로 보였지만 실제 역은 235개). 지금은 하나만 넣는다.
+            cur = by_station.get(name)
+            if cur is None or d["deals"] > cur["deals"]:
+                by_station[name] = {
+                    "sgg": d["sgg"], "dong": d["dong"], "deals": d["deals"],
+                    "medianPerPyeong": d["medianPerPyeong"],
+                    "medianPrice": d["medianPrice"],
                     }
     payload = {
         "updated": sorted({m for d in out for m in d["months"]})[-1] if out else None,

@@ -1090,6 +1090,11 @@ const dataPromise = loadData().then(() => {
       // 데이터가 늦게 도착했을 수 있다. 그 사이 역을 열어 뒀으면 다시 그린다.
       if (typeof StationDetail !== 'undefined') StationDetail.refresh();
     }).catch(() => null));
+    // 단지 목록은 780KB 라 요약보다 10배 크다. await 하지 않는다 —
+    // 이걸 기다리면 지도 첫 화면이 그만큼 늦어진다. 도착하면 다시 그린다.
+    StationPrice.loadComplexes('data/station-complex.json').then((ok) => {
+      if (ok && typeof StationDetail !== 'undefined') StationDetail.refresh();
+    });
   }
   return Promise.all(extra);
 });

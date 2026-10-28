@@ -163,21 +163,44 @@ section('세대수·공급면적 (K-apt)');
   check('세대수는 1 이상 정수', withH.every(c => Number.isInteger(c.h) && c.h > 0),
     withH.filter(c => !(Number.isInteger(c.h) && c.h > 0)).length + '곳 위반');
 
-  // 20㎡ 미만이거나 400㎡ 를 넘는 '한 세대 평균'은 아파트가 아니다.
-  // 상가·주차장이 kaptMarea 에 섞여 들어간 경우이고, 그런 값은 버려야 한다.
-  const badSa = all.filter(c => c.sa != null && (c.sa < 20 || c.sa > 400));
-  check('공급면적이 상식 범위(20~400㎡)', badSa.length === 0, badSa.length + '곳');
+  // 10㎡ 미만이거나 500㎡ 를 넘는 '한 세대 평균'은 아파트가 아니다.
+  // K-apt 의 kaptMarea 에 상가·주차장이 섞여 들어간 경우이고, 그런 값은 버려야 한다.
+  const badBa = all.filter(c => c.ba != null && (c.ba < 10 || c.ba > 500));
+  check('관리비부과면적이 상식 범위(10~500㎡)', badBa.length === 0, badBa.length + '곳');
 
-  const badPr = all.filter(c => c.pr != null && (c.pr < 0.40 || c.pr > 0.95));
-  check('전용률이 상식 범위(40~95%)', badPr.length === 0, badPr.length + '곳');
+  const badPr = all.filter(c => c.pr != null && (c.pr < 0.50 || c.pr > 0.98));
+  check('전용률이 상식 범위(50~98%)', badPr.length === 0, badPr.length + '곳');
 
   // 공급면적은 세대수로 나눠서 나온다. 세대수가 없는데 면적만 있으면 계산이 틀린 것.
-  check('면적이 있으면 세대수도 있다', all.every(c => c.sa == null || c.h != null),
-    all.filter(c => c.sa != null && c.h == null).length + '곳 위반');
+  check('면적이 있으면 세대수도 있다', all.every(c => c.ba == null || c.h != null),
+    all.filter(c => c.ba != null && c.h == null).length + '곳 위반');
 
   // 전용면적은 공급면적보다 작아야 한다. 뒤집히면 필드 이름을 잘못 짚은 것이다.
-  check('전용면적 < 공급면적', all.every(c => c.ea == null || c.sa == null || c.ea <= c.sa),
-    all.filter(c => c.ea != null && c.sa != null && c.ea > c.sa).length + '곳 위반');
+  check('전용면적 < 공급면적', all.every(c => c.ea == null || c.ba == null || c.ea <= c.ba),
+    all.filter(c => c.ea != null && c.ba != null && c.ea > c.ba).length + '곳 위반');
+
+  // 평형 구성(bd)은 전용면적 구간별 세대수다. 합이 세대수와 어긋나면
+  // 다른 필드(kaptMparea60 같은)를 잘못 짚었거나 둘 중 하나가 틀린 것이다.
+  //
+  // 다만 **정확히 같기를 요구하면 안 된다.** 같은 세대를 두 방식으로 센 값이라
+  // 반올림·임대 포함 여부 때문에 ±1~3 은 실제로 어긋난다(5,301곳 중 61곳).
+  // 그 이상 벌어지는 것(광진코지웰 296 vs 364)은 fetch_kapt 의 plausible() 이
+  // 구성을 아예 버리므로 여기까지 오지 않는다. 그래서 여기서는 같은 기준
+  // (max(2, 2%))으로만 본다 — 두 곳의 기준이 어긋나면 안 된다.
+  const withBd = all.filter(c => Array.isArray(c.bd));
+  check('평형 구성은 4개 구간', withBd.every(c => c.bd.length === 4),
+    withBd.filter(c => c.bd.length !== 4).length + '곳 위반');
+  const bdOff = withBd.filter(c => Math.abs(c.bd.reduce((a, b) => a + b, 0) - c.h) >
+    Math.max(2, c.h * 0.02));
+  check('평형 구성 합 ≈ 세대수 (±2 또는 2%)', bdOff.length === 0, bdOff.length + '곳 위반');
+  check('평형 구성이 있으면 세대수도 있다', withBd.every(c => c.h != null),
+    withBd.filter(c => c.h == null).length + '곳 위반');
+  check('평형 구성은 음수 없음', withBd.every(c => c.bd.every(n => Number.isInteger(n) && n >= 0)),
+    withBd.filter(c => c.bd.some(n => !(Number.isInteger(n) && n >= 0))).length + '곳 위반');
+
+  // 사용승인 연도는 K-apt 값이라 실거래가의 건축년도와 크게 어긋나면 안 된다.
+  const badY = all.filter(c => c.y && (c.y < 1950 || c.y > 2027));
+  check('사용승인 연도가 상식 범위', badY.length === 0, badY.length + '곳');
 
   // 붙은 단지가 있으면 평균 전용면적이 실거래 전용면적과 크게 어긋나면 안 된다.
   // 단지 평균과 개별 거래라 정확히 같을 수는 없으니 배수로만 본다.

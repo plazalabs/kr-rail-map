@@ -79,6 +79,9 @@
     // 색을 살짝 다르게 해서 '이건 다른 자료에서 왔다'가 눈에 보이게 한다.
     '.sd-cx-u{grid-column:1/-1;font-size:11px;color:var(--fg-2,#374151);' +
     'font-variant-numeric:tabular-nums;margin-top:1px}' +
+    // 평형 구성은 한 단계 더 흐리게. 읽고 싶은 사람만 읽는 줄이다.
+    '.sd-cx-b{grid-column:1/-1;font-size:10px;color:var(--muted,#6b7280);' +
+    'font-variant-numeric:tabular-nums;margin-top:1px;letter-spacing:-.1px}' +
     '.sd-cx-more{margin-top:6px;width:100%;padding:6px 0;border:1px solid var(--border-strong,#ddd);' +
     'border-radius:6px;background:var(--btn-bg,#fff);color:var(--btn-text,#222);' +
     'cursor:pointer;font-size:12px}' +
@@ -353,27 +356,42 @@
     var c = StationPrice.complexes(nameKo, 3);
     if (!c) return '';
 
+    // 전용면적 구간별 세대수. K-apt 가 이걸 준다 — 합이 세대수와 정확히 맞는다.
+    // 3,000세대라도 전부 59㎡면 성격이 전혀 다르고, 전부 135㎡면 또 다르다.
+    // 평균 하나로는 그 차이가 안 보여서 구성을 같이 적는다.
+    var BAND_LABEL = ['~60㎡', '60~85㎡', '85~135㎡', '135㎡~'];
+    function bandText(bd) {
+      if (!bd || !bd.length) return '';
+      var parts = [];
+      for (var i = 0; i < bd.length; i++) {
+        if (bd[i]) parts.push(BAND_LABEL[i] + ' ' + bd[i].toLocaleString('ko-KR'));
+      }
+      return parts.join(' · ');
+    }
+
     function row(x, i) {
       var meta = [];
       if (x.y) meta.push(x.y + '년');
       // 세대수는 규모를 말해 준다. 12세대 소형과 3,000세대 대단지는 같은
       // 평당가라도 전혀 다른 자산이다. 없으면 그냥 빼고 그린다.
       if (x.h) meta.push(x.h.toLocaleString('ko-KR') + '세대');
-      if (x.a) meta.push(Math.round(x.a) + '㎡');
+      if (!x.ea && x.a) meta.push(Math.round(x.a) + '㎡');
       meta.push(x.n_deals + '건');
 
-      // 공급면적은 K-apt 의 '관리비부과 총면적'을 세대수로 나눈 단지 평균이다.
-      // 세대별 값이 아니므로 '평균'을 붙인다. 전용률은 그 자체로 단지 성격을
-      // 말해 준다 — 같은 84㎡라도 68%면 복도식 구축, 79%면 최근 판상형이다.
+      // 전용·공급 두 면적을 같이 보여줘야 대화가 된다. 사람들이 보는 시세표는
+      // 대개 공급면적 기준인데 실거래가는 전용면적만 준다. 전용률은 두 값을
+      // 나누면 나오므로 따로 적지 않는다.
       var extra = [];
-      if (x.sa) extra.push('공급 ' + Math.round(x.sa) + '㎡');
-      if (x.pr) extra.push('전용률 ' + Math.round(x.pr * 100) + '%');
+      if (x.ea) extra.push('전용 ' + Math.round(x.ea) + '㎡');
+      if (x.ba) extra.push('공급* ' + Math.round(x.ba) + '㎡');
       if (x.d) extra.push(x.d + '개동');
+      var bands = bandText(x.bd);
 
       return '<li class="sd-cx"><span class="sd-cx-n">' + esc(x.n) + '</span>' +
         '<span class="sd-cx-p">' + StationPrice.pp(x.pp) + '/평</span>' +
         '<span class="sd-cx-m">' + esc(meta.join(' · ')) + '</span>' +
         (extra.length ? '<span class="sd-cx-u">' + esc(extra.join(' · ')) + '</span>' : '') +
+        (bands ? '<span class="sd-cx-b">' + esc(bands) + '</span>' : '') +
         '</li>';
     }
 
@@ -385,13 +403,16 @@
       h += '<button type="button" class="sd-cx-more" data-more="1">' +
         '나머지 ' + (c.total - c.items.length) + '곳 보기</button>';
     }
-    // 세대수·공급면적은 다른 자료에서 온 값이라 출처를 밝힌다. 이게 없으면
+    // 세대수·면적은 다른 자료에서 온 값이라 출처를 밝힌다. 이게 없으면
     // 실거래가로 계산한 줄과 섞여 보인다.
     var hasUnits = c.items.some(function (x) { return !!x.h; });
+    var hasBa = c.items.some(function (x) { return !!x.ba; });
     h += '<div class="sd-note">※ 단지 좌표가 없어 <b>역에서의 거리는 알 수 없습니다.</b> ' +
       '역이 속한 법정동에 있는 단지 목록입니다. 거래 2건 미만 단지는 뺐습니다.' +
-      (hasUnits ? ' 세대수·공급면적은 국토교통부 공동주택 기본정보(K-apt)를 ' +
-        '단지명으로 이은 값이고, 공급면적은 <b>단지 평균</b>이라 세대별 값이 아닙니다.' : '') +
+      (hasUnits ? ' 세대수·면적·평형 구성은 국토교통부 공동주택 기본정보(K-apt)를 ' +
+        '단지명으로 이은 값이고, 면적은 <b>단지 평균</b>이라 세대별 값이 아닙니다.' : '') +
+      (hasBa ? ' <b>*</b> 공급면적은 K-apt의 <b>관리비부과면적</b>을 세대수로 나눈 값입니다. ' +
+        '대부분 단지에서 공급면적과 같지만, 전용면적에 관리비를 부과하는 단지는 다릅니다.' : '') +
       '</div></div>';
     return h;
   }

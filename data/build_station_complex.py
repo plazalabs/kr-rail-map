@@ -145,7 +145,7 @@ def build_complexes(rows, units=None):
             "a": med([x.get("area") for x in rs]),
         })
 
-    return {
+    out = {
         "n": rows[0]["apt"],
         "j": rows[0].get("jibun", ""),
         "y": int(statistics.median(years)) if years else 0,
@@ -155,25 +155,48 @@ def build_complexes(rows, units=None):
         "a": med([r.get("area") for r in rows]),
         "fl": med([r.get("floor") for r in rows if r.get("floor")]),
         "bands": out_bands,
-    } | kapt_fields(rows[0], units)
+    }
+    out |= kapt_fields(rows[0], units)
+
+    # 교차 확인은 **화면에 나가는 값끼리** 한다. rows[0] 의 면적과 비교하면
+    # 중위값과 어긋나서, 60㎡ 와 85㎡ 가 섞인 단지에서 60㎡ 쪽이 통과해 버린다
+    # (힐스테이트평택더퍼스트: 중위 60㎡ 인데 단지 평균 전용 151.9㎡).
+    ea = out.get("ea")
+    if ea and out.get("a") and (ea > out["a"] * 2.5 or ea < out["a"] / 2.5):
+        for k in ("h", "d", "ea", "ba", "pr", "bd"):
+            out.pop(k, None)
+    return out
 
 
 def kapt_fields(row, units):
-    """K-apt 에서 받은 세대수·공급면적·전용률. 없으면 빈 dict.
+    """K-apt 에서 받은 세대수·면적·평형 구성. 없으면 빈 dict.
 
-    화면에서는 이 세 값이 있을 때만 '1,200세대 · 공급 82㎡'를 그린다.
+    화면에서는 이 값이 있을 때만 '1,200세대 · 전용 78㎡'를 그린다.
     없는데 0 이나 추정값을 넣으면 그게 더 큰 거짓말이 된다.
+
+    넘기는 키
+      h   세대수
+      d   동수
+      y   사용승인 연도 (실거래가의 건축년도보다 정확)
+      ea  평균 전용면적
+      ba  평균 관리비부과면적  ← 공급면적 대신. K-apt 에 공급면적이 없다
+      pr  전용률 (추정)
+      bd  전용면적 구간별 세대수 [~60, 60~85, 85~135, 135~]
     """
     if not units:
         return {}
     import fetch_kapt  # noqa: E402
-    rec = units.get((row.get("lawd"), fetch_kapt.norm_name(row.get("apt"))))
+    # 키를 만들 때 fetch_kapt.match_key 를 **그대로** 쓴다. 여기서 따로
+    # 정규화하면 두 곳이 반드시 어긋난다 — K-apt 는 '신당남산타운(분양)',
+    # 실거래가는 '남산타운' 이라 단순 비교로는 16% 밖에 안 맞는다.
+    rec = units.get((row.get("lawd"),
+                     fetch_kapt.match_key(row.get("apt"), row.get("umd"))))
     if not rec:
         return {}
     out = {}
-    for src, dst in (("h", "h"), ("sa", "sa"), ("ea", "ea"), ("pr", "pr"), ("d", "d")):
-        if rec.get(src) is not None:
-            out[dst] = rec[src]
+    for k in ("h", "d", "y", "ea", "ba", "pr", "bd"):
+        if rec.get(k) is not None:
+            out[k] = rec[k]
     return out
 
 
@@ -278,8 +301,9 @@ def main():
                 with_units += 1
     basis = "단지·평형대별 최근 6개월 중위값. 단지 좌표가 없어 법정동 단위로 붙인다."
     if with_units:
-        basis += (" 세대수·공급면적은 국토교통부 공동주택 기본정보(K-apt)에서 받아 "
-                  "단지명으로 이었다. 공급면적은 단지 평균이라 세대별 값이 아니다.")
+        basis += (" 세대수·전용면적·평형 구성은 국토교통부 공동주택 기본정보(K-apt)에서 "
+                  "받아 단지명으로 이었다. 면적은 단지 평균이라 세대별 값이 아니다. "
+                  "K-apt 는 공급면적을 주지 않으므로 관리비부과면적(ba)을 그대로 적었다.")
     payload = {
         "updated": months[-1] if months else None,
         "period": [months[0], months[-1]] if months else [],

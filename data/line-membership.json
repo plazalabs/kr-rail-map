@@ -6,10 +6,10 @@
  "summary": {
   "lines": 78,
   "open_lines": 68,
-  "open_pairs": 1475,
+  "open_pairs": 1474,
   "open_confirmed": 1463,
-  "open_confirmed_pct": 99.2,
-  "open_lines_all_confirmed": 62
+  "open_confirmed_pct": 99.3,
+  "open_lines_all_confirmed": 63
  },
  "lines": {
   "arex": {
@@ -72,17 +72,15 @@
   "busan-metro-line-3-brown-line": {
    "name": "부산 도시철도 3호선",
    "status": "open",
-   "stations": 18,
+   "stations": 17,
    "confirmed": 17,
    "sources": [
     "osm-geometry",
     "osm-relation"
    ],
-   "unconfirmed": [
-    "동백"
-   ],
+   "unconfirmed": [],
    "provisional": false,
-   "partial": true,
+   "partial": false,
    "gap_reason": ""
   },
   "busan-metro-line-4-blue-line": {

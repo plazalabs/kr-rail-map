@@ -25,6 +25,10 @@ data/_osm_routes_tags.json
 data/_osm_align/
 # 실거래가 캐시
 data/_rtms/
+# K-apt 단지 정보 캐시 — 활용신청 뒤 fetch_kapt.py 로 받는다.
+# 결과(세대수·공급면적)는 build_station_complex.py 가 station-complex.json
+# 에 구워 넣으므로, 그 파일만 추적하면 사이트는 그대로 돌아간다.
+data/_kapt/
 # 역 주소 원본(28개 CSV, 373K)과 그 중간산출물
 # 역위치 CSV(data/_gov/*역위치*.csv)는 테스트가 정답지로 쓰므로 추적한다.
 # 주소 CSV 는 build_station_dong.py 가 필요할 때 다시 받는다.

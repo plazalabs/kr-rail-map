@@ -226,6 +226,42 @@ python data/build_station_complex.py     # 4. 단지·평형대 → station-comp
 python data/build_sources.py             # 5. 출처 표 갱신 (data.html)
 ```
 
+### 세대수·공급면적은 K-apt 에서 온다 (선택 단계)
+
+4번 앞에 끼어드는 단계다. 없어도 4번은 그대로 돌아간다 — 세대수가
+안 붙을 뿐이다.
+
+```bash
+python data/fetch_kapt.py --probe        # 살아 있는 서비스 버전과 승인 여부
+python data/fetch_kapt.py --all          # 목록 + 기본정보 → data/_kapt/units.json
+python data/build_station_complex.py     # 4. 여기서 단지에 세대수·공급면적이 붙는다
+```
+
+**활용신청이 따로 필요하다.** 공공데이터포털에서 아래 둘을 신청한다
+(자동승인, 즉시). 이용허락범위는 둘 다 "제한 없음"이다.
+
+| 서비스 | 데이터셋 |
+|---|---|
+| 국토교통부_공동주택 단지 목록제공 서비스 | data.go.kr/data/15057332 |
+| 국토교통부_공동주택 기본 정보제공 서비스 | data.go.kr/data/15058453 |
+
+승인 전에 부르면 `SERVICE_KEY_IS_NOT_REGISTERED_ERROR(30)` 이 온다.
+이걸 "키가 틀렸다"로 오해하면 한참을 헤맨다. **12 와 30 은 다른 문제다.**
+
+- `12 NO_OPENAPI_SERVICE_ERROR` = 그런 오퍼레이션이 없다 → **버전 번호**가 틀렸다
+- `30 SERVICE_KEY_IS_NOT_REGISTERED` = 오퍼레이션은 있다 → **활용신청**을 안 했다
+
+서비스 이름 뒤의 버전은 예고 없이 올라간다. 2026-10 기준 살아 있는 것은
+`AptListService4` / `AptBasisInfoServiceV5` 인데, 흔히 도는 예제는 V2·V3 를
+적고 있다. 그래서 `fetch_kapt.py` 는 1~8 을 훑어 살아 있는 것을 찾아
+`data/_kapt/_endpoints.json` 에 적어 두고 다음부터는 그걸 쓴다.
+
+**면적은 단지 평균이다.** `kaptMarea`(관리비 부과 총면적)를 세대수로 나눈
+값이라 세대별 공급면적이 아니다. 상가·주차장이 섞여 들어간 단지가 있어서
+1세대 20~400㎡ · 전용률 40~95% 를 벗어나면 **면적을 버리고 세대수만**
+남긴다. 틀린 면적을 보여주느니 안 보여주는 게 낫다.
+
+
 ## 키는 (시도, 시군구코드, 법정동) 세 부분
 
 이름만으로 묶으면 안 된다. '중구'는 서울·인천·부산·대구·대전·울산에 있고

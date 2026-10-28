@@ -65,6 +65,28 @@ def load_sgg_name():
             for c in lawd.codes()}
 
 
+UNITS = ROOT / "data" / "_kapt" / "units.json"
+
+
+def load_units():
+    """K-apt 세대수·공급면적. 없으면 빈 표다 — 있어도 없어도 돌아야 한다.
+
+    키를 (시군구, 단지명) 으로 잡은 이유는 fetch_kapt.py 쪽에 적어 두었다.
+    이름 정규화도 그 파일의 것을 그대로 쓴다. 두 곳에서 따로 정의하면
+    반드시 어긋난다.
+    """
+    if not UNITS.exists():
+        return {}
+    import fetch_kapt  # noqa: E402
+    doc = json.loads(UNITS.read_text("utf8"))
+    out = {}
+    for k, v in (doc.get("units") or {}).items():
+        sgg, name = k.split("|", 1)
+        out[(sgg, name)] = v
+    return out
+
+
+
 def norm_name(n):
     """'잠실(송파구청)' → '잠실'. 공식 주소데이터가 붙이는 부기를 뗀다."""
     return re.sub(r"\s*\(.*?\)\s*", "", n).strip()
@@ -97,7 +119,7 @@ def collect_deals(sgg_name):
     return deals, seen_file
 
 
-def build_complexes(rows):
+def build_complexes(rows, units=None):
     """같은 단지의 거래를 묶어 요약한다."""
     bands = {}
     for r in rows:
@@ -133,7 +155,27 @@ def build_complexes(rows):
         "a": med([r.get("area") for r in rows]),
         "fl": med([r.get("floor") for r in rows if r.get("floor")]),
         "bands": out_bands,
-    }
+    } | kapt_fields(rows[0], units)
+
+
+def kapt_fields(row, units):
+    """K-apt 에서 받은 세대수·공급면적·전용률. 없으면 빈 dict.
+
+    화면에서는 이 세 값이 있을 때만 '1,200세대 · 공급 82㎡'를 그린다.
+    없는데 0 이나 추정값을 넣으면 그게 더 큰 거짓말이 된다.
+    """
+    if not units:
+        return {}
+    import fetch_kapt  # noqa: E402
+    rec = units.get((row.get("lawd"), fetch_kapt.norm_name(row.get("apt"))))
+    if not rec:
+        return {}
+    out = {}
+    for src, dst in (("h", "h"), ("sa", "sa"), ("ea", "ea"), ("pr", "pr"), ("d", "d")):
+        if rec.get(src) is not None:
+            out[dst] = rec[src]
+    return out
+
 
 
 def main():
@@ -141,6 +183,7 @@ def main():
         raise SystemExit("data/_station_dong.json 이 없습니다. build_station_dong.py 를 먼저 실행하세요.")
 
     sgg_name = load_sgg_name()
+    units = load_units()
     stations = json.loads(DONG.read_text("utf8"))
 
     # 공식 주소데이터는 '서울역'·'총신대입구' 처럼 부르고, 지도는 '서울'·'이수'
@@ -184,7 +227,7 @@ def main():
         for _, rs in by_cx.items():
             if len(rs) < MIN_DEALS:
                 continue
-            cxs.append(build_complexes(rs))
+            cxs.append(build_complexes(rs, units))
         cxs.sort(key=lambda c: -(c["pp"] or 0))
         total_cx += len(by_cx)
         kept += len(cxs)
@@ -223,13 +266,29 @@ def main():
         del districts[k]
 
     months = sorted({"%d-%02d" % (x["year"], x["month"]) for x in deals if x.get("year")})
+    # 분모는 **역과 이어진 법정동만** 센다. 위에서 kept 를 세지만 그건
+    # 정리 전 숫자라, 역이 없는 법정동의 단지까지 포함된다(10,001 vs 5,301).
+    # 화면에 '몇 곳 중 몇 곳'을 적으려면 실제로 남은 것으로 세야 한다.
+    kept = 0
+    with_units = 0
+    for d in districts.values():
+        for c in d.get("complexes") or []:
+            kept += 1
+            if c.get("h"):
+                with_units += 1
+    basis = "단지·평형대별 최근 6개월 중위값. 단지 좌표가 없어 법정동 단위로 붙인다."
+    if with_units:
+        basis += (" 세대수·공급면적은 국토교통부 공동주택 기본정보(K-apt)에서 받아 "
+                  "단지명으로 이었다. 공급면적은 단지 평균이라 세대별 값이 아니다.")
     payload = {
         "updated": months[-1] if months else None,
         "period": [months[0], months[-1]] if months else [],
         "source": "국토교통부 아파트 매매 실거래가 (공공데이터포털)",
-        "basis": "단지·평형대별 최근 6개월 중위값. 단지 좌표가 없어 법정동 단위로 붙인다.",
+        "basis": basis,
         "note": "최근 1~2개월은 신고 지연(계약 후 30일)으로 건수가 적다. "
                 "거래 %d건 미만 단지는 목록에서 뺀다." % MIN_DEALS,
+        "units": {"source": "국토교통부 공동주택 단지 목록·기본 정보 (K-apt)",
+                  "complexes": with_units, "of": kept},
         "districts": districts,
         "stations": st_map,
     }
@@ -238,6 +297,11 @@ def main():
     size = OUT.stat().st_size
     print("단지 %d곳 중 %d곳 채택 (거래 %d건 이상)" % (total_cx, kept, MIN_DEALS))
     print("법정동 %d곳 · 역 %d곳 연결" % (len(districts), len(st_map)))
+    if units:
+        print("세대수 붙은 단지 %d/%d곳 (%.0f%%)"
+              % (with_units, kept, 100.0 * with_units / kept if kept else 0))
+    else:
+        print("세대수 없음 — data/fetch_kapt.py --all 로 받으면 붙는다")
     print("저장: data/station-complex.json  %.0fKB" % (size / 1024))
 
     print("\n=== 평당가 높은 단지 (역 있는 법정동) ===")

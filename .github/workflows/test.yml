@@ -60,7 +60,8 @@ jobs:
           node -e '
             const fs = require("fs");
             const files = ["data/lines.geojson","data/stations.geojson",
-                           "data/exits.geojson","data/station-price.json"];
+                           "data/exits.geojson","data/station-price.json",
+                           "data/transfer-times.json"];
             for (const f of files) {
               const d = JSON.parse(fs.readFileSync(f, "utf8"));
               const n = d.features ? d.features.length : Object.keys(d.stations || {}).length;

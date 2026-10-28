@@ -608,6 +608,12 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
 }
 #route-result .leg:last-child { border-bottom: none; }
 .leg-header { font-size: 12.5px; margin-bottom: 3px; }
+/* 환승 도보 시간 — 역마다 다르다. 눈에 띄되 구간 정보보다는 약하게. */
+#route-result .leg-transfer {
+  font-size: 12px; color: var(--muted); padding: 3px 0 3px 2px;
+  border-bottom: 1px dashed var(--border);
+}
+#route-result .leg-transfer b { color: var(--text); font-weight: 600; }
 
 /* 미개통 노선 표시 — 이 지도는 착공·계획 노선까지 그리므로 오해 방지가 필요하다 */
 .unopened-notice {

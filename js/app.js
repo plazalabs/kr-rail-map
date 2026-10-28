@@ -788,6 +788,10 @@ document.getElementById('route-go').addEventListener('click', () => {
         }).join('') +
         `</div></div>`;
     }
+    // 이 구간을 내린 뒤 갈아타는 시간. 역마다 다르다 (data/transfer-times.json).
+    if (leg.transferAfter > 0) {
+      html += `<div class="leg leg-transfer">🚶 <b>${b}</b>역 내 환승 · 도보 약 ${leg.transferAfter}분</div>`;
+    }
   });
   box.innerHTML = html;
   // 경로 하이라이트: 해당 경로 역만 밝게, 나머지는 어둡게
@@ -1096,6 +1100,11 @@ const dataPromise = loadData().then(() => {
       if (ok && typeof StationDetail !== 'undefined') StationDetail.refresh();
     });
   }
+  // 환승 도보 시간은 없어도 길찾기가 된다(기본 4분). 조용히 실패하고 넘어간다.
+  extra.push(fetch('data/transfer-times.json')
+    .then(r => r.ok ? r.json() : null)
+    .then(doc => { if (doc) RouteFinder.loadTransfers(doc); })
+    .catch(() => null));
   return Promise.all(extra);
 });
 map.on('load', async () => {

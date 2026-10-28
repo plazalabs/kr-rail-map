@@ -111,6 +111,12 @@ padding:1px 5px;border-radius:4px}
 <td>Open Database License 1.0</td>
 <td><span class="badge ok">가능</span></td>
 </tr>
+<tr data-src="osm-stops">
+<td>역 안 환승 도보 시간</td>
+<td><a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap contributors</a></td>
+<td>Open Database License 1.0</td>
+<td><span class="badge ok">가능</span></td>
+</tr>
 <tr data-src="osm-exits">
 <td>역 출구 좌표</td>
 <td><a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap contributors</a></td>
@@ -164,13 +170,14 @@ padding:1px 5px;border-radius:4px}
 <li>© OpenStreetMap contributors — <a href="https://www.openstreetmap.org/copyright" rel="noopener">원문</a></li>
 <li>© OpenStreetMap contributors — <a href="https://www.openstreetmap.org/copyright" rel="noopener">원문</a></li>
 <li>© OpenStreetMap contributors — <a href="https://www.openstreetmap.org/copyright" rel="noopener">원문</a></li>
+<li>© OpenStreetMap contributors — <a href="https://www.openstreetmap.org/copyright" rel="noopener">원문</a></li>
 <li>© OpenStreetMap · OpenFreeMap — <a href="https://openfreemap.org/" rel="noopener">원문</a></li>
 <li>위성 © Esri — <a href="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" rel="noopener">원문</a></li>
 </ul>
 
 <h3>상업적 이용 — 지금 상태</h3>
 <ul class="plain">
-<li><b>바로 쓸 수 있음 (8개)</b> — 노선 선형 (52개 노선), 역 좌표 대조, 역 출구 좌표, 역·노선 배정 검증, 역 ↔ 법정동 연결, 주변 시세, 배경 지도 (일반·다크·흑백), 소요 시간·환승·연장</li>
+<li><b>바로 쓸 수 있음 (9개)</b> — 노선 선형 (52개 노선), 역 좌표 대조, 역 안 환승 도보 시간, 역 출구 좌표, 역·노선 배정 검증, 역 ↔ 법정동 연결, 주변 시세, 배경 지도 (일반·다크·흑백), 소요 시간·환승·연장</li>
 <li><b>조건 확인 필요 (1개)</b> — 위성 배경</li>
 <li><b>아직 미확인 (2개)</b> — 노선·역 목록, 역 좌표·노선 선형 (32개 노선)</li>
 </ul>
@@ -208,6 +215,25 @@ padding:1px 5px;border-radius:4px}
 이미지에 ODbL을 전염시키지 않습니다. 지켜야 할 것은 <b>출처 표시</b>뿐이고, 지도 구석과
 이 페이지에 표시하고 있습니다. 역 좌표를 잇는 직선은 사실의 표현이라 별도 허락이
 필요 없습니다.</li>
+</ul>
+
+<h2>환승 도보 시간은 어떻게 계산했나</h2>
+<p>길찾기에서 <b>환승 1회를 4분으로 고정</b>해 쓰고 있었습니다. 그런데 신도림 1↔2호선과
+노원 4↔7호선은 실제로 걷는 거리가 다릅니다. 같은 4분을 매기면 "환승이 적은 경로"를
+고를 때 판단이 뒤집힙니다.</p>
+<ul class="plain">
+<li><b>방법.</b> OSM 노선 relation 에는 정차점이 순서대로 들어 있습니다. 같은 역에서
+노선 A 의 정차점과 노선 B 의 정차점 사이 <b>수평거리</b>를 재고, <b>÷ 1.0m/s + 90초</b>
+(수직 이동·개찰·대기)를 더해 <b>2~12분</b>으로 자릅니다. 도보 속도는 계단·혼잡을
+감안해 지상(1.3m/s)보다 느리게 잡았습니다.</li>
+<li><b>결과.</b> 환승역 265곳 중 <b>143곳</b>이 계산됐습니다(노선쌍 222개). 예를 들어
+동대문 1↔4 는 94m·3분, 잠실 2↔8 은 176m·4분, 김포공항 5↔9 는 24m·2분입니다.</li>
+<li><b>한계.</b> 공식 환승 소요시간 자료가 아니라 <b>추정값</b>입니다. 지하 깊이 차이는
+수평거리에 나타나지 않아 고정값으로 보정했으므로 <b>±1분 정도의 오차</b>가 있습니다.
+자료가 없는 <b>122곳</b>은 지금처럼 4분을 씁니다 — 대부분 미개통 GTX-D~H·동북선처럼
+아직 정차점이 없는 노선이거나, 정차점이 일부 역에만 있는 경부선 계통입니다.</li>
+<li><b>검증.</b> 널리 알려진 다섯 곳(동대문·잠실·사당·김포공항·종로3가)을 ±1분 안에서
+대조하고, 순서가 뒤집히지 않는지(동대문 &lt; 잠실) 테스트로 잠갔습니다.</li>
 </ul>
 
 <h2>어떻게 검증했나</h2>

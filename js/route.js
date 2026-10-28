@@ -4,10 +4,14 @@
 const RouteFinder = (() => {
   // 노선별 평균 속도 (km/h) — 실측 시각표가 아닌 어림 추정치 (추론)
   const SPEEDS = { ktx: 180, metro: 32, urban: 45, conventional: 55, etc: 40 };
-  const TRANSFER_MIN = 4;   // 환승 1회당 추가 시간 (추론)
-  // 경로를 '고를 때' 매기는 환승 비용. 표시 시간(TRANSFER_MIN)보다 비싸다.
-  // 실제 여행자는 2분 아끼자고 3번 갈아타지 않는다.
-  const TRANSFER_DECISION_MIN = 8;
+  const TRANSFER_MIN = 4;   // 환승 1회당 추가 시간 (추론) — 자료 없는 역의 기본값
+  // 역 안 환승 도보 시간. data/transfer-times.json 이 오면 그 값을 쓰고,
+  // 없으면 위의 4분을 쓴다. (아래 loadTransfers / transferMinutes 참고)
+  let transferDoc = null;
+  // 경로를 '고를 때' 매기는 환승 비용은 '실제 도보 시간 + 이 값' 이다.
+  // 실제 여행자는 2분 아끼자고 3번 갈아타지 않는다. 예전에는 8분 고정이었는데,
+  // 그 8분은 '평균 환승 4분 + 4분' 이었으므로 평균적인 역에서는 예전과 같다.
+  const TRANSFER_DECISION_EXTRA = 4;
   const WALK_KMH = 4;
   // KTX 탑승 1회당 붙는 접근 시간 (분). 좌석 지정·개찰·승강장 이동.
   //
@@ -48,6 +52,24 @@ const RouteFinder = (() => {
   let orderByLine = new Map();  // lineId -> [{id, piece, along}] 선형 순서
 
   function pairKey(a, b) { return a < b ? a + '|' + b : b + '|' + a; }
+
+  /* ---------- 역 안 환승 도보 시간 ----------
+   * OSM 노선 relation 의 정차점 좌표로 잰 승강장 사이 거리 ÷ 1.0m/s + 수직이동 90초.
+   * 공식 환승 소요시간 자료가 아니라 추정값이다 (data/build_transfer_times.py).
+   * 자료가 없는 역·노선쌍은 예전처럼 4분을 쓴다.
+   */
+  function loadTransfers(doc) {
+    transferDoc = (doc && doc.stations) ? doc : null;
+    return transferDoc ? Object.keys(transferDoc.stations).length : 0;
+  }
+
+  function transferMinutes(stationId, a, b) {
+    if (!transferDoc || !stationId || !a || !b || a === b) return TRANSFER_MIN;
+    const s = transferDoc.stations[stationId];
+    if (!s) return TRANSFER_MIN;
+    const p = s.pairs[pairKey(a, b)];
+    return p ? p.min : TRANSFER_MIN;
+  }
 
   // 공식 소요시간표의 두 역 사이에 '다른 정차역'이 끼어 있는지.
   // 끼어 있으면 그 공식값은 더 이상 이 구간의 시간이 아니다 (예: GTX-B 청학 신설).
@@ -310,8 +332,9 @@ const RouteFinder = (() => {
   const START = '\u0000start';
   const skey = (id, line) => id + '\u0001' + (line || '');
 
-  // opts.transferPenalty : 탐색 비용에만 쓰는 환승 페널티.
-  // 표시되는 소요시간은 실제 TRANSFER_MIN 기준으로 다시 계산한다.
+  // opts.transferPenalty : 탐색 비용에만 쓰는 환승 페널티. 주지 않으면
+  // '그 역의 실제 도보 시간 + TRANSFER_DECISION_EXTRA' 를 쓴다. 표시되는
+  // 소요시간도 같은 실제 도보 시간을 쓰므로, 고른 경로와 보여주는 시간이 맞는다.
   //
   // 왜 필요한가: 환승 3회 우회가 직통보다 2분 빠르다는 이유로 선택되면
   // 사용자 입장에서는 '더 나쁜 경로'다 (강남→원주: GTX-C+KTX 3회환승 49분
@@ -320,7 +343,7 @@ const RouteFinder = (() => {
   function findRoute(fromId, toId, opts) {
     if (!stationsById.has(fromId) || !stationsById.has(toId)) return null;
     if (fromId === toId) return { path: [fromId], legs: [], minutes: 0, transfers: 0 };
-    const penalty = (opts && opts.transferPenalty != null) ? opts.transferPenalty : TRANSFER_DECISION_MIN;
+    const explicitPenalty = (opts && opts.transferPenalty != null) ? opts.transferPenalty : null;
     // openOnly: 지금 운행 중인 노선만 쓴다. '지금 vs 개통 후' 비교의 '지금' 쪽.
     const openOnly = !!(opts && opts.openOnly);
 
@@ -341,8 +364,15 @@ const RouteFinder = (() => {
         if (openOnly && !e.open) continue;
         const nl = e.lineId || null;
         let cost = edgeMinutes(e);
-        // 환승 비용: 앞뒤 모두 노선이 있고 서로 다를 때만
-        if (line !== START && line !== null && nl !== null && nl !== line) cost += penalty;
+        // 환승 비용: 앞뒤 모두 노선이 있고 서로 다를 때만. 환승은 지금 있는
+        // 역(u)에서 일어난다. 역마다 실제 도보 시간이 다르므로 그 값을 쓴다.
+        // transferPenalty 를 명시하면 예전처럼 '그 값을 그대로' 쓴다
+        // (경로 비교 화면이 같은 잣대로 세 경로를 비교해야 하기 때문).
+        if (line !== START && line !== null && nl !== null && nl !== line) {
+          cost += explicitPenalty != null
+            ? explicitPenalty
+            : transferMinutes(u, line, nl) + TRANSFER_DECISION_EXTRA;
+        }
         // KTX 로 새로 탈 때는 접근 시간이 든다. 탐색 비용에도 넣어야
         // '3.8km KTX' 같은 경로가 애초에 후보로 뽑히지 않는다.
         if (nl !== line) cost += accessMinutes(nl);
@@ -381,14 +411,21 @@ const RouteFinder = (() => {
       minutes += edgeMinutes(e);
       const lid = e.lineId || null;
       if (lid !== curLine) {
-        legs.push({ lineId: curLine, from: path[legStart], to: path[i], walk: curLine === null, distKm: legKm });
-        if (curLine !== null && lid !== null) minutes += TRANSFER_MIN;
+        // 환승은 지금 역(path[i])에서 일어난다. 역·노선쌍마다 실제 도보
+        // 시간이 다르므로 그 값을 표시 시간에 넣는다. transferAfter 는
+        // '이 구간을 내린 뒤 갈아타는 데 걸리는 시간' 이다.
+        const tm = (curLine !== null && lid !== null)
+          ? transferMinutes(path[i], curLine, lid) : 0;
+        legs.push({ lineId: curLine, from: path[legStart], to: path[i],
+                    walk: curLine === null, distKm: legKm, transferAfter: tm });
+        if (tm) minutes += tm;
         minutes += accessMinutes(lid);
         legStart = i; curLine = lid; legKm = 0;
       }
       legKm += e.distKm;
     }
-    legs.push({ lineId: curLine, from: path[legStart], to: path[path.length - 1], walk: curLine === null, distKm: legKm });
+    legs.push({ lineId: curLine, from: path[legStart], to: path[path.length - 1],
+                walk: curLine === null, distKm: legKm, transferAfter: 0 });
 
     // 각 leg 에 개통 상태를 실어 보낸다 → 화면에서 '미개통' 배지로 표시.
     const unopenedNames = [];
@@ -431,6 +468,7 @@ const RouteFinder = (() => {
 
   return {
     buildGraph, findRoute, lineIsUnopened, statusOf, pathDistance,
+    loadTransfers, transferMinutes,
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
     // 예전에는 route-compare 가 그래프를 따로 만들었는데, 그쪽은 선형 조각을 이어붙여
     // 평탄화하는 바람에 GTX-D 분기(팔당 ↔ 삼성)에 없는 엣지가 생겼다.

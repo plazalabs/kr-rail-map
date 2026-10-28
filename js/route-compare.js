@@ -13,8 +13,9 @@
 'use strict';
 
 const RouteCompare = (() => {
-  // '최단시간' 경로를 고를 때만 쓰는 환승 페널티 (표시 시간에는 영향 없음)
-  const TIME_TRANSFER_PENALTY = 8;
+  // '최단시간' 경로의 환승 페널티는 route.js 가 정한다
+  // (역의 실제 도보 시간 + 4분). 여기서 따로 상수를 두지 않는다 —
+  // 예전에 8분 고정을 따로 두었더니 표시 시간(실제 값)과 어긋났다.
 
   let RF = null;                 // RouteFinder — 그래프·시간모델의 유일한 출처
   let lineNameOf = new Map();
@@ -137,14 +138,19 @@ const RouteCompare = (() => {
     edges.forEach((e, i) => {
       minutes += edgeMinutes(e);
       if (e.lineId !== curLine) {
-        legs.push({ lineId: curLine, from: stations[legStart], to: stations[i], walk: curLine === null, distKm: km });
-        if (curLine !== null && e.lineId !== null) minutes += RF.TRANSFER_MIN;
+        // 환승은 지금 역(stations[i])에서. 역·노선쌍마다 실제 도보 시간이 다르다.
+        const tm = (curLine !== null && e.lineId !== null)
+          ? RF.transferMinutes(stations[i], curLine, e.lineId) : 0;
+        legs.push({ lineId: curLine, from: stations[legStart], to: stations[i],
+                    walk: curLine === null, distKm: km, transferAfter: tm });
+        if (tm) minutes += tm;
         minutes += RF.accessMinutes(e.lineId);
         legStart = i; curLine = e.lineId; km = 0;
       }
       km += e.distKm;
     });
-    legs.push({ lineId: curLine, from: stations[legStart], to: stations[stations.length - 1], walk: curLine === null, distKm: km });
+    legs.push({ lineId: curLine, from: stations[legStart], to: stations[stations.length - 1],
+                walk: curLine === null, distKm: km, transferAfter: 0 });
     const transfers = Math.max(0, legs.filter(l => !l.walk && l.lineId !== null).length - 1);
     return { legs, minutes: Math.round(minutes), transfers };
   }
@@ -273,18 +279,17 @@ const RouteCompare = (() => {
 
   function findAll(fromId, toId) {
     if (!RF) return { time: null, transfer: null, fare: null, now: null };
-    // 최단시간 탐색에는 환승 페널티를 더 세게 준다.
-    // 표시 시간은 route.js가 TRANSFER_MIN(4분) 기준으로 다시 계산하므로 그대로다.
+    // 최단시간 탐색에는 환승 페널티를 더 세게 준다 — route.js 기본값이
+    // '역의 실제 도보 시간 + 4분' 이므로, 표시 시간과 같은 잣대로 고른다.
+    // (예전에는 8분 고정이었는데, 표시는 실제 값이라 둘이 어긋났다)
     // (환승 3회로 2분 아끼는 경로가 '최단시간'으로 뽑히던 문제)
-    const time = RF ? enrich(RF.findRoute(fromId, toId, { transferPenalty: TIME_TRANSFER_PENALTY })) : null;
+    const time = RF ? enrich(RF.findRoute(fromId, toId)) : null;
     const transfer = enrich(findMinTransfer(fromId, toId));
     const fare = enrich(findMinFare(fromId, toId));
     // '지금' — 미개통 노선을 한 개도 쓰지 않는 가장 빠른 경로.
     // 부동산에서 이게 핵심이다: 개통 전에 그 집에 살면 실제로 몇 분 걸리는가.
     // 목적지가 미개통 노선에만 있는 역이면 null 이 된다 (지금은 갈 수 없다).
-    const now = RF ? enrich(RF.findRoute(fromId, toId, {
-      transferPenalty: TIME_TRANSFER_PENALTY, openOnly: true,
-    })) : null;
+    const now = RF ? enrich(RF.findRoute(fromId, toId, { openOnly: true })) : null;
     return { time, transfer, fare, now };
   }
 
@@ -434,6 +439,10 @@ const RouteCompare = (() => {
         const un = leg.unopened ? ` <span class="badge-unopened">미개통</span>` : '';
         html += `<div class="leg${leg.unopened ? ' leg-unopened' : ''}">${a} → <b>${ln}</b>${un} <button class="via-toggle" data-target="${viaId}">${n}개역</button> → ${b}\n` +
           `<div class="via-list" id="${viaId}" hidden>${segStations.join(' → ')}</div></div>`;
+      }
+      // 이 구간을 내린 뒤 갈아타는 시간 (역마다 다르다)
+      if (leg.transferAfter > 0) {
+        html += `<div class="leg leg-transfer">🚶 <b>${b}</b>역 내 환승 · 도보 약 ${leg.transferAfter}분</div>`;
       }
     });
     return html;

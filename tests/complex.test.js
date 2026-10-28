@@ -144,5 +144,46 @@ section('평당가 순서');
     unsorted.length ? unsorted.length + '곳' : '전부');
 }
 
+section('세대수·공급면적 (K-apt)');
+{
+  // 세대수(h)·공급면적(sa)·전용률(pr)은 실거래가가 아니라 K-apt 에서 온다.
+  // 단지명으로 이어 붙이므로, 이름이 어긋나면 조용히 사라진다. 사라지는 건
+  // 괜찮지만 **틀린 값이 붙는 건 안 된다.** 그래서 범위를 잠근다.
+  const all = [];
+  for (const d of Object.values(districts)) for (const c of d.complexes || []) all.push(c);
+
+  const withH = all.filter(c => c.h != null);
+  const meta = cx.units || {};
+  check('K-apt 출처를 밝힌다', /K-apt|공동주택/.test(meta.source || ''), meta.source || '없음');
+  check('붙은 단지 수가 메타와 같다', withH.length === (meta.complexes || 0),
+    withH.length + ' / ' + (meta.complexes || 0));
+  check('메타의 분모가 전체 단지 수와 같다', (meta.of || 0) === all.length,
+    (meta.of || 0) + ' / ' + all.length);
+
+  check('세대수는 1 이상 정수', withH.every(c => Number.isInteger(c.h) && c.h > 0),
+    withH.filter(c => !(Number.isInteger(c.h) && c.h > 0)).length + '곳 위반');
+
+  // 20㎡ 미만이거나 400㎡ 를 넘는 '한 세대 평균'은 아파트가 아니다.
+  // 상가·주차장이 kaptMarea 에 섞여 들어간 경우이고, 그런 값은 버려야 한다.
+  const badSa = all.filter(c => c.sa != null && (c.sa < 20 || c.sa > 400));
+  check('공급면적이 상식 범위(20~400㎡)', badSa.length === 0, badSa.length + '곳');
+
+  const badPr = all.filter(c => c.pr != null && (c.pr < 0.40 || c.pr > 0.95));
+  check('전용률이 상식 범위(40~95%)', badPr.length === 0, badPr.length + '곳');
+
+  // 공급면적은 세대수로 나눠서 나온다. 세대수가 없는데 면적만 있으면 계산이 틀린 것.
+  check('면적이 있으면 세대수도 있다', all.every(c => c.sa == null || c.h != null),
+    all.filter(c => c.sa != null && c.h == null).length + '곳 위반');
+
+  // 전용면적은 공급면적보다 작아야 한다. 뒤집히면 필드 이름을 잘못 짚은 것이다.
+  check('전용면적 < 공급면적', all.every(c => c.ea == null || c.sa == null || c.ea <= c.sa),
+    all.filter(c => c.ea != null && c.sa != null && c.ea > c.sa).length + '곳 위반');
+
+  // 붙은 단지가 있으면 평균 전용면적이 실거래 전용면적과 크게 어긋나면 안 된다.
+  // 단지 평균과 개별 거래라 정확히 같을 수는 없으니 배수로만 본다.
+  const off = all.filter(c => c.ea && c.a && (c.ea > c.a * 2.5 || c.ea < c.a / 2.5));
+  check('단지 평균 전용면적이 거래 면적과 같은 자릿수', off.length === 0, off.length + '곳');
+}
+
 console.log('\n결과: ' + pass + ' 통과 / ' + fail + ' 실패');
 process.exit(fail ? 1 : 0);

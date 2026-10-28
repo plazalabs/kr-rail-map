@@ -41,6 +41,7 @@ jobs:
           $PY data/lawd.py
           $PY data/dong_match.py
           $PY data/station_names.py
+          $PY data/official_stations.py --selftest
           $PY data/fetch_rtms.py --selftest
 
       # 라이선스 표는 손으로 고치지 않는다. data/sources.json 이 원본이고
@@ -61,7 +62,7 @@ jobs:
             const fs = require("fs");
             const files = ["data/lines.geojson","data/stations.geojson",
                            "data/exits.geojson","data/station-price.json",
-                           "data/transfer-times.json"];
+                           "data/transfer-times.json","data/line-membership.json"];
             for (const f of files) {
               const d = JSON.parse(fs.readFileSync(f, "utf8"));
               const n = d.features ? d.features.length : Object.keys(d.stations || {}).length;

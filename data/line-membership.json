@@ -1,0 +1,1165 @@
+{
+ "schema": "kr-rail-map/line-membership/1",
+ "updated": "2026-10-28",
+ "note": "노선·역 목록이 어디서 확인되는지의 증빙. 배포 데이터가 아니다. 확인 원천은 공공데이터포털 역위치 CSV(이용허락 제한 없음), OSM 노선 relation 정차점, OSM 역 노드의 선형 근접도(ODbL) 셋이다.",
+ "near_km": 0.3,
+ "summary": {
+  "lines": 78,
+  "open_lines": 68,
+  "open_pairs": 1475,
+  "open_confirmed": 1463,
+  "open_confirmed_pct": 99.2,
+  "open_lines_all_confirmed": 62
+ },
+ "lines": {
+  "arex": {
+   "name": "인천국제공항철도",
+   "status": "open",
+   "stations": 14,
+   "confirmed": 14,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "busan-gimhae-light-rail-transit": {
+   "name": "부산김해경전철",
+   "status": "open",
+   "stations": 21,
+   "confirmed": 21,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "busan-metro-line-1": {
+   "name": "부산 도시철도 1호선",
+   "status": "open",
+   "stations": 40,
+   "confirmed": 40,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "busan-metro-line-2-green-line": {
+   "name": "부산 도시철도 2호선",
+   "status": "open",
+   "stations": 43,
+   "confirmed": 43,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "busan-metro-line-3-brown-line": {
+   "name": "부산 도시철도 3호선",
+   "status": "open",
+   "stations": 18,
+   "confirmed": 17,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [
+    "동백"
+   ],
+   "provisional": false,
+   "partial": true,
+   "gap_reason": ""
+  },
+  "busan-metro-line-4-blue-line": {
+   "name": "부산 도시철도 4호선",
+   "status": "open",
+   "stations": 15,
+   "confirmed": 15,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "chungbuk-line": {
+   "name": "충북선",
+   "status": "open",
+   "stations": 14,
+   "confirmed": 14,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "daegu-line": {
+   "name": "대구선",
+   "status": "open",
+   "stations": 6,
+   "confirmed": 6,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "daegu-metro-line-1": {
+   "name": "대구 도시철도 1호선",
+   "status": "open",
+   "stations": 36,
+   "confirmed": 36,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "daegu-metro-line-2": {
+   "name": "대구 도시철도 2호선",
+   "status": "open",
+   "stations": 29,
+   "confirmed": 29,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "daegu-metro-line-3": {
+   "name": "대구 도시철도 3호선",
+   "status": "open",
+   "stations": 30,
+   "confirmed": 30,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "daegusaneop-line": {
+   "name": "대구산업선",
+   "status": "open",
+   "stations": 3,
+   "confirmed": 3,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "daegyeong-line": {
+   "name": "대경선",
+   "status": "open",
+   "stations": 11,
+   "confirmed": 11,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "daejeon-metro-line-1": {
+   "name": "대전 도시철도 1호선",
+   "status": "open",
+   "stations": 22,
+   "confirmed": 22,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "daejeon-metro-line-2": {
+   "name": "대전 도시철도 2호선",
+   "status": "open",
+   "stations": 6,
+   "confirmed": 6,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "dongbu-line": {
+   "name": "동부선",
+   "status": "proposed",
+   "stations": 15,
+   "confirmed": 6,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "강북구보건소",
+    "강북구청사거리",
+    "광산사거리",
+    "광운대학교",
+    "번동사거리",
+    "석관중학교",
+    "시립어린이전문병원",
+    "월계2교",
+    "장위뉴타운"
+   ],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "dongbuk-line": {
+   "name": "동북선",
+   "status": "construction",
+   "stations": 16,
+   "confirmed": 7,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "115정거장(중계주공)",
+    "동명초교(가칭)",
+    "북서울꿈의숲(가칭)",
+    "서울과학기술대(가칭)",
+    "월계2교",
+    "은행사거리(가칭)",
+    "종암사거리(가칭)",
+    "종암이육사(가칭)",
+    "하월곡(가칭)"
+   ],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "donghae-line": {
+   "name": "동해선",
+   "status": "open",
+   "stations": 48,
+   "confirmed": 48,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gangneung-line-ktx": {
+   "name": "KTX 강릉선",
+   "status": "open",
+   "stations": 9,
+   "confirmed": 9,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gimpo-goldline": {
+   "name": "김포 골드라인",
+   "status": "open",
+   "stations": 10,
+   "confirmed": 10,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "great-train-express-line-a": {
+   "name": "GTX-A",
+   "status": "open",
+   "stations": 11,
+   "confirmed": 11,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-b": {
+   "name": "GTX-B",
+   "status": "construction",
+   "stations": 15,
+   "confirmed": 13,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "왕숙",
+    "청학"
+   ],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-c": {
+   "name": "GTX-C",
+   "status": "construction",
+   "stations": 14,
+   "confirmed": 14,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-d": {
+   "name": "GTX-D",
+   "status": "planned",
+   "stations": 30,
+   "confirmed": 25,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "광명시흥",
+    "교산",
+    "대장",
+    "영종국제도시",
+    "청라국제업무단지"
+   ],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-e": {
+   "name": "GTX-E",
+   "status": "proposed",
+   "stations": 18,
+   "confirmed": 12,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "대장",
+    "신정릉",
+    "영종국제도시",
+    "일패",
+    "청라국제업무단지",
+    "평창"
+   ],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-f": {
+   "name": "GTX-F",
+   "status": "proposed",
+   "stations": 21,
+   "confirmed": 17,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "교산",
+    "왕숙",
+    "일패",
+    "풍양"
+   ],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-g": {
+   "name": "GTX-G",
+   "status": "planned",
+   "stations": 10,
+   "confirmed": 8,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "동의정부",
+    "송우"
+   ],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-h": {
+   "name": "GTX-H",
+   "status": "planned",
+   "stations": 9,
+   "confirmed": 7,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "위례역사공원",
+    "조리"
+   ],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gunsan-cargo-line": {
+   "name": "군산화물선",
+   "status": "open",
+   "stations": 1,
+   "confirmed": 1,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gwangju-metro-line-1-pyeongdong-nokdong": {
+   "name": "광주 도시철도 1호선",
+   "status": "open",
+   "stations": 20,
+   "confirmed": 20,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gwangju-metro-line-2-inner-circle-line": {
+   "name": "광주 도시철도 2호선",
+   "status": "construction",
+   "stations": 2,
+   "confirmed": 1,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [
+    "극락강"
+   ],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gyeongbu-line": {
+   "name": "경부선",
+   "status": "open",
+   "stations": 43,
+   "confirmed": 43,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gyeongbu-line-ktx": {
+   "name": "KTX 경부선",
+   "status": "open",
+   "stations": 12,
+   "confirmed": 12,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gyeongbuk-line": {
+   "name": "경북선",
+   "status": "open",
+   "stations": 10,
+   "confirmed": 10,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gyeonggang-line-ktx": {
+   "name": "KTX 경강선",
+   "status": "open",
+   "stations": 5,
+   "confirmed": 5,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gyeongjeon-line": {
+   "name": "경전선",
+   "status": "open",
+   "stations": 32,
+   "confirmed": 31,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [
+    "원창"
+   ],
+   "provisional": false,
+   "partial": true,
+   "gap_reason": ""
+  },
+  "gyeongui-jungang-line": {
+   "name": "경의·중앙선",
+   "status": "open",
+   "stations": 57,
+   "confirmed": 57,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gyeongwon-line": {
+   "name": "경원선",
+   "status": "open",
+   "stations": 4,
+   "confirmed": 4,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gyooe-line-mugunghwa-train": {
+   "name": "교외선",
+   "status": "open",
+   "stations": 5,
+   "confirmed": 5,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "honam-line-ktx": {
+   "name": "KTX 호남선",
+   "status": "open",
+   "stations": 15,
+   "confirmed": 14,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [
+    "강경"
+   ],
+   "provisional": false,
+   "partial": true,
+   "gap_reason": ""
+  },
+  "incheon-airport-maglev-line-eastbound": {
+   "name": "인천공항 자기부상철도",
+   "status": "open",
+   "stations": 6,
+   "confirmed": 6,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "incheon-international-airport-shuttle-train": {
+   "name": "인천국제공항 셔틀트레인",
+   "status": "open",
+   "stations": 3,
+   "confirmed": 3,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "incheon-subway-line-1": {
+   "name": "인천 도시철도 1호선",
+   "status": "open",
+   "stations": 33,
+   "confirmed": 33,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "incheon-subway-line-2": {
+   "name": "인천 도시철도 2호선",
+   "status": "open",
+   "stations": 27,
+   "confirmed": 27,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "itx-saemaeul-honam-line": {
+   "name": "호남선",
+   "status": "open",
+   "stations": 23,
+   "confirmed": 23,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "janghang-cargo-line": {
+   "name": "장항화물선",
+   "status": "open",
+   "stations": 1,
+   "confirmed": 1,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "jeongseon-line": {
+   "name": "정선선",
+   "status": "open",
+   "stations": 6,
+   "confirmed": 6,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "jichuk-depot-line": {
+   "name": "지축기지선",
+   "status": "open",
+   "stations": 2,
+   "confirmed": 2,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "jungang-line": {
+   "name": "중앙선",
+   "status": "open",
+   "stations": 15,
+   "confirmed": 15,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "ktx": {
+   "name": "KTX 전라선",
+   "status": "open",
+   "stations": 11,
+   "confirmed": 11,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "ktx-jungbunaeryuk-line": {
+   "name": "KTX 중부내륙선",
+   "status": "open",
+   "stations": 8,
+   "confirmed": 8,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "mokpo-boseong-line": {
+   "name": "목포보성선",
+   "status": "open",
+   "stations": 6,
+   "confirmed": 6,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "mugunghwa-ho-jeolla-line": {
+   "name": "전라선",
+   "status": "open",
+   "stations": 18,
+   "confirmed": 12,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "괴목",
+    "금지",
+    "봉덕",
+    "서도",
+    "압록",
+    "주생"
+   ],
+   "provisional": false,
+   "partial": true,
+   "gap_reason": "전라선 남쪽 간이역 6곳(괴목·금지·봉덕·서도·압록·주생). OSM 에 역 노드가 없고 국가철도공단 역위치 파일도 전라선을 담고 있지 않다. 역 이름은 남겨 두고 확인되지 않았다는 사실을 그대로 적는다."
+  },
+  "pyeongtaek-line": {
+   "name": "평택선",
+   "status": "open",
+   "stations": 2,
+   "confirmed": 2,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "saemaeul-ho-janghang-line": {
+   "name": "장항선",
+   "status": "open",
+   "stations": 18,
+   "confirmed": 17,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "간치"
+   ],
+   "provisional": false,
+   "partial": true,
+   "gap_reason": ""
+  },
+  "samcheok-line": {
+   "name": "삼척선",
+   "status": "open",
+   "stations": 2,
+   "confirmed": 2,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seohae-line-conv": {
+   "name": "서해선",
+   "status": "open",
+   "stations": 5,
+   "confirmed": 5,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-metro-line-3": {
+   "name": "수도권 전철 3호선",
+   "status": "open",
+   "stations": 44,
+   "confirmed": 44,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-metropolitan-subway-gyeongchun-line": {
+   "name": "경춘선",
+   "status": "open",
+   "stations": 27,
+   "confirmed": 27,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-metropolitan-subway-gyeonggang-line": {
+   "name": "경강선",
+   "status": "open",
+   "stations": 12,
+   "confirmed": 12,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-metropolitan-subway-line-1": {
+   "name": "수도권 전철 1호선",
+   "status": "open",
+   "stations": 102,
+   "confirmed": 102,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-metropolitan-subway-line-4": {
+   "name": "수도권 전철 4호선",
+   "status": "open",
+   "stations": 52,
+   "confirmed": 52,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-metropolitan-subway-seohae-line": {
+   "name": "서해선",
+   "status": "open",
+   "stations": 20,
+   "confirmed": 20,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-metropolitan-subway-shinbundang-line": {
+   "name": "신분당선",
+   "status": "open",
+   "stations": 16,
+   "confirmed": 16,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-subway-line-2": {
+   "name": "서울 지하철 2호선",
+   "status": "open",
+   "stations": 51,
+   "confirmed": 51,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-subway-line-5": {
+   "name": "서울 지하철 5호선",
+   "status": "open",
+   "stations": 56,
+   "confirmed": 56,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-subway-line-6": {
+   "name": "서울 지하철 6호선",
+   "status": "open",
+   "stations": 39,
+   "confirmed": 39,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-subway-line-7": {
+   "name": "서울 지하철 7호선",
+   "status": "open",
+   "stations": 54,
+   "confirmed": 54,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-subway-line-8": {
+   "name": "서울 지하철 8호선",
+   "status": "open",
+   "stations": 24,
+   "confirmed": 24,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "seoul-subway-line-9": {
+   "name": "서울 지하철 9호선",
+   "status": "open",
+   "stations": 38,
+   "confirmed": 38,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "sillim-line": {
+   "name": "신림선",
+   "status": "open",
+   "stations": 11,
+   "confirmed": 11,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "suin-bundang-line": {
+   "name": "수인·분당선",
+   "status": "open",
+   "stations": 64,
+   "confirmed": 64,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "taebaek-line": {
+   "name": "태백선",
+   "status": "open",
+   "stations": 21,
+   "confirmed": 19,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [
+    "갈래호 승강장",
+    "송학"
+   ],
+   "provisional": false,
+   "partial": true,
+   "gap_reason": ""
+  },
+  "ui-sinseol-line": {
+   "name": "우이신설선",
+   "status": "open",
+   "stations": 13,
+   "confirmed": 13,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "uijeongbu-lrt": {
+   "name": "의정부경전철",
+   "status": "open",
+   "stations": 16,
+   "confirmed": 16,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "wolmi-sea-train": {
+   "name": "월미바다열차",
+   "status": "open",
+   "stations": 4,
+   "confirmed": 4,
+   "sources": [
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "yeongdong-line": {
+   "name": "영동선",
+   "status": "open",
+   "stations": 20,
+   "confirmed": 20,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "yongin-light-rail-transit": {
+   "name": "용인 경전철",
+   "status": "open",
+   "stations": 15,
+   "confirmed": 15,
+   "sources": [
+    "official",
+    "osm-geometry",
+    "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  }
+ }
+}

@@ -87,12 +87,6 @@ padding:1px 5px;border-radius:4px}
 <table class="tbl">
 <thead><tr><th>항목</th><th>출처</th><th>라이선스</th><th>상업적 이용</th></tr></thead>
 <tbody>
-<tr data-src="frdb">
-<td>노선·역 목록</td>
-<td><a href="https://frdb2.ivyro.net/" rel="noopener">미래철도DB (FRDB)</a></td>
-<td>출처 사이트 이용 조건 — 상업적 재사용 미확인</td>
-<td><span class="badge unv">미확인</span></td>
-</tr>
 <tr data-src="chulmom">
 <td>역 좌표·노선 선형 (32개 노선)</td>
 <td><a href="https://chul.mom/" rel="noopener">철도맘 (chul.mom)</a></td>
@@ -112,7 +106,7 @@ padding:1px 5px;border-radius:4px}
 <td><span class="badge ok">가능</span></td>
 </tr>
 <tr data-src="osm-stops">
-<td>역 안 환승 도보 시간</td>
+<td>역 안 환승 도보 시간 · 노선·역 배정</td>
 <td><a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap contributors</a></td>
 <td>Open Database License 1.0</td>
 <td><span class="badge ok">가능</span></td>
@@ -124,7 +118,7 @@ padding:1px 5px;border-radius:4px}
 <td><span class="badge ok">가능</span></td>
 </tr>
 <tr data-src="korail-stations">
-<td>역·노선 배정 검증</td>
+<td>노선·역 배정 (공식 대조)</td>
 <td><a href="https://www.data.go.kr/" rel="noopener">국가철도공단 — 노선별 역위치</a></td>
 <td>공공데이터포털 — 이용허락범위 제한 없음</td>
 <td><span class="badge ok">가능</span></td>
@@ -165,7 +159,6 @@ padding:1px 5px;border-radius:4px}
 
 <h3>표시해야 하는 출처 문구</h3>
 <ul class="plain">
-<li>미래철도DB(FRDB) 공개 목록 — <a href="https://frdb2.ivyro.net/" rel="noopener">원문</a></li>
 <li>철도맘(chul.mom) 표시 좌표 — <a href="https://chul.mom/" rel="noopener">원문</a></li>
 <li>© OpenStreetMap contributors — <a href="https://www.openstreetmap.org/copyright" rel="noopener">원문</a></li>
 <li>© OpenStreetMap contributors — <a href="https://www.openstreetmap.org/copyright" rel="noopener">원문</a></li>
@@ -177,9 +170,14 @@ padding:1px 5px;border-radius:4px}
 
 <h3>상업적 이용 — 지금 상태</h3>
 <ul class="plain">
-<li><b>바로 쓸 수 있음 (9개)</b> — 노선 선형 (52개 노선), 역 좌표 대조, 역 안 환승 도보 시간, 역 출구 좌표, 역·노선 배정 검증, 역 ↔ 법정동 연결, 주변 시세, 배경 지도 (일반·다크·흑백), 소요 시간·환승·연장</li>
+<li><b>바로 쓸 수 있음 (9개)</b> — 노선 선형 (52개 노선), 역 좌표 대조, 역 안 환승 도보 시간 · 노선·역 배정, 역 출구 좌표, 노선·역 배정 (공식 대조), 역 ↔ 법정동 연결, 주변 시세, 배경 지도 (일반·다크·흑백), 소요 시간·환승·연장</li>
 <li><b>조건 확인 필요 (1개)</b> — 위성 배경</li>
-<li><b>아직 미확인 (2개)</b> — 노선·역 목록, 역 좌표·노선 선형 (32개 노선)</li>
+<li><b>아직 미확인 (1개)</b> — 역 좌표·노선 선형 (32개 노선)</li>
+</ul>
+
+<h3>출처로 쓰지 않는 자료</h3>
+<ul class="plain">
+<li><b><a href="https://frdb2.ivyro.net/" rel="noopener">미래철도DB (FRDB)</a></b> — 초기 노선·역 목록을 만들 때 참고했으나 출처로 쓰지 않는다. 사이트가 스스로 &quot;비영리, 비상업, 개인 사이트&quot; 라고 밝히고 이용허락 표시가 없다. 게다가 &quot;부동산 투자 목적으로 쓰려면 관계당국에서 다시 확인하라&quot; 고 적어 두었다. 지금 목록은 OSM 과 공공데이터로 다시 확인했고, 그 증빙이 data/line-membership.json 이다.</li>
 </ul>
 <!-- sources:end -->
 
@@ -318,10 +316,10 @@ padding:1px 5px;border-radius:4px}
 <p>개인적인 열람, 학습, 연구 목적의 이용은 자유롭게 하셔도 됩니다. 출처를 밝혀 주시면 좋습니다.</p>
 <div class="warn">
 <p><b>상업적 이용은 원천별로 다릅니다.</b> 위 표의 <b>상업적 이용</b> 열이 답입니다.
-11개 원천 중 <b>8개는 바로 쓸 수 있고</b>(ODbL·공공데이터), <b>1개는 조건 확인이 필요하며</b>(위성 배경),
-<b>2개는 아직 확인되지 않았습니다</b> — 미래철도DB의 노선·역 목록과 철도맘의 32개 노선 선형입니다.
-이 둘은 공개돼 있지만 상업적 재사용 허락을 받지 못했습니다. 유료 서비스에 넣을 계획이라면
-이 둘을 대체하는 작업(아래)이 끝난 뒤에 쓰시는 것이 안전합니다.</p>
+11개 원천 중 <b>9개는 바로 쓸 수 있고</b>(ODbL·공공데이터), <b>1개는 조건 확인이 필요하며</b>(위성 배경),
+<b>1개는 아직 확인되지 않았습니다</b> — 철도맘의 32개 노선 선형입니다.
+공개돼 있지만 상업적 재사용 허락을 받지 못했습니다. 유료 서비스에 넣을 계획이라면
+이것을 대체하는 작업(아래)이 끝난 뒤에 쓰시는 것이 안전합니다.</p>
 </div>
 
 <h2>앞으로 할 일 — 공공데이터 전환</h2>
@@ -335,16 +333,41 @@ padding:1px 5px;border-radius:4px}
 <p>그래서 좌표와 선형은 OSM(ODbL)을 쓰고, 역·노선 배정과 역번호 같은 속성은 공공데이터로
 검증하는 방식으로 갑니다. ODbL은 상업적 이용을 허용하며, 지도로 보여주는 것은
 파생물 배포가 아니라 결과물 표시로 보아 전염되지 않습니다.</p>
-<p><b>2026-10-27 현재.</b> 선형은 84개 중 <b>52개를 OSM 선로에서 다시 그려</b> 상업 이용이
-가능한 상태로 바꿨습니다. 역 좌표·출구·시세·검증 자료는 모두 OSM과 공공데이터라 문제가 없습니다.
-남은 것은 <b>노선·역 목록의 출처(미래철도DB)</b>와 <b>32개 노선의 선형(철도맘)</b>입니다.</p>
+<p><b>2026-10-28 현재.</b> <b>노선·역 목록은 OSM과 공공데이터로 다시 확인했습니다.</b>
+개통 노선 <b>68개</b>의 (노선, 역) <b>1,475쌍 중 1,463쌍(99.2%)</b>이 독립된 두 자료 중
+하나 이상에서 확인됩니다. 확인되지 않은 <b>12개 역</b>은 이름을 전부 공개하고 있습니다(아래).
+선형은 84개 중 <b>52개를 OSM 선로에서 다시 그렸습니다.</b>
+남은 것은 <b>32개 노선의 선형(철도맘)</b>입니다.</p>
+
+<h2 id="membership">노선·역 목록은 어떻게 확인했나</h2>
+<p>노선·역 목록은 처음에 미래철도DB를 참고해 만들었습니다. 그런데 그 사이트는 스스로
+<b>"비영리, 비상업, 개인 사이트"</b>라고 밝히고 있고 이용허락 표시가 없습니다. 유료 서비스를
+생각한다면 출처로 쓸 수 없습니다. 그래서 <b>같은 사실을 다른 자료에서 다시 얻어</b> 대조했습니다.</p>
+<ul class="plain">
+<li><b>세 자료를 씁니다.</b> ① 공공데이터포털의 국가철도공단 <b>노선별 역위치 CSV</b>
+(이용허락범위 제한 없음, 19개 노선 682행) ② OSM <b>노선 relation의 정차점 목록</b>(ODbL, 51개 노선)
+③ OSM <b>역 노드가 그 노선 선형에서 300m 안에 있는지</b>(ODbL).</li>
+<li><b>결과.</b> 개통 노선 68개의 (노선, 역) 1,475쌍 중 <b>1,463쌍(99.2%)</b>이 하나 이상에서
+확인됩니다. <b>62개 노선은 역이 하나도 빠짐없이 확인</b>됩니다.</li>
+<li><b>확인되지 않은 12개.</b> 전라선 6곳(괴목·금지·봉덕·서도·압록·주생 — OSM에 역 노드가 없는
+작은 역), 태백선 2곳(송학·갈래호 승강장 — 이 구간 선형이 아직 개략선), 경전선 원창, 장항선 간치,
+KTX 호남선 강경, 부산 3호선 동백입니다. <b>이름을 지우지 않고 그대로 두었습니다</b> — 확인이
+안 됐다는 사실이 확인된 것보다 중요하기 때문입니다. 목록은
+<a href="data/line-membership.json"><code>data/line-membership.json</code></a>에 있습니다.</li>
+<li><b>부산 3호선 '동백'은 오류로 보입니다.</b> 공식 역위치 자료의 부산 3호선은 17역인데
+우리는 18역이고, 그 하나가 동백입니다. 부산 2호선에 실제로 있는 동백역과는 8km 떨어져 있습니다.
+<b>지울지는 확인 후에 정합니다</b> — 지우는 것은 되돌리기 어렵습니다.</li>
+<li><b>개통 전 10개 노선</b>(GTX-B~H, 동북선, 동부선, 광주 2호선)은 OSM에도 공식 파일에도
+없습니다. 이 노선들은 <code>provisional</code>로 표시했고, 역명은 <b>국가·지자체 계획 발표 기준</b>이라
+확정이 아닙니다. 개통·고시가 나오면 그때 대체합니다.</li>
+</ul>
 
 <h2>정정 요청</h2>
 <p>역 위치가 틀렸거나 빠진 역이 있으면 알려 주세요. 확인해서 고치겠습니다.</p>
 
-<p class="note">최종 수정 2026-10-27 · 데이터 기준 2026-10<br>
-노선·역 데이터는 미래철도DB(FRDB)·철도맘(chul.mom) 공개 자료를 참고해 재구성했습니다.
-역·노선 배정은 국가철도공단 자료로 검증했습니다.<br>
+<p class="note">최종 수정 2026-10-28 · 데이터 기준 2026-10<br>
+노선·역 데이터는 OSM(ODbL)과 국가철도공단 역위치 자료로 다시 확인했습니다.
+개통 전 노선의 역명은 계획 발표 기준이라 확정이 아닙니다.<br>
 출구 좌표 © OpenStreetMap contributors (ODbL) · 주변 시세 국토교통부 아파트 매매 실거래가 ·
 지도 © OpenStreetMap · OpenFreeMap · 위성 © Esri<br>
 표시된 연장은 선형 데이터 기준이며 실제 영업거리와 다를 수 있습니다.</p>

@@ -250,7 +250,7 @@ def main():
 {rel_html}
 </ul>
 <a class="cta" href="../?line={esc(lid)}">지도에서 {esc(p["name_ko"])} 보기 →</a>
-<p class="note">노선·역 데이터 © OpenStreetMap contributors (ODbL) · 지도 © OpenStreetMap · OpenFreeMap<br>
+<p class="note">노선·역 데이터는 OSM(ODbL)·국가철도공단 역위치 자료로 확인했습니다. 개통 전 노선의 역명은 계획 발표 기준(확정 아님). 출구 좌표 © OpenStreetMap contributors (ODbL) · 지도 © OpenStreetMap · OpenFreeMap<br>
 표시된 연장은 선형 데이터 기준이며 실제 영업거리와 다를 수 있습니다.</p>
 </main>
 </body>

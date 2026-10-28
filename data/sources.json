@@ -1,6 +1,6 @@
 {
   "schema": "kr-rail-map/sources/1",
-  "updated": "2026-10-27",
+  "updated": "2026-10-28",
   "generated_by": "data/build_sources.py",
   "note": "이 사이트가 쓰는 모든 원천과 그 이용 조건. 사람이 읽는 표는 data.html 이고, 이 파일이 원본이다. 표는 이 파일에서 자동으로 만들어진다 — 둘이 어긋나면 테스트가 실패한다.",
   "licences": {
@@ -54,35 +54,6 @@
     }
   },
   "sources": [
-    {
-      "id": "frdb",
-      "title": "노선·역 목록",
-      "provider": "미래철도DB (FRDB)",
-      "attribution": "미래철도DB(FRDB) 공개 목록",
-      "url": "https://frdb2.ivyro.net/",
-      "licence": "site-terms-unverified",
-      "obtained": "공개 목록을 옮겨 정리",
-      "snapshot": "2026-10",
-      "used_for": "노선 이름·색·구분·개통 상태, 역 이름과 노선 배정",
-      "feeds": [
-        "data/frdb_lines.json"
-      ],
-      "affects": [
-        "data/lines.geojson",
-        "data/stations.geojson"
-      ],
-      "fields": [
-        "lines[].id",
-        "lines[].name_ko",
-        "lines[].color",
-        "lines[].category",
-        "lines[].status",
-        "stations[].name_ko",
-        "stations[].lines"
-      ],
-      "commercial": "unverified",
-      "caveat": "이 사이트에서 유일하게 남은 미확인 원천이다. 이름·순서 같은 사실 정보라 저작권 대상이 아니라는 견해가 일반적이지만 확인된 것은 아니다."
-    },
     {
       "id": "chulmom",
       "title": "역 좌표·노선 선형 (32개 노선)",
@@ -151,7 +122,7 @@
     },
     {
       "id": "osm-stops",
-      "title": "역 안 환승 도보 시간",
+      "title": "역 안 환승 도보 시간 · 노선·역 배정",
       "provider": "OpenStreetMap contributors",
       "attribution": "© OpenStreetMap contributors",
       "url": "https://www.openstreetmap.org/copyright",
@@ -159,17 +130,20 @@
       "obtained": "Geofabrik south-korea-latest.osm.pbf → 노선 관계가 'stop' 역할로 참조하는 정차점 노드 2,341개 추출",
       "obtained_url": "https://download.geofabrik.de/asia/south-korea-latest.osm.pbf",
       "snapshot": "2026-10-27",
-      "used_for": "같은 역에서 노선 A 의 정차점과 노선 B 의 정차점 사이 거리를 재 환승 도보 시간을 추정한다",
+      "used_for": "노선별 정차점 목록으로 (1) 승강장 사이 거리를 재 환승 도보 시간을 내고 (2) 노선에 어떤 역이 들어가는지 확인한다",
       "feeds": [
-        "data/transfer-times.json"
+        "data/transfer-times.json",
+        "data/line-membership.json"
       ],
       "affects": [],
       "fields": [
         "stations[].pairs[].m",
-        "stations[].pairs[].min"
+        "stations[].pairs[].min",
+        "lines[].stations",
+        "lines[].confirmed"
       ],
       "commercial": "allowed",
-      "caveat": "공식 환승 소요시간 자료가 아니라 **추정값**이다. 승강장 사이 수평거리 ÷ 1.0m/s + 수직이동·대기 90초로 계산하고 2~12분으로 자른다. 지하 깊이 차이는 수평거리에 나타나지 않아 고정값으로 보정했다. 자료가 없는 역·노선쌍(265곳 중 122곳, 주로 미개통 GTX·경부선 일부)은 4분을 쓴다."
+      "caveat": "환승 시간은 공식 자료가 아니라 추정값이다(±1분). 노선·역 배정은 이 목록과 공공데이터 역위치를 함께 보고 판단하며, 둘 다 확인해주지 못한 역은 data/line-membership.json 의 unconfirmed 에 이름으로 남긴다."
     },
     {
       "id": "osm-exits",
@@ -196,14 +170,14 @@
     },
     {
       "id": "korail-stations",
-      "title": "역·노선 배정 검증",
+      "title": "노선·역 배정 (공식 대조)",
       "provider": "국가철도공단 — 노선별 역위치",
       "attribution": "국가철도공단 노선별 역위치",
       "url": "https://www.data.go.kr/",
       "licence": "data-go-kr-open",
       "obtained": "공공데이터포털 파일데이터 (18개 노선 CSV)",
       "snapshot": "2022-11 ~ 2026-06 (노선마다 다름)",
-      "used_for": "역 누락 0건 검증의 정답지. tests/official.test.js 가 매번 다시 대조한다",
+      "used_for": "노선별 역 목록의 공식 정답지. 역 누락 0건 검증과 노선·역 배정 확인에 쓰고, tests/official.test.js 와 tests/membership.test.js 가 매번 다시 대조한다",
       "feeds": [
         "data/_gov/"
       ],
@@ -319,6 +293,14 @@
       ],
       "commercial": "allowed",
       "caveat": "실제 시간표가 아니라 추정값이다. 연장은 선형을 따라 잰 값이라 공식 영업거리와 조금 다르다(인천공항철도 +9%)."
+    }
+  ],
+  "not_used": [
+    {
+      "id": "frdb",
+      "name": "미래철도DB (FRDB)",
+      "url": "https://frdb2.ivyro.net/",
+      "reason": "초기 노선·역 목록을 만들 때 참고했으나 출처로 쓰지 않는다. 사이트가 스스로 \"비영리, 비상업, 개인 사이트\" 라고 밝히고 이용허락 표시가 없다. 게다가 \"부동산 투자 목적으로 쓰려면 관계당국에서 다시 확인하라\" 고 적어 두었다. 지금 목록은 OSM 과 공공데이터로 다시 확인했고, 그 증빙이 data/line-membership.json 이다."
     }
   ]
 }

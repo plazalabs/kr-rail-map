@@ -36,7 +36,10 @@ const lineFiles = fs.readdirSync(path.join(ROOT, 'line'))
   .filter(f => f.endsWith('.html'));
 
 section('메인 화면 출처');
-check('미래철도DB 를 적는다', /미래철도DB/.test(index));
+check('노선·역 출처를 OSM·국가철도공단으로 적는다',
+  /OpenStreetMap/.test(index) && /국가철도공단/.test(index));
+check('미래철도DB 를 데이터 출처로 적지 않는다',
+  !/노선·역 데이터 — 미래철도DB/.test(index));
 check('철도맘을 적는다', /철도맘/.test(index));
 check('출구 좌표에 OSM 표기를 유지한다',
   /출구 좌표[^<]*OpenStreetMap contributors \(ODbL\)/.test(index));
@@ -51,9 +54,15 @@ check('노선 페이지가 있다', lineFiles.length === 72, lineFiles.length + 
     wrong.length ? wrong.slice(0, 3).join(', ') : '0개');
 }
 {
-  const noFrdb = lineFiles.filter(f => !/미래철도DB/.test(read('line/' + f)));
-  check('모든 노선 페이지가 실제 출처를 적는다', noFrdb.length === 0,
-    noFrdb.length ? noFrdb.slice(0, 3).join(', ') : '72/72');
+  const noSrc = lineFiles.filter(f => !/(OpenStreetMap|국가철도공단)/.test(read('line/' + f)));
+  check('모든 노선 페이지가 실제 출처를 적는다', noSrc.length === 0,
+    noSrc.length ? noSrc.slice(0, 3).join(', ') : '72/72');
+}
+{
+  // 출처로 쓰지 않기로 한 자료를 노선 페이지에서 '출처' 로 적으면 안 된다.
+  const still = lineFiles.filter(f => /미래철도DB/.test(read('line/' + f)));
+  check('노선 페이지가 미래철도DB 를 출처로 적지 않는다', still.length === 0,
+    still.length ? still.slice(0, 3).join(', ') : '0개');
 }
 {
   const noLink = lineFiles.filter(f => !/href="\.\.\/data\.html"/.test(read('line/' + f)));
@@ -96,8 +105,12 @@ check('미개통 노선 포함을 적는다', /미개통/.test(dataPage));
 // 원천별로 상업적 이용 가능 여부가 다르다. 한 문장으로 '아직 확인 안 됨' 이라고
 // 뭉뚱그리면, 실제로는 쓸 수 있는 OSM·공공데이터까지 못 쓴다고 읽힌다.
 check('상업적 이용을 원천별로 나눠 적는다', /상업적 이용은 원천별로 다릅니다/.test(dataPage));
-check('미확인 원천을 이름으로 짚는다',
-  /미래철도DB/.test(dataPage) && /철도맘/.test(dataPage));
+check('미확인 원천을 이름으로 짚는다', /철도맘/.test(dataPage));
+// 출처를 바꿨다면 '왜 안 쓰는지' 도 남겨야 한다. 조용히 지우면 나중에
+// '이 데이터 어디서 났나' 를 답할 수 없다.
+check('쓰지 않기로 한 자료를 이유와 함께 남긴다',
+  /출처로 쓰지 않는 자료/.test(dataPage) && /미래철도DB/.test(dataPage));
+check('노선·역 목록을 다시 확인했다고 적는다', /노선·역 목록은 OSM과 공공데이터로 다시 확인/.test(dataPage));
 check('공공데이터 전환 계획을 적는다', /data\.go\.kr/.test(dataPage));
 
 section('주변 시세 — 출처와 한계');

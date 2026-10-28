@@ -99,17 +99,25 @@ check('미개통 노선이 그래프에서 배제되지 않음', sawUnopened, 'G
 check('미개통 구간에 unopened 플래그가 붙음', unflagged.length === 0, unflagged.join(', '));
 check('플래그된 미개통 구간이 1개 이상', flagged >= 1, `flagged=${flagged}`);
 
-console.log('\n[데이터] FRDB 반영 확인');
+console.log('\n[데이터] 개통 전 노선은 임시(provisional)로 표시');
 const dongbu = lines.features.find(f => f.properties.id === 'dongbu-line');
-check('동부선에 FRDB 출처가 기록됨', !!dongbu.properties.frdb_url, dongbu.properties.frdb_url);
 const dongbuSt = stations.features.filter(f => (f.properties.lines || []).includes('dongbu-line'));
-check('동부선 역이 FRDB 15역과 일치', dongbuSt.length === 15, `${dongbuSt.length}개`);
-check('동부선에 FRDB 역명이 전부 존재',
-  (dongbu.properties.frdb_stations || []).every(n =>
-    dongbuSt.some(s => s.properties.name_ko === n ||
-      (s.properties.aliases || []).includes(n))),
-  (dongbu.properties.frdb_stations || []).filter(n =>
-    !dongbuSt.some(s => s.properties.name_ko === n)).join(','));
+// 개통 전 노선의 역명은 계획 발표 기준이라 확정이 아니다. 데이터에 그 사실이
+// 값으로 있어야 화면에서도 숨기지 않을 수 있다.
+check('동부선이 provisional 로 표시됨', dongbu.properties.provisional === true,
+  String(dongbu.properties.provisional));
+check('동부선에 계획 출처가 적혀 있음', !!dongbu.properties.plan_source,
+  dongbu.properties.plan_source);
+check('동부선 역이 10개 이상', dongbuSt.length >= 10, `${dongbuSt.length}개`);
+check('개통 전 노선에만 provisional 이 붙음',
+  lines.features.filter(f => f.properties.provisional)
+    .every(f => f.properties.status !== 'open'),
+  lines.features.filter(f => f.properties.provisional && f.properties.status === 'open')
+    .map(f => f.properties.id).join(', '));
+// 출처를 바꿨으므로 frdb_* 속성이 배포 데이터에 남아 있으면 안 된다.
+check('배포 데이터에 frdb_* 속성이 없다',
+  !lines.features.some(f => Object.keys(f.properties).some(k => k.startsWith('frdb_'))) &&
+  !stations.features.some(f => Object.keys(f.properties).some(k => k.startsWith('frdb_'))));
 
 console.log('\n[중복] 같은 노선 위 400m 내 중복역이 없어야 함');
 function hav(a, b) {

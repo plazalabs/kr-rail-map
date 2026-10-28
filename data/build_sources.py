@@ -100,8 +100,28 @@ def render(data):
         "<li><b>아직 미확인 (%d개)</b> — %s</li>"
         % (len(unverified), ", ".join(esc(s["title"]) for s in unverified) or "없음"),
         "</ul>",
+        not_used_block(data),
         END,
     ])
+
+
+def not_used_block(data):
+    """출처로 **쓰지 않는** 자료. 지운 흔적을 남기는 게 목적이다.
+
+    참고했던 자료를 조용히 지우면, 나중에 '이 데이터 어디서 났나' 를 물을 때
+    답할 수 없다. 쓰지 않기로 한 이유까지 같이 적는다.
+    """
+    items = data.get("not_used") or []
+    if not items:
+        return ""
+    out = ["", "<h3>출처로 쓰지 않는 자료</h3>", '<ul class="plain">']
+    for it in items:
+        name = esc(it.get("name") or it.get("id"))
+        if it.get("url"):
+            name = '<a href="%s" rel="noopener">%s</a>' % (esc(it["url"]), name)
+        out.append("<li><b>%s</b> — %s</li>" % (name, esc(it.get("reason"))))
+    out.append("</ul>")
+    return "\n".join(out)
 
 
 def main():

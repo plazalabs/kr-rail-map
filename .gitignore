@@ -36,3 +36,6 @@ data/_kapt/
 # '1호선' 하나에 전국 1호선이 섞인다 (실제로 그렇게 깨졌다).
 data/_gov/addr/
 data/_station_dong.json
+# 주택인허가 원본 캐시 — 활용신청 승인 뒤 fetch_dev.py 로 받는다.
+# 결과는 build_station_dev.py 가 station-dev.json 에 구워 넣는다.
+data/_dev/

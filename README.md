@@ -36,7 +36,8 @@ python3 -m http.server 8123
 | `vendor/` | MapLibre GL JS 4.7.1 (로컬 벤더링, BSD) |
 | `data/lines.geojson` `data/stations.geojson` | 앱이 읽는 최종 데이터 (82노선·1,245역) |
 | `data/build_access.js` | `data/access.json` 생성 (route.js 재사용, 1,246역 × 2회 다익스트라) |
-| `data/fetch_dev.py` `data/build_station_dev.py` | 주택인허가 → `data/station-dev.json` (법정동 단위, 845곳) |
+| `data/fetch_dev.py` `data/build_station_dev.py` | 주택인허가 → `data/station-dev.json` (법정동 단위, 1,191곳) |
+| `data/bjd_codes.py` | 법정동코드 전체자료 → `data/_gov/bjd_codes.json` (역 주소의 동 이름을 코드로) |
 | `data/build_data.py` | 파이프라인: Geofabrik PBF → 원시 GeoJSON |
 | `data/clean_data.py` | 후처리: 노이즈 제거·변형 병합·역 병합 |
 | `data/dedupe_geometry.py` | 같은 구간이 양방향으로 중복된 조각 제거 (연장 2배 오류 수정) |

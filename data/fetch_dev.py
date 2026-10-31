@@ -346,19 +346,43 @@ def station_sgg():
 
 
 def bjdongs_of():
-    """시군구 5자리 → 그 안의 법정동 5자리 목록.
+    """[(시군구 5, 법정동 5)] — 역이 있는 법정동 전부.
 
-    시군구 단위로 한 번에 받는 것이 기본이지만, 이 서비스가 bjdongCd 를
-    요구할 수도 있다. 승인 전에는 확인할 방법이 없어서 양쪽 다 버티게 둔다.
-    법정동 코드는 K-apt 단지 목록(10자리 = 시군구 5 + 법정동 5)에서 얻는다.
+    두 자료를 합친다.
+
+      1) K-apt 단지 목록 — 단지가 있는 동. 역이 '부발읍' 처럼 읍/면까지만
+         적혀 있어도 그 아래 리를 넓게 덮는다.
+      2) 법정동코드 전체자료 — 역 주소의 동 이름으로 찾은 코드.
+
+    2) 가 없으면 단지가 없는 동네를 영영 못 받는다. 2026-11-01 실측으로
+    역이 있는 376쌍 중 285쌍(76%)만 코드를 알았고, 종로1~6가·을지로1~7가
+    같은 곳은 '자료 없음'으로 남았다. 2) 를 붙여 376쌍 전부(100%)를 찾는다.
+
+    돌려주는 시군구는 **찾은 코드의 시군구**다. 인천 서구처럼 분구된 곳은
+    역 주소의 옛 코드(28275)와 실제 코드(검단구 28290)가 다르다. 옛 코드로
+    조회하면 없는 동을 조회하게 된다.
     """
+    import bjd_codes                                      # noqa: E402
+
+    out = set()
     lst = load_json(ROOT / "data" / "_kapt" / "list.json", []) or []
-    out = {}
     for c in lst:
         b = (c.get("bjd") or "").strip()
         if len(b) == 10 and b.isdigit():
-            out.setdefault(b[:5], set()).add(b[5:])
-    return {k: sorted(v) for k, v in out.items()}
+            out.add((b[:5], b[5:]))
+
+    sd = load_json(ROOT / "data" / "_station_dong.json", []) or []
+    for s in sd:
+        lawd, dong = (s.get("lawd") or "").strip(), (s.get("dong") or "").strip()
+        if not lawd or not dong:
+            continue
+        code = bjd_codes.code_for(lawd, dong)
+        if code:
+            out.add((code[:5], code[5:]))
+        # '부발읍' 만 적힌 역 — 읍/면 자체는 법정동이 아니라 리를 전부 받는다.
+        for code in bjd_codes.umd_codes(lawd, dong):
+            out.add((code[:5], code[5:]))
+    return sorted(out)
 
 
 # ---------------------------------------------------------------- 저장
@@ -497,12 +521,12 @@ def main():
         return 2
 
     if args.dongs:
-        sggs = station_sgg()
-        bj = bjdongs_of()
-        n_dong = sum(len(bj.get(s, [])) for s in sggs)
-        print("역이 있는 시군구 %d곳: %s" % (len(sggs), ", ".join(sggs[:12]) + (" ..." if len(sggs) > 12 else "")))
+        targets = bjdongs_of()
+        sggs = sorted({s for s, _ in targets})
+        print("역이 있는 시군구 %d곳: %s"
+              % (len(sggs), ", ".join(sggs[:12]) + (" ..." if len(sggs) > 12 else "")))
         print("시군구 단위로 받으면 호출 %d번이면 끝난다." % len(sggs))
-        print("법정동 단위로 내려가면 호출 %d번 (시군구 단위가 0건일 때만)." % n_dong)
+        print("법정동 단위로 내려가면 호출 %d번 (시군구 단위가 0건일 때만)." % len(targets))
         return 0
 
     if args.status:
@@ -511,7 +535,7 @@ def main():
             print("받은 것이 없다.")
             return 0
         print("저장: %d건 / 마지막 갱신 %s" % (len(doc.get("rows", [])), doc.get("updated", "?")))
-        print("받은 시군구 %d / %d" % (len(doc.get("done", [])), len(station_sgg())))
+        print("받은 법정동 %d / %d" % (len(doc.get("done", [])), len(bjdongs_of())))
         return 0
 
     if args.probe:
@@ -534,29 +558,28 @@ def main():
         return 0
 
     if args.all:
-        sggs = station_sgg()
-        bj = bjdongs_of()
         # 법정동 코드 없이는 아무것도 안 준다(2026-11-01 실측: sigunguCd 만
         # 주면 {"body":{}} 가 온다). 그래서 시군구 단위로 먼저 찔러보지 않고
         # 처음부터 법정동 단위로 간다. 84 × 1회를 아낀다.
-        targets = [(s, b) for s in sggs for b in bj.get(s, [])]
+        targets = bjdongs_of()
         doc = load_saved() or {"updated": None, "rows": [], "done": [], "total": 0}
         done = set(doc.get("done", []))
         rows = doc.get("rows", [])
         seen = {r["k"] for r in rows if r.get("k")}
-        print("시군구 %d곳 · 법정동 %d곳 (역이 있는 법정동 코드를 아는 만큼)"
-              % (len(sggs), len(targets)))
+        print("시군구 %d곳 · 법정동 %d곳 (역이 있는 법정동 전부)"
+              % (len({s for s, _ in targets}), len(targets)))
         if not targets:
-            print("법정동 코드표가 비었다. data/_kapt/list.json 이 필요하다.")
+            print("법정동 코드표가 비었다. data/_gov/bjd_codes.json 이 필요하다.")
             return 1
-        for i, (sgg, bjd) in enumerate(targets, 1):
+        todo = [t for t in targets if "%s/%s" % t not in done]
+        print("이미 받은 법정동 %d곳은 건너뛴다. 남은 %d곳."
+              % (len(targets) - len(todo), len(todo)))
+        for i, (sgg, bjd) in enumerate(todo, 1):
             tag = "%s/%s" % (sgg, bjd)
-            if tag in done:
-                continue
             try:
                 raw, total = fetch_sgg(sgg, key, bjdong=bjd)
             except ApiError as e:
-                print("[%d/%d] %s 실패: %s" % (i, len(targets), tag, e))
+                print("[%d/%d] %s 실패: %s" % (i, len(todo), tag, e))
                 if e.code in QUOTA_CODES or e.code in NEED_APPROVAL:
                     save({"updated": time.strftime("%Y-%m-%d %H:%M"),
                           "rows": rows, "done": sorted(done), "total": len(rows)})
@@ -577,9 +600,9 @@ def main():
             done.add(tag)
             if added:
                 print("[%d/%d] %s: 원본 %d줄 → 저장 %d건 (누적 %d)"
-                      % (i, len(targets), tag, len(raw), added, len(rows)))
-            # 845곳을 한 곳마다 저장하면 파일을 4GB쯤 다시 쓴다. 10곳마다.
-            if i % 10 == 0 or i == len(targets):
+                      % (i, len(todo), tag, len(raw), added, len(rows)))
+            # 수백 곳을 한 곳마다 저장하면 파일을 몇 GB 다시 쓴다. 10곳마다.
+            if i % 10 == 0 or i == len(todo):
                 save({"updated": time.strftime("%Y-%m-%d %H:%M"),
                       "rows": rows, "done": sorted(done), "total": len(rows)})
         print("\n완료: %d건" % len(rows))

@@ -68,6 +68,11 @@ def dong_of(addr):
 
     번지 뒤에 '외 2필지' 가 붙는 줄이 흔하다. 번지에서 끊지 않으면
     '역삼동 123-4 외 2필지' 가 법정동 이름이 되어 아무 역에도 안 붙는다.
+
+    **법정동 이름은 낱말 하나(읍/면이면 둘)다.** 그 뒤를 계속 붙이면
+    '면목동 블록' 이 된다 — 이 API 는 번지가 없을 때 대지위치를
+    '서울특별시 중랑구 면목동 블록' 으로 적어 보낸다(7,347줄 중 1,011줄).
+    그 이름은 어느 역과도 안 맞아서, 물량이 통째로 사라진다.
     """
     toks = str(addr or "").split()
     if len(toks) < 2:
@@ -77,12 +82,11 @@ def dong_of(addr):
         if t.endswith(("시", "구", "군")):
             continue
         if t.endswith(_DONG_END):
-            seg = []
-            for t2 in toks[i:]:
-                if is_bunji(t2):
-                    break
-                seg.append(t2)
-            return " ".join(seg)
+            # '부발읍 아리미' — 읍/면 뒤의 리까지가 한 법정동이다.
+            if t.endswith(("읍", "면")) and i + 1 < len(toks) \
+                    and toks[i + 1].endswith("리") and not is_bunji(toks[i + 1]):
+                return t + " " + toks[i + 1]
+            return t
     # 읍면동 토큰이 아예 없으면 포기한다. 마지막 토큰을 쓰면 '123-4' 같은
     # 번지가 법정동 이름이 되어 엉뚱한 곳에 붙는다. 부르는 쪽이 법정동코드
     # 표로 대신한다.
@@ -93,15 +97,27 @@ def bjd_table():
     """(시군구 5자리, 법정동 5자리) → 법정동 이름.
 
     대지위치가 비어 있거나 이상하게 적힌 줄을 건지기 위한 보조 표다.
-    K-apt 단지 목록에 10자리 법정동코드와 동 이름이 같이 있어서 만들 수 있다.
+
+    **법정동코드 전체자료를 먼저 쓴다.** K-apt 단지 목록만 쓰면 단지가 있는
+    동의 이름만 알 수 있다. 그러면 인허가가 0건인 동네는 이름이 없어서
+    '받았는데 0건'이 아니라 '못 받음'으로 보인다 — 화면이 거짓말을 한다.
+    2026-11-01 실측: 받은 법정동 1,191곳 중 이름이 있던 것은 851곳뿐이었다.
+
+    이름은 '읍면 리' 를 붙여 쓴다(주소데이터 표기와 같게). K-apt 는 동 이름만
+    주므로 전체자료를 먼저 넣고, 빠진 것만 K-apt 로 채운다.
     """
-    if not KAPT.exists():
-        return {}
     out = {}
-    for c in json.loads(KAPT.read_text("utf8")):
-        b = c.get("bjd") or ""
-        if len(b) == 10 and c.get("as3"):
-            out.setdefault((b[:5], b[5:]), c["as3"])
+    import bjd_codes                                     # noqa: E402
+
+    for sgg, sub in (bjd_codes.load() or {}).items():
+        for name, b in sub.items():
+            out.setdefault((sgg, b), name)
+
+    if KAPT.exists():
+        for c in json.loads(KAPT.read_text("utf8")):
+            b = c.get("bjd") or ""
+            if len(b) == 10 and c.get("as3"):
+                out.setdefault((b[:5], b[5:]), c["as3"])
     return out
 
 
@@ -332,19 +348,39 @@ def main():
         print("data/_station_dong.json 이 없다. build_station_dong.py 를 먼저.")
         return 1
 
+    import bjd_codes                                     # noqa: E402
     import dong_match                                    # noqa: E402
     import station_names                                 # noqa: E402
 
+    tab = bjd_table()
+
     # 역 → (시군구, 법정동). 시세 파이프라인과 같은 표를 쓴다.
+    #
+    # 주소데이터의 이름·코드를 법정동코드 전체자료에 맞춘다. 원본에는
+    # 오타(구로구 '개보동' → 개봉동), 옛 이름(교하읍 야당리 → 야당동),
+    # 분구 전 코드(인천 서구 28275 → 검단구 28290)가 섞여 있다. 맞추지
+    # 않으면 인허가를 **받아 놓고도** 그 역에 안 붙는다 — 개봉·운정·
+    # 검단오류가 실제로 그랬다(2026-11-01).
     dong2st = {}
+    fixed = []
     for s in json.loads(DONG.read_text("utf8")):
         if not s.get("dong") or not s.get("lawd"):
             continue
+        lawd, dong = s["lawd"], s["dong"]
+        code = bjd_codes.code_for(lawd, dong)
+        if code:
+            lawd, dong = code[:5], tab.get((code[:5], code[5:]), dong)
+            if (lawd, dong) != (s["lawd"], s["dong"]):
+                fixed.append((s["name"], s["dong"], dong))
         names = station_names.resolve_all(s["name"])
         if names:
-            dong2st.setdefault((s["lawd"], s["dong"]), set()).update(names)
+            dong2st.setdefault((lawd, dong), set()).update(names)
 
-    tab = bjd_table()
+    if fixed:
+        print("주소데이터의 법정동 표기를 전체자료에 맞춘 역 %d개 (예: %s)"
+              % (len({f[0] for f in fixed}),
+                 ", ".join("%s %s→%s" % f for f in fixed[:2])))
+
     this_year = time.localtime().tm_year
 
     rows, dup = dedupe(rows)

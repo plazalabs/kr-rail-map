@@ -1112,6 +1112,12 @@ const dataPromise = loadData().then(() => {
       if (ok && typeof StationDetail !== 'undefined') StationDetail.refresh();
     });
   }
+  // 공급(앞으로 들어올 세대)도 같은 방식으로. 없으면 절을 통째로 건너뛴다.
+  if (typeof StationDev !== 'undefined') {
+    StationDev.load('data/station-dev.json').then((ok) => {
+      if (ok && typeof StationDetail !== 'undefined') StationDetail.refresh();
+    });
+  }
   return Promise.all(extra);
 });
 map.on('load', async () => {

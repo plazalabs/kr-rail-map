@@ -444,6 +444,16 @@
         StationAccess.sectionHtml(sid) + '</div>';
     }
 
+    // 공급 — '앞으로 이 동네에 몇 세대가 들어오나'. 시세(지금)·접근성(시간)에
+    // 이어 세 번째 축이다. 자료가 없으면 절을 건너뛴다.
+    if (typeof StationDev !== 'undefined' && StationDev.isReady()) {
+      var dv = StationDev.of(nameKo);
+      if (dv) {
+        html += '<div class="sd-sec"><h3>앞으로 들어올 세대</h3>' +
+          StationDev.sectionHtml(nameKo) + '</div>';
+      }
+    }
+
     // 경유 노선
     html += '<div class="sd-sec"><h3>경유 노선 · ' + lineIds.length + '개 (환승 ' +
       lineIds.length + '개 노선 가능)</h3>';

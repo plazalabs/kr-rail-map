@@ -71,6 +71,10 @@ F_CRTN = ("crtnDay",)                           # 생성일자
 # (주상복합·기숙사처럼 '세대' 개념이 아닌 건은 세대수가 0 이거나 비어 있다.)
 HOUSE_MAX = 20000
 
+# 단지명 자리에 들어오는 '이름이 아닌 것'. 이 API 는 이름을 모를 때 '미정'을 준다.
+BAD_NAMES = ("미정", "없음", "없슴", "-", "--", "0",
+             "아파트", "공동주택", "주상복합", "주택", "연립주택", "다세대주택")
+
 RETRY_CODES = ("01", "02", "04", "05")
 QUOTA_CODES = ("22",)
 NEED_APPROVAL = ("30",)
@@ -106,8 +110,16 @@ def error_of(text):
 
 
 def parse_payload(text):
-    """JSON 이든 XML 이든 {"items": [...], "total": n} 로 맞춘다."""
-    t = (text or "").lstrip()
+    """JSON 이든 XML 이든 {"items": [...], "total": n} 로 맞춘다.
+
+    **빈 본문은 0건이다.** 이 게이트웨이는 데이터가 없는 법정동에 대해
+    HTTP 200 + 본문 0바이트를 준다(2026-11-01 실측). 그걸 파서에 그대로
+    넣으면 ParseError 로 845곳 순회가 통째로 죽는다 — 한 곳이 비었다고
+    전체를 잃으면 안 된다.
+    """
+    t = (text or "").strip()
+    if not t:
+        return {"items": [], "total": 0}
     if t.startswith("{"):
         try:
             o = json.loads(t)
@@ -129,7 +141,11 @@ def parse_payload(text):
             total = len(rows)
         return {"items": rows, "total": total}
 
-    root = ET.fromstring(t)
+    try:
+        root = ET.fromstring(t)
+    except ET.ParseError:
+        # 깨진 본문도 0건으로 본다. 여기서 죽으면 남은 법정동을 다 잃는다.
+        return {"items": [], "total": 0}
     body = root.find(".//body")
     if body is None:
         return {"items": [], "total": 0}
@@ -147,10 +163,19 @@ def parse_payload(text):
 
 
 def pick(row, names):
+    """후보 필드명을 차례로 보고 첫 값을 준다.
+
+    **공백만 있는 값은 없는 것으로 본다.** 이 API 는 빈 칸을 "" 가 아니라
+    " " 로 준다(2026-11-01 실측). 그대로 쓰면 단지명이 " " 이 되고,
+    날짜가 " " 이 되어 `if not v` 검사가 전부 통과해 버린다.
+    """
     for n in names:
         v = row.get(n)
-        if v not in (None, ""):
-            return v
+        if v is None:
+            continue
+        s = str(v).strip()
+        if s:
+            return s
     return None
 
 
@@ -164,11 +189,33 @@ def as_int(v):
 
 
 def ymd(v):
-    """YYYYMMDD → YYYY-MM-DD. 형식이 아니면 None."""
+    """YYYYMMDD → YYYY-MM-DD. 형식이 아니면 None.
+
+    **9999 같은 값은 날짜가 아니라 '미정' 표기다.** 이 API 는 준공예정일을
+    모를 때 99991201 로 준다(2026-11-01 실측). 그대로 쓰면 9,999년 입주
+    물량이 생긴다. 1900~2100 밖은 버린다.
+    """
     s = (v or "").strip()
     if not re.fullmatch(r"\d{8}", s):
         return None
+    if not (1900 <= int(s[:4]) <= 2100):
+        return None
     return "%s-%s-%s" % (s[:4], s[4:6], s[6:])
+
+
+def name_of(name, addr):
+    """단지명. 이름이 없거나 '미정' 이면 대지위치에서 만든다.
+
+    이름 없는 줄을 버리면 세대수를 잃는다. 시도·시군구를 떼고 '동 + 번지' 만
+    남긴다 — 어느 땅인지는 알아야 쓸모가 있다.
+    """
+    n = (name or "").strip()
+    if n and n not in BAD_NAMES:
+        return n
+    parts = (addr or "").split()
+    if len(parts) > 2:
+        return " ".join(parts[2:])
+    return parts[-1] if parts else "(이름 없음)"
 
 
 def measure(row, sgg="", bjd="", dong=""):
@@ -201,23 +248,29 @@ def measure(row, sgg="", bjd="", dong=""):
         "bjd": bjd,
         "dong": dong,
     }
-    # 이름이 비면 대지위치로 대신한다. 이름 없는 줄을 버리면 세대수를 잃는다.
-    if not rec["n"]:
-        rec["n"] = addr.split()[-1] if addr else "(이름 없음)"
+    rec["n"] = name_of(rec["n"], addr)
     return rec
 
 
 # ---------------------------------------------------------------- 호출
 
 def load_key():
-    k = os.environ.get("DATA_GO_KR_KEY", "").strip()
+    """이 서비스 전용 키. 없으면 공용 키로 넘어간다.
+
+    공공데이터포털은 **서비스마다 활용신청을 따로** 받고, 계정마다 승인된
+    서비스가 다르다. 주택인허가를 받은 계정과 실거래가를 받은 계정이
+    다를 수 있어서 키를 따로 둔다. 공용 키를 덮어쓰면 실거래가 파이프라인이
+    조용히 죽는다.
+    """
+    k = os.environ.get("DATA_GO_KR_KEY_DEV", "").strip()
     if k:
         return k
     if SECRET.exists():
         try:
-            return (json.loads(SECRET.read_text("utf8")).get("data_go_kr") or "").strip()
+            d = json.loads(SECRET.read_text("utf8"))
         except Exception:                        # noqa: BLE001
             return ""
+        return ((d.get("data_go_kr_dev") or d.get("data_go_kr") or "").strip())
     return ""
 
 
@@ -394,13 +447,28 @@ def selftest():
     chk("세대수 없음은 버린다", measure({"bldNm": "x"}) is None)
     chk("세대수 과대는 버린다", measure({"bldNm": "x", "hhldCnt": "99999"}) is None)
     chk("이름이 없으면 대지위치로 채운다",
-        measure({"hhldCnt": "5", "platPlc": "부산 해운대구 우동 1-1"})["n"] == "1-1",
+        measure({"hhldCnt": "5", "platPlc": "부산 해운대구 우동 1-1"})["n"] == "우동 1-1",
         measure({"hhldCnt": "5", "platPlc": "부산 해운대구 우동 1-1"})["n"])
+    # '미정' 은 이름이 아니다. 그대로 두면 화면에 '미정 1,499세대' 가 뜬다.
+    chk("'미정' 은 대지위치로 바꾼다",
+        measure({"hhldCnt": "5", "bldNm": "미정",
+                 "platPlc": "서울특별시 동작구 노량진동 294-220번지"})["n"]
+        == "노량진동 294-220번지",
+        measure({"hhldCnt": "5", "bldNm": "미정",
+                 "platPlc": "서울특별시 동작구 노량진동 294-220번지"})["n"])
+
+    # --- 빈 본문·깨진 본문 (한 곳이 비었다고 전체를 잃으면 안 된다)
+    chk("빈 본문은 0건", parse_payload("") == {"items": [], "total": 0})
+    chk("공백 본문도 0건", parse_payload("  \n ") == {"items": [], "total": 0})
+    chk("깨진 XML 도 0건", parse_payload("<response><body>")["items"] == [])
 
     # --- 날짜 파서
     chk("날짜 형식이 아니면 None", ymd("2025-03-10") is None)
     chk("여덟 자리는 통과", ymd("20250310") == "2025-03-10")
     chk("빈 값은 None", ymd("") is None)
+    # 이 API 는 '미정'을 9999 로 준다. 그대로 쓰면 9,999년 입주가 생긴다.
+    chk("9999 는 날짜가 아니다", ymd("99991201") is None)
+    chk("1900년 이전도 버린다", ymd("18991231") is None)
 
     print("fetch_dev selftest: %d 통과 / %d 실패" % (ok, fail))
     for b in bad:
@@ -468,26 +536,27 @@ def main():
     if args.all:
         sggs = station_sgg()
         bj = bjdongs_of()
+        # 법정동 코드 없이는 아무것도 안 준다(2026-11-01 실측: sigunguCd 만
+        # 주면 {"body":{}} 가 온다). 그래서 시군구 단위로 먼저 찔러보지 않고
+        # 처음부터 법정동 단위로 간다. 84 × 1회를 아낀다.
+        targets = [(s, b) for s in sggs for b in bj.get(s, [])]
         doc = load_saved() or {"updated": None, "rows": [], "done": [], "total": 0}
         done = set(doc.get("done", []))
         rows = doc.get("rows", [])
         seen = {r["k"] for r in rows if r.get("k")}
-        for i, sgg in enumerate(sggs, 1):
-            if sgg in done:
+        print("시군구 %d곳 · 법정동 %d곳 (역이 있는 법정동 코드를 아는 만큼)"
+              % (len(sggs), len(targets)))
+        if not targets:
+            print("법정동 코드표가 비었다. data/_kapt/list.json 이 필요하다.")
+            return 1
+        for i, (sgg, bjd) in enumerate(targets, 1):
+            tag = "%s/%s" % (sgg, bjd)
+            if tag in done:
                 continue
             try:
-                raw, total = fetch_sgg(sgg, key)
-                # 시군구 단위로 0건이면 법정동 단위로 내려간다. 빈 응답을
-                # '공급 없음' 으로 읽으면 안 되기 때문에 여기서 한 번 더 시도한다.
-                if not raw and bj.get(sgg):
-                    raw = []
-                    for b in bj[sgg]:
-                        got, _ = fetch_sgg(sgg, key, bjdong=b)
-                        for it in got:
-                            it.setdefault("bjdongCd", b)
-                            raw.append(it)
+                raw, total = fetch_sgg(sgg, key, bjdong=bjd)
             except ApiError as e:
-                print("[%d/%d] %s 실패: %s" % (i, len(sggs), sgg, e))
+                print("[%d/%d] %s 실패: %s" % (i, len(targets), tag, e))
                 if e.code in QUOTA_CODES or e.code in NEED_APPROVAL:
                     save({"updated": time.strftime("%Y-%m-%d %H:%M"),
                           "rows": rows, "done": sorted(done), "total": len(rows)})
@@ -496,8 +565,7 @@ def main():
                 continue
             added = 0
             for it in raw:
-                bjd = (it.get("bjdongCd") or "").strip()
-                rec = measure(it, sgg, bjd, "")
+                rec = measure(it, sgg, (it.get("bjdongCd") or bjd).strip(), "")
                 if not rec:
                     continue
                 if rec["k"] and rec["k"] in seen:
@@ -506,11 +574,14 @@ def main():
                     seen.add(rec["k"])
                 rows.append(rec)
                 added += 1
-            done.add(sgg)
-            print("[%d/%d] %s: 원본 %d줄 → 저장 %d건 (누적 %d)" %
-                  (i, len(sggs), sgg, len(raw), added, len(rows)))
-            save({"updated": time.strftime("%Y-%m-%d %H:%M"),
-                  "rows": rows, "done": sorted(done), "total": len(rows)})
+            done.add(tag)
+            if added:
+                print("[%d/%d] %s: 원본 %d줄 → 저장 %d건 (누적 %d)"
+                      % (i, len(targets), tag, len(raw), added, len(rows)))
+            # 845곳을 한 곳마다 저장하면 파일을 4GB쯤 다시 쓴다. 10곳마다.
+            if i % 10 == 0 or i == len(targets):
+                save({"updated": time.strftime("%Y-%m-%d %H:%M"),
+                      "rows": rows, "done": sorted(done), "total": len(rows)})
         print("\n완료: %d건" % len(rows))
         print("다음: python data/build_station_dev.py")
         return 0

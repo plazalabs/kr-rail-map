@@ -291,6 +291,18 @@ padding:2px 10px;font-weight:700;margin-left:8px}
         StationAccess.sectionHtml(top3[0].feature.properties.id) + '</div>';
     }
 
+    // 공급 — '앞으로 이 동네에 몇 세대가 들어오나'. 점수에는 넣지 않는다.
+    // 공급이 많으면 임대 경쟁이 세지지만 동시에 상권·교통이 좋아지기도 해서
+    // 방향이 한쪽이 아니다. 판단은 사람이 하고, 재료만 준다.
+    if (typeof StationDev !== 'undefined' && StationDev.isReady()) {
+      const nm = top3[0].feature.properties.name_ko;
+      const dv = StationDev.of(nm);
+      if (dv) {
+        h += `<div class="iv-card"><h4>🏗️ 앞으로 들어올 세대 (${esc(nm)}역 일대)</h4>` +
+          StationDev.sectionHtml(nm) + '</div>';
+      }
+    }
+
     // GTX 강조
     if (g) {
       const nm = g.feature.properties.name_ko;

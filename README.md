@@ -29,12 +29,14 @@ python3 -m http.server 8123
 | `js/app.js` | 지도 3종, 표시 범위(수도권/전국), 검색, 노선 토글, 공유, 즐겨찾기 |
 | `js/route.js` | 길찾기 (역-노선 그래프 + 다익스트라, 노선별 표정속도) |
 | `js/access.js` | 도심 접근성 — `data/access.json` 읽기·순위·표 렌더 |
+| `js/dev.js` | 앞으로 들어올 세대 — `data/station-dev.json` 읽기·연도별·사업 목록 |
 | `js/diagram.js` | **개략 노선도 엔진** — 환승역 병합, 45도 완화 배치, 라벨 충돌 회피 |
 | `js/draw.js` | 나만의 노선 그리기 + 거리/면적 측정 |
 | `js/station-detail.js` `compare.js` `stats.js` `timeline.js` `route-compare.js` `invest.js` `coverage.js` | 역 상세·비교·통계·타임라인·경로비교·투자분석·영향권 |
 | `vendor/` | MapLibre GL JS 4.7.1 (로컬 벤더링, BSD) |
 | `data/lines.geojson` `data/stations.geojson` | 앱이 읽는 최종 데이터 (82노선·1,245역) |
 | `data/build_access.js` | `data/access.json` 생성 (route.js 재사용, 1,246역 × 2회 다익스트라) |
+| `data/fetch_dev.py` `data/build_station_dev.py` | 주택인허가 → `data/station-dev.json` (법정동 단위, 845곳) |
 | `data/build_data.py` | 파이프라인: Geofabrik PBF → 원시 GeoJSON |
 | `data/clean_data.py` | 후처리: 노이즈 제거·변형 병합·역 병합 |
 | `data/dedupe_geometry.py` | 같은 구간이 양방향으로 중복된 조각 제거 (연장 2배 오류 수정) |

@@ -1105,6 +1105,13 @@ const dataPromise = loadData().then(() => {
     .then(r => r.ok ? r.json() : null)
     .then(doc => { if (doc) RouteFinder.loadTransfers(doc); })
     .catch(() => null));
+  // 도심 접근성(78KB)은 역 상세 패널에서만 쓴다. 지도 첫 화면을 막지 않도록
+  // 기다리지 않고 띄우고, 도착하면 열려 있는 패널만 다시 그린다.
+  if (typeof StationAccess !== 'undefined') {
+    StationAccess.load('data/access.json').then((ok) => {
+      if (ok && typeof StationDetail !== 'undefined') StationDetail.refresh();
+    });
+  }
   return Promise.all(extra);
 });
 map.on('load', async () => {

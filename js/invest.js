@@ -55,6 +55,16 @@
 
   function isGtxLine(lid) { return GTX_RE.test(lid); }
 
+  // 가장 가까운 역의 도심 접근성. 모듈이 없거나 그 역이 계산 대상이 아니면 null.
+  // 0분을 '아주 좋음'으로 읽지 않도록, 값이 없으면 점수를 주지 않는다.
+  // 이름 주의: 이 파일에는 이미 accessOf(역, lng, lat) = '역까지 보행거리' 가 있다.
+  // 같은 이름을 쓰면 그쪽이 덮여서 최근접역 계산이 통째로 깨진다 (실제로 깨졌다).
+  function stationAccess(top) {
+    if (!top || typeof StationAccess === 'undefined' || !StationAccess.isReady()) return null;
+    const a = StationAccess.of(top.feature.properties.id);
+    return (a && a.score && a.score.after != null) ? a : null;
+  }
+
   function lineStatus(lid) {
     const f = LN.find(l => l.properties.id === lid);
     return f ? (f.properties.status || 'open') : 'open';
@@ -152,6 +162,17 @@
       parts.push(`GTX 상태(${sts.map(statusLabel).join('/')}) (+${bonus})`);
     } else {
       parts.push('주변 GTX역 없음 (+0)');
+    }
+
+    // 도심 접근성 — 가장 가까운 역에서 3대 업무지구(도심·여의도·강남)까지
+    // 평균 시간. 지금까지 이 점수는 '역이 몇 개 있나'만 봤는데, 부동산에서
+    // 값을 만드는 것은 역의 개수가 아니라 '강남까지 몇 분'이다.
+    const acc = stationAccess(top);
+    if (acc) {
+      const m = Math.round(acc.score.after);
+      const p = m <= 20 ? 15 : m <= 30 ? 12 : m <= 40 ? 8 : m <= 50 ? 5 : m <= 70 ? 2 : 0;
+      score += p;
+      parts.push(`도심 3대 업무지구 평균 ${m}분 (+${p})`);
     }
 
     score = Math.min(100, Math.max(0, Math.round(score)));
@@ -261,6 +282,14 @@ padding:2px 10px;font-weight:700;margin-left:8px}
       <div><span class="iv-score">${sc.score}</span><span class="iv-grade">${sc.grade}</span></div>
       ${sc.parts.map(x => `<div class="iv-reason">· ${esc(x)}</div>`).join('')}
     </div>`;
+
+    // 도심 접근성 — 이 지점에서 걸어갈 수 있는 역 기준. 지도에서 아무 곳이나
+    // 찍었을 때 '강남까지 몇 분'이 바로 나오는 것이 이 카드의 목적이다.
+    const accTop = stationAccess(top3[0]);
+    if (accTop) {
+      h += `<div class="iv-card"><h4>🚇 도심까지 (${esc(top3[0].feature.properties.name_ko)}역 기준)</h4>` +
+        StationAccess.sectionHtml(top3[0].feature.properties.id) + '</div>';
+    }
 
     // GTX 강조
     if (g) {

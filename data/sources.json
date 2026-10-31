@@ -305,23 +305,26 @@
     },
     {
       "id": "derived",
-      "title": "소요 시간·환승·연장",
+      "title": "소요 시간·환승·도심 접근성·연장",
       "provider": "자체 계산",
       "attribution": "",
       "url": "",
       "licence": "own",
       "obtained": "공개된 공식 소요 시간을 기준으로 구간별 추정, 선형을 따라 잰 길이",
       "snapshot": "2026-10",
-      "used_for": "역 사이 소요 시간, 환승 횟수, 노선 연장",
+      "used_for": "역 사이 소요 시간, 환승 횟수, 역에서 도심까지 걸리는 시간, 노선 연장",
       "feeds": [],
       "affects": [
-        "data/lines.geojson"
+        "data/lines.geojson",
+        "data/access.json"
       ],
       "fields": [
-        "lines[].length_km"
+        "lines[].length_km",
+        "access.stations[].now",
+        "access.stations[].after"
       ],
       "commercial": "allowed",
-      "caveat": "실제 시간표가 아니라 추정값이다. 연장은 선형을 따라 잰 값이라 공식 영업거리와 조금 다르다(인천공항철도 +9%)."
+      "caveat": "실제 시간표가 아니라 추정값이다. 노선별 표정속도(영업거리÷소요시간)로 계산하며 개별 구간은 ±20~30% 틀릴 수 있다. 연장은 선형을 따라 잰 값이라 공식 영업거리와 조금 다르다(인천공항철도 +9%)."
     }
   ],
   "not_used": [

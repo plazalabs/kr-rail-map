@@ -3,7 +3,36 @@
 
 const RouteFinder = (() => {
   // 노선별 평균 속도 (km/h) — 실측 시각표가 아닌 어림 추정치 (추론)
-  const SPEEDS = { ktx: 180, metro: 32, urban: 45, conventional: 55, etc: 40 };
+  //
+  // 카테고리 하나로 묶으면 안 된다. 'metro' 안에 2호선(표정 44km/h)과
+  // 경춘선(표정 62km/h)이 같이 들어 있어서, 하나의 상수로는 둘 다 못 맞힌다.
+  // 예전에 32km/h 하나로 두었더니 춘천→서울이 172분(실제 78분)으로 나왔다.
+  // 그래서 카테고리 기본값 + 노선별 예외로 둔다.
+  const SPEEDS = { ktx: 170, metro: 32, urban: 45, conventional: 55, etc: 40 };
+
+  // 노선별 표정속도 (km/h) = 영업거리 ÷ 전 구간 소요시간. 공개 시각표 기준.
+  //   경춘선   춘천~상봉 81.2km / 79분  = 62
+  //   경의중앙 문산~지평 118.8km / 158분 = 45
+  //   수인분당 청량리~인천 104.5km / 132분 = 47
+  //   신분당   신사~광교 33.2km / 37분   = 54
+  //   공항철도 서울~인천공항 63.8km / 66분 = 58
+  //   경강선   판교~여주 54.0km / 57분   = 57
+  //   동해선   부전~태화강 63.4km / 72분  = 53
+  //   서해선   소사~원시 31.4km / 37분   = 51
+  //   대경선   구미~경산 61.8km / 45분   = 55  (2024 개통 광역철도)
+  //   KTX 강릉선 서울~강릉 213.8km / 114분 = 113
+  const LINE_SPEEDS = {
+    'seoul-metropolitan-subway-gyeongchun-line': 62,
+    'gyeongui-jungang-line': 45,
+    'suin-bundang-line': 47,
+    'seoul-metropolitan-subway-shinbundang-line': 54,
+    'arex': 58,
+    'seoul-metropolitan-subway-gyeonggang-line': 57,
+    'donghae-line': 53,
+    'seoul-metropolitan-subway-seohae-line': 51,
+    'daegyeong-line': 55,
+    'gangneung-line-ktx': 113,
+  };
   const TRANSFER_MIN = 4;   // 환승 1회당 추가 시간 (추론) — 자료 없는 역의 기본값
   // 역 안 환승 도보 시간. data/transfer-times.json 이 오면 그 값을 쓰고,
   // 없으면 위의 4분을 쓴다. (아래 loadTransfers / transferMinutes 참고)
@@ -277,9 +306,11 @@ const RouteFinder = (() => {
     });
   }
 
-  // GTX·고속 계통은 category 가 urban 이라 표의 속도(45km/h)를 쓰면
-  // 일반철도(55km/h)보다 느려져 엉뚱한 우회 경로가 잡힌다. 따로 처리한다.
+  // GTX·고속 계통은 category 가 urban 이라 표의 속도(48km/h)를 쓰면
+  // 일반철도(62km/h)보다 느려져 엉뚱한 우회 경로가 잡힌다. 따로 처리한다.
   function speedOf(lineId) {
+    const own = LINE_SPEEDS[lineId];
+    if (own) return own;
     const cat = lineCat.get(lineId);
     if (cat === 'ktx') return SPEEDS.ktx;
     if (/^gtx|great-train-express/.test(lineId || '')) return 110;
@@ -446,6 +477,50 @@ const RouteFinder = (() => {
     };
   }
 
+  /* ---------- 한 역 → 모든 역 ----------
+   * findRoute 는 한 쌍만 답한다. '도심까지 몇 분' 을 모든 역에 대해 구하려면
+   * 1,246번 부르게 되므로, 한 번의 다익스트라로 전 역 시간을 뽑는다.
+   *
+   * 비용 규칙은 findRoute 와 '완전히 같다' — edgeMinutes + 환승 도보 + 접근시간.
+   * 두 함수가 갈라지면 상세 패널의 '강남까지 34분' 과 길찾기의 34분이
+   * 서로 다른 말을 하게 된다. 그래서 새 규칙을 만들지 않고 그대로 쓴다.
+   *
+   * 반환: Map<stationId, 분>. 도달 불가(지금은 미개통 노선만 있는 역 등)는 없다.
+   */
+  function allTimesFrom(fromId, opts) {
+    const out = new Map();
+    if (!stationsById.has(fromId)) return out;
+    const openOnly = !!(opts && opts.openOnly);
+    const dist = new Map([[skey(fromId, START), 0]]);
+    const pq = [];
+    heapPush(pq, [0, fromId, START]);
+    const best = new Map();
+    while (pq.length) {
+      const [d, u, line] = heapPop(pq);
+      const k = skey(u, line);
+      if (d > (dist.get(k) ?? Infinity)) continue;   // 낡은 항목
+      const prev = best.get(u);
+      if (prev == null || d < prev) best.set(u, d);
+      for (const e of (adj.get(u) || [])) {
+        if (openOnly && !e.open) continue;
+        const nl = e.lineId || null;
+        let cost = edgeMinutes(e);
+        if (line !== START && line !== null && nl !== null && nl !== line) {
+          cost += transferMinutes(u, line, nl) + TRANSFER_DECISION_EXTRA;
+        }
+        if (nl !== line) cost += accessMinutes(nl);
+        const nk = skey(e.to, nl);
+        const nd = d + cost;
+        if (nd < (dist.get(nk) ?? Infinity)) {
+          dist.set(nk, nd);
+          heapPush(pq, [nd, e.to, nl]);
+        }
+      }
+    }
+    best.forEach((v, kk) => out.set(kk, Math.round(v)));
+    return out;
+  }
+
   // 이 노선이 미개통인지 (UI 에서 노선 범례·상세에 배지로 쓴다)
   function lineIsUnopened(lineId) { return isUnopened(lineId); }
   function statusOf(lineId) { return lineStatus.get(lineId) || 'open'; }
@@ -467,7 +542,7 @@ const RouteFinder = (() => {
   }
 
   return {
-    buildGraph, findRoute, lineIsUnopened, statusOf, pathDistance,
+    buildGraph, findRoute, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
     loadTransfers, transferMinutes,
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
     // 예전에는 route-compare 가 그래프를 따로 만들었는데, 그쪽은 선형 조각을 이어붙여

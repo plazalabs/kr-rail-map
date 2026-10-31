@@ -8,11 +8,12 @@
   세대수와 착공·사용검사 일자를 준다. 그중 **아직 사용검사(준공)를 안 받은
   건**이 '앞으로 들어올 물량'이다.
 
-  착공 여부를 따로 센다. 이게 이 자료의 핵심이다.
-    st  있음  = 이미 착공  → 공급이 확정적이다
-    st  없음  = 미착공     → 인허가만 받은 상태. 취소·지연될 수 있다
-  둘을 합쳐 '1,200세대 들어옵니다'라고 하면 실제보다 낙관적으로 읽힌다.
-  그래서 started / planned 를 나눠서 낸다.
+  착공 여부는 **알 수 없다.** 실제 착공일(stcnsDay)은 준공된 건의 89% 에는
+  있지만 미준공 건의 2% 에만 있다 — 준공 처리할 때 같이 적는 칸이라
+  공사 중인 건은 비어 있다(2026-11-01 실측 7,463건). 그래서 '착공/미착공'을
+  나눠 세면 미래 물량이 전부 '미착공'으로 보여 "아무것도 확정되지 않았다"는
+  잘못된 인상을 준다. 그 구분은 버리고, 대신 **착공예정일이 이미 지난 물량**을
+  센다 — 예정일이 지났는데 준공도 안 됐다는 건 사실이고, 공사 중이거나 밀린 것이다.
 
 좌표가 없다 — 입도를 솔직히 적는다
   이 API 는 위경도를 주지 않는다. 대지위치 문자열과 법정동 코드뿐이다.
@@ -48,8 +49,15 @@ LIST_MAX = 6
 #   '경기도 남양주시 화도읍 마석우리 12'   → 화도읍 마석우리
 # 시/구/군 으로 끝나는 토큰은 건너뛴다. '강남구' 를 동으로 잡으면 안 된다.
 _DONG_END = ("동", "읍", "면", "가")
-# 번지 토큰: 123, 123-4, 산12, 산12-3
+# 번지 토큰. 이 API 는 번지를 여러 모양으로 준다(2026-11-01 실측).
+#   123-4   산12-3   605-30번지   -722번지
+# 뒤의 '번지' 와 앞의 '-' 를 떼고 숫자 모양인지 본다. '-' 를 안 떼면
+# '역삼동 -722번지' 가 통째로 법정동 이름이 된다.
 _BUNJI = re.compile(r"^산?\d+(-\d+)?$")
+
+
+def is_bunji(tok):
+    return bool(_BUNJI.match(tok.replace("번지", "").lstrip("-")))
 
 
 def dong_of(addr):
@@ -71,7 +79,7 @@ def dong_of(addr):
         if t.endswith(_DONG_END):
             seg = []
             for t2 in toks[i:]:
-                if _BUNJI.match(t2):
+                if is_bunji(t2):
                     break
                 seg.append(t2)
             return " ".join(seg)
@@ -100,28 +108,33 @@ def bjd_table():
 # ---------------------------------------------------------------- 집계
 
 def empty():
-    return {"cnt": 0, "hh": 0, "started": 0, "planned": 0,
-            "cntStarted": 0, "cntPlanned": 0, "byYear": {}, "list": []}
+    return {"cnt": 0, "hh": 0, "overdue": 0, "byYear": {}, "list": []}
 
 
-def add(bucket, rec):
-    """한 건을 묶음에 더한다."""
+def add(bucket, rec, today):
+    """한 건을 묶음에 더한다.
+
+    **착공 여부는 이 자료로 알 수 없다.** stcnsDay(실제 착공일)는 준공된 건의
+    89% 에는 있지만 아직 준공 안 된 건의 2% 에만 있다 — 준공 처리할 때 같이
+    적는 칸이라, 공사 중인 건은 비어 있다(2026-11-01 실측 7,463건).
+    그래서 '착공/미착공'을 나눠 세면 미래 물량이 전부 '미착공'으로 보여
+    "아무것도 확정되지 않았다"는 잘못된 인상을 준다. 그 구분은 버린다.
+
+    대신 **착공예정일이 이미 지난 물량**을 센다. 이건 사실이다 — 예정일이
+    지났는데 준공도 안 됐다는 뜻이고, 공사 중이거나 밀린 것이다.
+    """
     h = rec.get("h") or 0
     if h <= 0:
         return
     bucket["cnt"] += 1
     bucket["hh"] += h
-    if rec.get("st"):
-        bucket["started"] += h
-        bucket["cntStarted"] += 1
-    else:
-        bucket["planned"] += h
-        bucket["cntPlanned"] += 1
     y = rec.get("y")
     if y:
         bucket["byYear"][str(y)] = bucket["byYear"].get(str(y), 0) + h
-    bucket["list"].append({"n": rec.get("n") or "", "h": h, "y": y,
-                           "st": rec.get("st"), "dn": rec.get("dn")})
+    stp = rec.get("stp")
+    if stp and stp < today:
+        bucket["overdue"] += h
+    bucket["list"].append({"n": rec.get("n") or "", "h": h, "y": y, "stp": stp})
 
 
 def finish(bucket):
@@ -132,14 +145,53 @@ def finish(bucket):
     return bucket
 
 
+def dedupe(rows):
+    """같은 사업이 여러 승인 건으로 들어온 것을 하나로 접는다.
+
+    이 API 는 **사업이 아니라 인허가 건**을 준다. 같은 대지·같은 연면적·같은
+    세대수인데 관리번호만 다른 줄이 흔하다(2026-11-01 실측: 전체 7,463줄 중
+    450그룹). 그대로 더하면 물량이 두 배가 된다.
+
+    기준을 넓게 잡지 않는다. 이름·세대수·대지위치가 **모두 같을 때만** 같은
+    건으로 본다. '쌍용2단지 919세대' 와 '쌍용2단지 203동 136세대' 는 세대수가
+    달라서 다른 줄로 남긴다 — 접으면 919세대짜리 단지가 136세대가 된다.
+    넓게 접는 쪽이 더 위험하다.
+
+    연면적(totArea)은 키에 넣지 않는다. 같은 사업의 승인 건끼리 81,297 과
+    81,065 처럼 0.3% 만 다른 경우가 있어서, 넣으면 중복이 그대로 남는다.
+
+    남길 것은 **가장 최근에 만들어진 줄**(crtnDay)이다. 일정이 바뀌면 새
+    승인 건이 생기므로, 최신 줄이 지금 유효한 일정이다.
+    """
+    best = {}
+    dropped = 0
+    for r in rows:
+        k = (r.get("sgg"), r.get("bjd"), r.get("n"), r.get("h"),
+             (r.get("a") or "").strip())
+        cur = best.get(k)
+        if cur is None:
+            best[k] = r
+            continue
+        dropped += 1
+        if (r.get("cd") or "") > (cur.get("cd") or ""):
+            best[k] = r
+    return list(best.values()), dropped
+
+
 def split(rows, this_year):
     """받은 전체 행 → (앞으로 들어올 것, 최근에 들어온 것).
 
-    앞으로: 사용검사(준공)를 아직 안 받은 건. dn 이 없다.
+    앞으로: 아직 사용검사(준공)를 안 받았고, **준공예정일이 올해 이후**인 건.
     최근:   준공일이 이번 해 기준 RECENT_YEARS 안에 있는 건.
-    그보다 오래된 준공은 '공급'이 아니라 이미 시세에 반영된 과거다. 뺀다.
+
+    **준공예정일이 지난 건은 빼야 한다.** 이 API 는 다 지은 건에도
+    useInsptDay 를 비워 두는 경우가 많다(2026-11-01 실측: 역삼동 1,409줄 중
+    2016·2020년 준공예정 건이 준공일 공백). 그걸 '미준공'으로 세면 10년 전
+    건물이 '앞으로 들어올 물량'이 된다. 예정일이 이미 지났으면 준공됐거나
+    사업이 죽은 것이므로 공급으로 세지 않는다. 몇 건인지 따로 보고한다.
     """
-    plan, recent = [], []
+    cut = "%d-01-01" % this_year
+    plan, recent, stale, undated = [], [], 0, 0
     for r in rows:
         if not (r.get("h") or 0) > 0:
             continue
@@ -152,8 +204,15 @@ def split(rows, this_year):
             if y >= this_year - RECENT_YEARS:
                 recent.append(r)
             continue
+        dnp = r.get("dnp")
+        if dnp is None:
+            undated += 1
+            continue
+        if dnp < cut:
+            stale += 1
+            continue
         plan.append(r)
-    return plan, recent
+    return plan, recent, stale, undated
 
 
 # ---------------------------------------------------------------- 자체 점검
@@ -179,6 +238,9 @@ def selftest():
         ("서울특별시 종로구 종로1가 1", "종로1가"),
         ("인천광역시 중구 운남동 산12-3", "운남동"),
         ("부산광역시 해운대구 우동", "우동"),
+        # 이 API 는 번지를 '번지'·'-' 붙여서도 준다. 안 떼면 통째로 이름이 된다.
+        ("서울특별시 강남구 역삼동 -722번지", "역삼동"),
+        ("서울특별시 강남구 역삼동 605-30번지", "역삼동"),
         ("", ""),
     ]
     for addr, want in cases:
@@ -187,41 +249,61 @@ def selftest():
 
     # --- 나눠 세기
     rows = [
-        {"h": 500, "st": "2025-01-02", "dn": None, "y": 2027, "n": "가"},   # 착공
-        {"h": 300, "st": None, "dn": None, "y": 2028, "n": "나"},           # 미착공
-        {"h": 200, "st": "2020-05-01", "dn": "2023-06-30", "y": 2023, "n": "다"},  # 최근 준공
-        {"h": 100, "st": "2010-01-01", "dn": "2012-12-31", "y": 2012, "n": "라"},  # 옛날 준공
-        {"h": 0, "st": None, "dn": None, "y": 2029, "n": "마"},             # 세대수 0
+        {"h": 500, "st": "2025-01-02", "dn": None, "dnp": "2027-06-30",
+         "stp": "2025-06-01", "y": 2027, "n": "가"},                                    # 착공예정 지남
+        {"h": 300, "st": None, "dn": None, "dnp": "2028-12-31",
+         "stp": "2027-01-01", "y": 2028, "n": "나"},                                    # 아직 안 지남
+        {"h": 200, "st": "2020-05-01", "dn": "2023-06-30", "dnp": None, "y": 2023, "n": "다"},   # 최근 준공
+        {"h": 100, "st": "2010-01-01", "dn": "2012-12-31", "dnp": None, "y": 2012, "n": "라"},   # 옛날 준공
+        {"h": 0, "st": None, "dn": None, "dnp": "2029-01-01", "y": 2029, "n": "마"},             # 세대수 0
+        # 2016년 준공예정인데 준공일이 빈 줄 — 실제 응답에 흔하다. 빼야 한다.
+        {"h": 900, "st": None, "dn": None, "dnp": "2016-03-08", "y": 2016, "n": "바"},
+        # 예정일 자체가 없는 줄 — 계획으로도 최근으로도 세지 않는다.
+        {"h": 700, "st": None, "dn": None, "dnp": None, "y": None, "n": "사"},
     ]
-    plan, recent = split(rows, 2026)
-    chk("미준공만 '앞으로'로 센다", len(plan) == 2, len(plan))
+    plan, recent, stale, undated = split(rows, 2026)
+    chk("미준공 + 예정일 미래만 '앞으로'", [r["n"] for r in plan] == ["가", "나"],
+        [r["n"] for r in plan])
     chk("오래된 준공은 뺀다", [r["n"] for r in recent] == ["다"], [r["n"] for r in recent])
+    chk("예정일이 지난 미준공은 공급이 아니다", stale, 1)
+    chk("예정일 없는 줄도 공급이 아니다", undated, 1)
 
     b = empty()
     for r in plan:
-        add(b, r)
+        add(b, r, "2026-11-01")
     finish(b)
     chk("총 세대수", b["hh"] == 800, b["hh"])
-    chk("착공 세대수", b["started"] == 500, b["started"])
-    chk("미착공 세대수", b["planned"] == 300, b["planned"])
-    chk("착공/미착공 합이 총계와 같다", b["started"] + b["planned"] == b["hh"])
-    chk("건수도 나눠 센다", b["cntStarted"] == 1 and b["cntPlanned"] == 1,
-        (b["cntStarted"], b["cntPlanned"]))
     chk("연도별로 쌓는다", b["byYear"] == {"2027": 500, "2028": 300}, b["byYear"])
     chk("목록은 세대수 큰 것부터", [x["n"] for x in b["list"]] == ["가", "나"],
         [x["n"] for x in b["list"]])
+    # 착공일(st)은 미준공 건에 거의 안 채워진다. 그래도 그 값으로 '확정'을
+    # 판단하지 않는다 — 대신 착공예정일이 지난 물량을 센다.
+    chk("착공예정일이 지난 물량을 센다", b["overdue"] == 500, b["overdue"])
+
+    # --- 중복 승인 건 접기
+    same = {"sgg": "11680", "bjd": "10100", "n": "래미안", "h": 100,
+            "ta": 5000, "a": "역삼동 1", "cd": "2020-01-01", "y": 2027}
+    newer = dict(same, cd="2025-01-01", y=2029)
+    other = {"sgg": "11680", "bjd": "10100", "n": "래미안", "h": 60,
+             "ta": 5000, "a": "역삼동 1", "cd": "2025-01-01", "y": 2028}
+    # 연면적만 살짝 다른 같은 사업 — 이것도 접어야 한다(실제로 0.3% 차이였다).
+    near = dict(same, ta=5020, cd="2024-01-01")
+    kept, dropped = dedupe([same, newer, near, other])
+    chk("같은 사업의 여러 승인 건을 접는다", dropped, 2)
+    chk("가장 최근 줄을 남긴다", [r["y"] for r in kept if r["h"] == 100], [2029])
+    chk("세대수가 다르면 다른 건으로 남긴다", len(kept), 2)
 
     # --- 목록 길이 제한
     b2 = empty()
     for i in range(10):
-        add(b2, {"h": i + 1, "n": "x%d" % i, "y": 2030})
+        add(b2, {"h": i + 1, "n": "x%d" % i, "y": 2030}, "2026-11-01")
     finish(b2)
     chk("목록은 LIST_MAX 개까지만", len(b2["list"]) == LIST_MAX, len(b2["list"]))
     chk("잘라도 총계는 그대로", b2["hh"] == 55, b2["hh"])
 
     # --- 이름이 비어도 세대수는 잃지 않는다
     b3 = empty()
-    add(b3, {"h": 40, "n": "", "y": 2031})
+    add(b3, {"h": 40, "n": "", "y": 2031}, "2026-11-01")
     finish(b3)
     chk("이름 없는 건도 센다", b3["hh"] == 40 and len(b3["list"]) == 1, b3)
 
@@ -265,6 +347,9 @@ def main():
     tab = bjd_table()
     this_year = time.localtime().tm_year
 
+    rows, dup = dedupe(rows)
+    print("중복 승인 건 %d줄을 접었다 → %d줄" % (dup, len(rows)))
+
     # 법정동마다 나눠 담는다. 이름을 못 뽑은 줄은 버리지 않고 따로 센다.
     by_dong = {}
     no_dong = 0
@@ -278,9 +363,14 @@ def main():
         key = (r.get("sgg") or "", dong)
         by_dong.setdefault(key, []).append(r)
 
-    plan, recent = split(rows, this_year)
-    print("받은 %d건 → 앞으로 들어올 %d건 / 최근 %d년 준공 %d건 (법정동 못 뽑음 %d건)"
-          % (len(rows), len(plan), RECENT_YEARS, len(recent), no_dong))
+    plan, recent, stale, undated = split(rows, this_year)
+    print("받은 %d건 → 앞으로 들어올 %d건 / 최근 %d년 준공 %d건"
+          % (len(rows), len(plan), RECENT_YEARS, len(recent)))
+    print("  뺀 것: 준공예정일이 이미 지난 미준공 %d건 · 예정일 자체가 없는 %d건"
+          % (stale, undated))
+    print("  법정동을 못 뽑은 줄 %d건" % no_dong)
+
+    today = time.strftime("%Y-%m-%d")
 
     def group(subset):
         out = {}
@@ -290,11 +380,26 @@ def main():
                 dong = tab.get((r.get("sgg") or "", r.get("bjd") or ""), "")
             if not dong:
                 continue
-            add(out.setdefault((r.get("sgg") or "", dong), empty()), r)
+            add(out.setdefault((r.get("sgg") or "", dong), empty()), r, today)
         return {k: finish(v) for k, v in out.items()}
 
     plan_d = group(plan)
     recent_d = group(recent)
+
+    # **자료를 받은 법정동**을 따로 센다. 이게 없으면 '공급 0세대'와
+    # '자료를 못 받은 동네'가 화면에서 똑같이 보인다. 전자는 정보이고
+    # 후자는 결손인데, 구별하지 않으면 사이트가 거짓말을 한다.
+    collected = set()
+    for tag in (doc.get("done") or []):
+        parts = str(tag).split("/")
+        if len(parts) != 2:
+            continue
+        nm = tab.get((parts[0], parts[1]))
+        if nm:
+            collected.add((parts[0], nm))
+    print("자료를 받은 법정동 %d곳 (그중 역이 있는 곳 %d곳)"
+          % (len(collected), sum(1 for k in collected
+                                 if dong_match.stations_in(k[0], k[1], dong2st))))
 
     # 법정동 → 역
     import lawd                                         # noqa: E402
@@ -307,7 +412,7 @@ def main():
             "sgg": lawd.label_of(sgg) if sgg else "",
             "dong": dong,
             "cnt": b["cnt"], "hh": b["hh"],
-            "started": b["started"], "planned": b["planned"],
+            "overdue": b["overdue"],
             "byYear": b["byYear"], "list": b["list"],
             "stations": sts,
         }
@@ -316,44 +421,53 @@ def main():
             rec["recent"] = {"cnt": rb["cnt"], "hh": rb["hh"], "byYear": rb["byYear"]}
         districts.append(rec)
 
+    # 역별 값은 '받은 법정동 전체'를 돈다. 물량이 0인 동네도 넣어야
+    # 화면이 '0세대(자료 있음)'이라고 말할 수 있다.
+    for (sgg, dong) in sorted(collected | set(plan_d)):
+        b = plan_d.get((sgg, dong)) or empty()
+        sts = sorted(dong_match.stations_in(sgg, dong, dong2st))
+        if not sts:
+            continue
+        rb = recent_d.get((sgg, dong))
         for name in sts:
             cur = stations.get(name)
             if cur is None:
                 stations[name] = {
-                    "lawd": sgg, "sgg": rec["sgg"], "dong": dong,
+                    "lawd": sgg, "dong": dong,
+                    "sgg": lawd.label_of(sgg) if sgg else "",
                     "cnt": b["cnt"], "hh": b["hh"],
-                    "started": b["started"], "planned": b["planned"],
-                    "byYear": b["byYear"], "list": list(b["list"]),
-                    "recent": rec.get("recent"),
+                    "overdue": b["overdue"],
+                    "byYear": dict(b["byYear"]), "list": list(b["list"]),
+                    "recent": ({"cnt": rb["cnt"], "hh": rb["hh"],
+                                "byYear": dict(rb["byYear"])} if rb else None),
                 }
                 continue
             # 역이 여러 법정동에 걸치면 물량을 더한다. 목록은 큰 것부터 다시.
             cur["cnt"] += b["cnt"]
             cur["hh"] += b["hh"]
-            cur["started"] += b["started"]
-            cur["planned"] += b["planned"]
+            cur["overdue"] += b["overdue"]
             for y, v in b["byYear"].items():
                 cur["byYear"][y] = cur["byYear"].get(y, 0) + v
             cur["list"] = sorted(cur["list"] + b["list"],
                                  key=lambda x: -x["h"])[:LIST_MAX]
             cur["byYear"] = dict(sorted(cur["byYear"].items()))
-            if rec.get("recent"):
+            if rb:
                 r0 = cur.get("recent") or {"cnt": 0, "hh": 0, "byYear": {}}
-                r0["cnt"] += rec["recent"]["cnt"]
-                r0["hh"] += rec["recent"]["hh"]
-                for y, v in rec["recent"]["byYear"].items():
+                r0["cnt"] += rb["cnt"]
+                r0["hh"] += rb["hh"]
+                for y, v in rb["byYear"].items():
                     r0["byYear"][y] = r0["byYear"].get(y, 0) + v
                 cur["recent"] = r0
 
     hit = sum(1 for d in districts if d["stations"])
-    print("역이 붙은 법정동 %d곳 / 전체 %d곳 · 역 %d개"
+    print("역이 붙은 법정동 %d곳 / 물량 있는 법정동 %d곳 · 역 %d개"
           % (hit, len(districts), len(stations)))
     print("\n=== 앞으로 들어올 세대가 많은 법정동 ===")
     for d in districts[:12]:
         if not d["stations"]:
             continue
-        print("  %-8s %-10s %6d세대 (착공 %5d / 미착공 %5d)  %s"
-              % (d["sgg"], d["dong"], d["hh"], d["started"], d["planned"],
+        print("  %-8s %-10s %6d세대 (착공예정 지남 %5d)  %s"
+              % (d["sgg"], d["dong"], d["hh"], d["overdue"],
                  ", ".join(d["stations"][:3])))
 
     payload = {

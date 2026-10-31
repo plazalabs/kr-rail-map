@@ -66,6 +66,44 @@ if (has) {
     r.list.every((c, i) => i === 0 || r.list[i - 1].h >= c.h)));
   check('법정동 이름이 있다', Object.values(doc.stations).every(r => r.dong));
 
+  section('법정동 이름');
+  // 대지위치가 번지 없이 오면 '면목동 블록' 처럼 뒤에 군더더기가 붙는다
+  // (7,347줄 중 1,011줄). 그 이름은 어느 역과도 안 맞아 물량이 통째로
+  // 사라진다 — 실제로 '불로동 블록' 이 9,735세대를 들고 1위에 있었다.
+  // '종로1가'·'명륜4가' 처럼 숫자가 들어간 법정동은 정상이다. 군더더기는
+  // '블록'·'번지' 이거나 낱말 뒤에 붙은 번지다('역삼동 123-4').
+  const junk = Object.values(doc.stations).filter(r => /블록|번지|\s\d/.test(r.dong));
+  check('법정동 이름에 군더더기가 없다', junk.length === 0,
+    junk.slice(0, 3).map(r => r.dong).join(', '));
+  const zeroHh = Object.values(doc.stations).filter(r => r.hh === 0);
+  check('0세대 역도 기록으로 남는다', zeroHh.length > 50, zeroHh.length);
+  check('0세대 역에도 법정동이 있다', zeroHh.every(r => r.dong));
+
+  // ── 법정동코드표
+  // 역에 붙인 법정동이 실재하는 코드인지 본다. 코드표가 없으면 조회 자체가
+  // 안 되고, 이름이 틀리면 인허가를 받아 놓고도 역에 안 붙는다.
+  section('법정동코드표');
+  const bjdFile = path.join(ROOT, 'data/_gov/bjd_codes.json');
+  const bjd = fs.existsSync(bjdFile) ? JSON.parse(fs.readFileSync(bjdFile, 'utf8')) : null;
+  check('법정동코드표를 커밋했다', !!bjd);
+  if (bjd) {
+    const nBjd = Object.values(bjd).reduce((a, s) => a + Object.keys(s).length, 0);
+    check('법정동 20,000곳 이상', nBjd > 20000, nBjd);
+    // 인천 서구가 서해구(28275)·검단구(28290)로 갈라진 것을 반영했는가.
+    // 이걸 모르면 검단 7개 동의 인허가를 영영 못 받는다.
+    check('인천 서해구가 있다', !!(bjd['28275'] && bjd['28275']['검암동']));
+    check('인천 검단구가 있다', !!(bjd['28290'] && bjd['28290']['불로동']));
+    check('구가 없는 시(세종)도 있다', !!(bjd['36110'] && bjd['36110']['반곡동']));
+
+    const orphan = Object.values(doc.stations).filter(r => {
+      const sub = bjd[r.lawd];
+      if (!sub) return true;
+      return !Object.keys(sub).some(k => k === r.dong || k.split(' ').pop() === r.dong);
+    });
+    check('역에 붙인 법정동이 모두 코드표에 있다', orphan.length === 0,
+      orphan.slice(0, 3).map(r => r.lawd + ' ' + r.dong).join(', '));
+  }
+
   section('기간');
   const ys = new Set();
   for (const r of Object.values(doc.stations)) {

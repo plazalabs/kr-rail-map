@@ -498,7 +498,8 @@ def save_basis(doc):
     BASIS.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), "utf8")
 
 
-def fetch_basis(key, path, codes, sleep=0.05, partial=None, save_every=100):
+def fetch_basis(key, path, codes, sleep=0.25, partial=None, save_every=100,
+                backoff=(1.0, 3.0, 8.0)):
     """단지별 세대수·면적. codes 는 kaptCode 목록.
 
     partial: 이미 받아 둔 {kaptCode: 레코드}. 매 100건마다 저장해서
@@ -507,6 +508,12 @@ def fetch_basis(key, path, codes, sleep=0.05, partial=None, save_every=100):
     마지막에 **한 번 더 훑는다.** 6회 재시도로도 2%쯤은 실패하는데,
     그 2%가 하필 대단지일 수 있다. 이미 받은 것은 건너뛰므로 추가 비용이
     거의 없다.
+
+    04 는 **초당 요청 제한**인 경우가 많다. 2026-11-01 에 0.05초 간격으로
+    몰아 쳤더니 58건 받고 04 가 왔고, 잠시 뒤 같은 명령이 또 58건쯤 받고
+    멈췄다 — 하루 한도(22)라면 0건이어야 하므로 한도가 아니다. 그래서 04 는
+    **그 건만 잠깐 물러섰다 다시 부른다**(backoff). 그래도 계속 막히면
+    DOWN_STREAK 번 연속 실패로 보고 멈춘다.
     """
     out = {} if partial is None else partial
     for round_no in (1, 2):
@@ -517,20 +524,28 @@ def fetch_basis(key, path, codes, sleep=0.05, partial=None, save_every=100):
             print("  한 번 더 훑는다 — 남은 %d곳" % len(todo))
         streak = 0
         for i, kc in enumerate(todo, 1):
-            try:
-                rows = call(path, {"kaptCode": kc, "numOfRows": "10", "pageNo": "1"},
-                            key)["items"]
-            except ApiError as e:
-                # 30(미승인)·22(한도)는 '이 단지가 없다'가 아니다. 멈춘다.
-                if e.code in ("30", "22"):
-                    if partial is not None:
-                        save_basis(out)
-                    raise
-                streak += 1
-                if e.code in DOWN_CODES and streak >= DOWN_STREAK:
-                    if partial is not None:
-                        save_basis(out)
-                    raise down_error(e.code, streak)
+            rows = None
+            for attempt in range(len(backoff) + 1):
+                try:
+                    rows = call(path, {"kaptCode": kc, "numOfRows": "10",
+                                       "pageNo": "1"}, key)["items"]
+                    break
+                except ApiError as e:
+                    # 30(미승인)·22(한도)는 '이 단지가 없다'가 아니다. 멈춘다.
+                    if e.code in ("30", "22"):
+                        if partial is not None:
+                            save_basis(out)
+                        raise
+                    if e.code in DOWN_CODES and attempt < len(backoff):
+                        time.sleep(backoff[attempt])   # 초당 제한이면 여기서 풀린다
+                        continue
+                    streak += 1
+                    if e.code in DOWN_CODES and streak >= DOWN_STREAK:
+                        if partial is not None:
+                            save_basis(out)
+                        raise down_error(e.code, streak)
+                    break
+            if rows is None:
                 continue
             streak = 0
             if rows:
@@ -907,7 +922,7 @@ def selftest():
     g["call"] = fake_call_down
     try:
         try:
-            fetch_basis("k", "p", ["D%d" % i for i in range(20)], sleep=0)
+            fetch_basis("k", "p", ["D%d" % i for i in range(20)], sleep=0, backoff=())
             chk("서비스 다운에서 멈춤", False, "04")
         except ApiError as e:
             chk("서비스 다운에서 멈춤", e.code, "04")
@@ -926,10 +941,30 @@ def selftest():
 
     g["call"] = fake_call_flaky
     try:
-        r = fetch_basis("k", "p", ["E%d" % i for i in range(9)], sleep=0)
+        r = fetch_basis("k", "p", ["E%d" % i for i in range(9)], sleep=0, backoff=())
         # 1차에서 6곳, 2차에서 남은 3곳 중 2곳 → 8곳.
         # 한두 번 튕기는 건 넘어가고 계속 받는다.
         chk("간헐적 04 는 넘어간다", len(r), 8)
+    finally:
+        g["call"] = orig
+
+    # 04 가 한 번 왔다가 풀리는 경우 — 그 건을 다시 불러 건져야 한다.
+    # (초당 제한이면 대부분 이 경우다. 버리면 그 단지가 영영 빈다.)
+    tries = {"A1": 0}
+
+    def fake_call_once(path, params, key, timeout=25):
+        kc = params.get("kaptCode")
+        if kc == "A1":
+            tries["A1"] += 1
+            if tries["A1"] == 1:
+                raise ApiError("04", "HTTP_ERROR")
+        return {"items": [{"hoCnt": "80", "kaptMarea": "6000"}], "total": 1}
+
+    g["call"] = fake_call_once
+    try:
+        r = fetch_basis("k", "p", ["A1", "A2"], sleep=0, backoff=(0,))
+        chk("04 뒤에 다시 불러 건진다", sorted(r), ["A1", "A2"])
+        chk("재시도 횟수를 센다", tries["A1"], 2)
     finally:
         g["call"] = orig
 

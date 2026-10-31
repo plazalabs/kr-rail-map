@@ -580,6 +580,34 @@ function restoreFromUrl() {
   }
 }
 
+/* 역 상세 패널의 '여기서 출발 / 여기로 도착' 버튼.
+ *
+ * 역 패널(#sd-panel)은 z-index 1000, 길찾기 패널(#route-panel)은 35 다.
+ * 역 패널을 닫지 않고 길찾기 패널만 열면, 길찾기 패널이 역 패널 '뒤에'
+ * 열려서 사용자 눈에는 아무 일도 일어나지 않은 것처럼 보인다.
+ * (실제로 그랬다. Esc 로 역 패널을 닫아야 그제서야 입력칸이 드러났다.)
+ * 그래서 역 패널을 먼저 닫고, 반대편 칸으로 초점을 옮긴다.
+ */
+function routeFromStation(stationName, which) {
+  if (typeof StationDetail !== 'undefined') StationDetail.hide();
+  const panel = document.getElementById('route-panel');
+  panel.hidden = false;
+  const mine = document.getElementById(which === 'from' ? 'route-from' : 'route-to');
+  const other = document.getElementById(which === 'from' ? 'route-to' : 'route-from');
+  const box = document.getElementById('route-result');
+  mine.value = stationName;
+  if (other.value.trim()) {
+    // 반대편이 이미 채워져 있으면 바로 찾는다. 한 번 더 누르게 하지 않는다.
+    document.getElementById('route-go').click();
+    return;
+  }
+  box.innerHTML = '';
+  other.focus();
+  setStatus(which === 'from'
+    ? `${stationName}에서 출발 — 도착역을 입력하세요.`
+    : `${stationName}으로 도착 — 출발역을 입력하세요.`);
+}
+
 /* ---------- 길찾기 UI ---------- */
 const lineNameOf = new Map();
 function setupRouteFinder() {
@@ -1136,8 +1164,7 @@ map.on('load', async () => {
     // 역 상세 패널의 액션 버튼 연동
     StationDetail.onAction = (action, stationName) => {
       if (action === 'from' || action === 'to') {
-        document.getElementById(action === 'from' ? 'route-from' : 'route-to').value = stationName;
-        document.getElementById('route-panel').hidden = false;
+        routeFromStation(stationName, action);
       } else if (action === 'fav') {
         toggleFavStation(stationName);
       }
@@ -1394,20 +1421,10 @@ document.getElementById('coverage-btn').addEventListener('click', () => {
   document.getElementById('coverage-btn').classList.toggle('active', CoverageMap.isActive());
 });
 
-// 툴바 드롭다운 토글
-document.querySelectorAll('.tb-dropdown').forEach(dd => {
-  const btn = dd.querySelector('.tb-dropbtn');
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    const wasOpen = dd.classList.contains('open');
-    document.querySelectorAll('.tb-dropdown.open').forEach(o => o.classList.remove('open'));
-    if (!wasOpen) dd.classList.add('open');
-  });
-  // 메뉴 안 버튼 클릭 시 드롭다운 닫기
-  dd.querySelectorAll('.tb-dropmenu button').forEach(b => {
-    b.addEventListener('click', () => dd.classList.remove('open'));
-  });
-});
-document.addEventListener('click', () => {
-  document.querySelectorAll('.tb-dropdown.open').forEach(o => o.classList.remove('open'));
-});
+/* 툴바 드롭다운은 ui.js 의 initDropdowns() 가 맡는다.
+ *
+ * 여기서 한 번 더 리스너를 달면 안 된다. 같은 버튼에 두 개가 붙으면
+ * 첫 번째가 'open' 을 붙이고 두 번째가 '이미 열려 있네' 하고 다시 닫아서,
+ * 도구·분석·저장 버튼이 아무 반응도 하지 않는 것처럼 보인다.
+ * (사이드바 토글에서 똑같은 사고가 있었다 — 위 주석 참고)
+ * aria-expanded 갱신과 바깥 클릭 닫기도 ui.js 쪽에만 있다. */

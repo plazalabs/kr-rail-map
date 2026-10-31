@@ -95,6 +95,28 @@
     '.sd-btns button{flex:1;padding:9px 0;border:1px solid var(--border-strong,#ddd);border-radius:6px;' +
     'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:14px}' +
     '.sd-btns button:hover{background:var(--hover,#f6f6f6)}' +
+    // 역을 눌렀을 때 가장 먼저 하고 싶은 일은 '여기서 어디로 가지' 다.
+    // 예전에는 이 버튼이 패널 맨 아래(출구·시간표 다음)에 있어서 스크롤하지
+    // 않으면 존재조차 보이지 않았다. 이제 이름 바로 아래에 둔다.
+    '.sd-actions{display:flex;gap:6px;margin:12px 0 2px}' +
+    '.sd-actions button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;' +
+    'padding:9px 4px;border:1px solid var(--border-strong,#ddd);border-radius:9px;' +
+    'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;' +
+    'font-size:12.5px;font-weight:600;line-height:1.15}' +
+    '.sd-actions button:hover{background:var(--hover,#f6f6f6);border-color:var(--accent,#1a73e8)}' +
+    '.sd-actions button.sd-primary{background:var(--accent,#1a73e8);color:var(--accent-text,#fff);' +
+    'border-color:var(--accent,#1a73e8)}' +
+    '.sd-actions button.sd-primary:hover{filter:brightness(1.06)}' +
+    '.sd-actions button.sd-fav{flex:0 0 54px}' +
+    '.sd-actions .sd-ico{font-size:15px;line-height:1}' +
+    // 접었다 펴는 절 — 인접역·출구는 늘 필요하지 않다. 첫 화면을 짧게 유지한다.
+    '.sd-det{margin-top:14px;border-top:1px solid var(--border,#eee);padding-top:9px}' +
+    '.sd-det>summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted,#6b7280);' +
+    'list-style:none;display:flex;align-items:center;gap:6px;padding:2px 0}' +
+    '.sd-det>summary::-webkit-details-marker{display:none}' +
+    '.sd-det>summary::before{content:"\\25B8";font-size:10px;transition:transform .15s;display:inline-block}' +
+    '.sd-det[open]>summary::before{transform:rotate(90deg)}' +
+    '.sd-det>summary:hover{color:var(--text,#222)}' +
     '@media (max-width:768px){' +
     '#sd-panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;height:auto;' +
     'max-height:62vh;border-radius:14px 14px 0 0;box-shadow:var(--shadow-lg,0 -2px 12px rgba(0,0,0,.18));' +
@@ -433,6 +455,16 @@
     var html = '<div><b style="font-size:17px">' + esc(nameKo) + '</b>' +
       (nameEn ? '<div class="sd-en">' + esc(nameEn) + '</div>' : '') + '</div>';
 
+    // 액션은 이름 바로 아래. 패널을 열자마자 스크롤 없이 보여야 한다.
+    html += '<div class="sd-actions">' +
+      '<button class="sd-primary" data-act="from" title="' + esc(nameKo) + '에서 출발하는 경로 찾기">' +
+      '<span class="sd-ico">🚉</span>여기서 출발</button>' +
+      '<button data-act="to" title="' + esc(nameKo) + '으로 가는 경로 찾기">' +
+      '<span class="sd-ico">🎯</span>여기로 도착</button>' +
+      '<button class="sd-fav" data-act="fav" title="즐겨찾기" aria-label="즐겨찾기">' +
+      '<span class="sd-ico">⭐</span></button>' +
+      '</div>';
+
     // 시세를 먼저. 없으면 빈 문자열이라 자연스럽게 노선부터 시작한다.
     html += priceSection(nameKo);
 
@@ -455,30 +487,36 @@
     }
 
     // 경유 노선
-    html += '<div class="sd-sec"><h3>경유 노선 · ' + lineIds.length + '개 (환승 ' +
-      lineIds.length + '개 노선 가능)</h3>';
+    html += '<div class="sd-sec"><h3>경유 노선 ' + lineIds.length + '개</h3>';
     html += lineIds.length ? lineIds.map(lineRow).join('') : '<div class="sd-note">노선 정보 없음</div>';
     html += '</div>';
 
-    // 인접역 (노선별)
-    html += '<div class="sd-sec"><h3>인접역 (노선별)</h3>';
+    // 인접역 (노선별) — 접어 둔다. 역 하나 열 때마다 노선 수만큼 줄이 늘어나서
+    // 패널이 길어지는 주범이었다. 필요할 때만 펴 본다.
+    html += '<details class="sd-det"><summary>인접역 (노선별)</summary>';
     html += lineIds.length ? lineIds.map(function (lid) { return adjRow(lid, sid); }).join('')
       : '<div class="sd-note">노선 정보 없음</div>';
-    html += '<div class="sd-note">※ 인접역 순서는 역 좌표 간 거리로 추론한 것으로, 실제 운행 순서와 다를 수 있습니다.</div></div>';
+    html += '<div class="sd-note">※ 인접역 순서는 역 좌표 간 거리로 추론한 것으로, 실제 운행 순서와 다를 수 있습니다.</div></details>';
 
     // 출구 — 부동산에서 '역까지 몇 분'은 중심점이 아니라 출구까지의 거리다.
     // 출구 좌표가 없는 역(주로 KTX·일반철도)은 없다고 밝히고 중심점으로 물러난다.
     var exits = (typeof StationExits !== 'undefined' && StationExits.isReady())
       ? StationExits.exitsOf(sid) : [];
-    html += '<div class="sd-sec"><h3>';
+    // 출구도 접어 둔다. 12개짜리 역은 버튼만 열두 줄이라 첫 화면을 다 먹었다.
+    // 제목에 개수와 최대 이격거리를 적어 두면, 펴지 않아도 판단은 된다.
+    var exTitle = '출구';
+    var maxNo = 0;
     if (exits.length) {
       var sm = StationExits.summary(sid);
       var nums = exits.map(function (e) { return parseInt(e.no, 10) || 0; })
         .filter(function (n) { return n > 0; });
-      var maxNo = nums.length ? Math.max.apply(null, nums) : 0;
-      html += '출구 · ' + exits.length + '개';
-      if (sm.spreadKm > 0.05) html += ' (최대 ' + Math.round(sm.spreadKm * 1000) + 'm 떨어짐)';
-      html += '</h3><div class="sd-exits">';
+      maxNo = nums.length ? Math.max.apply(null, nums) : 0;
+      exTitle += ' · ' + exits.length + '개';
+      if (sm.spreadKm > 0.05) exTitle += ' (최대 ' + Math.round(sm.spreadKm * 1000) + 'm 떨어짐)';
+    }
+    html += '<details class="sd-det"><summary>' + esc(exTitle) + '</summary>';
+    if (exits.length) {
+      html += '<div class="sd-exits">';
       html += exits.slice().sort(function (a, b) {
         return (parseInt(a.no, 10) || 999) - (parseInt(b.no, 10) || 999);
       }).map(function (e) {
@@ -496,18 +534,12 @@
       html += '<div class="sd-note">출구를 누르면 지도가 그 출구로 이동합니다. ' +
         '출구 좌표 © OpenStreetMap (ODbL)</div>';
     } else {
-      html += '출구</h3><div class="sd-note">이 역은 출구 좌표가 없어 역 중심점으로 거리를 잽니다.</div>';
+      html += '<div class="sd-note">이 역은 출구 좌표가 없어 역 중심점으로 거리를 잽니다.</div>';
     }
-    html += '</div>';
+    html += '</details>';
 
-    // 시간표
-    html += '<div class="sd-sec"><h3>첫차 / 막차</h3><div class="sd-note">시간표 데이터 없음</div></div>';
-
-    // 액션 버튼
-    html += '<div class="sd-btns">' +
-      '<button data-act="from">출발지</button>' +
-      '<button data-act="to">도착지</button>' +
-      '<button data-act="fav">⭐ 즐겨찾기</button></div>';
+    // '첫차 / 막차' 칸은 없앴다. 자료가 없어서 '시간표 데이터 없음' 한 줄만
+    // 남는 빈 칸이었고, 그 빈 칸이 액션 버튼을 화면 밖으로 밀어내고 있었다.
 
     var body = panel.querySelector('#sd-body');
     body.innerHTML = html;
@@ -558,7 +590,7 @@
     });
 
     // 액션 버튼
-    body.querySelectorAll('.sd-btns button').forEach(function (b) {
+    body.querySelectorAll('.sd-actions button').forEach(function (b) {
       b.addEventListener('click', function () {
         var act = b.getAttribute('data-act');
         if (typeof api.onAction === 'function') {
@@ -571,6 +603,8 @@
             var ev = new CustomEvent('stationdetail:fav', { detail: { name: nameKo } });
             document.dispatchEvent(ev);
           } else {
+            // 역 패널이 길찾기 패널을 덮으므로 먼저 닫는다 (app.js 주석 참고).
+            hide();
             var input = document.getElementById(act === 'from' ? 'route-from' : 'route-to');
             var rp = document.getElementById('route-panel');
             if (input) input.value = nameKo;
@@ -580,6 +614,9 @@
       });
     });
 
+    // 다른 역을 열었는데 이전에 스크롤한 위치가 남아 있으면, 새 역의 이름과
+    // 액션 버튼이 화면 밖에서 시작한다. 항상 맨 위부터 보여준다.
+    panel.scrollTop = 0;
     panel.classList.add('sd-open');
   }
 

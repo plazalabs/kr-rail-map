@@ -2,8 +2,9 @@
 
 수도권 전철을 중심으로 한 **철도 노선도 웹앱**. 서버 없이 도는 정적 단일 페이지 앱입니다.
 
-- 지도 위에 82개 노선 / 1,245개 역
+- 지도 위에 84개 노선 / 1,246개 역
 - 역 검색 · 최단 경로·환승·요금 계산
+- **도심 접근성** — 역에서 도심·여의도·강남·서울역·판교까지, 지금과 개통 후
 - **45도 개략 노선도** (지리 좌표를 옥타리니어로 재배치)
 - 노선별 정적 랜딩 페이지 44개 + sitemap
 - 모바일 대응(오프캔버스 드로어 / 하단 툴바 / 바텀시트)
@@ -26,12 +27,14 @@ python3 -m http.server 8123
 | `index.html` / `css/style.css` | 앱 셸, 디자인 토큰, 반응형 레이아웃 |
 | `js/ui.js` | 토스트·모달 관리·드로어·드롭다운·키보드 |
 | `js/app.js` | 지도 3종, 표시 범위(수도권/전국), 검색, 노선 토글, 공유, 즐겨찾기 |
-| `js/route.js` | 길찾기 (역-노선 그래프 + 다익스트라, 노선별 평균속도) |
+| `js/route.js` | 길찾기 (역-노선 그래프 + 다익스트라, 노선별 표정속도) |
+| `js/access.js` | 도심 접근성 — `data/access.json` 읽기·순위·표 렌더 |
 | `js/diagram.js` | **개략 노선도 엔진** — 환승역 병합, 45도 완화 배치, 라벨 충돌 회피 |
 | `js/draw.js` | 나만의 노선 그리기 + 거리/면적 측정 |
 | `js/station-detail.js` `compare.js` `stats.js` `timeline.js` `route-compare.js` `invest.js` `coverage.js` | 역 상세·비교·통계·타임라인·경로비교·투자분석·영향권 |
 | `vendor/` | MapLibre GL JS 4.7.1 (로컬 벤더링, BSD) |
 | `data/lines.geojson` `data/stations.geojson` | 앱이 읽는 최종 데이터 (82노선·1,245역) |
+| `data/build_access.js` | `data/access.json` 생성 (route.js 재사용, 1,246역 × 2회 다익스트라) |
 | `data/build_data.py` | 파이프라인: Geofabrik PBF → 원시 GeoJSON |
 | `data/clean_data.py` | 후처리: 노이즈 제거·변형 병합·역 병합 |
 | `data/dedupe_geometry.py` | 같은 구간이 양방향으로 중복된 조각 제거 (연장 2배 오류 수정) |

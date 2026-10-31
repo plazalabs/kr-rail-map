@@ -436,6 +436,14 @@
     // 시세를 먼저. 없으면 빈 문자열이라 자연스럽게 노선부터 시작한다.
     html += priceSection(nameKo);
 
+    // 도심 접근성 — 시세 다음으로 중요한 값. '이 집에서 강남까지 몇 분'은
+    // 부동산에서 실제로 비교하는 축이고, 개통으로 얼마나 줄어드는지까지 보여준다.
+    // 자료(access.json)가 아직 없으면 이 절을 통째로 건너뛴다.
+    if (typeof StationAccess !== 'undefined' && StationAccess.isReady()) {
+      html += '<div class="sd-sec"><h3>도심 접근성</h3>' +
+        StationAccess.sectionHtml(sid) + '</div>';
+    }
+
     // 경유 노선
     html += '<div class="sd-sec"><h3>경유 노선 · ' + lineIds.length + '개 (환승 ' +
       lineIds.length + '개 노선 가능)</h3>';

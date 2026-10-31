@@ -6,8 +6,8 @@
  "summary": {
   "lines": 78,
   "open_lines": 68,
-  "open_pairs": 1474,
-  "open_confirmed": 1463,
+  "open_pairs": 1489,
+  "open_confirmed": 1478,
   "open_confirmed_pct": 99.3,
   "open_lines_all_confirmed": 63
  },
@@ -100,8 +100,8 @@
   "chungbuk-line": {
    "name": "충북선",
    "status": "open",
-   "stations": 14,
-   "confirmed": 14,
+   "stations": 16,
+   "confirmed": 16,
    "sources": [
     "osm-geometry"
    ],
@@ -486,8 +486,8 @@
   "gyeongbu-line": {
    "name": "경부선",
    "status": "open",
-   "stations": 43,
-   "confirmed": 43,
+   "stations": 45,
+   "confirmed": 45,
    "sources": [
     "osm-geometry",
     "osm-relation"
@@ -514,8 +514,8 @@
   "gyeongbuk-line": {
    "name": "경북선",
    "status": "open",
-   "stations": 10,
-   "confirmed": 10,
+   "stations": 11,
+   "confirmed": 11,
    "sources": [
     "osm-geometry"
    ],
@@ -540,8 +540,8 @@
   "gyeongjeon-line": {
    "name": "경전선",
    "status": "open",
-   "stations": 32,
-   "confirmed": 31,
+   "stations": 33,
+   "confirmed": 32,
    "sources": [
     "osm-geometry",
     "osm-relation"
@@ -570,8 +570,8 @@
   "gyeongwon-line": {
    "name": "경원선",
    "status": "open",
-   "stations": 4,
-   "confirmed": 4,
+   "stations": 5,
+   "confirmed": 5,
    "sources": [
     "osm-geometry"
    ],
@@ -724,8 +724,8 @@
   "jungang-line": {
    "name": "중앙선",
    "status": "open",
-   "stations": 15,
-   "confirmed": 15,
+   "stations": 16,
+   "confirmed": 16,
    "sources": [
     "osm-geometry"
    ],
@@ -751,8 +751,8 @@
   "ktx-jungbunaeryuk-line": {
    "name": "KTX 중부내륙선",
    "status": "open",
-   "stations": 8,
-   "confirmed": 8,
+   "stations": 9,
+   "confirmed": 9,
    "sources": [
     "osm-geometry",
     "osm-relation"
@@ -765,8 +765,8 @@
   "mokpo-boseong-line": {
    "name": "목포보성선",
    "status": "open",
-   "stations": 6,
-   "confirmed": 6,
+   "stations": 7,
+   "confirmed": 7,
    "sources": [
     "osm-geometry"
    ],
@@ -812,8 +812,8 @@
   "saemaeul-ho-janghang-line": {
    "name": "장항선",
    "status": "open",
-   "stations": 18,
-   "confirmed": 17,
+   "stations": 21,
+   "confirmed": 20,
    "sources": [
     "osm-geometry"
    ],
@@ -840,8 +840,8 @@
   "seohae-line-conv": {
    "name": "서해선",
    "status": "open",
-   "stations": 5,
-   "confirmed": 5,
+   "stations": 6,
+   "confirmed": 6,
    "sources": [
     "osm-geometry"
    ],
@@ -1074,8 +1074,8 @@
   "taebaek-line": {
    "name": "태백선",
    "status": "open",
-   "stations": 21,
-   "confirmed": 19,
+   "stations": 22,
+   "confirmed": 20,
    "sources": [
     "osm-geometry"
    ],

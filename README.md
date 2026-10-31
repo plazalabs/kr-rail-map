@@ -35,7 +35,8 @@ python3 -m http.server 8123
 | `js/station-detail.js` `compare.js` `stats.js` `timeline.js` `route-compare.js` `invest.js` `coverage.js` | 역 상세·비교·통계·타임라인·경로비교·투자분석·영향권 |
 | `vendor/` | MapLibre GL JS 4.7.1 (로컬 벤더링, BSD) |
 | `data/lines.geojson` `data/stations.geojson` | 앱이 읽는 최종 데이터 (82노선·1,245역) |
-| `data/build_access.js` | `data/access.json` 생성 (route.js 재사용, 1,246역 × 2회 다익스트라) |
+| `data/build_access.js` | `data/access.json` 생성 (route.js 재사용, 1,234역 × 2회 다익스트라) |
+| `data/fix_interchange_lines.py` | 고립된 역·노선을 300m 근거로 이어 붙인다 → `stations.geojson` |
 | `data/fetch_dev.py` `data/build_station_dev.py` | 주택인허가 → `data/station-dev.json` (법정동 단위, 1,191곳) |
 | `data/bjd_codes.py` | 법정동코드 전체자료 → `data/_gov/bjd_codes.json` (역 주소의 동 이름을 코드로) |
 | `data/build_data.py` | 파이프라인: Geofabrik PBF → 원시 GeoJSON |

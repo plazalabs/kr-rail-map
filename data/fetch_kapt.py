@@ -414,6 +414,7 @@ def fetch_list(key, path, codes, sleep=0.05, partial=None):
     수집이 중간에 끊겨도 다음 실행이 이어서 하도록 매 시군구마다 저장한다.
     """
     out = []
+    streak = 0
     for i, code in enumerate(codes, 1):
         if partial is not None and code in partial:
             out.extend(partial[code])
@@ -432,9 +433,15 @@ def fetch_list(key, path, codes, sleep=0.05, partial=None):
                     if partial is not None:
                         save_part(partial)
                     raise
+                streak += 1
+                if e.code in DOWN_CODES and streak >= DOWN_STREAK:
+                    if partial is not None:
+                        save_part(partial)
+                    raise down_error(e.code, streak)
                 print("  ! %s 시군구 %s — 건너뜀 (%s)" % (code, page, e))
                 ok = False
                 break
+            streak = 0
             rows = res["items"]
             for r in rows:
                 rows_here.append({
@@ -470,6 +477,21 @@ def fetch_list(key, path, codes, sleep=0.05, partial=None):
 
 BASIS = CACHE / "basis.json"
 
+# 04 HTTP_ERROR 는 '이 단지가 없다'가 아니라 게이트웨이가 백엔드를 못 부른 것이다.
+# 2026-11-01 에 실제로 이게 왔다 — 키는 승인됐고 RTMS 는 같은 키로 정상인데
+# K-apt 만 04 를 돌려줬다. 한도(22)도 미승인(30)도 아닌 서비스 장애다.
+#
+# 이걸 한 건 실패로 보고 계속 돌면 1,009곳 × 재시도 5회 × 4초 ≈ 6시간을
+# 헛되이 돌고, 끝나고도 '받은 것 없음'만 남는다. 그래서 연달아 오면 멈춘다.
+DOWN_CODES = ("04", "05")
+DOWN_STREAK = 5
+
+
+def down_error(code, streak):
+    return ApiError(code, "%d건 연속 실패 — 서비스가 응답하지 않는 것으로 본다. "
+                         "키 문제가 아니면(data.go.kr 상태 확인) 잠시 뒤 다시 "
+                         "실행하면 받은 것까지는 그대로 남아 있다." % streak)
+
 
 def save_basis(doc):
     CACHE.mkdir(parents=True, exist_ok=True)
@@ -493,6 +515,7 @@ def fetch_basis(key, path, codes, sleep=0.05, partial=None, save_every=100):
             break
         if round_no == 2:
             print("  한 번 더 훑는다 — 남은 %d곳" % len(todo))
+        streak = 0
         for i, kc in enumerate(todo, 1):
             try:
                 rows = call(path, {"kaptCode": kc, "numOfRows": "10", "pageNo": "1"},
@@ -503,7 +526,13 @@ def fetch_basis(key, path, codes, sleep=0.05, partial=None, save_every=100):
                     if partial is not None:
                         save_basis(out)
                     raise
+                streak += 1
+                if e.code in DOWN_CODES and streak >= DOWN_STREAK:
+                    if partial is not None:
+                        save_basis(out)
+                    raise down_error(e.code, streak)
                 continue
+            streak = 0
             if rows:
                 out[kc] = measure(rows[0])
             if i % save_every == 0:
@@ -863,6 +892,44 @@ def selftest():
         except ApiError as e:
             chk("한도에서 멈춤", e.code, "22")
         chk("멈추기 전 받은 것은 남음", sorted(got), ["A1", "A2"])
+    finally:
+        g["call"] = orig
+
+    # 서비스가 통째로 죽었을 때(04)를 한 단지 실패와 구별한다.
+    # 2026-11-01 실제 상황: 키 승인됨, RTMS 정상, K-apt 만 04.
+    # 구별하지 않으면 1,009곳을 6시간 동안 헛되이 돌고 아무것도 못 받는다.
+    tried = []
+
+    def fake_call_down(path, params, key, timeout=25):
+        tried.append(params.get("kaptCode"))
+        raise ApiError("04", "HTTP_ERROR")
+
+    g["call"] = fake_call_down
+    try:
+        try:
+            fetch_basis("k", "p", ["D%d" % i for i in range(20)], sleep=0)
+            chk("서비스 다운에서 멈춤", False, "04")
+        except ApiError as e:
+            chk("서비스 다운에서 멈춤", e.code, "04")
+        chk("다운이면 전부 돌지 않는다", len(tried), DOWN_STREAK)
+    finally:
+        g["call"] = orig
+
+    # 04 가 간헐적으로 오는 경우는 계속 간다 (한두 번은 넘긴다)
+    n = {"i": 0}
+
+    def fake_call_flaky(path, params, key, timeout=25):
+        n["i"] += 1
+        if n["i"] % 3 == 0:
+            raise ApiError("04", "HTTP_ERROR")
+        return {"items": [{"hoCnt": "50", "kaptMarea": "4000"}], "total": 1}
+
+    g["call"] = fake_call_flaky
+    try:
+        r = fetch_basis("k", "p", ["E%d" % i for i in range(9)], sleep=0)
+        # 1차에서 6곳, 2차에서 남은 3곳 중 2곳 → 8곳.
+        # 한두 번 튕기는 건 넘어가고 계속 받는다.
+        chk("간헐적 04 는 넘어간다", len(r), 8)
     finally:
         g["call"] = orig
 

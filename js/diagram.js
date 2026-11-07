@@ -93,8 +93,10 @@ const DiagramMode = (() => {
       });
       groups.forEach((g, i) => {
         const id = 'n:' + name + (groups.length > 1 ? '#' + i : '');
+        // 카드의 출발·도착이 넘길 대표 역 ID — 묶음 안에서 지나는 노선이 가장 많은 역 (같으면 먼저 나온 역)
+        const rep = g.items.reduce((a, s) => ((s.properties.lines || []).length > (a.properties.lines || []).length ? s : a));
         nodes.set(id, {
-          id, name, coord: g.coord,
+          id, name, coord: g.coord, sid: rep.properties.id,
           lines: new Set(),
         });
         g.items.forEach(s => clusterOf.set(s.properties.id, id));
@@ -357,6 +359,7 @@ const DiagramMode = (() => {
       const isTransfer = n.lines.size > 1;
       const g = mk('g', { class: 'dg-station' }, gDots);
       g.dataset.name = n.name;
+      if (n.sid) g.dataset.sid = n.sid;
       g.dataset.lines = [...n.lines].join(',');
       // 일반역은 소속 노선 색으로 테두리를 준다
       let ring = '#5b626b';
@@ -528,7 +531,8 @@ const DiagramMode = (() => {
     let drag = null;
     scroll.addEventListener('pointerdown', e => {
       if (e.button !== 0) return;
-      if (e.target.closest('.dg-station')) return;
+      // 역 노드·역 카드(출발/도착 버튼) 위에서는 드래그를 시작하지 않는다 — setPointerCapture 가 클릭을 가로챈다
+      if (e.target.closest('.dg-station, .dg-card')) return;
       drag = { x: e.clientX, y: e.clientY, l: scroll.scrollLeft, t: scroll.scrollTop, moved: 0 };
       scroll.setPointerCapture(e.pointerId);
       scroll.style.cursor = 'grabbing';
@@ -610,6 +614,7 @@ const DiagramMode = (() => {
       if (card) { card.remove(); card = null; }
       if (!g) return;
       const name = g.dataset.name;
+      const sid = g.dataset.sid || null;
       const ids = (g.dataset.lines || '').split(',').filter(Boolean);
       const colorOf = id => {
         const l = LINES.find(f => f.properties.id === id);
@@ -620,6 +625,7 @@ const DiagramMode = (() => {
         return l ? (l.properties.name_ko || id) : id;
       };
       card = document.createElement('div');
+      card.className = 'dg-card';
       card.style.cssText =
         'position:absolute;z-index:5;min-width:172px;background:var(--panel);color:var(--text);' +
         'border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);padding:10px 12px;font-size:12.5px';
@@ -639,10 +645,14 @@ const DiagramMode = (() => {
       card.querySelectorAll('button').forEach(b => {
         b.onclick = ev => {
           ev.stopPropagation();
-          const el = document.getElementById(b.dataset.act === 'from' ? 'route-from' : 'route-to');
-          if (el) el.value = name;
+          const act = b.dataset.act;
           exit();
-          if (window.UI) UI.openPanel('route-panel');
+          // 이름이 아니라 역 ID 로 넘긴다 (동명역 구분 — 역 상세 패널의 onAction 과 같은 방식)
+          if (typeof api.onAction === 'function') { api.onAction(act, name, sid); return; }
+          const el = document.getElementById(act === 'from' ? 'route-from' : 'route-to');
+          if (el) { el.value = name; if (sid) el.dataset.sid = sid; }
+          const rp = document.getElementById('route-panel');
+          if (rp) rp.hidden = false;
         };
       });
       scroll.appendChild(card);
@@ -660,11 +670,14 @@ const DiagramMode = (() => {
     }
   }
 
-  return {
+  const api = {
     init, enter, exit, isActive,
-    // 테스트용 — 좌표 변환만 검사한다
-    _debug: { mercY, flatCoords, planar, projectAlong },
+    // 카드의 출발·도착 버튼 → (act, 역 이름, 역 ID). app.js 가 연결한다.
+    onAction: null,
+    // 테스트용 — 좌표 변환·역 묶음만 검사한다
+    _debug: { mercY, flatCoords, planar, projectAlong, buildClusters },
   };
+  return api;
 })();
 
 if (typeof window !== 'undefined') window.DiagramMode = DiagramMode;

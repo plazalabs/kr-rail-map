@@ -1538,8 +1538,8 @@ document.getElementById('invest-btn').addEventListener('click', () => {
 });
 document.getElementById('coverage-btn').addEventListener('click', () => {
   if (typeof CoverageMap === 'undefined') { setStatus('영향권 모듈을 불러오지 못했습니다.'); return; }
+  // 버튼 켜짐 표시는 CoverageMap.show()/hide() 가 맡는다 (패널 ✕ 로 닫을 때도 같이 꺼지게)
   CoverageMap.isActive() ? CoverageMap.hide() : CoverageMap.show();
-  document.getElementById('coverage-btn').classList.toggle('active', CoverageMap.isActive());
 });
 
 /* 툴바 드롭다운은 ui.js 의 initDropdowns() 가 맡는다.

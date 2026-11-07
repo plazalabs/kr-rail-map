@@ -286,5 +286,37 @@ console.log('\n[개략도] 노선도를 켜도 툴바가 가려지지 않음 (�
     /classList\.add\('dg-on'\);\s*placeOverlay\(\);/.test(dsrc) && /classList\.remove\('dg-on'\)/.test(dsrc));
 }
 
+console.log('\n[커버리지] 버튼 켜짐 표시를 show()/hide() 가 맡음 (버그 ⑧)');
+{
+  const cls = new Set();
+  const btn = fakeEl();
+  btn.classList = { add: c => cls.add(c), remove: c => cls.delete(c),
+    toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), contains: c => cls.has(c) };
+  // 패널 안 요소(#cv-close 등)를 찾을 수 있는 스텁
+  const elQ = () => Object.assign(fakeEl(), { querySelector: () => fakeEl() });
+  const doc = {
+    createElement: elQ, createElementNS: elQ, createTextNode: () => fakeEl(),
+    getElementById: id => (id === 'coverage-btn' ? btn : fakeEl()), querySelector: () => null, querySelectorAll: () => [],
+    body: fakeEl(), documentElement: fakeEl(), head: fakeEl(), addEventListener() {}, removeEventListener() {},
+  };
+  const c = { console, Math, JSON, Date, Set, Map, Array, Object, String, Number, isNaN, isFinite, parseFloat, parseInt,
+    document: doc, requestAnimationFrame: () => 0, cancelAnimationFrame() {}, setTimeout: () => 0, clearTimeout() {} };
+  c.window = c; c.globalThis = c; c.self = c;
+  vm.createContext(c);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/coverage.js'), 'utf8'), c, { filename: 'js/coverage.js' });
+  const fakeMap = { on() {}, getSource() { return { setData() {} }; }, addSource() {}, addLayer() {}, getLayer() { return null; },
+    removeLayer() {}, removeSource() {}, fitBounds() {} };
+  c.CoverageMap.init(fakeMap, STATIONS_FC.features, LINES_FC.features);
+  c.CoverageMap.show();
+  check('show() → 버튼 active', cls.has('active') && c.CoverageMap.isActive());
+  c.CoverageMap.hide();   // 패널 ✕ 가 부르는 함수
+  check('hide()(패널 ✕) → 버튼 active 해제', !cls.has('active') && !c.CoverageMap.isActive());
+  c.CoverageMap.show();
+  check('다시 show() → 버튼 active', cls.has('active'));
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  check('app.js 메뉴 핸들러가 버튼 클래스를 따로 만지지 않음',
+    !/getElementById\('coverage-btn'\)\.classList/.test(app));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -275,12 +275,20 @@ background:var(--bg,#fff);color:var(--text,#222);font-size:13px;margin-bottom:10
     }
     panel.style.display = 'block';
     active = true;
+    syncButton();
     render();
+  }
+
+  // 메뉴의 '노선 영향권' 버튼 켜짐 표시 — 켜고 끄는 모든 경로(메뉴·패널 ✕)가 여기를 지난다
+  function syncButton() {
+    const btn = typeof document !== 'undefined' && document.getElementById('coverage-btn');
+    if (btn && btn.classList) btn.classList.toggle('active', active);
   }
 
   function hide() {
     active = false;
     curLineId = null;
+    syncButton();
     if (panel) panel.style.display = 'none';
     if (map) {
       for (const sid of ['cv-circles', 'cv-line', 'cv-stations']) {

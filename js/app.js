@@ -1302,7 +1302,7 @@ map.on('load', async () => {
       if (action === 'from' || action === 'to') {
         routeFromStation(stationName, action, stationId);
       } else if (action === 'fav') {
-        toggleFavStation(stationName);
+        toggleFavStation(stationName, stationId);
       }
     };
   }
@@ -1385,15 +1385,28 @@ function loadFavorites() {
   try { favorites = JSON.parse(localStorage.getItem(FAV_KEY) || '{"stations":[],"routes":[]}'); } catch {}
   if (!favorites.stations) favorites.stations = [];
   if (!favorites.routes) favorites.routes = [];
+  // 역 즐겨찾기는 { name, id } 로 저장한다 (경로 즐겨찾기의 fromId/toId 와 같은 방식).
+  // 옛 저장분은 이름 문자열이다. 이름이 하나뿐인 역이면 그 역 ID 로 바꿔 읽고,
+  // 동명역 이름(어느 역인지 모름)은 문자열 그대로 둔다 — 깨지지 않게, 추측하지 않게.
+  favorites.stations = favorites.stations.map(e => {
+    if (typeof e !== 'string') return e;
+    const same = STATIONS.filter(s => s.properties.name_ko === e);
+    return same.length === 1 ? { name: e, id: same[0].properties.id } : e;
+  });
 }
 function saveFavorites() {
   try { localStorage.setItem(FAV_KEY, JSON.stringify(favorites)); } catch {}
 }
-function isFavStation(name) { return favorites.stations.includes(name); }
-function toggleFavStation(name) {
-  const i = favorites.stations.indexOf(name);
+// 항목이 그 역인가: ID 가 있는 항목은 ID 로, 옛 이름 문자열은 이름으로 (그 이름의 어느 역이든)
+function favMatches(e, name, id) {
+  if (typeof e === 'string') return e === name;
+  return id ? e.id === id : e.name === name;
+}
+function isFavStation(name, id) { return favorites.stations.some(e => favMatches(e, name, id)); }
+function toggleFavStation(name, id) {
+  const i = favorites.stations.findIndex(e => favMatches(e, name, id));
   if (i >= 0) favorites.stations.splice(i, 1);
-  else favorites.stations.push(name);
+  else favorites.stations.push(id ? { name, id } : name);
   saveFavorites(); renderFavorites();
 }
 function renderFavorites() {
@@ -1403,18 +1416,26 @@ function renderFavorites() {
   if (favorites.stations.length) {
     const h = document.createElement('div'); h.className = 'panel-head'; h.textContent = '⭐ 즐겨찾는 역';
     box.appendChild(h);
-    favorites.stations.forEach(name => {
+    const nameCount = {};
+    STATIONS.forEach(x => { nameCount[x.properties.name_ko] = (nameCount[x.properties.name_ko] || 0) + 1; });
+    favorites.stations.forEach(e => {
+      const name = typeof e === 'string' ? e : e.name;
+      const byId = typeof e === 'string' ? null : stationById(e.id);
       const div = document.createElement('div'); div.className = 'fav-item';
-      div.textContent = name;
+      // 동명역은 지역(있으면)이나 노선으로 구분해 보인다
+      div.textContent = byId && nameCount[name] > 1
+        ? name + ' · ' + (regionOf.get(byId.properties.id) || stationLinesLabel(byId))
+        : name;
+      if (byId) div.dataset.sid = byId.properties.id;
       div.onclick = () => {
-        const s = STATIONS.find(x => x.properties.name_ko === name);
+        const s = byId || STATIONS.find(x => x.properties.name_ko === name);
         if (s) {
           map.flyTo({ center: s.geometry.coordinates, zoom: 14 });
           showStation(s, { lng: s.geometry.coordinates[0], lat: s.geometry.coordinates[1] });
         }
       };
       const del = document.createElement('button'); del.textContent = '✕'; del.className = 'memo-del';
-      del.onclick = (e) => { e.stopPropagation(); toggleFavStation(name); };
+      del.onclick = (ev) => { ev.stopPropagation(); const i = favorites.stations.indexOf(e); if (i >= 0) favorites.stations.splice(i, 1); saveFavorites(); renderFavorites(); };
       div.appendChild(del); box.appendChild(div);
     });
   }
@@ -1484,15 +1505,15 @@ function openStationPopup(feature, lngLat) {
     '<div class="st-btns">' +
       '<button data-act="from">출발지</button>' +
       '<button data-act="to">도착지</button>' +
-      '<button data-act="fav">' + (isFavStation(sname) ? '★' : '☆') + ' 즐겨찾기</button>' +
+      '<button data-act="fav">' + (isFavStation(sname, p.id) ? '★' : '☆') + ' 즐겨찾기</button>' +
     '</div>';
   el.querySelectorAll('button').forEach(b => {
     b.addEventListener('click', ev => {
       ev.stopPropagation();
       const act = b.dataset.act;
       if (act === 'fav') {
-        toggleFavStation(sname);
-        b.innerHTML = (isFavStation(sname) ? '★' : '☆') + ' 즐겨찾기';
+        toggleFavStation(sname, p.id);
+        b.innerHTML = (isFavStation(sname, p.id) ? '★' : '☆') + ' 즐겨찾기';
         return;
       }
       setRouteStation(document.getElementById(act === 'from' ? 'route-from' : 'route-to'), orig || sname);

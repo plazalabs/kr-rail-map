@@ -421,5 +421,16 @@ console.log('\n[자동완성] 동명역은 지도 중심에 가까운 역부터 
   check('거리 기준은 지금 지도 중심', /const ctr = map\.getCenter\(\)/.test(app));
 }
 
+console.log('\n[즐겨찾기] 역 즐겨찾기를 역 ID 로 (IMPL9 건 5)');
+{
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  check('새 항목은 { name, id } 로 저장', /favorites\.stations\.push\(id \? \{ name, id \} : name\)/.test(app));
+  check('옛 이름 문자열: 이름이 하나뿐이면 ID 로, 동명이면 그대로',
+    /typeof e !== 'string'\) return e;[\s\S]{0,160}same\.length === 1 \? \{ name: e, id: same\[0\]\.properties\.id \} : e/.test(app));
+  check('역 상세·팝업의 ⭐ 가 역 ID 를 넘김',
+    /toggleFavStation\(stationName, stationId\)/.test(app) && /toggleFavStation\(sname, p\.id\)/.test(app) && /isFavStation\(sname, p\.id\)/.test(app));
+  check('사이드바 항목 클릭은 ID 로 역을 찾음', /const s = byId \|\| STATIONS\.find/.test(app));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -35,7 +35,10 @@ async function press(sel, { scroll = true } = {}) {
 // 모바일: 사이드바(테마·범위·나의 노선)는 서랍 안 — ☰ 로 열고 누른 뒤 ✕ 로 닫는다 (실제 클릭)
 async function sidePress(sel) {
   if (process.env.MOBILE !== '1') return press(sel);
-  const o = await press('#sidebar-toggle'); await sleep(450);
+  const o = await press('#sidebar-toggle');
+  // 서랍이 미끄러져 들어오는 동안은 버튼 위치가 바뀐다 — 보이고 맨 위에 올 때까지 기다린다 (최대 3초)
+  for (let i = 0; i < 20; i++) { await sleep(150); const i2 = await info(sel); if (i2.visible && i2.onTop) break; }
+  await sleep(150);
   const r = await press(sel); await sleep(300);
   const c = await press('#sidebar-close'); await sleep(400);
   if (!o.ok) return { ok: false, why: '☰ ' + o.why };
@@ -245,7 +248,7 @@ const want = s => !ONLY.length || ONLY.includes(s);
       s.renderMs = Date.now() - t1;
       await b.shot(path.join(OUT, `D-${chain.length}-${t}.png`));
       chain.push({ step: kind + ':' + t, press: p.ok, ...s });
-      rec('추가 그린 노선·위치', `→ ${t}`, p.ok && s.mylines === 1 && s.mylineLayers === 3 && s.loc === 1 && s.locLayer && s.rendered > 0 && s.locRendered > 0, JSON.stringify(s));
+      rec('추가 그린 노선·위치', `→ ${t}`, p.ok && s.mylines === 1 && s.mylineLayers === 3 && s.loc === 1 && s.locLayer && s.rendered > 0 && s.locRendered > 0, (p.ok ? '' : '누르기 실패: ' + p.why + ' ') + JSON.stringify(s));
     }
     await b.shot(path.join(OUT, 'D-after-chain.png'));
     // 그리는 중 전환: 2점 찍고 테마 전환 → 미리보기 유지 → Enter 로 완료

@@ -2,7 +2,7 @@
  * LineCompare — 노선 비교 (독립 모듈)
  *
  * 사용법 (index.html에 스크립트 추가 후):
- *   LineCompare.init(LINES, STATIONS);   // GeoJSON FeatureCollection 2개
+ *   LineCompare.init(LINES, STATIONS);   // 피처 배열 2개 (FeatureCollection 도 가능)
  *   LineCompare.show();                 // 비교 패널 표시
  *   LineCompare.hide();                 // 숨기기
  *   LineCompare.setLine(0, 'seoul-metropolitan-subway-line-1'); // 슬롯에 노선 지정
@@ -202,8 +202,9 @@
 
   /* ---------- 공개 API ---------- */
   function init(lines, stations) {
-    LINES = (lines && lines.features) ? lines.features : [];
-    STATIONS = (stations && stations.features) ? stations.features : [];
+    // app.js 는 피처 배열을 넘긴다(다른 모듈과 같은 관행). FeatureCollection 도 받는다 — timeline.js 와 같은 방식.
+    LINES = (lines && lines.features) ? lines.features : (Array.isArray(lines) ? lines : []);
+    STATIONS = (stations && stations.features) ? stations.features : (Array.isArray(stations) ? stations : []);
     slotLine = [null, null];
   }
 

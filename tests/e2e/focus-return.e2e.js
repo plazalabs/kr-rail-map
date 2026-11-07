@@ -1,0 +1,87 @@
+/* e2e: 키보드로 역 고르기와 패널 포커스 (IMPL9 건 2)
+ *  - 키보드만으로: / → '강남' → ↓ → Enter → 역 상세가 열리고 포커스가 패널 안으로
+ *  - Esc 로 닫으면 포커스가 검색창으로 돌아감
+ *  - 툴바 메뉴(분석 > 철도망 통계)로 연 패널을 Esc 로 닫으면 포커스가 '분석' 버튼으로
+ *  - 역 상세 ✕ 를 Tab 으로 찾아 Enter 로 닫아도 같은 자리로
+ * 실행: node tests/e2e/run.js --only focus-return
+ */
+'use strict';
+const { launch, sleep, BASE, recorder } = require('./lib/cdp');
+const R = recorder('focus-return');
+
+async function ready(b) {
+  for (let i = 0; i < 120; i++) { await sleep(400); if (await b.evaluate(`typeof dataReady!=='undefined'&&dataReady&&map.loaded()`).catch(() => false)) break; }
+  await sleep(600);
+}
+const active = b => b.evaluate(`(() => { const a = document.activeElement; if (!a || a === document.body) return 'body';
+  const p = a.closest('#sd-panel, #rs-panel, #lc-panel, #cv-panel, #iv-panel, #rt-panel');
+  return (a.id || a.className || a.tagName) + (p ? ' @' + p.id : ''); })()`);
+const isOpen = (b, id) => b.evaluate(`(() => { const e = document.getElementById('${id}'); if (!e) return false;
+  if ('${id}' === 'sd-panel') return e.classList.contains('sd-open'); return e.style.display !== 'none' && !e.hidden; })()`);
+// 버튼의 Enter 기본 동작(클릭)은 글자 값(캐리지 리턴)이 있는 키 이벤트여야 일어난다 (실제 키보드와 같게)
+async function enter(b) {
+  await b.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: String.fromCharCode(13) });
+  await b.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+}
+async function waitOpen(b, id, want = true, ms = 5000) { const t0 = Date.now(); while (Date.now() - t0 < ms) { if ((await isOpen(b, id)) === want) return true; await sleep(150); } return false; }
+
+(async () => {
+  const b = await launch({ port: 9701, w: 1440, h: 1000 });
+  await b.send('Network.setBypassServiceWorker', { bypass: true });
+  await b.send('Network.setCacheDisabled', { cacheDisabled: true });
+  await b.goto(BASE + '#normal', 800); await ready(b);
+
+  // 1. 키보드만으로 역 고르기
+  await b.key('/', 'Slash', 191); await sleep(150);
+  await b.type('강남'); await sleep(500);
+  await b.key('ArrowDown', 'ArrowDown', 40); await sleep(100);
+  const cur = await b.evaluate(`(document.querySelector('#search-results .hit.active .hit-name') || {}).textContent || null`);
+  await enter(b);
+  const opened = await waitOpen(b, 'sd-panel');
+  await sleep(400);
+  const a1 = await active(b);
+  R.check('키보드: / → 강남 → ↓ → Enter → 역 상세 열림', cur === '강남' && opened, { cur, opened });
+  R.check('역 상세가 열리면 포커스가 패널 안으로', /@sd-panel/.test(a1), a1);
+  await b.key('Escape', 'Escape', 27);
+  const closed = await waitOpen(b, 'sd-panel', false);
+  await sleep(200);
+  const a2 = await active(b);
+  R.check('Esc 로 닫으면 포커스가 검색창으로', closed && a2 === 'search', { closed, a2 });
+
+  // 2. Tab 으로 ✕ 까지 가서 Enter
+  await enter(b);   // 검색창에 '강남' 이 남아 있다 — 다시 연다
+  await waitOpen(b, 'sd-panel'); await sleep(400);
+  let reached = false;
+  for (let i = 0; i < 6 && !reached; i++) { reached = (await b.evaluate(`document.activeElement && document.activeElement.id`)) === 'sd-close'; if (!reached) { await b.key('Tab', 'Tab', 9); await sleep(80); } }
+  if (reached) await enter(b);
+  const closed2 = await waitOpen(b, 'sd-panel', false); await sleep(200);
+  const a3 = await active(b);
+  R.check('Tab 으로 ✕ 에 닿아 Enter → 닫히고 포커스가 검색창으로', reached && closed2 && a3 === 'search', { reached, closed2, a3 });
+
+  // 3. 툴바 '분석 > 철도망 통계' (키보드: Tab 으로 버튼, Enter)
+  const dd = await b.evaluate(`(() => { const e = [...document.querySelectorAll('#toolbar .tb-dropbtn')].find(x => x.textContent.trim().startsWith('분석')); e.focus(); return document.activeElement === e; })()`);
+  await enter(b); await sleep(250);
+  const sb = await b.evaluate(`(() => { const e = document.getElementById('stats-btn'); e.focus(); return document.activeElement === e; })()`);
+  await enter(b);
+  const rsOpen = await waitOpen(b, 'rs-panel'); await sleep(300);
+  const a4 = await active(b);
+  R.check('분석 > 철도망 통계 (키보드) → 패널 열림·포커스가 패널 안으로', dd && sb && rsOpen && /@rs-panel/.test(a4), { dd, sb, rsOpen, a4 });
+  await b.key('Escape', 'Escape', 27);
+  const rsClosed = await waitOpen(b, 'rs-panel', false); await sleep(200);
+  const a5 = await active(b);
+  R.check("Esc 로 닫으면 포커스가 '분석' 버튼으로 (메뉴 항목은 닫혀 안 보이므로)", rsClosed && /tb-dropbtn/.test(a5), { rsClosed, a5 });
+
+  // 4. 마우스 동작은 그대로: 지도에서 역 클릭 → 상세 열림, ✕ 클릭 → 닫힘
+  await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.name_ko === '서울'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`); await sleep(1800);
+  const p = await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.name_ko === '서울'); const p = map.project(s.geometry.coordinates); const r = map.getCanvas().getBoundingClientRect(); return [r.x + p.x, r.y + p.y]; })()`);
+  await b.click(p[0], p[1]);
+  const mo = await waitOpen(b, 'sd-panel'); await sleep(600);   // 패널이 미끄러져 들어오는 동안 기다림
+  const cx = await b.evaluate(`(() => { const r = document.getElementById('sd-close').getBoundingClientRect(); return [r.x + r.width/2, r.y + r.height/2]; })()`);
+  await b.click(cx[0], cx[1]);
+  const mc = await waitOpen(b, 'sd-panel', false);
+  R.check('마우스: 지도에서 역 클릭 → 상세, ✕ 클릭 → 닫힘 (기존 동작)', mo && mc, { mo, mc });
+  const exc = b.logs.filter(l => /EXC/.test(l));
+  R.check('예외 0', exc.length === 0, exc.slice(0, 3));
+  b.close();
+  R.finish();
+})().catch(e => { console.error(e); process.exit(1); });

@@ -36,6 +36,7 @@ const CHECKS = [
   ['station-detail-data', 'station-detail-data.e2e.js', {}, '역 상세·투자분석 데이터 지연 로딩, 키보드로 역 열기 (IMPL9)'],
   ['region-labels', 'region-labels.e2e.js', {}, '동명역 지역 표시 — 자동완성·검색 (IMPL9)'],
   ['nearby-first', 'nearby-first.e2e.js', {}, '자동완성 동명역을 지도 중심에 가까운 순으로 (IMPL9)'],
+  ['fav-stations', 'fav-stations.e2e.js', {}, '역 즐겨찾기를 역 ID 로 — 동명역 구분·옛 저장분 (IMPL9)'],
   ['ui-fixes', 'ui-fixes.e2e.js', {}, '노선 비교·노선도 카드·노선도 툴바·영향권·style=local·그린 노선/위치 (IMPL7, 데스크톱)'],
   ['ui-fixes-mobile', 'ui-fixes.e2e.js', { MOBILE: '1' }, '같은 항목, 모바일 390×844'],
 ];

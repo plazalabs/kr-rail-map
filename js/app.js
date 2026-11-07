@@ -1545,7 +1545,6 @@ map.on('mouseleave', 'rail-stations', () => { map.getCanvas().style.cursor = '';
 document.getElementById('diagram-btn').addEventListener('click', () => {
   if (typeof DiagramMode === 'undefined') { setStatus('다이어그램 모듈을 불러오지 못했습니다.'); return; }
   DiagramMode.isActive() ? DiagramMode.exit() : DiagramMode.enter();
-  document.getElementById('diagram-btn').classList.toggle('active', DiagramMode.isActive());
 });
 document.getElementById('compare-btn').addEventListener('click', () => {
   if (typeof LineCompare === 'undefined') { setStatus('비교 모듈을 불러오지 못했습니다.'); return; }

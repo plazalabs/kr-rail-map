@@ -90,7 +90,10 @@ function applyView() {
   const key = styleKeyFor(mode, theme);
   if (key !== appliedStyleKey) {
     appliedStyleKey = key;
-    map.setStyle(baseStyle());
+    // diff:false — 기본 diff 모드는 커스텀 레이어를 지우면서 style.load 를
+    // 쏘지 않아 restoreCustomLayers 가 영영 못 돈다 (테마·배경 전환 시 노선 소실).
+    // 전체 교체로 style.load 를 보장해 기존 복원 경로를 탄다.
+    map.setStyle(baseStyle(), { diff: false });
   }
   document.getElementById('map').classList.toggle('grayscale', mode === 'gray');
   if (location.hash !== '#' + mode) history.replaceState(null, '', '#' + mode);
@@ -1182,13 +1185,16 @@ map.on('load', async () => {
   if (!focusLineFromUrl()) restoreFromUrl();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
-function restoreCustomLayers() {
-  if (dataReady && map.isStyleLoaded() && !map.getSource('lines')) {
+// styleReady=true 는 style.load 경로. 이 시점엔 스타일 JSON 이 적용돼 addLayer 가
+// 가능하지만, 타일·스프라이트가 덜 와서 isStyleLoaded() 는 아직 false 다 (실측).
+// 그래서 style.load 에서는 isStyleLoaded 검사를 건너뛴다.
+function restoreCustomLayers(styleReady) {
+  if (dataReady && (styleReady === true || map.isStyleLoaded()) && !map.getSource('lines')) {
     addDataLayers(); updateFilters(); DrawTools.restyle();
     addExitLayers();
   }
 }
-map.on('style.load', restoreCustomLayers);
+map.on('style.load', () => restoreCustomLayers(true));
 map.on('styledata', restoreCustomLayers); // 동일 스타일 재적용 등 style.load 미발화 대비 안전망
 
 /* ---------- 노선 하이라이트 ---------- */

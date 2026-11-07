@@ -393,5 +393,25 @@ console.log('\n[지연 로딩] 역 상세 전용 데이터는 첫 화면에서 �
     /InvestAnalyzer\.refresh\(\)/.test(app) && /refresh\(\) \{\s*if \(!lastPoint/.test(inv));
 }
 
+console.log('\n[동명역 지역] data/station-region.json (IMPL9 건 3)');
+{
+  const reg = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/station-region.json'), 'utf8'));
+  const all = STATIONS_FC.features;
+  const cnt = {}; all.forEach(s => { cnt[s.properties.name_ko] = (cnt[s.properties.name_ko] || 0) + 1; });
+  const byId = new Map(all.map(s => [s.properties.id, s]));
+  const ids = Object.keys(reg.stations);
+  check('모든 항목이 실제 역 ID', ids.every(id => byId.has(id)));
+  check('모든 항목이 이름이 겹치는 역 (동명 없는 역에는 안 붙음)', ids.every(id => cnt[byId.get(id).properties.name_ko] >= 2));
+  check('항목의 이름이 그 역 이름과 같음', ids.every(id => reg.stations[id].name === byId.get(id).properties.name_ko));
+  const dupStations = all.filter(s => cnt[s.properties.name_ko] >= 2).length;
+  check('붙임 + 못 붙임 = 동명 역 전체', reg.summary.labeled + reg.summary.unlabeled === dupStations && reg.summary.dup_stations === dupStations,
+    `${reg.summary.labeled} + ${reg.summary.unlabeled} / ${dupStations}`);
+  check('붙임 수 = 항목 수', reg.summary.labeled === ids.length);
+  const seoulSi = all.find(s => s.properties.name_ko === '시청' && s.properties.lines.includes('seoul-subway-line-2')).properties.id;
+  check("서울 시청 → '서울 중구'", reg.stations[seoulSi] && reg.stations[seoulSi].label === '서울 중구');
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  check('app.js 가 역 ID 로 지역을 찾음 (이름으로 찾지 않음)', /regionOf\.get\(it\.id\)/.test(app) && /regionOf\.get\(p\.id\)/.test(app));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

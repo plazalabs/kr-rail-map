@@ -558,6 +558,12 @@ document.getElementById('share-btn').addEventListener('click', async () => {
     const to = document.getElementById('route-to').value.trim();
     if (from) url.searchParams.set('from', from); else url.searchParams.delete('from');
     if (to) url.searchParams.set('to', to); else url.searchParams.delete('to');
+    // 동명역(서울·부산·대전 시청 등) 구분용 역 ID. 이름(from/to)은 사람이 읽고
+    // 옛 링크와 호환되도록 그대로 둔다.
+    const fs = routeInputStation(document.getElementById('route-from'));
+    const ts = routeInputStation(document.getElementById('route-to'));
+    if (from && fs) url.searchParams.set('from_id', fs.properties.id); else url.searchParams.delete('from_id');
+    if (to && ts) url.searchParams.set('to_id', ts.properties.id); else url.searchParams.delete('to_id');
     // 지도 중심/줌 포함
     const c = map.getCenter(), z = map.getZoom();
     url.searchParams.set('c', `${c.lng.toFixed(5)},${c.lat.toFixed(5)},${z.toFixed(1)}`);
@@ -572,8 +578,12 @@ function restoreFromUrl() {
   const from = q.get('from'), to = q.get('to');
   if (from || to) {
     document.getElementById('route-panel').hidden = false;
-    if (from) document.getElementById('route-from').value = from;
-    if (to) document.getElementById('route-to').value = to;
+    // from_id/to_id 가 있으면(새 링크) 그 역으로 확정한다. 없으면(옛 링크, 이름만)
+    // 이름만 넣어 두고, 길찾기 때 resolveRoutePair 가 동명역 중 반대편과 가장
+    // 가까운 역으로 해석한다.
+    const fs = stationById(q.get('from_id')), ts = stationById(q.get('to_id'));
+    if (from) setRouteStation(document.getElementById('route-from'), fs || from);
+    if (to) setRouteStation(document.getElementById('route-to'), ts || to);
     if (from && to) setTimeout(() => document.getElementById('route-go').click(), 800);
   }
   const c = q.get('c');
@@ -591,14 +601,15 @@ function restoreFromUrl() {
  * (실제로 그랬다. Esc 로 역 패널을 닫아야 그제서야 입력칸이 드러났다.)
  * 그래서 역 패널을 먼저 닫고, 반대편 칸으로 초점을 옮긴다.
  */
-function routeFromStation(stationName, which) {
+function routeFromStation(stationName, which, stationId) {
   if (typeof StationDetail !== 'undefined') StationDetail.hide();
   const panel = document.getElementById('route-panel');
   panel.hidden = false;
   const mine = document.getElementById(which === 'from' ? 'route-from' : 'route-to');
   const other = document.getElementById(which === 'from' ? 'route-to' : 'route-from');
   const box = document.getElementById('route-result');
-  mine.value = stationName;
+  // 이름이 아니라 그 역(ID)을 넘긴다. 서울 시청 패널에서 눌렀는데 부산 시청이 잡히면 안 된다.
+  setRouteStation(mine, stationById(stationId) || stationName);
   if (other.value.trim()) {
     // 반대편이 이미 채워져 있으면 바로 찾는다. 한 번 더 누르게 하지 않는다.
     document.getElementById('route-go').click();
@@ -638,18 +649,18 @@ function attachAutocomplete(input) {
     input.removeAttribute('aria-activedescendant');
   }
   function render(q) {
-    const seen = new Set();
     items = [];
+    // 이름으로 중복을 지우지 않는다. 동명역(서울·부산·대전 시청 등)은 노선 표기로
+    // 구분해 모두 보이고, 고른 항목의 역 ID 를 입력칸에 담는다.
     for (const s of STATIONS) {
       const n = s.properties.name_ko;
-      if (seen.has(n)) continue;
       if (!n.includes(q)) continue;
-      seen.add(n);
-      // 시작 매칭 우선
-      items.push({ name: n, lines: s.properties.lines || [], starts: n.startsWith(q) });
+      items.push({ id: s.properties.id, name: n, lines: s.properties.lines || [],
+        starts: n.startsWith(q), exact: n === q });
       if (items.length >= 60) break;
     }
-    items.sort((a, b) => (b.starts - a.starts));
+    // 정확히 일치 → 시작 매칭 → 나머지 (동명역이 8개 밖으로 밀리지 않게)
+    items.sort((a, b) => (b.exact - a.exact) || (b.starts - a.starts));
     items = items.slice(0, 8);
     if (!items.length) { hide(); return; }
     list.innerHTML = items.map((it, i) => {
@@ -672,6 +683,7 @@ function attachAutocomplete(input) {
     else input.removeAttribute('aria-activedescendant');
   }
   input.addEventListener('input', () => {
+    delete input.dataset.sid; // 손으로 고치기 시작하면 앞서 고른 역은 무효
     const q = input.value.trim();
     if (!q) { hide(); return; }
     render(q);
@@ -691,7 +703,7 @@ function attachAutocomplete(input) {
       highlight();
     } else if (e.key === 'Enter' && activeIdx >= 0) {
       e.preventDefault();
-      input.value = items[activeIdx].name;
+      setRouteStation(input, stationById(items[activeIdx].id) || items[activeIdx].name);
       hide();
     } else if (e.key === 'Escape') { hide(); }
   });
@@ -699,7 +711,8 @@ function attachAutocomplete(input) {
     const el = e.target.closest('.ac-item');
     if (!el) return;
     e.preventDefault();
-    input.value = items[+el.dataset.i].name;
+    const it = items[+el.dataset.i];
+    setRouteStation(input, stationById(it.id) || it.name);
     hide();
     input.focus();
   });
@@ -707,9 +720,79 @@ function attachAutocomplete(input) {
 /* 사이드바 토글은 ui.js 가 맡는다.
  * 여기서도 리스너를 달면 같은 버튼에 두 개가 붙어서, 클릭 한 번에
  * sidebar-hidden 이 두 번 토글되고 결과적으로 아무 일도 안 일어난다. */
-function resolveStation(name) {
+/* ---------- 역 식별 (동명역) ----------
+ * 이름이 같은 역이 여러 곳 있다 (시청: 서울·부산·대전, 교대: 서울·부산·대구 등).
+ * 이름의 첫 역을 돌려주면 서울 시청을 고를 방법이 없었다 (시청→강남이 부산 경유 421km).
+ * 입력칸에는 이름을 보이고, 고른 역의 ID 는 input.dataset.sid 에 담는다.
+ */
+let stationIndex = null;
+function stationById(id) {
+  if (!id) return null;
+  if (!stationIndex || stationIndex.size !== STATIONS.length) {
+    stationIndex = new Map(STATIONS.map(s => [s.properties.id, s]));
+  }
+  return stationIndex.get(id) || null;
+}
+function stationsNamed(name) {
   name = (name || '').trim();
-  return STATIONS.find(s => s.properties.name_ko === name) || null;
+  return name ? STATIONS.filter(s => s.properties.name_ko === name) : [];
+}
+// 입력칸에 역을 넣는다. 역(feature)이면 ID 까지, 이름(문자열)이면 이름만.
+function setRouteStation(input, st) {
+  if (st && typeof st === 'object') {
+    input.value = st.properties.name_ko;
+    input.dataset.sid = st.properties.id;
+  } else {
+    input.value = st || '';
+    delete input.dataset.sid;
+  }
+}
+// 입력칸이 가리키는 역. 담긴 ID 가 지금 이름과 맞을 때만 믿는다
+// (다른 코드가 value 만 바꿔 놓았으면 ID 는 낡은 것이다).
+function routeInputStation(input) {
+  const s = stationById(input.dataset.sid);
+  if (s && s.properties.name_ko === input.value.trim()) return s;
+  const c = stationsNamed(input.value);
+  return c.length === 1 ? c[0] : null;
+}
+// 하위 호환: 이름 하나로 역 찾기. 동명역이면 첫 역 (옛 동작).
+function resolveStation(name) {
+  return stationsNamed(name)[0] || null;
+}
+// 출발·도착을 함께 확정한다.
+//  1) 입력칸에 ID 가 있으면 그 역
+//  2) 이름이 유일하면 그 역
+//  3) ID 없는 동명역(옛 공유 링크·직접 타이핑·옛 즐겨찾기)은 후보 중 반대편과
+//     가장 가까운 쌍으로 해석하고, 어떻게 해석했는지 알린다.
+function resolveRoutePair(fromInput, toInput) {
+  const cand = input => {
+    const s = stationById(input.dataset.sid);
+    if (s && s.properties.name_ko === input.value.trim()) return [s];
+    return stationsNamed(input.value);
+  };
+  const A = cand(fromInput), B = cand(toInput);
+  if (!A.length || !B.length) return { from: A[0] || null, to: B[0] || null, guessed: [] };
+  const d2 = (a, b) => {
+    const p = a.geometry.coordinates, q = b.geometry.coordinates;
+    const dx = (p[0] - q[0]) * Math.cos((p[1] + q[1]) / 2 * Math.PI / 180), dy = p[1] - q[1];
+    return dx * dx + dy * dy;
+  };
+  let best = null;
+  for (const a of A) for (const b of B) {
+    if (a === b && (A.length > 1 || B.length > 1)) continue;
+    const d = d2(a, b);
+    if (!best || d < best.d) best = { a, b, d };
+  }
+  if (!best) best = { a: A[0], b: B[0] };
+  const guessed = [];
+  if (A.length > 1) guessed.push(best.a);
+  if (B.length > 1) guessed.push(best.b);
+  // 해석 결과를 입력칸에 고정한다 (이후 공유 링크에 ID 가 실린다)
+  setRouteStation(fromInput, best.a); setRouteStation(toInput, best.b);
+  return { from: best.a, to: best.b, guessed };
+}
+function stationLinesLabel(s) {
+  return (s.properties.lines || []).map(lid => lineNameOf.get(lid) || lid).slice(0, 3).join('·');
 }
 document.getElementById('route-btn').addEventListener('click', () => {
   const p = document.getElementById('route-panel');
@@ -720,23 +803,35 @@ document.getElementById('route-close').addEventListener('click', () => {
 });
 document.getElementById('route-swap').addEventListener('click', () => {
   const a = document.getElementById('route-from'), b = document.getElementById('route-to');
+  const sa = a.dataset.sid, sb = b.dataset.sid;
   [a.value, b.value] = [b.value, a.value];
+  if (sb) a.dataset.sid = sb; else delete a.dataset.sid;
+  if (sa) b.dataset.sid = sa; else delete b.dataset.sid;
 });
 document.getElementById('route-save').addEventListener('click', () => {
   const from = document.getElementById('route-from').value.trim();
   const to = document.getElementById('route-to').value.trim();
   if (!from || !to) { setStatus('출발역과 도착역을 입력하세요.'); return; }
-  const exists = favorites.routes.some(r => r.from === from && r.to === to);
+  // 동명역을 구분하도록 역 ID 도 함께 저장한다 (옛 항목은 이름만 있어도 동작)
+  const fs = routeInputStation(document.getElementById('route-from'));
+  const ts = routeInputStation(document.getElementById('route-to'));
+  const fromId = fs ? fs.properties.id : undefined, toId = ts ? ts.properties.id : undefined;
+  const exists = favorites.routes.some(r => r.from === from && r.to === to &&
+    (!r.fromId || !fromId || r.fromId === fromId) && (!r.toId || !toId || r.toId === toId));
   if (exists) { setStatus('이미 저장된 경로입니다.'); return; }
-  favorites.routes.push({ from, to });
+  favorites.routes.push(Object.assign({ from, to }, fromId ? { fromId } : {}, toId ? { toId } : {}));
   saveFavorites(); renderFavorites();
   setStatus(`⭐ 경로 저장됨: ${from} → ${to}`);
 });
 document.getElementById('route-go').addEventListener('click', () => {
   const box = document.getElementById('route-result');
-  const from = resolveStation(document.getElementById('route-from').value);
-  const to = resolveStation(document.getElementById('route-to').value);
+  const pair = resolveRoutePair(document.getElementById('route-from'), document.getElementById('route-to'));
+  const from = pair.from, to = pair.to;
   if (!from || !to) { box.innerHTML = '출발역과 도착역을 목록에서 선택해주세요.'; return; }
+  if (pair.guessed.length) {
+    setStatus('동명역: ' + pair.guessed.map(s => `${s.properties.name_ko}(${stationLinesLabel(s)})`).join(', ') +
+      ' 으로 해석했습니다. 다른 역이면 입력칸 목록에서 고르세요.');
+  }
   // 3종 비교 모듈이 있으면 사용, 없으면 기존 단일 경로
   if (typeof RouteCompare !== 'undefined') {
     RouteCompare.show(from.properties.id, to.properties.id);
@@ -1165,9 +1260,9 @@ map.on('load', async () => {
   if (typeof StationDetail !== 'undefined') {
     StationDetail.init(map, LINES, STATIONS);
     // 역 상세 패널의 액션 버튼 연동
-    StationDetail.onAction = (action, stationName) => {
+    StationDetail.onAction = (action, stationName, stationId) => {
       if (action === 'from' || action === 'to') {
-        routeFromStation(stationName, action);
+        routeFromStation(stationName, action, stationId);
       } else if (action === 'fav') {
         toggleFavStation(stationName);
       }
@@ -1290,8 +1385,8 @@ function renderFavorites() {
       div.textContent = `${r.from} → ${r.to}`;
       div.onclick = () => {
         document.getElementById('route-panel').hidden = false;
-        document.getElementById('route-from').value = r.from;
-        document.getElementById('route-to').value = r.to;
+        setRouteStation(document.getElementById('route-from'), stationById(r.fromId) || r.from);
+        setRouteStation(document.getElementById('route-to'), stationById(r.toId) || r.to);
         document.getElementById('route-go').click();
       };
       const del = document.createElement('button'); del.textContent = '✕'; del.className = 'memo-del';
@@ -1359,7 +1454,7 @@ function openStationPopup(feature, lngLat) {
         b.innerHTML = (isFavStation(sname) ? '★' : '☆') + ' 즐겨찾기';
         return;
       }
-      document.getElementById(act === 'from' ? 'route-from' : 'route-to').value = sname;
+      setRouteStation(document.getElementById(act === 'from' ? 'route-from' : 'route-to'), orig || sname);
       document.getElementById('route-panel').hidden = false;
       closeStationPopup();
     });

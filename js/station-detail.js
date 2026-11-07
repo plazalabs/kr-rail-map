@@ -486,6 +486,11 @@
       }
     }
 
+    // 역세권 범위(근사) — 1차 250m 안 출구·다른 역 수. 모듈이 없으면 건너뛴다.
+    if (typeof StationArea !== 'undefined' && StationArea.panelHtml) {
+      html += StationArea.panelHtml(sid);
+    }
+
     // 경유 노선
     html += '<div class="sd-sec"><h3>경유 노선 ' + lineIds.length + '개</h3>';
     html += lineIds.length ? lineIds.map(lineRow).join('') : '<div class="sd-note">노선 정보 없음</div>';

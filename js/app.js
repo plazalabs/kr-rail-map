@@ -257,6 +257,8 @@ function updateFilters() {
   if (map.getLayer('rail-lines')) map.setFilter('rail-lines', f);
   if (map.getLayer('rail-stations')) map.setFilter('rail-stations', sf);
   if (map.getLayer('station-labels')) map.setFilter('station-labels', sf);
+  // 역세권 범위도 역 점과 같은 기준(line_id)으로 거른다
+  if (typeof StationArea !== 'undefined') StationArea.setLines(ids);
 }
 
 /* ---------- 노선 토글 UI ---------- */
@@ -1287,6 +1289,7 @@ map.on('load', async () => {
   if (typeof RouteCompare !== 'undefined') RouteCompare.init(RouteFinder, STATIONS, LINES);
   if (typeof InvestAnalyzer !== 'undefined') InvestAnalyzer.init(map, STATIONS, LINES);
   if (typeof CoverageMap !== 'undefined') CoverageMap.init(map, STATIONS, LINES);
+  if (typeof StationArea !== 'undefined') { StationArea.init(map, STATIONS); StationArea.setLines([...visibleLines]); }
   if (!focusLineFromUrl()) restoreFromUrl();
 });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
@@ -1297,6 +1300,7 @@ function restoreCustomLayers(styleReady) {
   if (dataReady && (styleReady === true || map.isStyleLoaded()) && !map.getSource('lines')) {
     addDataLayers(); updateFilters(); DrawTools.restyle();
     addExitLayers();
+    if (typeof StationArea !== 'undefined') StationArea.restore();
   }
 }
 map.on('style.load', () => restoreCustomLayers(true));

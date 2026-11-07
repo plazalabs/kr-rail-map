@@ -1,0 +1,57 @@
+name: e2e
+
+# 화면 점검(tests/e2e) — 헤드리스 Chrome 으로 실제로 눌러 본다.
+# 단위 테스트(test.yml)와 분리했다. 화면 점검은 네트워크(배경 지도 타일·글꼴)와 브라우저 타이밍에
+# 기대므로, 아직 CI 에서의 안정성을 재지 못했다(2026-11-07 기준 로컬 Windows 에서만 측정).
+# 그래서 푸시 게이트에 넣지 않고 수동 실행 + 야간 실행으로 시작한다. 게이트 편입은 안정성을 본 뒤 결정.
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: '일부 항목만 (쉼표 구분, 비우면 전 항목). 목록: node tests/e2e/run.js --list'
+        required: false
+        default: ''
+  schedule:
+    - cron: '30 18 * * *'   # 매일 03:30 KST
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 한글 글꼴이 없으면 버튼·라벨 폭이 달라져 배치(가림 판정)가 로컬과 어긋날 수 있다.
+      - name: 한글 글꼴
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk
+
+      - name: 크롬 확인
+        run: |
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          echo "CHROME_PATH=$CHROME" >> "$GITHUB_ENV"
+          "$CHROME" --version
+
+      - name: 화면 점검
+        env:
+          E2E_OUT: ${{ runner.temp }}/e2e-out
+          E2E_RETRY: '1'
+          # 입력값은 셸에 직접 끼우지 않고 환경 변수로 넘긴다
+          ONLY: ${{ github.event.inputs.only }}
+        run: |
+          if [ -n "$ONLY" ]; then
+            node tests/e2e/run.js --only "$ONLY"
+          else
+            node tests/e2e/run.js
+          fi
+
+      - name: 결과·스크린샷 보관
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-out
+          path: ${{ runner.temp }}/e2e-out
+          retention-days: 14

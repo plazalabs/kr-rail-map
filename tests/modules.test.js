@@ -327,5 +327,52 @@ console.log('\n[스타일] ?style=local QA 모드 제거 (버그 ⑨)');
   check('저장소에 qa-style.json 이 없음 (모드가 기댈 파일 없음)', !fs.existsSync(path.join(ROOT, 'qa-style.json')));
 }
 
+console.log('\n[그리기] 테마·배경 전환(setStyle) 후 그린 노선 복원 (추가 건)');
+{
+  // 가짜 지도: setStyle 은 소스·레이어를 모두 지운다
+  const sources = new Map(), layers = new Set();
+  const fakeMap = {
+    on() {}, getCanvas: () => ({ style: {} }), doubleClickZoom: { enable() {}, disable() {} },
+    getSource: id => sources.get(id), getLayer: id => (layers.has(id) ? {} : undefined),
+    addSource(id, def) { sources.set(id, { _data: def.data, setData(d) { this._data = d; } }); },
+    addLayer(def) { layers.add(def.id); }, removeLayer(id) { layers.delete(id); }, removeSource(id) { sources.delete(id); },
+    setPaintProperty() {},
+    _styleSwap() { sources.clear(); layers.clear(); },
+  };
+  const saved = { seq: 3, myLines: [
+    { id: 'my-1', name: '나의 노선 1', color: '#e91e63', dashKey: '실선', coords: [[126.97, 37.55], [126.98, 37.56]], stations: [] },
+    { id: 'my-2', name: '나의 노선 2', color: '#3f51b5', dashKey: '파선', coords: [[127.0, 37.5], [127.01, 37.51]], stations: [] },
+  ] };
+  const store = { 'kr-rail-map-mylines-v1': JSON.stringify(saved) };
+  const doc = {
+    createElement: fakeEl, createElementNS: fakeEl, createTextNode: () => fakeEl(),
+    getElementById: () => fakeEl(), querySelector: () => null, querySelectorAll: () => [],
+    body: fakeEl(), documentElement: fakeEl(), head: fakeEl(), addEventListener() {}, removeEventListener() {},
+  };
+  const c = { console, Math, JSON, Date, Set, Map, Array, Object, String, Number, isNaN, isFinite, parseFloat, parseInt,
+    document: doc, localStorage: { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } } };
+  c.window = c; c.globalThis = c; c.self = c;
+  vm.createContext(c);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8') + '\n;this.__DT = DrawTools;', c, { filename: 'js/draw.js' });
+  const DT = c.__DT;
+  DT.init(fakeMap, () => {});
+  DT.refreshMyLines();
+  const n0 = (sources.get('mylines') && sources.get('mylines')._data.features.length) || 0;
+  fakeMap._styleSwap();
+  DT.restyle();
+  const n1 = (sources.get('mylines') && sources.get('mylines')._data.features.length) || 0;
+  check('전환 전 그린 노선 2개 표시', n0 === 2, n0);
+  check('setStyle 뒤 restyle() → 그린 노선 2개 다시 표시', n1 === 2, n1);
+  check('선 모양별 레이어 3개 다시 생김', ['mylines-solid', 'mylines-dash', 'mylines-dot'].every(id => layers.has(id)));
+  check('그리는 중이 아니면 미리보기 소스를 만들지 않음', !sources.has('draw-preview'));
+  check('같은 스타일에서 restyle() 을 또 불러도 2개 (중복 없음)', (DT.restyle(), sources.get('mylines')._data.features.length === 2));
+
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  check('내 위치 소스를 마지막 위치(myLocationData)로 다시 만듦',
+    /addSource\('my-location', \{ type: 'geojson', data: myLocationData\(\) \}\)/.test(app));
+  check('위치를 찍으면 lastLocation 에 기억', /lastLocation = \[lng, lat\];/.test(app));
+  check('찍은 적이 없으면 빈 소스 (features: [])', /lastLocation \? \[\{[\s\S]{0,140}\}\] : \[\]/.test(app));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

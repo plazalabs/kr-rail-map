@@ -61,6 +61,8 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
 
 let LINES = [], STATIONS = [];
+// 내 위치 버튼으로 마지막에 찍힌 위치 [lng, lat] — 찍은 적이 없으면 null (스타일 교체 후 복원용)
+let lastLocation = null;
 let dataReady = false;
 const visibleLines = new Set();
 
@@ -182,8 +184,8 @@ function addDataLayers() {
       'line-opacity': 0.6
     }
   });
-  // 내 위치 레이어
-  map.addSource('my-location', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  // 내 위치 레이어 — 테마·배경 전환으로 다시 만들 때 마지막으로 찍은 위치를 다시 싣는다
+  map.addSource('my-location', { type: 'geojson', data: myLocationData() });
   map.addLayer({
     id: 'my-location-dot', type: 'circle', source: 'my-location',
     paint: { 'circle-radius': 8, 'circle-color': '#4285f4', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 }
@@ -1318,18 +1320,19 @@ function highlightLine(lineId) {
 }
 
 /* ---------- 내 위치 ---------- */
+function myLocationData() {
+  return { type: 'FeatureCollection', features: lastLocation ? [{
+    type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: lastLocation }
+  }] : [] };
+}
 document.getElementById('locate-btn').addEventListener('click', () => {
   if (!navigator.geolocation) { setStatus('위치 정보를 지원하지 않는 브라우저입니다.'); return; }
   setStatus('위치 확인 중…');
   navigator.geolocation.getCurrentPosition(pos => {
     const lng = pos.coords.longitude, lat = pos.coords.latitude;
     // 내 위치 표시
-    if (map.getSource('my-location')) {
-      map.getSource('my-location').setData({ type: 'FeatureCollection', features: [{
-        type: 'Feature', properties: {},
-        geometry: { type: 'Point', coordinates: [lng, lat] }
-      }]});
-    }
+    lastLocation = [lng, lat];
+    if (map.getSource('my-location')) map.getSource('my-location').setData(myLocationData());
     // 가장 가까운 역 찾기
     let best = null, bestD = Infinity;
     const R = Math.PI / 180;

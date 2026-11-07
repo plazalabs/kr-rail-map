@@ -489,5 +489,21 @@ console.log('\n[미리 받기] 첫 화면 뒤 쉬는 동안 상세 데이터 (IM
     /function prefetchDetailData\(\) \{\s*const go = \(\) => loadDetailData\(\);[\s\S]{0,200}requestIdleCallback\(go/.test(app));
 }
 
+console.log('\n[대비] 강조 상자 흐린 글자 — light·neon 만 보정 (IMPL10 건 2)');
+{
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8');
+  const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const cr = (a, b) => { const A = lum(a), B = lum(b); return (Math.max(A, B) + 0.05) / (Math.min(A, B) + 0.05); };
+  const varOf = (th, v) => { const blk = (css.match(new RegExp('body\\[data-theme="' + th + '"\\] \\{([^}]*)\\}')) || [])[1] || ''; return (blk.match(new RegExp('--' + v + ':\\s*(#[0-9a-fA-F]{6})')) || [])[1]; };
+  const fix = th => (css.match(new RegExp('body\\[data-theme="' + th + '"\\] \\.rc-nf\\.hot :is\\(\\.rc-nf-label, \\.rc-nf-sub, \\.rc-nf-arrow, \\.rc-nf-why\\) \\{ color: (#[0-9a-fA-F]{6}); \\}')) || [])[1];
+  for (const th of ['light', 'neon']) {
+    const c = fix(th), bg = varOf(th, 'accent-weak');
+    check(`${th}: 강조 상자 흐린 글자 ${c} / ${bg} ≥ 4.5`, !!c && !!bg && cr(c, bg) >= 4.5, c && bg ? cr(c, bg).toFixed(2) : '규칙 없음');
+  }
+  check('테마 변수는 그대로 (light --muted #6b7280, neon --muted #7d8f3c)', varOf('light', 'muted') === '#6b7280' && varOf('neon', 'muted') === '#7d8f3c',
+    `${varOf('light', 'muted')} / ${varOf('neon', 'muted')}`);
+  check('다른 테마에는 이 보정 규칙이 없음 (핑크 제외 결정 포함)', !/body\[data-theme="(dark|eclipse|pink|hospital|win95)"\] \.rc-nf\.hot/.test(css));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

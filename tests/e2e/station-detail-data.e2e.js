@@ -1,5 +1,5 @@
 /* e2e: 역 상세·투자분석 데이터 지연 로딩 (IMPL9 건 1)
- *  - 첫 화면에서는 시세·단지·도심 접근성·공급 파일을 받지 않는다
+ *  - 시세·단지·도심 접근성·공급 파일은 지도 준비 뒤 쉬는 동안 미리 받는다(IMPL10) — 준비 전에는 받지 않고, 파일마다 1번
  *  - 키보드(/ → 역 이름 → Enter)로 역을 열면 그때 받고, 네 절이 모두 뜬다
  *  - 느린 회선(Fast 3G)에서 투자분석을 켜자마자 지점을 찍어도, 자료가 도착하면 카드가 채워진다
  * 실행: node tests/e2e/run.js --only station-detail-data
@@ -41,9 +41,16 @@ function watch(b) {
   await b.send('Network.setBypassServiceWorker', { bypass: true });
   await b.send('Network.setCacheDisabled', { cacheDisabled: true });
   const got = watch(b);
-  await b.goto(BASE + '#normal', 800); await ready(b); await sleep(2500);
-  const early = FILES.filter(got);
-  R.check('첫 화면에서 상세 데이터 4종을 받지 않음', early.length === 0, early);
+  // 페이지 안에서 '지도 준비(dataReady)' 시각을 잰다 — 상세 4종 요청 시작 시각과 비교 (IMPL10 미리 받기)
+  await b.send('Page.addScriptToEvaluateOnNewDocument', { source: `(function poll(){ if (typeof dataReady !== 'undefined' && dataReady) { window.__readyAt = performance.now(); return; } setTimeout(poll, 10); })();` });
+  await b.goto(BASE + '#normal', 800); await ready(b);
+  // 미리 받기가 끝날 때까지(최대 30초) 기다린다
+  await waitFor(b, `${JSON.stringify(FILES)}.every(f => performance.getEntriesByType('resource').some(e => e.name.split('?')[0].endsWith('/data/' + f) && e.responseEnd > 0))`, 30000);
+  const pre = await b.evaluate(`(() => { const r = performance.getEntriesByType('resource'); return { readyAt: Math.round(window.__readyAt || -1),
+    files: ${JSON.stringify(FILES)}.map(f => { const es = r.filter(e => e.name.split('?')[0].endsWith('/data/' + f)); return { f, n: es.length, start: es.length ? Math.round(es[0].startTime) : null }; }) }; })()`);
+  R.check('상세 데이터 4종을 지도 준비 뒤에만 받기 시작 (첫 화면 방해 없음)',
+    pre.readyAt > 0 && pre.files.every(x => x.start !== null && x.start >= pre.readyAt), pre);
+  R.check('쉬는 동안 4종을 미리 받음 (파일마다 1번)', pre.files.every(x => x.n === 1), pre.files);
 
   await b.key('/', 'Slash', 191); await sleep(200);
   const focused = await b.evaluate(`document.activeElement && document.activeElement.id`);
@@ -60,12 +67,14 @@ function watch(b) {
     '도심 접근성': `[...document.querySelectorAll('#sd-panel .sd-sec h3')].some(h => h.textContent === '도심 접근성')`,
     '앞으로 들어올 세대': `[...document.querySelectorAll('#sd-panel .sd-sec h3')].some(h => h.textContent === '앞으로 들어올 세대')`,
   };
+  const secMs = {};
   for (const [k, expr] of Object.entries(sec)) {
-    const ms = await waitFor(b, expr, T);
-    R.check(`역 상세 '${k}' 절 표시 (지연 로딩 후)`, ms !== null, ms === null ? `${T}ms 안에 안 뜸` : `${ms}ms`);
+    const ms = await waitFor(b, expr, T); secMs[k] = ms;
+    R.check(`역 상세 '${k}' 절 표시`, ms !== null, ms === null ? `${T}ms 안에 안 뜸` : `${ms}ms`);
   }
-  const late = FILES.filter(got);
-  R.check('역을 연 뒤 상세 데이터 4종을 받음', late.length === 4, late);
+  R.check('미리 받은 뒤 열면 시세·단지가 바로 뜸 (1.5초 안)', secMs['시세'] !== null && secMs['시세'] < 1500 && secMs['단지 목록'] !== null && secMs['단지 목록'] < 1500, secMs);
+  const cnt = await b.evaluate(`${JSON.stringify(FILES)}.map(f => performance.getEntriesByType('resource').filter(e => e.name.split('?')[0].endsWith('/data/' + f)).length)`);
+  R.check('역을 연 뒤에도 4종은 파일마다 1번만 받음 (중복 없음)', cnt.every(n => n === 1), cnt);
   await b.shot(path.join(OUT, 'gangnam.png'));
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0 (역 상세)', exc.length === 0, exc.slice(0, 3));
@@ -96,6 +105,23 @@ function watch(b) {
   await v.shot(path.join(OUT, 'invest-slow.png'));
   const exc2 = v.logs.filter(l => /EXC/.test(l));
   R.check('예외 0 (투자분석)', exc2.length === 0, exc2.slice(0, 3));
-  v.close();
+  v.close(); await sleep(1000);
+
+  // ── E: 느린 회선에서 미리 받기 도중(준비 직후)에 역을 열기 → 깨지지 않고 네 절이 뜨고, 중복 없이 받음
+  const w = await launch({ port: 9663, w: 1440, h: 1000 });
+  await w.send('Network.setBypassServiceWorker', { bypass: true });
+  await w.send('Network.setCacheDisabled', { cacheDisabled: true });
+  await w.send('Network.emulateNetworkConditions', { offline: false, latency: 562.5, downloadThroughput: 180000, uploadThroughput: 84375 });
+  await w.goto(BASE + '#normal', 800);
+  for (let i = 0; i < 400; i++) { await sleep(100); if (await w.evaluate(`typeof dataReady!=='undefined'&&dataReady`).catch(() => false)) break; }
+  await w.evaluate(`(() => { const s = STATIONS.find(x => x.properties.name_ko === '강남' && x.properties.lines.includes('seoul-subway-line-2')); showStation(s, { lng: s.geometry.coordinates[0], lat: s.geometry.coordinates[1] }); 0 })()`);
+  const eMs = {};
+  for (const [k, expr] of Object.entries(sec)) eMs[k] = await waitFor(w, expr, 60000);
+  const cntE = await w.evaluate(`${JSON.stringify(FILES)}.map(f => performance.getEntriesByType('resource').filter(e => e.name.split('?')[0].endsWith('/data/' + f)).length)`);
+  R.check('느린 회선: 미리 받기 도중에 역을 열어도 네 절이 모두 뜸', Object.values(eMs).every(x => x !== null), eMs);
+  R.check('느린 회선: 그때도 4종은 파일마다 1번만 받음', cntE.every(n => n === 1), cntE);
+  const excE = w.logs.filter(l => /EXC/.test(l));
+  R.check('예외 0 (미리 받기 도중 열기)', excE.length === 0, excE.slice(0, 3));
+  w.close();
   R.finish();
 })().catch(e => { console.error(e); process.exit(1); });

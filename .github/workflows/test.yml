@@ -62,15 +62,23 @@ jobs:
       - name: 데이터 파일 무결성
         run: |
           set -e
+          # 파일마다 본체가 들어 있는 키를 명시한다. features/stations 만 세던
+          # 시절엔 line-membership.json(본체가 lines)이 0건으로 세여 ce37a74 부터
+          # 빨간불이었다. 키를 추측하지 않고 지정해야 키가 바뀌거나 빠져도 잡힌다.
           node -e '
             const fs = require("fs");
-            const files = ["data/lines.geojson","data/stations.geojson",
-                           "data/exits.geojson","data/station-price.json",
-                           "data/transfer-times.json","data/line-membership.json"];
-            for (const f of files) {
+            const files = {   // 파일: [본체 키, 형태]
+              "data/lines.geojson": ["features", "array"], "data/stations.geojson": ["features", "array"],
+              "data/exits.geojson": ["features", "array"], "data/station-price.json": ["stations", "object"],
+              "data/transfer-times.json": ["stations", "object"], "data/line-membership.json": ["lines", "object"]
+            };
+            for (const [f, [key, kind]] of Object.entries(files)) {
               const d = JSON.parse(fs.readFileSync(f, "utf8"));
-              const n = d.features ? d.features.length : Object.keys(d.stations || {}).length;
-              console.log(f + " OK (" + n + ")");
-              if (!n) throw new Error(f + " is empty");
+              const v = d[key];
+              const ok = kind === "array" ? Array.isArray(v) : (v !== null && typeof v === "object" && !Array.isArray(v));
+              if (!ok) throw new Error(f + ": ." + key + " is missing or not " + kind);
+              const n = kind === "array" ? v.length : Object.keys(v).length;
+              console.log(f + " ." + key + " OK (" + n + ")");
+              if (!n) throw new Error(f + ": ." + key + " is empty");
             }
           '

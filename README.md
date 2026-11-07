@@ -19,7 +19,6 @@ python3 -m http.server 8123
 # 브라우저에서 http://localhost:8123/
 ```
 
-`?style=local` 쿼리를 붙이면 타일 없이 동작하는 오프라인 QA 모드.
 `?line=<노선 id>` 로 특정 노선만 볼 수 있습니다. 예: `/?line=seoul-subway-line-2`
 
 ## 구조

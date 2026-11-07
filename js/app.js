@@ -43,13 +43,8 @@ const DARK_THEMES = new Set(['dark', 'eclipse', 'neon']);
 let theme = localStorage.getItem('krrail-theme') || 'light';
 if (!THEMES.some(t => t.id === theme)) theme = 'light';
 
-// 오프라인 QA용: ?style=local 이면 타일 없이 빈 배경 스타일 사용
-const QA_LOCAL_STYLE = new URLSearchParams(location.search).get('style') === 'local'
-  ? '/qa-style.json' : null;
-
 function baseStyle() {
   const mode = modeFromHash();
-  if (QA_LOCAL_STYLE && mode !== 'satellite') return QA_LOCAL_STYLE;
   if (mode === 'satellite') return STYLES.satellite;
   if (DARK_THEMES.has(theme)) return STYLES.dark;
   return STYLES.normal;
@@ -76,7 +71,6 @@ function modeFromHash() {
 }
 let appliedStyleKey = null;
 function styleKeyFor(mode, theme) {
-  if (QA_LOCAL_STYLE && mode !== 'satellite') return 'qa-local';
   if (mode === 'satellite') return 'satellite';
   return DARK_THEMES.has(theme) ? 'dark' : 'bright';
 }

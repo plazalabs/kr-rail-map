@@ -7,7 +7,7 @@
  *   StationDetail.show(stationFeature);   // properties: id, name_ko, name_en, lines
  *   StationDetail.hide();
  *
- * option: StationDetail.onAction = (action, stationName) => {...}
+ * option: StationDetail.onAction = (action, stationName, stationId) => {...}
  *   action: 'from' | 'to' | 'fav' — 패널 내 출발지/도착지/즐겨찾기 버튼 클릭 시 호출.
  *   onAction이 없으면 기본 동작으로 DOM(id: route-from/route-to/route-panel)을 직접 건드린다.
  */
@@ -594,7 +594,7 @@
       b.addEventListener('click', function () {
         var act = b.getAttribute('data-act');
         if (typeof api.onAction === 'function') {
-          api.onAction(act, nameKo);
+          api.onAction(act, nameKo, sid);   // 동명역 구분용 역 ID (3번째 인자)
           return;
         }
         // 기본 동작: 기존 페이지 DOM 활용 (없으면 무시)
@@ -607,7 +607,7 @@
             hide();
             var input = document.getElementById(act === 'from' ? 'route-from' : 'route-to');
             var rp = document.getElementById('route-panel');
-            if (input) input.value = nameKo;
+            if (input) { input.value = nameKo; input.dataset.sid = sid; }
             if (rp) rp.hidden = false;
           }
         } catch (e) { /* 독립 모듈: 실패해도 조용히 */ }
@@ -652,7 +652,7 @@
     show: show,
     hide: hide,
     refresh: refresh,
-    onAction: null,   // (action, stationName) => void — 호스트가 주입 가능
+    onAction: null,   // (action, stationName, stationId) => void — 호스트가 주입 가능
     // 테스트/디버깅용
     _lineOrder: lineOrder,
     _adjacent: adjacent

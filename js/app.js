@@ -678,11 +678,20 @@ function attachAutocomplete(input) {
       const n = s.properties.name_ko;
       if (!n.includes(q)) continue;
       items.push({ id: s.properties.id, name: n, lines: s.properties.lines || [],
-        starts: n.startsWith(q), exact: n === q });
+        starts: n.startsWith(q), exact: n === q, coord: s.geometry.coordinates });
       if (items.length >= 60) break;
     }
-    // 정확히 일치 → 시작 매칭 → 나머지 (동명역이 8개 밖으로 밀리지 않게)
-    items.sort((a, b) => (b.exact - a.exact) || (b.starts - a.starts));
+    // 정확히 일치 → 시작 매칭 → 나머지 (동명역이 8개 밖으로 밀리지 않게).
+    // 같은 이름끼리는 지금 보는 지도 중심에 가까운 역부터 (서울을 보며 '시청' → 서울 시청이 위).
+    // 서로 다른 이름의 순서는 건드리지 않는다 — 이름 그룹은 처음 나온 순서를 그대로 쓴다.
+    const ctr = map.getCenter(), kx = Math.cos(ctr.lat * Math.PI / 180);
+    const firstAt = new Map();
+    items.forEach((it, i) => {
+      if (!firstAt.has(it.name)) firstAt.set(it.name, i);
+      it.d = Math.hypot((it.coord[0] - ctr.lng) * kx, it.coord[1] - ctr.lat);
+    });
+    items.sort((a, b) => (b.exact - a.exact) || (b.starts - a.starts) ||
+      (firstAt.get(a.name) - firstAt.get(b.name)) || (a.d - b.d));
     items = items.slice(0, 8);
     if (!items.length) { hide(); return; }
     list.innerHTML = items.map((it, i) => {

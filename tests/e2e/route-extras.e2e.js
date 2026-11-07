@@ -30,9 +30,14 @@ const R = recorder('route-extras');
   const c = await ev(`(() => { const r = document.getElementById('route-from').getBoundingClientRect(); return [r.x + 20, r.y + r.height/2]; })()`);
   await b.click(c[0], c[1]); await b.type('시청'); await sleep(300);
   const labels = await ev(`[...document.querySelectorAll('#route-from ~ .ac-list .ac-item, #route-from + .ac-list .ac-item')].slice(0, 3).map(e => e.innerText.replace(/\\s+/g,' '))`);
+  // 두 번째 항목이 어느 역인지 노선 표기로 정한다 (IMPL9: 동명역 순서는 지도 중심 거리순이라 고정 순서를 가정하지 않는다)
+  const want2 = await ev(`(() => { const el = [...document.querySelectorAll('#route-from ~ .ac-list .ac-item, #route-from + .ac-list .ac-item')][1]; if (!el) return null;
+    const nm = el.childNodes[0].textContent.trim(), ln = (el.querySelector('.ac-lines') || {}).textContent || '';
+    const s = STATIONS.find(x => x.properties.name_ko === nm && (x.properties.lines || []).map(l => lineNameOf.get(l) || l).slice(0, 3).join('·') === ln);
+    return s ? s.properties.id : null; })()`);
   await b.key('ArrowDown', 'ArrowDown', 40); await b.key('ArrowDown', 'ArrowDown', 40); await b.key('Enter', 'Enter', 13); await sleep(200);
   const kb = await ev(`({ v: document.getElementById('route-from').value, sid: document.getElementById('route-from').dataset.sid || null })`);
-  R.check('키보드 ↓↓Enter → 두 번째 항목(서울 시청) ID 저장', kb.v === '시청' && kb.sid === I.seoulSi, { labels, kb });
+  R.check('키보드 ↓↓Enter → 두 번째 항목의 역 ID 저장', kb.v === '시청' && !!want2 && kb.sid === want2, { labels, want2, kb });
 
   // 3. ID 로 지정한 '먼 쌍'(부산 시청 → 서울 교대)이 근접 추정에 덮이지 않음
   await ev(`setRouteStation(document.getElementById('route-from'), stationById('${I.busanSi}')); setRouteStation(document.getElementById('route-to'), stationById('${I.seoulGyo}')); window.__rc=[]; RouteCompare.show=(f,t)=>__rc.push([f,t]); document.getElementById('route-go').click(); 0`);

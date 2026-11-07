@@ -111,6 +111,19 @@ const a2 = C.stats('seoul-subway-line-2').km;
 check('같은 노선 두 번 → 같은 값', Math.abs(a1 - a2) < 1e-9, `${a1} / ${a2}`);
 check('부산 1호선과 서울 2호선은 다른 길이', Math.abs(a1 - b1) > 1, `${a1.toFixed(1)} / ${b1.toFixed(1)}`);
 
+console.log('\n[노선 비교] init() — app.js 처럼 피처 배열로 넘겨도 노선이 잡힘 (버그 ④)');
+{
+  const cmpA = loadModule('js/compare.js');
+  cmpA.LineCompare.init(LINES_FC.features, STATIONS_FC.features);
+  const s2 = cmpA.LineCompare._debug.stats('seoul-subway-line-2');
+  check('배열로 init → 2호선 통계가 나옴', !!s2 && s2.stations >= 40, s2 && s2.stations);
+  check('배열로 init → FC 로 init 한 값과 같음', !!s2 && Math.abs(s2.km - L2.km) < 1e-9 && s2.stations === L2.stations,
+    s2 && `${s2.km.toFixed(2)} / ${L2.km.toFixed(2)}`);
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  check('app.js 는 LineCompare.init(LINES, STATIONS) — 피처 배열을 넘김', /LineCompare\.init\(LINES, STATIONS\)/.test(app)
+    && /LINES = l\.features; STATIONS = s\.features;/.test(app));
+}
+
 /* ================= CoverageMap ================= */
 const cov = loadModule('js/coverage.js');
 cov.CoverageMap.init({ on() {}, resize() {}, addLayer() {}, removeLayer() {} },

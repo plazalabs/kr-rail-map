@@ -479,5 +479,15 @@ console.log('\n[남은 문제] 영향권 가림·노선도 버튼·메모 핀 (I
   check('setStyle 뒤 restyle() → 메모 핀 다시 표시', n1 === 1 && layers.has('memo-pins'), n1);
 }
 
+console.log('\n[미리 받기] 첫 화면 뒤 쉬는 동안 상세 데이터 (IMPL10 건 1)');
+{
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  const i = app.indexOf('dataReady = true;');
+  check('지도 준비(dataReady = true) 뒤, 첫 렌더 끝(idle)에만 미리 받기를 건다',
+    i > 0 && /dataReady = true;\s*map\.once\('idle', prefetchDetailData\);/.test(app));
+  check('미리 받기는 브라우저 유휴(requestIdleCallback, 없으면 2초 뒤)에 loadDetailData() 를 부른다 (한 번만 받기 공유)',
+    /function prefetchDetailData\(\) \{\s*const go = \(\) => loadDetailData\(\);[\s\S]{0,200}requestIdleCallback\(go/.test(app));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -1278,9 +1278,18 @@ function loadDetailData() {
 }
 // 역 상세 패널이 처음 열릴 때 (지도 load 전에 검색으로 여는 경우도 포함)
 if (typeof StationDetail !== 'undefined') StationDetail.beforeShow = loadDetailData;
+// 첫 화면이 다 뜬 뒤 쉬는 동안 미리 받기 (IMPL10) — 지도 준비(dataReady) 뒤 첫 렌더가 끝나고(idle),
+// 브라우저가 한가할 때(requestIdleCallback, 없으면 2초 뒤) loadDetailData() 를 부른다.
+// 이미 받았거나 받는 중이면 loadDetailData() 가 그냥 돌아온다(한 번만 받기). 그 전에 역을 열면 즉시 받기 그대로.
+function prefetchDetailData() {
+  const go = () => loadDetailData();
+  if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(go, { timeout: 5000 });
+  else setTimeout(go, 2000);
+}
 map.on('load', async () => {
   await dataPromise;
   dataReady = true;
+  map.once('idle', prefetchDetailData);   // 첫 화면 준비를 방해하지 않게 준비 완료 뒤에만
   addDataLayers(); updateFilters();
   addExitLayers();
   DrawTools.setStations(STATIONS);

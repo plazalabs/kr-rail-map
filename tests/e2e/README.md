@@ -36,7 +36,7 @@ E2E_BASE=https://plazalabs.github.io/kr-rail-map/index.html node tests/e2e/run.j
 | `route-extras` | `route-extras.e2e.js` | 옛 링크 해석 안내, 키보드 ↓↓Enter 선택, ID로 지정한 쌍 유지, ⇄ 교체, 즐겨찾기 경로 저장·복원, 옛 즐겨찾기 |
 | `satellite-labels` | `satellite-labels.e2e.js` | 위성(직접 열기·전환)·일반·다크·흑백에서 역 이름(줌 13)·출구 번호(줌 17.5) 글자가 화면에 나옴 (버그 ⑦) |
 | `station-area` | `station-area.e2e.js` | 역세권 범위(근사): 토글, 출구/역 좌표 기준, 경계 거리 ±1m, 전환 후 복원, 노선 필터, 역 패널 한 줄, 범례 ✕, 모바일 |
-| `station-detail-data` | `station-detail-data.e2e.js` | 역 상세·투자분석 데이터 지연 로딩: 첫 화면에서 안 받음, 키보드(/ → 이름 → Enter)로 역 열기, 네 절(시세·단지·도심 접근성·공급) 표시, 느린 회선에서 투자분석 카드 채움 (IMPL9) |
+| `station-detail-data` | `station-detail-data.e2e.js` | 역 상세·투자분석 데이터: 지도 준비 뒤에만 쉬는 동안 미리 받기(파일마다 1번, IMPL10), 미리 받은 뒤 열면 1.5초 안, 느린 회선에서 미리 받기 도중 열기, 키보드(/ → 이름 → Enter)로 역 열기, 네 절(시세·단지·도심 접근성·공급) 표시, 느린 회선에서 투자분석 카드 채움 (IMPL9) |
 | `region-labels` | `region-labels.e2e.js` | 동명역 지역 표시: 길찾기 자동완성·상단 검색에서 지역을 확정한 동명역에만 '· 서울 중구', 동명 없는 역·미확정 역에는 없음 (IMPL9) |
 | `nearby-first` | `nearby-first.e2e.js` | 길찾기 자동완성: 지도 중심(서울·부산·대전)에 따라 그 도시의 '시청'이 맨 위, 다른 이름의 순서는 그대로, 고른 역 ID 저장 (IMPL9) |
 | `fav-stations` | `fav-stations.e2e.js` | 역 즐겨찾기를 역 ID로: 서울·부산 시청 ⭐가 따로 저장·표시, 사이드바 클릭 시 그 역, 한쪽 해제, 옛 저장분(이름만) 열림 (IMPL9) |

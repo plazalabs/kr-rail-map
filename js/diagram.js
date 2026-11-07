@@ -486,6 +486,9 @@ const DiagramMode = (() => {
 
     overlay.append(bar, scroll, legend);
     host.appendChild(overlay);
+    host.classList.add('dg-on');
+    placeOverlay();
+    window.addEventListener('resize', placeOverlay);
     active = true;
 
     requestAnimationFrame(() => {
@@ -659,8 +662,24 @@ const DiagramMode = (() => {
     });
   }
 
+  /* 노선도가 상단(데스크톱)·하단(모바일) 툴바를 덮지 않게 툴바 줄을 비워 둔다.
+     툴바는 .dg-on 동안 오버레이 위로 올라간다(css) — 드롭다운 메뉴도 노선도 위에 뜬다. */
+  function placeOverlay() {
+    if (!overlay) return;
+    const host = overlay.parentNode;
+    const tb = document.getElementById('toolbar');
+    overlay.style.top = ''; overlay.style.bottom = '';
+    if (!host || !tb) return;
+    const hr = host.getBoundingClientRect(), tr = tb.getBoundingClientRect();
+    if (!tr.width || !tr.height) return;
+    if (tr.top - hr.top < hr.height / 2) overlay.style.top = Math.max(0, Math.round(tr.bottom - hr.top + 8)) + 'px';
+    else overlay.style.bottom = Math.max(0, Math.round(hr.bottom - tr.top)) + 'px';
+  }
+
   function exit() {
     if (!active) return;
+    window.removeEventListener('resize', placeOverlay);
+    if (overlay && overlay.parentNode) overlay.parentNode.classList.remove('dg-on');
     if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
     overlay = null;
     active = false;

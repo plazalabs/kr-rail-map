@@ -784,6 +784,9 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
   display: flex; flex-direction: column;
   overflow: hidden;
 }
+/* 노선도를 켠 동안에도 툴바(저장·도구·분석 메뉴)를 쓸 수 있게 오버레이 위로 올린다.
+   오버레이는 diagram.js placeOverlay() 가 툴바 줄을 비우고 배치한다. */
+#map-wrap.dg-on #toolbar { z-index: 210; }
 .dg-bar {
   flex: 0 0 auto;
   display: flex; align-items: center; gap: 8px;

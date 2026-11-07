@@ -12,6 +12,11 @@ const STYLES = {
   dark: 'https://tiles.openfreemap.org/styles/dark',
   satellite: {
     version: 8,
+    // 글자(symbol) 레이어용 폰트. 인라인 스타일이라 bright·dark 스타일 URL 과 달리
+    // 이 항목이 저절로 들어오지 않는다. 없으면 역 이름·출구 번호 레이어 추가가
+    // "requires a style glyphs property" 로 실패한다. 값은 bright·dark 스타일의
+    // glyphs 와 같은 주소다 (2026-11-07 실측).
+    glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
     sources: {
       esri: {
         type: 'raster',
@@ -206,7 +211,12 @@ function addDataLayers() {
       'text-field': ['get', 'name_ko'], 'text-size': 11, 'text-offset': [0, 1.2],
       'text-font': ['Noto Sans Regular']
     },
-    paint: { 'text-halo-color': '#ffffff', 'text-halo-width': 1 }
+    // 위성 사진 위에서는 검은 글자 + 얇은 흰 테두리가 어두운 지붕·숲에 묻힌다.
+    // 위성일 때만 흰 글자 + 어두운 테두리로 바꾼다. 일반·다크·흑백은 그대로.
+    // (배경을 바꾸면 스타일 전체 교체 → restoreCustomLayers → 여기를 다시 지나므로 분기가 따라간다)
+    paint: modeFromHash() === 'satellite'
+      ? { 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 1.6 }
+      : { 'text-halo-color': '#ffffff', 'text-halo-width': 1 }
   });
 }
 

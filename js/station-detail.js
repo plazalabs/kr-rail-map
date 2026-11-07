@@ -441,6 +441,8 @@
 
   function show(feature) {
     if (!feature || !feature.properties) return;
+    // 호스트가 '패널을 처음 열 때 받을 데이터' 를 걸어 둘 수 있다 (app.js loadDetailData — 지연 로딩)
+    if (typeof api.beforeShow === 'function') { try { api.beforeShow(feature); } catch (e) { /* 조용히 */ } }
     // 지도 load 전에 클릭이 들어올 수 있다. 패널이 없으면 여기서 만든다.
     if (!panel) { injectCSS(); buildPanel(); }
     current = feature;
@@ -658,6 +660,7 @@
     hide: hide,
     refresh: refresh,
     onAction: null,   // (action, stationName, stationId) => void — 호스트가 주입 가능
+    beforeShow: null, // (feature) => void — 패널을 열기 직전 호출 (데이터 지연 로딩)
     // 테스트/디버깅용
     _lineOrder: lineOrder,
     _adjacent: adjacent

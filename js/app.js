@@ -1222,38 +1222,38 @@ const dataPromise = loadData().then(() => {
   if (typeof StationExits !== 'undefined') {
     extra.push(StationExits.load('data/exits.geojson').catch(() => null));
   }
-  // 시세는 없어도 지도는 그대로 쓸 수 있다. 조용히 실패하고 넘어간다.
-  if (typeof StationPrice !== 'undefined') {
-    extra.push(StationPrice.load('data/station-price.json').then(() => {
-      // 데이터가 늦게 도착했을 수 있다. 그 사이 역을 열어 뒀으면 다시 그린다.
-      if (typeof StationDetail !== 'undefined') StationDetail.refresh();
-    }).catch(() => null));
-    // 단지 목록은 780KB 라 요약보다 10배 크다. await 하지 않는다 —
-    // 이걸 기다리면 지도 첫 화면이 그만큼 늦어진다. 도착하면 다시 그린다.
-    StationPrice.loadComplexes('data/station-complex.json').then((ok) => {
-      if (ok && typeof StationDetail !== 'undefined') StationDetail.refresh();
-    });
-  }
+  // 시세·단지·도심 접근성·공급은 역 상세와 투자분석에서만 쓴다 → loadDetailData() 가 필요할 때 받는다.
   // 환승 도보 시간은 없어도 길찾기가 된다(기본 4분). 조용히 실패하고 넘어간다.
   extra.push(fetch('data/transfer-times.json')
     .then(r => r.ok ? r.json() : null)
     .then(doc => { if (doc) RouteFinder.loadTransfers(doc); })
     .catch(() => null));
-  // 도심 접근성(78KB)은 역 상세 패널에서만 쓴다. 지도 첫 화면을 막지 않도록
-  // 기다리지 않고 띄우고, 도착하면 열려 있는 패널만 다시 그린다.
-  if (typeof StationAccess !== 'undefined') {
-    StationAccess.load('data/access.json').then((ok) => {
-      if (ok && typeof StationDetail !== 'undefined') StationDetail.refresh();
-    });
-  }
-  // 공급(앞으로 들어올 세대)도 같은 방식으로. 없으면 절을 통째로 건너뛴다.
-  if (typeof StationDev !== 'undefined') {
-    StationDev.load('data/station-dev.json').then((ok) => {
-      if (ok && typeof StationDetail !== 'undefined') StationDetail.refresh();
-    });
-  }
   return Promise.all(extra);
 });
+
+/* 역 상세·투자분석 전용 데이터 — 첫 화면에서 받지 않는다.
+ * 시세(431KB)·단지(1.3MB)·도심 접근성(88KB)·공급(277KB)은 역을 열거나 투자분석을 켜기 전에는
+ * 아무 데도 쓰이지 않는데, 예전에는 첫 로딩에 함께 받았다(시세는 지도 준비까지 막았다).
+ * 처음 필요해질 때 한 번만 받는다. 받는 동안·실패 시 동작은 예전과 같다:
+ * 해당 절 없이 패널을 먼저 띄우고, 도착하면 열린 패널을 다시 그린다. 실패하면 그 절을 조용히 건너뛴다. */
+let detailDataRequested = false;
+function loadDetailData() {
+  if (detailDataRequested) return;
+  detailDataRequested = true;
+  const redraw = ok => {
+    if (ok === false) return;
+    if (typeof StationDetail !== 'undefined') StationDetail.refresh();
+    if (typeof InvestAnalyzer !== 'undefined' && InvestAnalyzer.refresh) InvestAnalyzer.refresh();
+  };
+  if (typeof StationPrice !== 'undefined') {
+    StationPrice.load('data/station-price.json').then(redraw).catch(() => null);
+    StationPrice.loadComplexes('data/station-complex.json').then(redraw);
+  }
+  if (typeof StationAccess !== 'undefined') StationAccess.load('data/access.json').then(redraw);
+  if (typeof StationDev !== 'undefined') StationDev.load('data/station-dev.json').then(redraw);
+}
+// 역 상세 패널이 처음 열릴 때 (지도 load 전에 검색으로 여는 경우도 포함)
+if (typeof StationDetail !== 'undefined') StationDetail.beforeShow = loadDetailData;
 map.on('load', async () => {
   await dataPromise;
   dataReady = true;
@@ -1529,6 +1529,7 @@ document.getElementById('report-btn').addEventListener('click', () => {
 document.getElementById('invest-btn').addEventListener('click', () => {
   if (typeof InvestAnalyzer === 'undefined') { setStatus('투자분석 모듈을 불러오지 못했습니다.'); return; }
   const on = !InvestAnalyzer.isActive();
+  if (on) loadDetailData();   // 투자분석 결과의 도심 접근성·공급 절
   InvestAnalyzer.setMode(on);
   document.getElementById('invest-btn').classList.toggle('active', on);
   if (on) setStatus('투자분석: 분석할 지점을 클릭하세요 (Esc 취소)');

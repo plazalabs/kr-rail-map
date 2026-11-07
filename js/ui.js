@@ -80,6 +80,48 @@ const UI = (() => {
       else el.style.display = 'none';
     }
   }
+  /* 포커스 (IMPL9 건 2) — 패널이 열리면 그 직전 포커스를 기억하고 패널 안으로 옮기고,
+   * 닫히면 기억한 자리로 돌려준다. 키보드만 쓰는 사람이 패널을 닫은 뒤 맨 처음으로 튕기지 않게.
+   * 마우스·터치로 닫을 때 입력창으로 돌려주면 휴대폰 자판이 튀어나오므로 그때는 입력창으로는 돌려주지 않는다. */
+  let lastFocus = null, lastFocusAt = 0, keyboardLast = false;
+  const inModal = el => MODALS.some(m => { const p = document.getElementById(m.panel); return p && p.contains(el); });
+  document.addEventListener('focusin', e => {
+    if (e.target && e.target !== document.body && !inModal(e.target)) { lastFocus = e.target; lastFocusAt = Date.now(); }
+  }, true);
+  document.addEventListener('keydown', () => { keyboardLast = true; }, true);
+  document.addEventListener('pointerdown', () => { keyboardLast = false; }, true);
+  const visible = el => !!el && el.isConnected && el.getClientRects().length > 0 && !el.closest('[hidden]');
+  const isTextField = el => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+  function onModalOpen(m) {
+    const el = document.getElementById(m.panel);
+    if (!el) return;
+    const a = document.activeElement;
+    // 검색 결과를 고르면 검색창이 먼저 blur 된 뒤 패널이 열린다 — 방금(5초 안) 포커스가 있던 곳을 쓴다
+    m.opener = (a && a !== document.body && !inModal(a)) ? a
+      : (lastFocus && Date.now() - lastFocusAt < 5000 ? lastFocus : null);
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+    el.setAttribute('data-modal-focus', '');
+    try { el.focus({ preventScroll: true }); } catch (e) { /* 무시 */ }
+  }
+  function onModalClose(m) {
+    const el = document.getElementById(m.panel);
+    const a = document.activeElement;
+    const opener = m.opener; m.opener = null;
+    // 이미 다른 곳(다른 패널 등)으로 포커스가 옮겨 갔으면 건드리지 않는다
+    if (el && a && a !== document.body && !el.contains(a)) return;
+    let target = opener;
+    if (!visible(target)) {
+      // 메뉴 항목으로 열었으면 그 항목은 메뉴와 함께 닫혀 안 보인다 → 메뉴 버튼으로
+      const dd = opener && opener.closest && opener.closest('.tb-dropdown');
+      target = dd ? dd.querySelector('.tb-dropbtn') : null;
+    }
+    if (!visible(target) || (!keyboardLast && isTextField(target))) {
+      if (el && a && el.contains(a)) a.blur();
+      return;
+    }
+    try { target.focus({ preventScroll: true }); } catch (e) { /* 무시 */ }
+  }
+
   // 모듈이 패널을 게을리 만들어도 요소가 나타나는 순간 감시를 붙인다
   function watchModals() {
     MODALS.forEach(m => {
@@ -87,7 +129,13 @@ const UI = (() => {
         const el = document.getElementById(m.watchEl || m.panel);
         if (!el || el.__uiWatched) return;
         el.__uiWatched = true;
-        const check = () => { if (panelOpen(m)) closeModals(m.panel); };
+        const check = () => {
+          const open = panelOpen(m);
+          if (open && !m.__open) onModalOpen(m);
+          else if (!open && m.__open) onModalClose(m);
+          m.__open = open;
+          if (open) closeModals(m.panel);
+        };
         new MutationObserver(check).observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
         check();  // 생성과 동시에 열린 경우를 위해 한 번 검사
       };

@@ -432,5 +432,16 @@ console.log('\n[즐겨찾기] 역 즐겨찾기를 역 ID 로 (IMPL9 건 5)');
   check('사이드바 항목 클릭은 ID 로 역을 찾음', /const s = byId \|\| STATIONS\.find/.test(app));
 }
 
+console.log('\n[접근성] 패널 열고 닫을 때 포커스 (IMPL9 건 2)');
+{
+  const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+  check('모달 감시가 열림·닫힘 전환에서 onModalOpen/onModalClose 를 부름',
+    /if \(open && !m\.__open\) onModalOpen\(m\);\s*else if \(!open && m\.__open\) onModalClose\(m\);/.test(ui));
+  check('열 때: 직전 포커스(또는 5초 안의 마지막 포커스)를 기억하고 패널로 포커스',
+    /Date\.now\(\) - lastFocusAt < 5000/.test(ui) && /el\.focus\(\{ preventScroll: true \}\)/.test(ui));
+  check('닫을 때: 다른 곳으로 옮겨 간 포커스는 건드리지 않음', /if \(el && a && a !== document\.body && !el\.contains\(a\)\) return;/.test(ui));
+  check('마우스·터치로 닫을 때는 입력창으로 돌려주지 않음 (휴대폰 자판 방지)', /!keyboardLast && isTextField\(target\)/.test(ui));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

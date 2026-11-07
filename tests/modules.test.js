@@ -413,5 +413,13 @@ console.log('\n[동명역 지역] data/station-region.json (IMPL9 건 3)');
   check('app.js 가 역 ID 로 지역을 찾음 (이름으로 찾지 않음)', /regionOf\.get\(it\.id\)/.test(app) && /regionOf\.get\(p\.id\)/.test(app));
 }
 
+console.log('\n[자동완성] 동명역은 지도 중심에 가까운 역부터 (IMPL9 건 4)');
+{
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  check('정렬: 정확 → 시작 → 이름 그룹 처음 순서 → 거리 (그룹 밖 순서 유지)',
+    /\(b\.exact - a\.exact\) \|\| \(b\.starts - a\.starts\) \|\|\s*\(firstAt\.get\(a\.name\) - firstAt\.get\(b\.name\)\) \|\| \(a\.d - b\.d\)/.test(app));
+  check('거리 기준은 지금 지도 중심', /const ctr = map\.getCenter\(\)/.test(app));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

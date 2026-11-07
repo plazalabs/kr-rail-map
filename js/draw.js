@@ -431,18 +431,21 @@ const DrawTools = (() => {
   }
 
   function restyle() {
-    // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
+    // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원.
+    // setStyle 뒤에는 이전 소스가 이미 없다 — 소스 유무가 아니라 그리기 데이터(pts·myLines)를 기준으로 다시 그린다.
     if (map.getSource('draw-preview')) {
       map.removeLayer('draw-preview-pts'); map.removeLayer('draw-preview-line');
       map.removeSource('draw-preview');
+    }
+    if (mode || pts.length) {
       ensurePreview();
-      refreshPreview(); // 현재 pts 기준 (완료된 측정선도 pts에 남아 있음)
+      refreshPreview(); // 현재 pts 기준 (그리는 중인 점, 완료된 측정선도 pts에 남아 있음)
     }
     if (map.getSource('mylines')) {
       MYLINE_LAYERS.forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
       map.removeSource('mylines');
-      refreshMyLines();
     }
+    if (myLines.length) refreshMyLines();
   }
 
   return { init, renderMyLineList, restyle, refreshMyLines, refreshMemos,

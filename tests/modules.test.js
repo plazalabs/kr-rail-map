@@ -374,5 +374,24 @@ console.log('\n[그리기] 테마·배경 전환(setStyle) 후 그린 노선 복
   check('찍은 적이 없으면 빈 소스 (features: [])', /lastLocation \? \[\{[\s\S]{0,140}\}\] : \[\]/.test(app));
 }
 
+console.log('\n[지연 로딩] 역 상세 전용 데이터는 첫 화면에서 받지 않음 (IMPL9 건 1)');
+{
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  const sd = fs.readFileSync(path.join(ROOT, 'js/station-detail.js'), 'utf8');
+  const inv = fs.readFileSync(path.join(ROOT, 'js/invest.js'), 'utf8');
+  // dataPromise(첫 화면) 구간: 'const extra = [];' 부터 그 블록의 'return Promise.all(extra);' 까지
+  const a = app.indexOf('const extra = [];'), z = app.indexOf('return Promise.all(extra);', a);
+  const boot = app.slice(a, z);
+  check('첫 화면 구간에 시세·단지·접근성·공급 로드가 없음',
+    a > 0 && z > a && !/station-price|station-complex|access\.json|station-dev/.test(boot));
+  const fn = app.slice(app.indexOf('function loadDetailData()'), app.indexOf('function loadDetailData()') + 900);
+  check('loadDetailData() 가 4종을 한 번만 받음',
+    /detailDataRequested = true/.test(fn) && ['station-price.json', 'station-complex.json', 'access.json', 'station-dev.json'].every(f => fn.includes(f)));
+  check('역 상세를 열 때(beforeShow)와 투자분석을 켤 때 loadDetailData() 호출',
+    /StationDetail\.beforeShow = loadDetailData/.test(app) && /if \(on\) loadDetailData\(\)/.test(app) && /api\.beforeShow\(feature\)/.test(sd));
+  check('자료 도착 시 투자분석 결과도 다시 그림 (InvestAnalyzer.refresh)',
+    /InvestAnalyzer\.refresh\(\)/.test(app) && /refresh\(\) \{\s*if \(!lastPoint/.test(inv));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -377,6 +377,7 @@ padding:2px 10px;font-weight:700;margin-left:8px}
     });
   }
 
+  let lastPoint = null;   // 마지막으로 분석한 지점 [lng, lat] — 자료 도착 후 다시 그리기용
   function onMapClick(e) {
     if (!clickMode) return;
     InvestAnalyzer.analyze(e.lngLat.lng, e.lngLat.lat);
@@ -390,7 +391,14 @@ padding:2px 10px;font-weight:700;margin-left:8px}
     },
     analyze(lng, lat) {
       if (!map) return;
+      lastPoint = [lng, lat];
       render(lng, lat);
+    },
+    // 도심 접근성·공급 자료는 투자분석을 켤 때 받기 시작한다(app.js loadDetailData).
+    // 자료보다 먼저 지점을 찍었으면 카드가 빠진 결과가 뜬다 — 도착하면 같은 지점을 다시 그린다.
+    refresh() {
+      if (!lastPoint || !panel || panel.style.display === 'none') return;
+      render(lastPoint[0], lastPoint[1]);
     },
     hide() {
       if (panel) panel.style.display = 'none';

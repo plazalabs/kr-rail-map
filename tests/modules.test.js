@@ -318,5 +318,14 @@ console.log('\n[커버리지] 버튼 켜짐 표시를 show()/hide() 가 맡음 (
     !/getElementById\('coverage-btn'\)\.classList/.test(app));
 }
 
+console.log('\n[스타일] ?style=local QA 모드 제거 (버그 ⑨)');
+{
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+  check('app.js 에 qa-style.json·QA_LOCAL_STYLE 참조가 없음', !/qa-style|QA_LOCAL_STYLE|qa-local/.test(app));
+  check('README 에 ?style=local 안내가 없음', !/style=local/.test(readme));
+  check('저장소에 qa-style.json 이 없음 (모드가 기댈 파일 없음)', !fs.existsSync(path.join(ROOT, 'qa-style.json')));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -524,6 +524,13 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
 }
 .ac-item:hover, .ac-item.active { background: var(--hover); }
 .ac-item .ac-lines { color: var(--muted); font-size: 10.5px; margin-left: auto; }
+/* 길찾기 '지금 vs 개통 후' 강조 상자(.rc-nf.hot, 배경 --accent-weak) 안의 흐린 글자(--muted) 대비 보정 (IMPL10 건 2)
+   대상: 이름표(지금·개통 후), 환승 n회, →, '…개통으로 단축' — 모두 muted/accent-weak 같은 쌍.
+   테마 변수(--muted)는 그대로 두고 이 두 테마의 이 상자 안 글자만 같은 색 계열로 조금 조정해 WCAG AA 4.5:1 을 넘긴다.
+   light: #6b7280(4.22) → #656c79(4.61) — 5.5% 어둡게 / neon: #7d8f3c(4.46) → #809241(4.64) — 2.5% 밝게 */
+body[data-theme="light"] .rc-nf.hot :is(.rc-nf-label, .rc-nf-sub, .rc-nf-arrow, .rc-nf-why) { color: #656c79; }
+body[data-theme="neon"] .rc-nf.hot :is(.rc-nf-label, .rc-nf-sub, .rc-nf-arrow, .rc-nf-why) { color: #809241; }
+
 /* 패널이 열릴 때 포커스를 받는 패널 자체에는 테두리를 그리지 않는다 (안의 버튼은 기존 포커스 표시 그대로) */
 [data-modal-focus]:focus { outline: none; }
 /* 동명역 지역 (시청 · 서울 중구) */

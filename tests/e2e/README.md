@@ -1,0 +1,51 @@
+# 화면 점검 (e2e)
+
+단위 테스트(`tests/*.test.js`)는 모듈 계산만 본다. 2026-11-07에는 화면 버그 9건이 단위 테스트를 모두 통과한 채 남아 있었다.
+여기 있는 점검은 실제 브라우저(헤드리스 Chrome)에서 **실제 마우스·키 이벤트로** 앱을 눌러 보고 결과를 판정한다.
+
+- 외부 패키지 없음: Node 22 내장 `fetch`·`WebSocket`으로 Chrome DevTools Protocol을 직접 쓴다 (`lib/cdp.js`).
+- 정적 서버도 Node로 띄운다 (`lib/serve.js`). python이 없어도 된다.
+- 단위 테스트와 따로 돈다. 배경 지도 타일·글꼴을 받으므로 **네트워크가 필요**하다.
+
+## 실행
+
+```bash
+node tests/e2e/run.js                          # 전 항목 (로컬 정적 서버 127.0.0.1:8124 를 직접 띄움)
+node tests/e2e/run.js --list                   # 항목 목록
+node tests/e2e/run.js --only ui-fixes,theme-switch
+E2E_BASE=https://plazalabs.github.io/kr-rail-map/index.html node tests/e2e/run.js --only route-extras   # 배포본 대상
+```
+
+| 환경 변수 | 뜻 | 기본값 |
+|---|---|---|
+| `CHROME_PATH` | 크롬 실행 파일 | 자동 탐색 (Windows 기본 설치 경로 → `google-chrome`·`chromium`) |
+| `E2E_PORT` | 정적 서버 포트 | `8124` |
+| `E2E_BASE` | 이미 떠 있는 주소. 주면 서버를 띄우지 않는다 | 없음 |
+| `E2E_OUT` | 스크린샷·`result.json`·`summary.json` 폴더 | OS 임시 폴더 `/kr-rail-map-e2e` |
+| `E2E_RETRY` | 실패한 항목을 다시 돌릴 횟수. 재시도 후 통과하면 `FLAKY`로 표시 | `0` |
+
+종료 코드: 모든 항목이 통과하면 0, 하나라도 실패하면 1, 크롬을 못 찾거나 항목 이름이 틀리면 2.
+
+## 항목
+
+| 이름 | 파일 | 보는 것 |
+|---|---|---|
+| `theme-switch` | `theme-switch.e2e.js` | 테마(다크·이클립스·네온)·배경(위성·흑백·일반) 전환 후 노선·역·역 라벨·출구·내 위치 레이어 복원. 8가지 전환과 연쇄 7단계 (버그 ①) |
+| `toolbar-menus` | `toolbar-menus.e2e.js` | 툴바 `도구`·`분석`·`저장` 메뉴 13항목이 390·768·1440 폭에서 화면 안에 보이고, 맨 위에 있고, 실제로 눌림 (버그 ②) |
+| `same-name-stations` | `same-name-stations.e2e.js` | 동명역 37개 이름의 모든 역을 자동완성으로 고를 수 있고 길찾기에 그 역 ID가 들어감. 시청→강남, 공유 링크, 옛 링크, 역 상세 `여기서 출발` (버그 ③) |
+| `route-extras` | `route-extras.e2e.js` | 옛 링크 해석 안내, 키보드 ↓↓Enter 선택, ID로 지정한 쌍 유지, ⇄ 교체, 즐겨찾기 경로 저장·복원, 옛 즐겨찾기 |
+| `satellite-labels` | `satellite-labels.e2e.js` | 위성(직접 열기·전환)·일반·다크·흑백에서 역 이름(줌 13)·출구 번호(줌 17.5) 글자가 화면에 나옴 (버그 ⑦) |
+| `station-area` | `station-area.e2e.js` | 역세권 범위(근사): 토글, 출구/역 좌표 기준, 경계 거리 ±1m, 전환 후 복원, 노선 필터, 역 패널 한 줄, 범례 ✕, 모바일 |
+| `ui-fixes` | `ui-fixes.e2e.js` | 노선 비교 목록(④), 노선도 카드 출발·도착과 동명역 ID(⑤), 노선도를 켠 상태의 툴바·`노선도 PNG`(⑥), 영향권 버튼 상태(⑧), `?style=local`(⑨), 전환 후 그린 노선·내 위치 점 유지 |
+| `ui-fixes-mobile` | 위와 같음 (`MOBILE=1`) | 같은 항목을 390×844 모바일 에뮬레이션으로 |
+
+판정 규칙(공통):
+- 누르기 전에 그 지점의 맨 위 요소가 대상인지 확인한다. 가려져 있으면 실패나 미검증으로 남기고, 요소의 `click()`으로 우회하지 않는다.
+- 각 점검은 마지막에 `E2E-SUMMARY <이름>: pass N fail N 미검증 N`을 찍는다.
+
+## 알려 둔 것
+
+- `ui-fixes`의 '영향권을 메뉴로 끄기'는 **미검증**으로 나온다. 켠 상태의 영향권 패널이 메뉴 항목(모바일은 `분석` 버튼)을 덮기 때문이다(구현보고_IMPL7 남은 문제 3). 실패로 세지 않는다.
+- `theme-switch`는 MapLibre `AbortError`(스타일 교체 중 타일 요청 취소)를 기록만 하고 판정에 넣지 않는다.
+- 내 위치는 실제 GPS 대신 서울역 좌표를 주입한다. 클립보드는 권한을 부여해 읽는다.
+- 출처: 2026-11-07 세션의 점검 스크립트 `impl1/2/3/3-extra/5b/6/7.js`와 `cdp.js`, 그리고 `audit/tools/serve.js`를 옮긴 것이다. 옮기며 바꾼 점은 세 가지다: 세션 임시 경로를 없앴고, 실패 시 종료 코드 1을 내게 했고, 크롬 위치를 자동으로 찾게 했다. 판정 로직은 바꾸지 않았다. `route-extras`만은 원본이 값만 찍던 것이라, IMPL3 보고서의 실측값을 기대값으로 붙였다.

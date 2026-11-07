@@ -8,7 +8,7 @@
 - **45도 개략 노선도** (지리 좌표를 옥타리니어로 재배치)
 - **역세권 범위 (근사)** — 사이드바 `지도 레이어 > 역세권 범위`. 1차 250m·2차 350m(서울시 『안심주택의 역세권 범위』 거리 기준), 줌 14 이상.
   공식 기준점은 승강장 경계지만 그 자료(행안부 지하철역사)가 신청형이라 아직 없어, **출구가 있는 역(938)은 출구별 원의 합집합, 없는 역(308)은 역 좌표 기준 원**으로 근사한다. 범례·역 패널에 근사임을 표시한다.
-- 노선별 정적 랜딩 페이지 44개 + sitemap
+- 노선별 정적 랜딩 페이지 72개 + sitemap(74 URL)
 - 모바일 대응(오프캔버스 드로어 / 하단 툴바 / 바텀시트)
 - PWA(오프라인) · 7가지 지도 테마
 
@@ -20,6 +20,21 @@ python3 -m http.server 8123
 ```
 
 `?line=<노선 id>` 로 특정 노선만 볼 수 있습니다. 예: `/?line=seoul-subway-line-2`
+
+## 테스트
+
+둘 다 외부 패키지 없이 Node 22 로 돕니다.
+
+```bash
+# 단위 테스트 — 모듈 계산·데이터 검사 (CI test.yml 이 푸시마다 실행)
+for f in tests/*.test.js; do node "$f" || exit 1; done
+
+# 화면 점검(e2e) — 헤드리스 Chrome 으로 실제로 눌러 본다. 네트워크 필요
+node tests/e2e/run.js            # 전 항목
+node tests/e2e/run.js --list     # 항목 목록
+```
+
+화면 점검의 항목·환경 변수·판정 규칙은 [`tests/e2e/README.md`](tests/e2e/README.md). CI 에서는 `e2e.yml` 이 수동 실행·야간 실행으로 돈다.
 
 ## 구조
 
@@ -36,7 +51,9 @@ python3 -m http.server 8123
 | `js/station-detail.js` `compare.js` `stats.js` `timeline.js` `route-compare.js` `invest.js` `coverage.js` | 역 상세·비교·통계·타임라인·경로비교·투자분석·영향권 |
 | `js/station-area.js` | 역세권 범위(근사). 기준점 원천(`setAnchorSource`) → 거리장 → 등치선(250·350m) 구조라 승강장 경계 자료가 오면 원천만 교체 |
 | `vendor/` | MapLibre GL JS 4.7.1 (로컬 벤더링, BSD) |
-| `data/lines.geojson` `data/stations.geojson` | 앱이 읽는 최종 데이터 (82노선·1,245역) |
+| `tests/*.test.js` | 단위 테스트 (의존성 없는 단일 스크립트) |
+| `tests/e2e/` | 화면 점검 — 헤드리스 Chrome + CDP, 실행기 `run.js` |
+| `data/lines.geojson` `data/stations.geojson` | 앱이 읽는 최종 데이터 (84노선·1,246역) |
 | `data/build_access.js` | `data/access.json` 생성 (route.js 재사용, 1,234역 × 2회 다익스트라) |
 | `data/fix_interchange_lines.py` | 고립된 역·노선을 300m 근거로 이어 붙인다 → `stations.geojson` |
 | `data/fetch_dev.py` `data/build_station_dev.py` | 주택인허가 → `data/station-dev.json` (법정동 단위, 1,191곳) |

@@ -275,5 +275,16 @@ console.log('\n[개략도] buildClusters() — 노드가 역 ID 를 가짐 (버�
     /DiagramMode\.onAction = \(action, stationName, stationId\) => \{[\s\S]{0,120}routeFromStation\(stationName, action, stationId\)/.test(app));
 }
 
+console.log('\n[개략도] 노선도를 켜도 툴바가 가려지지 않음 (버그 ⑥)');
+{
+  const dsrc = fs.readFileSync(path.join(ROOT, 'js/diagram.js'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8');
+  const ov = Number((css.match(/#diagram-overlay \{[^}]*z-index: (\d+)/) || [])[1]);
+  const tb = Number((css.match(/#map-wrap\.dg-on #toolbar \{ z-index: (\d+)/) || [])[1]);
+  check('노선도 켠 동안 툴바 z-index > 오버레이 z-index', tb > ov, `${tb} / ${ov}`);
+  check('enter() 가 dg-on 을 달고 placeOverlay() 로 툴바 줄을 비움, exit() 가 dg-on 을 뗌',
+    /classList\.add\('dg-on'\);\s*placeOverlay\(\);/.test(dsrc) && /classList\.remove\('dg-on'\)/.test(dsrc));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

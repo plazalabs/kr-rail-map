@@ -730,10 +730,16 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
   }
   #toolbar::-webkit-scrollbar { display: none; }
   #toolbar button { padding: 8px 12px; font-size: 13px; box-shadow: none; }
-  .tb-dropmenu {
-    top: auto; bottom: calc(100% + 6px); right: auto; left: 0;
+  /* 툴바는 가로 스크롤(overflow-x:auto)이라 overflow-y 도 auto 로 계산되어,
+     위로 띄운 absolute 메뉴가 툴바 안에서 잘렸다. fixed 는 overflow 조상에
+     잘리지 않으므로 메뉴를 화면 기준 하단 시트로 띄운다 (툴바 높이 54~55px 실측). */
+  .tb-dropmenu,
+  .tb-dropdown:nth-last-child(1) .tb-dropmenu {
+    position: fixed;
+    top: auto; left: 8px; right: 8px;
+    bottom: calc(60px + env(safe-area-inset-bottom));
+    max-height: calc(100vh - 140px); overflow-y: auto;
   }
-  .tb-dropdown:nth-last-child(1) .tb-dropmenu { left: auto; right: 0; }
 
   #status {
     bottom: calc(58px + env(safe-area-inset-bottom));

@@ -524,6 +524,8 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
 }
 .ac-item:hover, .ac-item.active { background: var(--hover); }
 .ac-item .ac-lines { color: var(--muted); font-size: 10.5px; margin-left: auto; }
+/* 동명역 지역 (시청 · 서울 중구) */
+.ac-item .ac-region, .hit .hit-region { color: var(--text-2); font-size: 11.5px; margin-left: 4px; white-space: nowrap; }
 .rp-row { display: flex; gap: 6px; }
 .rp-row button {
   border: 1px solid var(--border); background: var(--btn-bg); color: var(--btn-text);

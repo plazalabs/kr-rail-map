@@ -64,6 +64,13 @@ let LINES = [], STATIONS = [];
 // 내 위치 버튼으로 마지막에 찍힌 위치 [lng, lat] — 찍은 적이 없으면 null (스타일 교체 후 복원용)
 let lastLocation = null;
 let dataReady = false;
+// 동명역 지역 표시 (IMPL9 건 3) — 역 ID → '서울 중구'. 이름이 겹치는 역 가운데 이름+노선으로 지역을
+// 확정할 수 있었던 역만 들어 있다(data/build_station_region.py). 없으면 아무것도 붙이지 않는다.
+const regionOf = new Map();
+fetch('data/station-region.json')
+  .then(r => (r.ok ? r.json() : null))
+  .then(d => { if (d && d.stations) for (const id in d.stations) regionOf.set(id, d.stations[id].label); })
+  .catch(() => null);
 const visibleLines = new Set();
 
 /* ---------- 지도 모드 + 테마 + 해시 ---------- */
@@ -484,6 +491,13 @@ function renderSearch(raw) {
     name.className = 'hit-name';
     name.textContent = p.name_ko || p.name_en || '(이름 없음)';
     row.appendChild(name);
+    // 동명역이면 지역 (시청 · 서울 중구)
+    if (regionOf.has(p.id)) {
+      const rg = document.createElement('span');
+      rg.className = 'hit-region';
+      rg.textContent = '· ' + regionOf.get(p.id);
+      row.appendChild(rg);
+    }
 
     // 노선 점 + 이름. 환승역은 점이 여러 개다.
     const lines = document.createElement('span');
@@ -675,6 +689,7 @@ function attachAutocomplete(input) {
       const ln = it.lines.map(lid => lineNameOf.get(lid) || lid).slice(0, 3).join('·');
       return '<div class="ac-item" role="option" aria-selected="false" id="' + listId + '-o' + i +
         '" data-i="' + i + '">' + it.name +
+        (regionOf.has(it.id) ? '<span class="ac-region">· ' + regionOf.get(it.id) + '</span>' : '') +
         (ln ? '<span class="ac-lines">' + ln + '</span>' : '') + '</div>';
     }).join('');
     list.hidden = false;

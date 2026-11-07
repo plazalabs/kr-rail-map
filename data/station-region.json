@@ -1,0 +1,304 @@
+{
+ "updated": "2026-11-08",
+ "source": "korail-addr — 국가철도공단 역 주소데이터 (data/_station_dong.json 경유)",
+ "basis": "이름이 겹치는 역에 한해, 이름+노선 표기로 그 역 하나에만 맞는 주소 행의 시도·시군구. 모호하거나 안 맞는 역은 넣지 않는다.",
+ "summary": {
+  "dup_names": 37,
+  "dup_stations": 76,
+  "labeled": 40,
+  "unlabeled": 36,
+  "unlabeled_by_reason": {
+   "이 역에만 맞는 행이 없음(노선 표기가 겹치거나 안 맞음)": 16,
+   "주소데이터에 이 이름이 없음": 20
+  },
+  "rows": {
+   "한 역에 맞음": 76,
+   "두 역 이상에 맞음(모호)": 6
+  },
+  "unknown_line_codes": []
+ },
+ "stations": {
+  "st-14102501782": {
+   "name": "동백",
+   "sido": "부산광역시",
+   "sgg": "해운대구",
+   "label": "부산 해운대구"
+  },
+  "st-1708284956": {
+   "name": "고촌",
+   "sido": "부산광역시",
+   "sgg": "기장군",
+   "label": "부산 기장군"
+  },
+  "st-289245376": {
+   "name": "동래",
+   "sido": "부산광역시",
+   "sgg": "동래구",
+   "label": "부산 동래구"
+  },
+  "st-355172816": {
+   "name": "중동",
+   "sido": "경기도",
+   "sgg": "부천시",
+   "label": "경기 부천시"
+  },
+  "st-355173720": {
+   "name": "양정",
+   "sido": "부산광역시",
+   "sgg": "부산진구",
+   "label": "부산 부산진구"
+  },
+  "st-355173730": {
+   "name": "좌천",
+   "sido": "부산광역시",
+   "sgg": "동구",
+   "label": "부산 동구"
+  },
+  "st-355173809": {
+   "name": "금곡",
+   "sido": "부산광역시",
+   "sgg": "북구",
+   "label": "부산 북구"
+  },
+  "st-355173812": {
+   "name": "증산",
+   "sido": "경상남도",
+   "sgg": "양산시",
+   "label": "경남 양산시"
+  },
+  "st-355173841": {
+   "name": "남포",
+   "sido": "부산광역시",
+   "sgg": "중구",
+   "label": "부산 중구"
+  },
+  "st-355173843": {
+   "name": "중앙",
+   "sido": "부산광역시",
+   "sgg": "중구",
+   "label": "부산 중구"
+  },
+  "st-368636728": {
+   "name": "용문",
+   "sido": "경기도",
+   "sgg": "양평군",
+   "label": "경기 양평군"
+  },
+  "st-5208433894": {
+   "name": "박물관",
+   "sido": "경상남도",
+   "sgg": "김해시",
+   "label": "경남 김해시"
+  },
+  "st-5208433897": {
+   "name": "공항",
+   "sido": "부산광역시",
+   "sgg": "강서구",
+   "label": "부산 강서구"
+  },
+  "st-5208472151": {
+   "name": "중동",
+   "sido": "부산광역시",
+   "sgg": "해운대구",
+   "label": "부산 해운대구"
+  },
+  "st-5277767273": {
+   "name": "연산",
+   "sido": "부산광역시",
+   "sgg": "연제구",
+   "label": "부산 연제구"
+  },
+  "st-5349743238": {
+   "name": "중앙",
+   "sido": "경기도",
+   "sgg": "단원구",
+   "label": "경기 단원구"
+  },
+  "st-5426070122": {
+   "name": "교대",
+   "sido": "부산광역시",
+   "sgg": "연제구",
+   "label": "부산 연제구"
+  },
+  "st-5446013304": {
+   "name": "양정",
+   "sido": "경기도",
+   "sgg": "남양주시",
+   "label": "경기 남양주시"
+  },
+  "st-5747416901": {
+   "name": "송정",
+   "sido": "부산광역시",
+   "sgg": "해운대구",
+   "label": "부산 해운대구"
+  },
+  "st-5757138369": {
+   "name": "동래",
+   "sido": "부산광역시",
+   "sgg": "동래구",
+   "label": "부산 동래구"
+  },
+  "st-5840686671": {
+   "name": "용산",
+   "sido": "서울특별시",
+   "sgg": "용산구",
+   "label": "서울 용산구"
+  },
+  "st-5881815128": {
+   "name": "금곡",
+   "sido": "경기도",
+   "sgg": "남양주시",
+   "label": "경기 남양주시"
+  },
+  "st-5889532068": {
+   "name": "양평",
+   "sido": "경기도",
+   "sgg": "양평군",
+   "label": "경기 양평군"
+  },
+  "st-5927786493": {
+   "name": "판교",
+   "sido": "경기도",
+   "sgg": "분당구",
+   "label": "경기 분당구"
+  },
+  "st-5935738063": {
+   "name": "시청",
+   "sido": "서울특별시",
+   "sgg": "중구",
+   "label": "서울 중구"
+  },
+  "st-5937907124": {
+   "name": "화정",
+   "sido": "경기도",
+   "sgg": "덕양구",
+   "label": "경기 덕양구"
+  },
+  "st-5937907125": {
+   "name": "대곡",
+   "sido": "경기도",
+   "sgg": "고양시",
+   "label": "경기 고양시"
+  },
+  "st-6033315007": {
+   "name": "종합운동장",
+   "sido": "서울특별시",
+   "sgg": "송파구",
+   "label": "서울 송파구"
+  },
+  "st-6039313683": {
+   "name": "양평",
+   "sido": "서울특별시",
+   "sgg": "영등포구",
+   "label": "서울 영등포구"
+  },
+  "st-6039314028": {
+   "name": "송정",
+   "sido": "서울특별시",
+   "sgg": "강서구",
+   "label": "서울 강서구"
+  },
+  "st-6094326922": {
+   "name": "신흥",
+   "sido": "경기도",
+   "sgg": "수정구",
+   "label": "경기 수정구"
+  },
+  "st-8850172482": {
+   "name": "종합운동장",
+   "sido": "부산광역시",
+   "sgg": "연제구",
+   "label": "부산 연제구"
+  },
+  "st-9252650044": {
+   "name": "공항",
+   "sido": "광주광역시",
+   "sgg": "광산구",
+   "label": "광주 광산구"
+  },
+  "st-9252650049": {
+   "name": "운천",
+   "sido": "광주광역시",
+   "sgg": "서구",
+   "label": "광주 서구"
+  },
+  "st-9252650053": {
+   "name": "화정",
+   "sido": "광주광역시",
+   "sgg": "서구",
+   "label": "광주 서구"
+  },
+  "st-9271804086": {
+   "name": "구암",
+   "sido": "대전광역시",
+   "sgg": "유성구",
+   "label": "대전 유성구"
+  },
+  "st-9271807342": {
+   "name": "용문",
+   "sido": "대전광역시",
+   "sgg": "서구",
+   "label": "대전 서구"
+  },
+  "st-9271807356": {
+   "name": "신흥",
+   "sido": "대전광역시",
+   "sgg": "동구",
+   "label": "대전 동구"
+  },
+  "st-9461950036": {
+   "name": "동백",
+   "sido": "경기도",
+   "sgg": "기흥구",
+   "label": "경기 기흥구"
+  },
+  "st-9950727434": {
+   "name": "운천",
+   "sido": "경기도",
+   "sgg": "파주시",
+   "label": "경기 파주시"
+  }
+ },
+ "unlabeled": {
+  "이 역에만 맞는 행이 없음(노선 표기가 겹치거나 안 맞음)": [
+   "고촌(gimpo-goldline)",
+   "교대(daegu-metro-line-1)",
+   "교대(seoul-subway-line-2/seoul-metro-line-3)",
+   "구암(daegu-metro-line-3)",
+   "남포(saemaeul-ho-janghang-line)",
+   "대곡(daegu-metro-line-1)",
+   "박물관(wolmi-sea-train)",
+   "시청(busan-metro-line-1)",
+   "시청(daejeon-metro-line-1)",
+   "연산(itx-saemaeul-honam-line)",
+   "용산(daegu-metro-line-2)",
+   "좌천(donghae-line)",
+   "중앙로(daegu-metro-line-1)",
+   "중앙로(daejeon-metro-line-1)",
+   "증산(seoul-subway-line-6)",
+   "판교(saemaeul-ho-janghang-line)"
+  ],
+  "주소데이터에 이 이름이 없음": [
+   "남산(busan-metro-line-1)",
+   "남산(daegu-metro-line-3)",
+   "동천(daegu-metro-line-3)",
+   "동천(seoul-metropolitan-subway-shinbundang-line)",
+   "마산(gimpo-goldline)",
+   "마산(gyeongjeon-line)",
+   "상동(gyeongbu-line)",
+   "상동(seoul-subway-line-7)",
+   "신기(daegu-metro-line-1)",
+   "신기(yeongdong-line)",
+   "신천(daegu-metro-line-1)",
+   "신천(seoul-metropolitan-subway-seohae-line/gtx-f/gtx-g)",
+   "양원(gyeongui-jungang-line)",
+   "양원(yeongdong-line)",
+   "월드컵경기장(daejeon-metro-line-1)",
+   "월드컵경기장(seoul-subway-line-6)",
+   "죽전(daegu-metro-line-2)",
+   "죽전(suin-bundang-line)",
+   "평창(gtx-e)",
+   "평창(gyeonggang-line-ktx/gangneung-line-ktx)"
+  ]
+ }
+}

@@ -215,6 +215,30 @@
    "caveat": "실거래가 API 는 좌표를 주지 않고, 지오코더 API 는 좌표 저장을 금지한다. 그래서 주소데이터로 이름을 잇는다."
   },
   {
+   "id": "korail-addr-region",
+   "title": "동명역 지역 표시",
+   "provider": "국가철도공단 — 역 주소데이터",
+   "attribution": "국가철도공단 역 주소데이터",
+   "url": "https://www.data.go.kr/",
+   "licence": "data-go-kr-open",
+   "obtained": "korail-addr 의 역 주소데이터에서 뽑은 역별 시도·시군구 (data/_station_dong.json) 를 이름+노선으로 역 ID 에 연결",
+   "snapshot": "2026-10",
+   "used_for": "이름이 겹치는 역(시청·양평 등)에 한해 자동완성·검색 결과에 시·군·구를 붙여 구분한다",
+   "feeds": [],
+   "affects": [
+    "data/station-region.json"
+   ],
+   "intermediate": [
+    "data/_station_dong.json"
+   ],
+   "fields": [
+    "station_region.stations[].sido",
+    "station_region.stations[].sgg"
+   ],
+   "commercial": "allowed",
+   "caveat": "주소데이터에는 역 ID 가 없고 노선 표기에 도시가 없다('1호선'). 그래서 이름+노선으로 그 역 하나에만 맞을 때만 붙이고, 모호하거나 안 맞는 역은 붙이지 않는다(data/build_station_region.py)."
+  },
+  {
    "id": "molit-rtms",
    "title": "주변 시세",
    "provider": "국토교통부 — 아파트 매매 실거래가",

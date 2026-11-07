@@ -254,5 +254,26 @@ check('꺾인 점 근처도 가장 가까운 구간을 고름',
   Math.abs(D.projectAlong([4.9, 0.1], line, cum).along - 4.9) < 0.2,
   D.projectAlong([4.9, 0.1], line, cum).along);
 
+console.log('\n[개략도] buildClusters() — 노드가 역 ID 를 가짐 (버그 ⑤ · 동명역)');
+{
+  const all = STATIONS_FC.features;
+  const { nodes } = D.buildClusters(all);
+  const sicheong = [...nodes.values()].filter(n => n.name === '시청');
+  const truth = all.filter(f => f.properties.name_ko === '시청');
+  check('시청 노드 3개 (서울·부산·대전)', sicheong.length === 3, sicheong.length);
+  check('시청 노드마다 서로 다른 역 ID', new Set(sicheong.map(n => n.sid)).size === 3, sicheong.map(n => n.sid).join(','));
+  check('각 노드의 역 ID 는 그 자리의 시청역',
+    sicheong.every(n => { const s = truth.find(f => f.properties.id === n.sid); return s && s.geometry.coordinates[0] === n.coord[0] && s.geometry.coordinates[1] === n.coord[1]; }));
+  const byId = new Map(all.map(f => [f.properties.id, f]));
+  check('모든 노드가 같은 이름의 실제 역 ID 를 가짐',
+    [...nodes.values()].every(n => byId.has(n.sid) && byId.get(n.sid).properties.name_ko === n.name));
+  const dsrc = fs.readFileSync(path.join(ROOT, 'js/diagram.js'), 'utf8');
+  check('diagram.js 에 없는 UI.openPanel 호출이 남아 있지 않음', !/UI\.openPanel/.test(dsrc));
+  check('드래그 시작 예외에 역 카드(.dg-card) 포함', /closest\('\.dg-station, \.dg-card'\)/.test(dsrc));
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  check('app.js 가 DiagramMode.onAction 을 routeFromStation(…, stationId) 로 연결',
+    /DiagramMode\.onAction = \(action, stationName, stationId\) => \{[\s\S]{0,120}routeFromStation\(stationName, action, stationId\)/.test(app));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

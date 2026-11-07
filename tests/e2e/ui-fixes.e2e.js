@@ -192,7 +192,8 @@ const want = s => !ONLY.length || ONLY.includes(s);
     rec('⑧ 영향권', '✕ 후 버튼 꺼짐', !x.active && !x.cov && x.circles === 0, JSON.stringify(x));
     rec('⑧ 영향권', '다시 켜기', c.active && c.cov && c.circles > 0, JSON.stringify(c));
     rec('⑧ 영향권', '메뉴로 끄기', d.pressOk ? (!d.active && !d.cov) : null, (d.pressOk ? '' : '범위 밖 관찰: 메뉴 항목이 영향권 패널에 가려 누르지 못함 — ') + JSON.stringify(d));
-    // 메뉴로 끄기 대체: 패널을 ✕ 로 닫지 않고 Esc 로 메뉴를 닫은 뒤 다시 켜고 ✕ 를 한 번 더 (상태 일관성)
+    // 한 번 더: (메뉴로 껐으면) 다시 켜고 ✕ 로 닫는다 — 상태 일관성. IMPL9 에서 메뉴로 끌 수 있게 되어 순서를 맞춤
+    if (!(await st()).cov) { await menu('분석', 'coverage-btn'); await sleep(1000); }
     r = await press('#cv-close'); await sleep(500); const e2 = await st();
     rec('⑧ 영향권', '두 번째 ✕ 후 버튼 꺼짐', r.ok && !e2.active && !e2.cov, JSON.stringify(e2));
   }

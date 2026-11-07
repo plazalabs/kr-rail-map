@@ -61,18 +61,20 @@ const DrawTools = (() => {
       paint: { 'line-color': color, 'line-width': 4, 'line-dasharray': DASHES[dashKey] } });
     map.addLayer({ id: 'draw-preview-pts', type: 'circle', source: 'draw-preview',
       paint: { 'circle-radius': 5, 'circle-color': '#fff', 'circle-stroke-color': color, 'circle-stroke-width': 2 } });
-    // 메모 핀 레이어 — 이모지(📌)를 심볼 텍스트로 쓰면 배경지도 글꼴 서버에
-    // 그 글리프가 없어 아무것도 안 그려진다. 글꼴이 필요 없는 원으로 찍는다.
-    if (!map.getSource('memos')) {
-      map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({
-        id: 'memo-pins', type: 'circle', source: 'memos',
-        paint: {
-          'circle-radius': 7, 'circle-color': '#f59e0b',
-          'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2.5
-        }
-      });
-    }
+    ensureMemos();
+  }
+  // 메모 핀 레이어 — 이모지(📌)를 심볼 텍스트로 쓰면 배경지도 글꼴 서버에
+  // 그 글리프가 없어 아무것도 안 그려진다. 글꼴이 필요 없는 원으로 찍는다.
+  function ensureMemos() {
+    if (map.getSource('memos')) return;
+    map.addSource('memos', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({
+      id: 'memo-pins', type: 'circle', source: 'memos',
+      paint: {
+        'circle-radius': 7, 'circle-color': '#f59e0b',
+        'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2.5
+      }
+    });
   }
   function refreshPreview() {
     ensurePreview();
@@ -137,7 +139,10 @@ const DrawTools = (() => {
     try { memos = JSON.parse(localStorage.getItem(MEMO_KEY) || '[]'); } catch { memos = []; }
   }
   function refreshMemos() {
-    if (!map.getSource('memos')) return;
+    // 저장된 메모가 있으면 레이어부터 만든다 (예전엔 메모 모드를 켜기 전까지 레이어가 없어
+    // 새로 고침·스타일 교체 뒤 저장된 핀이 안 보였다)
+    if (memos.length) ensureMemos();
+    if (!map.getSource('memos')) { renderMemoList(); return; }
     map.getSource('memos').setData({
       type: 'FeatureCollection',
       features: memos.map(m => ({
@@ -446,6 +451,9 @@ const DrawTools = (() => {
       map.removeSource('mylines');
     }
     if (myLines.length) refreshMyLines();
+    // 메모 핀도 그리기 데이터(memos)로 다시 그린다 — 그린 노선과 같은 복원 경로 (IMPL9 건 6)
+    if (map.getSource('memos')) { if (map.getLayer('memo-pins')) map.removeLayer('memo-pins'); map.removeSource('memos'); }
+    if (memos.length) refreshMemos();
   }
 
   return { init, renderMyLineList, restyle, refreshMyLines, refreshMemos,

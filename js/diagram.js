@@ -490,6 +490,7 @@ const DiagramMode = (() => {
     placeOverlay();
     window.addEventListener('resize', placeOverlay);
     active = true;
+    syncButton();
 
     requestAnimationFrame(() => {
       const t0 = performance.now();
@@ -676,6 +677,12 @@ const DiagramMode = (() => {
     else overlay.style.bottom = Math.max(0, Math.round(hr.bottom - tr.top)) + 'px';
   }
 
+  // 툴바 '노선도' 버튼 켜짐 표시 — 여닫는 모든 경로(버튼·막대 닫기·Esc·카드)가 enter/exit 를 지난다
+  function syncButton() {
+    const btn = typeof document !== 'undefined' && document.getElementById('diagram-btn');
+    if (btn && btn.classList) btn.classList.toggle('active', active);
+  }
+
   function exit() {
     if (!active) return;
     window.removeEventListener('resize', placeOverlay);
@@ -683,6 +690,7 @@ const DiagramMode = (() => {
     if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
     overlay = null;
     active = false;
+    syncButton();
     scale = 1;
     if (map && typeof map.resize === 'function') {
       try { map.resize(); } catch (e) {}

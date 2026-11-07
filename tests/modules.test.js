@@ -443,5 +443,41 @@ console.log('\n[접근성] 패널 열고 닫을 때 포커스 (IMPL9 건 2)');
   check('마우스·터치로 닫을 때는 입력창으로 돌려주지 않음 (휴대폰 자판 방지)', /!keyboardLast && isTextField\(target\)/.test(ui));
 }
 
+console.log('\n[남은 문제] 영향권 가림·노선도 버튼·메모 핀 (IMPL9 건 6)');
+{
+  const cov = fs.readFileSync(path.join(ROOT, 'js/coverage.js'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8');
+  const covZ = Number((cov.match(/#cv-panel\{[^}]*z-index:(\d+)/) || [])[1]);
+  const tbZ = Number((css.match(/#toolbar \{\s*position: absolute; top: 12px; right: 12px; z-index: (\d+)/) || [])[1]);
+  check('영향권 패널이 툴바보다 아래 층 (메뉴가 패널 위에 뜸)', covZ < tbZ, `${covZ} / ${tbZ}`);
+  check('모바일 영향권 패널이 하단 툴바 위로 올라감', /#cv-panel\{top:auto;bottom:calc\(70px \+ env\(safe-area-inset-bottom\)\)/.test(cov));
+  const dsrc = fs.readFileSync(path.join(ROOT, 'js/diagram.js'), 'utf8');
+  const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+  check('노선도 버튼 상태를 enter/exit 가 맞춤 (app.js 는 따로 토글 안 함)',
+    (dsrc.match(/syncButton\(\);/g) || []).length >= 2 && !/getElementById\('diagram-btn'\)\.classList\.toggle/.test(app));
+  // 메모 핀: 가짜 지도에서 setStyle → restyle() 복원
+  const sources = new Map(), layers = new Set();
+  const fakeMap = { on() {}, getCanvas: () => ({ style: {} }), doubleClickZoom: { enable() {}, disable() {} },
+    getSource: id => sources.get(id), getLayer: id => (layers.has(id) ? {} : undefined),
+    addSource(id, def) { sources.set(id, { _data: def.data, setData(d) { this._data = d; } }); },
+    addLayer(def) { layers.add(def.id); }, removeLayer(id) { layers.delete(id); }, removeSource(id) { sources.delete(id); }, setPaintProperty() {} };
+  const store = { 'kr-rail-map-memos-v1': JSON.stringify([{ id: 1, lng: 126.97, lat: 37.56, text: '메모' }]) };
+  const doc = { createElement: fakeEl, createElementNS: fakeEl, createTextNode: () => fakeEl(), getElementById: () => fakeEl(),
+    querySelector: () => null, querySelectorAll: () => [], body: fakeEl(), documentElement: fakeEl(), head: fakeEl(), addEventListener() {}, removeEventListener() {} };
+  const c = { console, Math, JSON, Date, Set, Map, Array, Object, String, Number, isNaN, isFinite, parseFloat, parseInt,
+    document: doc, localStorage: { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } } };
+  c.window = c; c.globalThis = c; c.self = c;
+  vm.createContext(c);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8') + '\n;this.__DT = DrawTools;', c, { filename: 'js/draw.js' });
+  c.__DT.init(fakeMap, () => {});
+  c.__DT.refreshMemos();
+  const n0 = sources.get('memos') ? sources.get('memos')._data.features.length : 0;
+  sources.clear(); layers.clear();
+  c.__DT.restyle();
+  const n1 = sources.get('memos') ? sources.get('memos')._data.features.length : 0;
+  check('저장된 메모가 있으면 첫 표시부터 핀 레이어 생성', n0 === 1, n0);
+  check('setStyle 뒤 restyle() → 메모 핀 다시 표시', n1 === 1 && layers.has('memo-pins'), n1);
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

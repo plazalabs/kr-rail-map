@@ -41,6 +41,7 @@ E2E_BASE=https://plazalabs.github.io/kr-rail-map/index.html node tests/e2e/run.j
 | `nearby-first` | `nearby-first.e2e.js` | 길찾기 자동완성: 지도 중심(서울·부산·대전)에 따라 그 도시의 '시청'이 맨 위, 다른 이름의 순서는 그대로, 고른 역 ID 저장 (IMPL9) |
 | `fav-stations` | `fav-stations.e2e.js` | 역 즐겨찾기를 역 ID로: 서울·부산 시청 ⭐가 따로 저장·표시, 사이드바 클릭 시 그 역, 한쪽 해제, 옛 저장분(이름만) 열림 (IMPL9) |
 | `focus-return` | `focus-return.e2e.js` | 키보드만으로 역 고르기(/ → 이름 → ↓ → Enter), 패널이 열리면 포커스가 패널 안으로, Esc·✕로 닫으면 원래 자리(검색창·메뉴 버튼)로, 마우스 동작은 그대로 (IMPL9) |
+| `panel-state` | `panel-state.e2e.js` | 영향권을 켠 채 메뉴로 끄기(데스크톱·모바일), 노선도를 막대 닫기·Esc·카드로 닫으면 툴바 버튼도 꺼짐, 메모 핀이 테마·배경 전환 뒤에도 보임 (IMPL9) |
 | `ui-fixes` | `ui-fixes.e2e.js` | 노선 비교 목록(④), 노선도 카드 출발·도착과 동명역 ID(⑤), 노선도를 켠 상태의 툴바·`노선도 PNG`(⑥), 영향권 버튼 상태(⑧), `?style=local`(⑨), 전환 후 그린 노선·내 위치 점 유지 |
 | `ui-fixes-mobile` | 위와 같음 (`MOBILE=1`) | 같은 항목을 390×844 모바일 에뮬레이션으로 |
 
@@ -50,7 +51,7 @@ E2E_BASE=https://plazalabs.github.io/kr-rail-map/index.html node tests/e2e/run.j
 
 ## 알려 둔 것
 
-- `ui-fixes`의 '영향권을 메뉴로 끄기'는 **미검증**으로 나온다. 켠 상태의 영향권 패널이 메뉴 항목(모바일은 `분석` 버튼)을 덮기 때문이다(구현보고_IMPL7 남은 문제 3). 실패로 세지 않는다.
+- `ui-fixes`의 '영향권을 메뉴로 끄기'는 IMPL9 건 6에서 패널 가림을 고친 뒤 통과로 판정된다(그 전에는 미검증).
 - `theme-switch`는 MapLibre `AbortError`(스타일 교체 중 타일 요청 취소)를 기록만 하고 판정에 넣지 않는다.
 - 내 위치는 실제 GPS 대신 서울역 좌표를 주입한다. 클립보드는 권한을 부여해 읽는다.
 - 출처: 2026-11-07 세션의 점검 스크립트 `impl1/2/3/3-extra/5b/6/7.js`와 `cdp.js`, 그리고 `audit/tools/serve.js`를 옮긴 것이다. 옮기며 바꾼 점은 세 가지다: 세션 임시 경로를 없앴고, 실패 시 종료 코드 1을 내게 했고, 크롬 위치를 자동으로 찾게 했다. 판정 로직은 바꾸지 않았다. `route-extras`만은 원본이 값만 찍던 것이라, IMPL3 보고서의 실측값을 기대값으로 붙였다.

@@ -530,6 +530,9 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
    light: #6b7280(4.22) → #656c79(4.61) — 5.5% 어둡게 / neon: #7d8f3c(4.46) → #809241(4.64) — 2.5% 밝게 */
 body[data-theme="light"] .rc-nf.hot :is(.rc-nf-label, .rc-nf-sub, .rc-nf-arrow, .rc-nf-why) { color: #656c79; }
 body[data-theme="neon"] .rc-nf.hot :is(.rc-nf-label, .rc-nf-sub, .rc-nf-arrow, .rc-nf-why) { color: #809241; }
+/* 같은 상자의 '−5분'(.rc-nf-delta, 강조색 --accent 글자 / 배경 --accent-weak) 대비 보정 — 핑크만 (IMPL11 건 1)
+   pink: #cc274c / #ffe6ec = 4.49 → #c9264b(1.3% 어둡게) = 4.60. 테마 변수(--accent)·배경·다른 테마는 그대로 */
+body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
 
 /* 패널이 열릴 때 포커스를 받는 패널 자체에는 테두리를 그리지 않는다 (안의 버튼은 기존 포커스 표시 그대로) */
 [data-modal-focus]:focus { outline: none; }

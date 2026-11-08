@@ -72,14 +72,14 @@ const StationDev = (() => {
     st.textContent =
       '.dv-top{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-bottom:2px}' +
       '.dv-big{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;' +
-      'color:var(--fg,#111827)}' +
+      'color:var(--text,#111827)}' +
       '.dv-unit{font-size:12px;color:var(--muted,#6b7280)}' +
-      '.dv-split{font-size:12px;color:var(--fg-2,#374151);margin-bottom:8px}' +
+      '.dv-split{font-size:12px;color:var(--text-2,#374151);margin-bottom:8px}' +
       '.dv-split b{font-variant-numeric:tabular-nums}' +
       '.dv-plan{color:var(--muted,#6b7280)}' +
       '.dv-yrs{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px}' +
       '.dv-yr{font-size:11.5px;padding:2px 7px;border-radius:10px;' +
-      'background:var(--chip,#f3f4f6);color:var(--fg-2,#374151);' +
+      'background:var(--surface-2,#f3f4f6);color:var(--text-2,#374151);' +
       'font-variant-numeric:tabular-nums;white-space:nowrap}' +
       '.dv-yr b{font-weight:600}' +
       '.dv-list{list-style:none;margin:0;padding:0;font-size:12.5px}' +
@@ -87,13 +87,16 @@ const StationDev = (() => {
       'border-bottom:1px solid var(--border,#f1f1f1)}' +
       '.dv-list li:last-child{border-bottom:0}' +
       '.dv-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;' +
-      'white-space:nowrap;color:var(--fg-2,#374151)}' +
-      '.dv-h{font-variant-numeric:tabular-nums;color:var(--fg,#111827);white-space:nowrap}' +
+      'white-space:nowrap;color:var(--text-2,#374151)}' +
+      '.dv-h{font-variant-numeric:tabular-nums;color:var(--text,#111827);white-space:nowrap}' +
       '.dv-stp{font-size:10.5px;color:var(--muted,#9ca3af);white-space:nowrap}' +
       '.dv-over{margin:2px 0 8px;font-size:12px;color:#9a5b00}' +
+      // 어두운 바탕 테마(dark·eclipse·neon)와 회색 바탕(win95)에서는 #9a5b00 이 대비 3.0~3.5 라 읽기 어렵다 (IMPL12 건 5)
+      'body[data-theme="dark"] .dv-over,body[data-theme="eclipse"] .dv-over,body[data-theme="neon"] .dv-over{color:#f0a64a}' +
+      'body[data-theme="win95"] .dv-over{color:#6b3f00}' +
       '.dv-over b{font-variant-numeric:tabular-nums}' +
       '.dv-recent{margin-top:9px;padding-top:8px;border-top:1px dashed var(--border,#e5e7eb);' +
-      'font-size:12px;color:var(--fg-2,#374151)}' +
+      'font-size:12px;color:var(--text-2,#374151)}' +
       '.dv-recent b{font-variant-numeric:tabular-nums}' +
       '.dv-none{font-size:12.5px;color:var(--muted,#6b7280);line-height:1.55}' +
       '.dv-note{font-size:12px;color:var(--muted,#6b7280);margin-top:7px;line-height:1.5}';

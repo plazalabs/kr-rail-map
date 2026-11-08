@@ -40,6 +40,7 @@ const CHECKS = [
   ['focus-return', 'focus-return.e2e.js', {}, '키보드로 역 고르기, 패널 열고 닫을 때 포커스 (IMPL9)'],
   ['panel-state', 'panel-state.e2e.js', {}, '영향권 패널 가림·노선도 버튼 상태·메모 핀 복원 (IMPL9)'],
   ['sw-navigate', 'sw-navigate.e2e.js', {}, '서비스워커가 노선 상세 페이지로 index.html 캐시를 덮어쓰지 않음 (IMPL12)'],
+  ['dev-theme', 'dev-theme.e2e.js', {}, '개발(공급) 패널 색 변수·글자 대비 — 모든 테마 (IMPL12)'],
   ['ui-fixes', 'ui-fixes.e2e.js', {}, '노선 비교·노선도 카드·노선도 툴바·영향권·style=local·그린 노선/위치 (IMPL7, 데스크톱)'],
   ['ui-fixes-mobile', 'ui-fixes.e2e.js', { MOBILE: '1' }, '같은 항목, 모바일 390×844'],
 ];

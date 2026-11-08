@@ -54,6 +54,7 @@ async function menu(label, btnId) {
 }
 async function ready() {
   for (let i = 0; i < 80; i++) { await sleep(500); if (await ev(`typeof dataReady!=='undefined'&&dataReady&&map.loaded()&&!!map.getLayer('rail-lines')`).catch(() => false)) break; }
+  await ev(`window.KR_loadExits && window.KR_loadExits(); 0`).catch(() => {});   // 출구 지연 로딩(IMPL12 건 4) — 먼저 받게 함
   for (let i = 0; i < 20; i++) { if (await ev(`!!map.getLayer('station-exits')`).catch(() => false)) break; await sleep(500); }
   await sleep(800);
 }

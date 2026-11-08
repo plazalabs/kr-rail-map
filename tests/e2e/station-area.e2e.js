@@ -12,6 +12,7 @@ function check(name, ok, detail) { out.checks.push({ name, ok: !!ok, detail }); 
 
 async function ready(b) {
   for (let i = 0; i < 80; i++) { await sleep(400); if (await b.evaluate(`typeof dataReady!=='undefined'&&dataReady&&map.loaded()&&!!map.getLayer('rail-lines')&&typeof StationArea!=='undefined'`).catch(() => false)) break; }
+  await b.evaluate(`window.KR_loadExits && window.KR_loadExits(); 0`).catch(() => {});   // 출구 지연 로딩(IMPL12 건 4) — 먼저 받게 함
   for (let i = 0; i < 20; i++) { if (await b.evaluate(`StationExits.isReady()`).catch(() => false)) break; await sleep(500); }
 }
 const idle = b => b.evaluate(`new Promise(r => { let done = false; const f = () => { if (!done) { done = true; r(); } }; map.once('idle', f); setTimeout(f, 6000); })`).then(() => sleep(300));

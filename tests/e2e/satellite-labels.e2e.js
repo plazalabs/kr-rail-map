@@ -20,13 +20,15 @@ const CASES = [ // [이름, 테마, 해시]
 
 async function ready(b) {
   for (let i = 0; i < 80; i++) { await sleep(400); if (await b.evaluate(`typeof dataReady!=='undefined'&&dataReady&&map.loaded()&&!!map.getLayer('rail-lines')`).catch(() => false)) break; }
-  for (let i = 0; i < 20; i++) { if (await b.evaluate(`!!map.getLayer('station-exits')`).catch(() => false)) break; await sleep(500); }
+  // 출구는 지연 로딩(IMPL12 건 4) — 여기서는 미리 받지 않는다. 줌 17.5 로 가면 자동으로 받는지 measure() 에서 본다.
 }
 async function idle(b) { await b.evaluate(`new Promise(r => { if (map.loaded()) setTimeout(r, 300); map.once('idle', () => r()); setTimeout(r, 8000); })`); await sleep(400); }
 async function measure(b, tagName) {
   const res = {};
   for (const [vn, c, z] of VIEWS) {
-    await b.evaluate(`map.jumpTo({ center: [${c}], zoom: ${z} }); 0`); await idle(b);
+    await b.evaluate(`map.jumpTo({ center: [${c}], zoom: ${z} }); 0`);
+    if (z >= 16) for (let i = 0; i < 40; i++) { if (await b.evaluate(`!!map.getLayer('station-exit-labels')`).catch(() => false)) break; await sleep(250); }
+    await idle(b);
     res[vn] = await b.evaluate(`(() => { const o = {}; for (const id of ${JSON.stringify(SYMBOLS)}) { const L = map.getLayer(id);
       o[id] = L ? { n: map.queryRenderedFeatures({ layers: [id] }).length, color: JSON.stringify(map.getPaintProperty(id, 'text-color') ?? null), halo: JSON.stringify(map.getPaintProperty(id, 'text-halo-color') ?? null), haloW: JSON.stringify(map.getPaintProperty(id, 'text-halo-width') ?? null) } : null; }
       o._glyphs = map.getStyle().glyphs || null; o._key = appliedStyleKey; return o; })()`);

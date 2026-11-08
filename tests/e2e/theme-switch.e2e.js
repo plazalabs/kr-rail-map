@@ -28,7 +28,8 @@ async function ready(b) {
     await sleep(500);
     if (await b.evaluate(`typeof dataReady!=='undefined'&&dataReady&&map.loaded()&&!!map.getLayer('rail-lines')`).catch(() => false)) break;
   }
-  // 출구 데이터는 비동기 — 최대 10초 대기
+  // 출구는 지연 로딩(IMPL12 건 4) — 첫 화면에서 받지 않으므로 먼저 받게 한 뒤, 전환 후 다시 붙는지 본다. 최대 10초 대기
+  await b.evaluate(`window.KR_loadExits && window.KR_loadExits(); 0`).catch(() => {});
   for (let i = 0; i < 20; i++) { if (await b.evaluate(`!!map.getLayer('station-exits')`).catch(() => false)) break; await sleep(500); }
 }
 const probe = b => b.evaluate(`(() => { const o = {}; const L = ${JSON.stringify(LAYERS)}; for (const k in L) o[k] = !!map.getLayer(L[k]); o._key = appliedStyleKey; o._loc = map.getSource('my-location') ? (map.getSource('my-location')._data && map.getSource('my-location')._data.features ? map.getSource('my-location')._data.features.length : '?') : null; return o; })()`);

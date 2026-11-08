@@ -155,20 +155,24 @@ console.log('\n[동명역] 이름으로 섞지 않는다');
   check('각 범위는 자기 역 기준점으로만 만들어짐', ok);
 }
 
-console.log('\n[노선 필터] 역 점과 같은 기준(line_id)');
+console.log('\n[노선 필터] 역 점과 같은 기준(lines — 환승역 대응, IMPL12)');
 {
   const appJs = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
-  check('app.js 역 점 필터가 line_id 기준', /\['in', \['get', 'line_id'\]/.test(appJs));
+  check('app.js 역 점 필터가 lines 기준(UI.lineFilterExpr), line_id 단일 필터 없음',
+    /const sf = UI\.lineFilterExpr\(ids\)/.test(appJs) && !/\['in', \['get', 'line_id'\]/.test(appJs));
   check('app.js updateFilters 가 StationArea.setLines 를 부름', /StationArea\.setLines\(ids\)/.test(appJs));
   check('app.js restoreCustomLayers 가 StationArea.restore 를 부름', /StationArea\.restore\(\)/.test(appJs));
   const s = STATIONS.find(x => x.properties.name_ko === '강남' && (x.properties.lines || []).includes('seoul-subway-line-2'));
   const f = D.featuresFor([s]);
   check('feature 가 역의 line_id 를 그대로 가짐', f.every(x => x.properties.line_id === s.properties.line_id), s.properties.line_id);
-  // 필터 식을 직접 평가 (all / == / in / get / literal 만 쓰인다)
+  check('feature 가 역의 노선 키(lines_key)를 가짐',
+    f.every(x => x.properties.lines_key === '|' + s.properties.lines.join('|') + '|'), f[0] && f[0].properties.lines_key);
+  // 필터 식을 직접 평가 (all / any / == / in / get / literal 만 쓰인다. in 은 문자열 부분일치도 된다)
   const ev = (e, ft) => {
     if (e === true) return true;
     switch (e[0]) {
       case 'all': return e.slice(1).every(x => ev(x, ft));
+      case 'any': return e.slice(1).some(x => ev(x, ft));
       case '==': return ev(e[1], ft) === ev(e[2], ft);
       case 'in': return ev(e[2], ft).includes(ev(e[1], ft));
       case 'get': return ft.properties[e[1]];
@@ -181,6 +185,15 @@ console.log('\n[노선 필터] 역 점과 같은 기준(line_id)');
   D.setLinesRaw([s.properties.line_id]);
   check('그 노선이 켜지면 1차·2차 각각 하나씩 통과',
     f.filter(x => ev(D.filterFor(250), x)).length === 1 && f.filter(x => ev(D.filterFor(350), x)).length === 1);
+  // 환승역: 대표 노선이 아닌 노선만 켜도 보여야 한다 (IMPL12 — 예전엔 사라졌다)
+  const t = STATIONS.find(x => (x.properties.lines || []).length >= 2 && x.properties.lines.some(l => l !== x.properties.line_id));
+  const other = t.properties.lines.find(l => l !== t.properties.line_id);
+  const ft = D.featuresFor([t]);
+  D.setLinesRaw([other]);
+  check(`환승역(${t.properties.name_ko})은 대표 아닌 노선(${other})만 켜도 1차·2차 통과`,
+    ft.filter(x => ev(D.filterFor(250), x)).length === 1 && ft.filter(x => ev(D.filterFor(350), x)).length === 1);
+  D.setLinesRaw([]);
+  check('켜진 노선이 없으면 아무것도 통과하지 않음', ft.every(x => !ev(D.filterFor(x.properties.r), x)));
   D.setLinesRaw(null);
 }
 

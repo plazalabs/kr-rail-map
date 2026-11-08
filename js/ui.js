@@ -358,7 +358,23 @@ const UI = (() => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  return { setStatus, closeModals, closeDropdowns, openDrawer, closeDrawer, isMobile, loadGeoJSON };
+  /* 역 노선 필터 (환승역 대응) — 역은 lines(지나는 노선 전부)를 가진다. line_id(대표 노선) 하나만 보면
+   * 환승역이 대표 아닌 노선만 켰을 때 사라진다. MapLibre(4.x)는 GeoJSON 의 배열 속성을 타일로 넘길 때
+   * 문자열로 바꾸므로 배열을 필터에 직접 쓰지 않고, '|노선1|노선2|' 문자열 키를 만들어 부분 문자열로 찾는다. */
+  function stationLineIds(p) {
+    const ls = (p && Array.isArray(p.lines) && p.lines.length) ? p.lines : (p && p.line_id ? [p.line_id] : []);
+    return ls.filter(Boolean);
+  }
+  function linesKey(p) { return '|' + stationLineIds(p).join('|') + '|'; }
+  // ids 중 하나라도 역의 노선이면 통과. ids 가 비면 아무것도 통과하지 않는다 (예전 ['in', …, []] 와 같음).
+  function lineFilterExpr(ids, prop) {
+    const key = ['get', prop || 'lines_key'];
+    if (!ids || !ids.length) return ['==', 1, 0];
+    return ['any'].concat(ids.map(id => ['in', '|' + id + '|', key]));
+  }
+
+  return { setStatus, closeModals, closeDropdowns, openDrawer, closeDrawer, isMobile, loadGeoJSON,
+    stationLineIds, linesKey, lineFilterExpr };
 })();
 
 window.UI = UI;

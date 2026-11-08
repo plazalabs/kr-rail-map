@@ -290,6 +290,18 @@
     return a;
   }
 
+  // ui.js 의 공용 함수를 쓴다 (없으면 같은 규칙의 대체 — 시험 샌드박스용)
+  function linesKeyOf(p) {
+    if (typeof UI !== 'undefined' && UI.linesKey) return UI.linesKey(p);
+    const ls = (p && Array.isArray(p.lines) && p.lines.length) ? p.lines : (p && p.line_id ? [p.line_id] : []);
+    return '|' + ls.filter(Boolean).join('|') + '|';
+  }
+  function lineFilterOf(ids) {
+    if (typeof UI !== 'undefined' && UI.lineFilterExpr) return UI.lineFilterExpr(ids);
+    if (!ids.length) return ['==', 1, 0];
+    return ['any'].concat(ids.map(id => ['in', '|' + id + '|', ['get', 'lines_key']]));
+  }
+
   function featuresFor(stations) {
     const out = [];
     for (const s of stations) {
@@ -298,7 +310,7 @@
         if (!a.geoms[r]) continue;
         out.push({ type: 'Feature', geometry: a.geoms[r],
           properties: { sid: s.properties.id, name: s.properties.name_ko,
-            line_id: s.properties.line_id, r, kind: a.kind } });
+            line_id: s.properties.line_id, lines_key: linesKeyOf(s.properties), r, kind: a.kind } });
       }
     }
     return out;
@@ -338,7 +350,8 @@
 
   /* ---------- ④ 지도 레이어 ---------- */
   function lineFilter() {
-    return lineIds ? ['in', ['get', 'line_id'], ['literal', lineIds]] : true;
+    // 역 점과 같은 기준: 그 역이 지나는 노선(lines) 중 하나라도 켜져 있으면 보인다
+    return lineIds ? lineFilterOf(lineIds) : true;
   }
   function filterFor(r) { return ['all', ['==', ['get', 'r'], r], lineFilter()]; }
 

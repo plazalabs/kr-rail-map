@@ -153,6 +153,7 @@ async function loadData() {
     STATIONS = window.KRRAIL_INLINE.stations.features;
     setStatus(`노선 ${LINES.length}개 · 역 ${STATIONS.length}개 로드됨`);
     LINES.forEach(f => visibleLines.add(f.properties.id));
+    annotateStations();
     return;
   }
   try {
@@ -168,6 +169,7 @@ async function loadData() {
     setStatus('실제 데이터 준비 중 — 스모크 테스트 데이터 표시');
   }
   LINES.forEach(f => visibleLines.add(f.properties.id));
+  annotateStations();
 }
 
 function addDataLayers() {
@@ -253,14 +255,20 @@ function addExitLayers() {
   } catch (e) { /* 스타일 교체 중이면 다음 기회에 */ }
 }
 
+// 역 점·라벨 필터용 노선 키 (UI.lineFilterExpr 가 읽는다). 데이터 파일은 바꾸지 않고 불러온 뒤 붙인다.
+function annotateStations() {
+  for (const s of STATIONS) s.properties.lines_key = UI.linesKey(s.properties);
+}
+
 function updateFilters() {
   const ids = [...visibleLines];
   const f = ['in', ['get', 'id'], ['literal', ids]];
-  const sf = ['in', ['get', 'line_id'], ['literal', ids]];
+  // 역은 지나는 노선(lines) 중 하나라도 켜져 있으면 보인다 (환승역이 대표 노선만으로 걸러지던 결함 수정)
+  const sf = UI.lineFilterExpr(ids);
   if (map.getLayer('rail-lines')) map.setFilter('rail-lines', f);
   if (map.getLayer('rail-stations')) map.setFilter('rail-stations', sf);
   if (map.getLayer('station-labels')) map.setFilter('station-labels', sf);
-  // 역세권 범위도 역 점과 같은 기준(line_id)으로 거른다
+  // 역세권 범위도 역 점과 같은 기준(lines)으로 거른다
   if (typeof StationArea !== 'undefined') StationArea.setLines(ids);
 }
 

@@ -676,7 +676,8 @@
     beforeShow: null, // (feature) => void — 패널을 열기 직전 호출 (데이터 지연 로딩)
     // 테스트/디버깅용
     _lineOrder: lineOrder,
-    _adjacent: adjacent
+    _adjacent: adjacent,
+    _idOnLine: idOnLine
   };
 
   global.StationDetail = api;

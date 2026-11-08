@@ -247,7 +247,7 @@
    "licence": "data-go-kr-open",
    "obtained": "공공데이터포털 오픈API (RTMSDataSvcAptTrade)",
    "snapshot": "2026-04 ~ 2026-09",
-   "used_for": "법정동 중위 평당가 463역, 단지 5,301곳의 평당가·준공연도·전용면적 (서울 25 + 경기 47 + 인천 12 시군구)",
+   "used_for": "법정동 중위 평당가 464역, 단지 5,301곳의 평당가·준공연도·전용면적 (서울 25 + 경기 47 + 인천 12 시군구)",
    "feeds": [
     "data/station-price.json",
     "data/station-complex.json"

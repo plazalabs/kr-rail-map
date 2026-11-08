@@ -70,8 +70,9 @@ const RouteFinder = (() => {
       ['왕십리',2],['삼성',3],['양재',5],['과천청사',3],['인덕원',4],
       ['금정',6],['의왕',6],['수원',null]],
   };
-  // 과천청사 = 정부과천청사 (우리 데이터 역명)
-  const GTX_NAME_ALIAS = { '과천청사': '정부과천청사' };
+  // 표의 역명 → 우리 데이터 역명. 과천청사 = 정부과천청사, 서울역 = '서울' (데이터 역명에 '역'이 없다 —
+  // 예전엔 '서울역'을 못 찾아 GTX-A·B 의 서울역 앞뒤 공식 소요시간 간선이 통째로 빠졌다, IMPL12)
+  const GTX_NAME_ALIAS = { '과천청사': '정부과천청사', '서울역': '서울' };
 
   let adj = new Map();      // stationId -> [{to, lineId, distKm, walk}]
   let lineCat = new Map();  // lineId -> category
@@ -265,16 +266,30 @@ const RouteFinder = (() => {
   // GTX 공식 소요시간 엣지 추가: 공식 역 순서대로 인접역 연결.
   // 미개통 노선(GTX-B/C 등)도 포함한다 — 이 지도는 개통 예정 노선까지 그린다.
   function addGtxOfficialEdges(activeIds) {
-    const nameToId = new Map();
+    // 이름 → 역 ID 는 '그 GTX 노선이 지나는 역' 가운데서만 찾는다 (IMPL12).
+    // 예전엔 전체에서 이름이 처음 나온 역을 썼다 — 동명 역(교대·시청·용산 …)이면 다른 도시 역에 간선이 붙을 수 있었다.
+    // 그 노선 위에 그 이름이 하나뿐일 때만 잇는다(둘 이상이면 모호해서 잇지 않는다).
+    const onLine = new Map();   // lid → Map(name → [id])
     stationsById.forEach((s, id) => {
       const n = s.properties.name_ko;
-      if (!nameToId.has(n)) nameToId.set(n, id);
+      const ls = Array.isArray(s.properties.lines) ? s.properties.lines
+        : (typeof s.properties.lines === 'string' ? (() => { try { return JSON.parse(s.properties.lines); } catch (e) { return []; } })() : []);
+      for (const l of ls) {
+        if (!onLine.has(l)) onLine.set(l, new Map());
+        const m = onLine.get(l);
+        m.set(n, (m.get(n) || []).concat(id));
+      }
     });
-    const resolve = n => nameToId.get(n) || nameToId.get(GTX_NAME_ALIAS[n]);
+    const resolveOn = (lid, n) => {
+      const m = onLine.get(lid);
+      if (!m) return null;
+      const ids = m.get(n) || m.get(GTX_NAME_ALIAS[n]) || [];
+      return ids.length === 1 ? ids[0] : null;
+    };
     Object.entries(GTX_TIMES).forEach(([lid, seq]) => {
       if (activeIds && !activeIds.has(lid)) return;   // 데이터에 없는 노선만 건너뜀
       for (let i = 0; i < seq.length - 1; i++) {
-        const a = resolve(seq[i][0]), b = resolve(seq[i + 1][0]);
+        const a = resolveOn(lid, seq[i][0]), b = resolveOn(lid, seq[i + 1][0]);
         const min = seq[i][1];
         if (!a || !b || min == null) continue;
         // 공식 소요시간은 '표에 적힌 두 역 사이' 시간이다.

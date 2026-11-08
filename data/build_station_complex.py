@@ -214,18 +214,19 @@ def main():
     import station_names  # noqa: E402  (같은 폴더)
     import dong_match  # noqa: E402
 
+    # (시군구코드, 법정동) → 역 **ID** 들 (IMPL12 건 2, build_station_price.py 와 같은 규칙)
+    import station_ids  # noqa: E402
+    ix = station_ids.Index()
     dong2st = {}
     unmatched = set()
     for s in stations:
         if not s["dong"] or not s.get("lawd"):
             continue
-        # resolve_all 을 쓴다. 이수역처럼 같은 역이 지도에 두 이름으로 들어
-        # 있는 경우가 있어, 한쪽만 고르면 나머지 한쪽은 시세가 안 뜬다.
-        names = station_names.resolve_all(s["name"])
-        if not names:
+        ids = ix.ids_of_row(s)
+        if not ids:
             unmatched.add(s["name"])
             continue
-        dong2st.setdefault((s["lawd"], s["dong"]), set()).update(names)
+        dong2st.setdefault((s["lawd"], s["dong"]), set()).update(ids)
     if unmatched:
         print("이름을 못 맞춘 역 %d곳: %s" % (len(unmatched), ", ".join(sorted(unmatched)[:8])))
 
@@ -276,7 +277,7 @@ def main():
         code, umd = dk.split("|", 1)
         for nm in dong_match.stations_in(code, umd, dong2st):
             cur = st_map.get(nm)
-            # 같은 이름의 역이 둘이면 거래가 많은 쪽을 쓴다 (중구 충돌 대비)
+            # 한 역이 여러 법정동에 걸치면 거래가 많은 쪽을 쓴다 (키는 역 ID)
             if cur is None or d["deals"] > districts[cur]["deals"]:
                 st_map[nm] = dk
 
@@ -314,6 +315,7 @@ def main():
         "units": {"source": "국토교통부 공동주택 단지 목록·기본 정보 (K-apt)",
                   "complexes": with_units, "of": kept},
         "districts": districts,
+        "keyed_by": "station_id",
         "stations": st_map,
     }
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), "utf8")

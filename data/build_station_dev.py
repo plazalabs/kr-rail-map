@@ -23,6 +23,7 @@
   한 건이 두 역에 세어질 수 있다. 역별 값은 '그 역이 속한 동네의 물량'이다.
 """
 import json
+import os
 import pathlib
 import re
 import sys
@@ -361,6 +362,8 @@ def main():
     # 분구 전 코드(인천 서구 28275 → 검단구 28290)가 섞여 있다. 맞추지
     # 않으면 인허가를 **받아 놓고도** 그 역에 안 붙는다 — 개봉·운정·
     # 검단오류가 실제로 그랬다(2026-11-01).
+    import station_ids  # noqa: E402
+    ix = station_ids.Index()
     dong2st = {}
     fixed = []
     for s in json.loads(DONG.read_text("utf8")):
@@ -372,16 +375,16 @@ def main():
             lawd, dong = code[:5], tab.get((code[:5], code[5:]), dong)
             if (lawd, dong) != (s["lawd"], s["dong"]):
                 fixed.append((s["name"], s["dong"], dong))
-        names = station_names.resolve_all(s["name"])
-        if names:
-            dong2st.setdefault((lawd, dong), set()).update(names)
+        ids = ix.ids_of_row(s)   # 역 ID (IMPL12 건 2, build_station_price.py 와 같은 규칙)
+        if ids:
+            dong2st.setdefault((lawd, dong), set()).update(ids)
 
     if fixed:
         print("주소데이터의 법정동 표기를 전체자료에 맞춘 역 %d개 (예: %s)"
               % (len({f[0] for f in fixed}),
                  ", ".join("%s %s→%s" % f for f in fixed[:2])))
 
-    this_year = time.localtime().tm_year
+    this_year = int(os.environ['DEV_TODAY'][:4]) if os.environ.get('DEV_TODAY') else time.localtime().tm_year
 
     rows, dup = dedupe(rows)
     print("중복 승인 건 %d줄을 접었다 → %d줄" % (dup, len(rows)))
@@ -406,7 +409,8 @@ def main():
           % (stale, undated))
     print("  법정동을 못 뽑은 줄 %d건" % no_dong)
 
-    today = time.strftime("%Y-%m-%d")
+    # 재현 빌드용: DEV_TODAY=YYYY-MM-DD 로 기준일을 고정할 수 있다 (미착공·지연 건수가 날짜에 따라 변한다)
+    today = os.environ.get("DEV_TODAY") or time.strftime("%Y-%m-%d")
 
     def group(subset):
         out = {}
@@ -504,10 +508,10 @@ def main():
             continue
         print("  %-8s %-10s %6d세대 (착공예정 지남 %5d)  %s"
               % (d["sgg"], d["dong"], d["hh"], d["overdue"],
-                 ", ".join(d["stations"][:3])))
+                 ", ".join(ix.name_of.get(x, x) for x in d["stations"][:3])))
 
     payload = {
-        "updated": time.strftime("%Y-%m-%d"),
+        "updated": today,
         "source": "국토교통부 건축HUB 주택인허가정보 (공공데이터포털)",
         "basis": "법정동 단위. 대지위치 문자열만 주고 좌표는 주지 않는다.",
         "note": ("'앞으로'는 사용검사를 아직 안 받은 건이다. 착공 여부를 나눠 "
@@ -515,6 +519,7 @@ def main():
                  "같은 건이 두 역에 세어질 수 있다."),
         "thisYear": this_year,
         "districts": districts,
+        "keyed_by": "station_id",
         "stations": stations,
     }
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), "utf8")

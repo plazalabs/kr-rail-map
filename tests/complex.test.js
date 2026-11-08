@@ -38,38 +38,18 @@ check('기준 월이 있다', /^\d{4}-\d{2}$/.test(cx.updated || ''), cx.updated
 check('출처를 밝힌다', /국토교통부/.test(cx.source || ''), cx.source);
 check('집계 기준을 밝힌다', /단지/.test(cx.basis || '') && /법정동/.test(cx.basis || ''), cx.basis);
 
-section('역 연결이 실제 역 이름과 맞는다');
+section('역 연결이 실제 역 ID 와 맞는다 (IMPL12: 키가 역 ID)');
 {
-  // 공식 주소데이터는 '상봉(시외버스터미널)' 처럼 부기를 붙이고, 개명 전
-  // 이름('총신대입구')을 쓰기도 한다. 그래서 이름을 세 단계로 맞춘다 —
-  // 괄호 떼기, 끝의 '역' 떼기, 별칭 찾기. 검사도 같은 규칙으로 한다.
-  const norm = n => String(n).replace(/\s*\(.*?\)\s*/g, '').trim();
-  const names = new Set();
-  const alias = {};
-  for (const f of stations.features) {
-    const p = f.properties;
-    names.add(p.name_ko);
-    for (const a of p.aliases || []) alias[a] = p.name_ko;
-  }
-  const resolves = n => {
-    for (const c of [n, norm(n)]) if (names.has(c)) return true;
-    const b = norm(n);
-    if (b.endsWith('역') && names.has(b.slice(0, -1))) return true;
-    if (alias[b] || alias[n]) return true;
-    return false;
-  };
-  const ghost = Object.keys(stMap).filter(n => !resolves(n));
-  check('없는 역 이름에 단지를 붙이지 않았다', ghost.length === 0,
-    ghost.length ? ghost.slice(0, 5).join(', ') : '전부 실제 역');
-  // 부기가 붙은 이름도 등록돼 있어야 한다. 이게 빠지면 상봉역처럼 공식
-  // 이름에 부기가 있는 역에서 단지 목록이 통째로 안 뜬다.
-  const withParen = Object.keys(stMap).filter(n => /\(/.test(n));
-  check('부기 붙은 이름도 함께 등록', withParen.length > 0, withParen.length + '개');
-  // 개명된 역은 옛 이름과 새 이름 양쪽에서 열려야 한다. 이수역은 지도에
-  // '이수' 와 '총신대입구(이수)' 로 두 번 들어 있어 둘 다 확인한다.
+  const ids = new Set(stations.features.map(f => f.properties.id));
+  const byName = n => stations.features.filter(f => f.properties.name_ko === n).map(f => f.properties.id);
+  check('키가 역 ID 다 (keyed_by)', cx.keyed_by === 'station_id', cx.keyed_by);
+  const ghost = Object.keys(stMap).filter(k => !ids.has(k));
+  check('없는 역 ID에 단지를 붙이지 않았다', ghost.length === 0, ghost.slice(0, 5).join(', '));
+  // 공식 이름에 부기가 붙은 역('상봉(시외버스터미널)')도 지도 역 ID 로 이어져야 한다
+  check('부기 붙은 공식 이름의 역(상봉)도 열린다', byName('상봉').some(id => stMap[id]), byName('상봉').join(','));
   check('개명역(이수)이 두 이름 모두 열린다',
-    !!stMap['이수'] && !!stMap['총신대입구(이수)'],
-    (stMap['이수'] || 'X') + ' / ' + (stMap['총신대입구(이수)'] || 'X'));
+    byName('이수').some(id => stMap[id]) && byName('총신대입구(이수)').some(id => stMap[id]),
+    byName('이수').concat(byName('총신대입구(이수)')).map(id => id + ':' + (stMap[id] ? 'O' : 'X')).join(' '));
 }
 {
   const badKey = Object.keys(stMap).filter(n => !districts[stMap[n]]);

@@ -60,20 +60,23 @@ def main():
     # 있고 '서구'는 인천·대구·광주·부산에 다 있다. 이름으로 묶으면 서울
     # 중구 아파트가 인천 중구 역에 붙는다. 경기·인천을 넣으려면 코드가
     # 필요했다.
+    # (시군구코드, 법정동) → 역 **ID** 들 (IMPL12 건 2). 예전엔 역 이름이었다 — 이름이 같은 역(시청·교대 …)의
+    # 자료가 한 이름으로 합쳐져 부산 시청에 서울 시청 시세가 떴다. 주소 행을 역 ID 에 대응시키는 규칙은
+    # station_ids.Index.ids_of_row (이름이 한 곳뿐이면 그 역, 여럿이면 이름+노선이 딱 한 역에 맞을 때만).
+    import station_ids  # noqa: E402
+    ix = station_ids.Index()
     dong2st = {}
     unmatched = set()
     for s in stations:
         if not s["dong"] or not s.get("lawd"):
             continue
-        # resolve_all 을 쓴다. 이수역처럼 같은 역이 지도에 두 이름으로 들어
-        # 있는 경우가 있어, 한쪽만 고르면 나머지 한쪽은 시세가 안 뜬다.
-        names = station_names.resolve_all(s["name"])
-        if not names:
+        ids = ix.ids_of_row(s)
+        if not ids:
             unmatched.add(s["name"])
             continue
-        dong2st.setdefault((s["lawd"], s["dong"]), set()).update(names)
+        dong2st.setdefault((s["lawd"], s["dong"]), set()).update(ids)
     if unmatched:
-        print("이름을 못 맞춘 역 %d곳: %s" % (len(unmatched), ", ".join(sorted(unmatched)[:8])))
+        print("역 ID 를 못 정한 주소 행의 역 %d곳 (이름이 없거나 동명 모호): %s" % (len(unmatched), ", ".join(sorted(unmatched)[:8])))
 
     # 실거래가 모으기 — 파일명 앞 5자리가 법정동코드다
     deals = []
@@ -134,7 +137,7 @@ def main():
             continue
         flag = "" if d["deals"] >= MIN_DEALS else "  (거래 적음)"
         print(f"  {d['sgg']} {d['dong']:<10} {d['medianPerPyeong']:>9,.0f}만원/평 "
-              f"{d['deals']:>4}건  {', '.join(d['stations'][:3])}{flag}")
+              f"{d['deals']:>4}건  {', '.join(ix.name_of.get(x, x) for x in d['stations'][:3])}{flag}")
         n += 1
         if n >= 12:
             break
@@ -147,9 +150,9 @@ def main():
     def norm_name(n):
         return re.sub(r"\s*\(.*?\)\s*", "", n).strip()
 
-    by_station = {}
+    by_station = {}   # 역 ID → 시세
     for d in out:
-        for name in d["stations"]:
+        for name in d["stations"]:   # (이제 역 ID)
             # 이름은 이미 station_names.resolve 를 거친 지도 이름이다.
             # 예전엔 괄호 부기를 뗀 이름까지 같이 등록해서 키가 부풀었다
             # (283개로 보였지만 실제 역은 235개). 지금은 하나만 넣는다.
@@ -166,6 +169,7 @@ def main():
         "source": "국토교통부 아파트 매매 실거래가 (공공데이터포털)",
         "note": "법정동 단위 집계. 최근 1~2개월은 신고 지연으로 건수가 적다.",
         "districts": out,
+        "keyed_by": "station_id",
         "stations": by_station,
     }
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=1), "utf8")

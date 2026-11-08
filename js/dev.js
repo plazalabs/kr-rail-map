@@ -23,7 +23,7 @@
 
 const StationDev = (() => {
   let doc = null;
-  let byName = null;
+  let byId = null;   // 역 ID → 공급 (IMPL12)
   let styleDone = false;
 
   function num(n) {
@@ -32,8 +32,10 @@ const StationDev = (() => {
 
   function setDoc(d) {
     if (!d || !d.stations) return false;
+    // 역 ID 키 자료만 쓴다 (옛 이름 키 자료는 동명 역 물량을 합쳐 놓았다)
+    if (d.keyed_by !== 'station_id') return false;
     doc = d;
-    byName = d.stations;
+    byId = d.stations;
     return true;
   }
 
@@ -48,14 +50,14 @@ const StationDev = (() => {
 
   /* 한 역의 공급. 자료가 없으면 null.
    * 반환: {sgg, dong, hh, cnt, started, planned, byYear, list, recent} */
-  function of(name) {
-    if (!doc || !name) return null;
-    return byName[name] || null;
+  function of(stationId) {
+    if (!doc || !stationId) return null;
+    return byId[String(stationId)] || null;
   }
 
   // 한 줄 요약 — 다른 카드에서 쓸 때.
-  function brief(name) {
-    const r = of(name);
+  function brief(stationId) {
+    const r = of(stationId);
     if (!r) return null;
     return {
       hh: r.hh, cnt: r.cnt, overdue: r.overdue || 0,
@@ -105,9 +107,9 @@ const StationDev = (() => {
 
   /* 상세 패널에 넣을 HTML.
    * 자료가 없으면 '없다'고 밝힌다 — 0세대와 구별해야 한다. */
-  function sectionHtml(name) {
+  function sectionHtml(stationId) {
     ensureStyle();
-    const r = of(name);
+    const r = of(stationId);
     if (!r) {
       return '<div class="dv-none">이 역이 속한 법정동의 주택인허가 자료가 없습니다. ' +
         '공급이 0이라는 뜻이 아니라 <b>자료를 받지 못한 동네</b>입니다.</div>';

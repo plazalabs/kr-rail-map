@@ -126,7 +126,7 @@ const sample = {
   ],
   recent: { cnt: 2, hh: 300, byYear: { 2024: 300 } },
 };
-Dev.setDoc({ stations: { '수원': sample, '한빛': Object.assign({}, sample, {
+Dev.setDoc({ keyed_by: 'station_id', stations: { '수원': sample, '한빛': Object.assign({}, sample, {
   cnt: 0, hh: 0, started: 0, planned: 0, byYear: {}, list: [], recent: null }) } });
 
 const h = Dev.sectionHtml('수원');

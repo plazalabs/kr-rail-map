@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  var byName = {};
+  var byId = {};   // 역 ID → 시세 (IMPL12: 예전엔 역 이름 키라 동명 역이 서로의 시세를 받았다)
   var meta = null;
   var loading = null;
   var ready = false;
@@ -49,7 +49,9 @@
           source: d.source || '',
           note: d.note || ''
         };
-        byName = d.stations || {};
+        // 역 ID 키 자료만 쓴다. 옛 이름 키 자료(캐시에 남은 것)는 동명 역에 남의 시세를 붙이므로 쓰지 않는다.
+        if (d.keyed_by !== 'station_id') throw new Error('old name-keyed data');
+        byId = d.stations || {};
         ready = true;
         return true;
       })
@@ -70,6 +72,7 @@
         return r.json();
       })
       .then(function (d) {
+        if (d.keyed_by !== 'station_id') throw new Error('old name-keyed data');
         cxDistricts = d.districts || {};
         cxByStation = d.stations || {};
         if (meta) meta.complexUpdated = d.updated || null;
@@ -82,17 +85,16 @@
     return loadComplexes.p;
   }
 
-  function of(stationName) {
-    if (!ready) return null;
-    var n = String(stationName || '');
-    return byName[n] || byName[norm(n)] || null;
+  /* 역 ID → 시세. 이름으로 찾지 않는다 (부산 시청 ≠ 서울 시청). */
+  function of(stationId) {
+    if (!ready || !stationId) return null;
+    return byId[String(stationId)] || null;
   }
 
   /* 역이 속한 법정동의 단지 목록. 좌표가 없으므로 '역 근처'라고 말하지 않는다. */
-  function complexes(stationName, limit) {
-    if (!cxReady) return null;
-    var n = String(stationName || '');
-    var key = cxByStation[n] || cxByStation[norm(n)];
+  function complexes(stationId, limit) {
+    if (!cxReady || !stationId) return null;
+    var key = cxByStation[String(stationId)];
     if (!key) return null;
     var d = cxDistricts[key];
     if (!d || !d.complexes || !d.complexes.length) return null;

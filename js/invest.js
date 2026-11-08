@@ -296,10 +296,11 @@ padding:2px 10px;font-weight:700;margin-left:8px}
     // 방향이 한쪽이 아니다. 판단은 사람이 하고, 재료만 준다.
     if (typeof StationDev !== 'undefined' && StationDev.isReady()) {
       const nm = top3[0].feature.properties.name_ko;
-      const dv = StationDev.of(nm);
+      const sid = top3[0].feature.properties.id;   // 역 ID 로 찾는다 (IMPL12)
+      const dv = StationDev.of(sid);
       if (dv) {
         h += `<div class="iv-card"><h4>🏗️ 앞으로 들어올 세대 (${esc(nm)}역 일대)</h4>` +
-          StationDev.sectionHtml(nm) + '</div>';
+          StationDev.sectionHtml(sid) + '</div>';
       }
     }
 

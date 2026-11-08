@@ -291,14 +291,29 @@
       '<span class="sd-badge ' + esc(st) + '">' + esc(label) + '</span></div>';
   }
 
+  // 노선 lid 위에 있는 이름 nm 의 역 ID. 같은 노선에 같은 이름이 둘이면 현재 역에서 가까운 쪽.
+  function idOnLine(nm, lid, fromId) {
+    var from = stationById(fromId), best = null, bd = Infinity;
+    for (var i = 0; i < STATIONS.length; i++) {
+      var s = STATIONS[i];
+      if (s.properties.name_ko !== nm || parseLines(s.properties).indexOf(lid) < 0) continue;
+      var d = (from && from.geometry && s.geometry)
+        ? havKm(from.geometry.coordinates[0], from.geometry.coordinates[1], s.geometry.coordinates[0], s.geometry.coordinates[1]) : 0;
+      if (d < bd) { bd = d; best = s.properties.id; }
+    }
+    return best;
+  }
+
   function adjRow(lid, stationId) {
     var line = lineById(lid);
     var nm = line ? (line.properties.name_ko || lid) : lid;
     var col = line ? (line.properties.color || '#888') : '#888';
     var a = adjacent(lid, stationId);
+    // 인접역은 '이 노선 위의' 그 이름 역 ID 로 잇는다 (IMPL12 — 이름으로 전체를 찾으면 교대가 부산 교대로 갔다)
     function cell(name) {
       if (!name) return '<span class="sd-st sd-none">—</span>';
-      return '<span class="sd-st" data-st="' + esc(name) + '">' + esc(name) + '</span>';
+      var tid = idOnLine(name, lid, stationId);
+      return '<span class="sd-st"' + (tid ? ' data-sid="' + esc(tid) + '"' : '') + ' data-st="' + esc(name) + '">' + esc(name) + '</span>';
     }
     return '<div class="sd-adj"><span class="sd-dot" style="background:' + esc(col) + '"></span>' +
       '<span class="sd-lname">' + esc(nm) + '</span>' +
@@ -341,9 +356,10 @@
   //
   // 패널 맨 위에 놓는다. 이 앱을 부동산 판단에 쓰기 때문에, 출구 12개와
   // 인접역을 지나 스크롤해야 시세가 나오면 순서가 거꾸로다.
-  function priceSection(nameKo) {
+  function priceSection(sid) {
+    // 역 ID 로 찾는다 (IMPL12 — 이름으로 찾으면 부산 시청에 서울 시청 시세가 떴다)
     var price = (typeof StationPrice !== 'undefined' && StationPrice.isReady())
-      ? StationPrice.of(nameKo) : null;
+      ? StationPrice.of(sid) : null;
     if (!price || !price.medianPerPyeong) return '';
 
     var pm = StationPrice.meta() || {};
@@ -362,7 +378,7 @@
       '실거래가는 좌표를 주지 않아 <b>법정동 단위</b>로 묶었습니다 — ' +
       '같은 법정동이라도 단지·층·연식에 따라 차이가 큽니다.' +
       (pm.updated ? ' (기준 ' + esc(pm.updated) + ')' : '') + '</div>';
-    h += complexBlock(nameKo);
+    h += complexBlock(sid);
     return h + '</div>';
   }
 
@@ -373,9 +389,9 @@
    * 좌표 없이도 단지 단위까지는 갈 수 있다. 기본 3곳만 보이고 나머지는
    * 펼친다 — 패널 첫 화면을 목록으로 채우면 시세가 안 보인다.
    */
-  function complexBlock(nameKo) {
+  function complexBlock(sid) {
     if (typeof StationPrice === 'undefined' || !StationPrice.isComplexReady) return '';
-    var c = StationPrice.complexes(nameKo, 3);
+    var c = StationPrice.complexes(sid, 3);
     if (!c) return '';
 
     // 전용면적 구간별 세대수. K-apt 가 이걸 준다 — 합이 세대수와 정확히 맞는다.
@@ -468,7 +484,7 @@
       '</div>';
 
     // 시세를 먼저. 없으면 빈 문자열이라 자연스럽게 노선부터 시작한다.
-    html += priceSection(nameKo);
+    html += priceSection(sid);
 
     // 도심 접근성 — 시세 다음으로 중요한 값. '이 집에서 강남까지 몇 분'은
     // 부동산에서 실제로 비교하는 축이고, 개통으로 얼마나 줄어드는지까지 보여준다.
@@ -481,10 +497,10 @@
     // 공급 — '앞으로 이 동네에 몇 세대가 들어오나'. 시세(지금)·접근성(시간)에
     // 이어 세 번째 축이다. 자료가 없으면 절을 건너뛴다.
     if (typeof StationDev !== 'undefined' && StationDev.isReady()) {
-      var dv = StationDev.of(nameKo);
+      var dv = StationDev.of(sid);
       if (dv) {
         html += '<div class="sd-sec"><h3>앞으로 들어올 세대</h3>' +
-          StationDev.sectionHtml(nameKo) + '</div>';
+          StationDev.sectionHtml(sid) + '</div>';
       }
     }
 
@@ -552,12 +568,9 @@
     body.innerHTML = html;
 
     // 인접역 클릭 → 해당 역 상세로 이동
-    body.querySelectorAll('.sd-st[data-st]').forEach(function (el) {
+    body.querySelectorAll('.sd-st[data-sid]').forEach(function (el) {
       el.addEventListener('click', function () {
-        var target = null;
-        for (var i = 0; i < STATIONS.length; i++) {
-          if (STATIONS[i].properties.name_ko === el.getAttribute('data-st')) { target = STATIONS[i]; break; }
-        }
+        var target = stationById(el.getAttribute('data-sid'));   // 역 ID 로 (이름 검색 아님)
         if (target) show(target);
       });
     });
@@ -580,7 +593,7 @@
     // 역을 눌러볼 때마다 30줄짜리 목록이 먼저 뜨면 시세가 안 보인다.
     body.querySelectorAll('.sd-cx-more[data-more]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var full = StationPrice.complexes(nameKo);
+        var full = StationPrice.complexes(sid);
         if (!full) return;
         var ul = btn.parentNode.querySelector('.sd-cx-list');
         ul.innerHTML = full.items.map(function (x) {

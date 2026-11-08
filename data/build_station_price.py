@@ -172,7 +172,8 @@ def main():
         "keyed_by": "station_id",
         "stations": by_station,
     }
-    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=1), "utf8")
+    # 압축(공백 없이) 저장 — 앱이 그대로 받는 파일이라 들여쓰기는 전송량만 늘린다 (IMPL12 건 4, 397→290KB)
+    OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), "utf8")
     print(f"\n저장: {OUT.relative_to(ROOT)} (역 {len(by_station)}곳)")
     return 0
 

@@ -384,7 +384,7 @@ console.log('\n[지연 로딩] 역 상세 전용 데이터는 첫 화면에서 �
   const boot = app.slice(a, z);
   check('첫 화면 구간에 시세·단지·접근성·공급 로드가 없음',
     a > 0 && z > a && !/station-price|station-complex|access\.json|station-dev/.test(boot));
-  const fn = app.slice(app.indexOf('function loadDetailData()'), app.indexOf('function loadDetailData()') + 900);
+  const fn = app.slice(app.indexOf('function loadDetailData('), app.indexOf('function loadDetailData(') + 1400);   // IMPL12: (opts) 인자·출구 지연 로딩 줄 추가
   check('loadDetailData() 가 4종을 한 번만 받음',
     /detailDataRequested = true/.test(fn) && ['station-price.json', 'station-complex.json', 'access.json', 'station-dev.json'].every(f => fn.includes(f)));
   check('역 상세를 열 때(beforeShow)와 투자분석을 켤 때 loadDetailData() 호출',
@@ -486,7 +486,7 @@ console.log('\n[미리 받기] 첫 화면 뒤 쉬는 동안 상세 데이터 (IM
   check('지도 준비(dataReady = true) 뒤, 첫 렌더 끝(idle)에만 미리 받기를 건다',
     i > 0 && /dataReady = true;\s*map\.once\('idle', prefetchDetailData\);/.test(app));
   check('미리 받기는 브라우저 유휴(requestIdleCallback, 없으면 2초 뒤)에 loadDetailData() 를 부른다 (한 번만 받기 공유)',
-    /function prefetchDetailData\(\) \{\s*const go = \(\) => loadDetailData\(\);[\s\S]{0,200}requestIdleCallback\(go/.test(app));
+    /function prefetchDetailData\(\) \{\s*const go = \(\) => loadDetailData\(\{ prefetch: true \}\);[\s\S]{0,200}requestIdleCallback\(go/.test(app));
 }
 
 console.log('\n[대비] 강조 상자 흐린 글자 — light·neon 만 보정 (IMPL10 건 2)');

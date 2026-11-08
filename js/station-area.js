@@ -442,7 +442,11 @@
     on = !!v;
     if (toggleEl) toggleEl.checked = on;
     ensureLegend().hidden = !on;
-    if (on) { retry = 0; ensureLayers(); applyFilters(); refresh(); }
+    if (on) {
+      // 역세권 범위의 기준점은 출구다 — 켤 때 출구 자료를 받게 한다 (app.js 지연 로딩, IMPL12)
+      if (typeof window !== 'undefined' && typeof window.KR_loadExits === 'function') window.KR_loadExits();
+      retry = 0; ensureLayers(); applyFilters(); refresh();
+    }
     else removeLayers();
   }
   function isOn() { return on; }

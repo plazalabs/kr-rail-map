@@ -103,7 +103,24 @@ async function clickSel(b, sel) {
     const sidsAfter = await b.evaluate(`[...new Set(map.queryRenderedFeatures({ layers: ['station-area-r1'] }).map(f => f.properties.sid))]`);
     const dotAfter = await b.evaluate(`map.queryRenderedFeatures({ layers: ['rail-stations'] }).some(f => f.properties.id === '${gangnam}')`);
     filt = { how: h, lid, before: sidsBefore.includes(gangnam), after: sidsAfter.includes(gangnam), dotAfter };
-    check('노선 체크 해제 → 범위도 빠짐 (역 점과 같은 기준)', filt.before && !filt.after && !filt.dotAfter, filt);
+    // IMPL12 건 1: 환승역은 지나는 노선(lines) 중 하나라도 켜져 있으면 보인다. 강남은 2호선+신분당선이라
+    // 대표 노선(2호선)만 꺼도 신분당선이 켜져 있으면 남는다. 범위와 역 점은 같은 기준으로 움직여야 한다.
+    const others = await b.evaluate(`STATIONS.find(s => s.properties.id === '${gangnam}').properties.lines.filter(l => l !== '${lid}')`);
+    check('대표 노선만 끄면 환승역(강남)은 범위·점 모두 남음 (다른 노선이 켜져 있음, 역 점과 같은 기준)',
+      filt.before && filt.after && filt.dotAfter && others.length > 0, Object.assign({ others }, filt));
+    // 나머지 노선까지 다 끄면 범위·점 모두 빠진다
+    for (const o of others) {
+      const sel = `#line-list label.line-item[data-line-id="${o}"] input[type=checkbox]`;
+      await b.evaluate(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (e) { const d = e.closest('details'); if (d) d.open = true; } 0 })()`);
+      await clickSel(b, sel); await sleep(500);
+    }
+    await idle(b);
+    const allOffArea = await b.evaluate(`map.queryRenderedFeatures({ layers: ['station-area-r1'] }).some(f => f.properties.sid === '${gangnam}')`);
+    const allOffDot = await b.evaluate(`map.queryRenderedFeatures({ layers: ['rail-stations'] }).some(f => f.properties.id === '${gangnam}')`);
+    check('지나는 노선을 모두 끄면 범위도 빠짐 (역 점과 같은 기준)', !allOffArea && !allOffDot, { allOffArea, allOffDot });
+    for (const o of others) {
+      await clickSel(b, `#line-list label.line-item[data-line-id="${o}"] input[type=checkbox]`); await sleep(400);
+    }
     await clickSel(b, cbSel); await sleep(800); await idle(b);
     const back = await b.evaluate(`map.queryRenderedFeatures({ layers: ['station-area-r1'] }).some(f => f.properties.sid === '${gangnam}')`);
     check('노선 다시 체크 → 범위 복귀', back);

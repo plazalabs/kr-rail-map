@@ -1251,9 +1251,8 @@ const dataPromise = loadData().then(() => {
   // 두 개를 다 받는다. 예전엔 여기서 return 으로 빠져나가서 아래 시세 로드가
   // 아예 실행되지 않았다 — 시세 섹션이 영원히 안 떴다. 병렬로 띄우고 둘 다 기다린다.
   const extra = [];
-  if (typeof StationExits !== 'undefined') {
-    extra.push(StationExits.load('data/exits.geojson').catch(() => null));
-  }
+  // 출구(exits.geojson, 약 729KB)는 첫 화면에서 받지 않는다 (IMPL12 건 4). 지도에는 줌 16부터 그리고,
+  // 거리 기준점으로는 역 상세·투자분석·역세권을 열 때 쓴다 → loadExits() 가 그때 한 번 받는다.
   // 시세·단지·도심 접근성·공급은 역 상세와 투자분석에서만 쓴다 → loadDetailData() 가 필요할 때 받는다.
   // 환승 도보 시간은 없어도 길찾기가 된다(기본 4분). 조용히 실패하고 넘어간다.
   extra.push(fetch('data/transfer-times.json')
@@ -1269,7 +1268,25 @@ const dataPromise = loadData().then(() => {
  * 처음 필요해질 때 한 번만 받는다. 받는 동안·실패 시 동작은 예전과 같다:
  * 해당 절 없이 패널을 먼저 띄우고, 도착하면 열린 패널을 다시 그린다. 실패하면 그 절을 조용히 건너뛴다. */
 let detailDataRequested = false;
-function loadDetailData() {
+// 출구 자료 — 필요해질 때 한 번만 받는다. 도착하면 출구 레이어를 만들고 열린 패널·결과를 다시 그린다.
+// 그 전에는 각 모듈이 지금처럼 역 중심점으로 물러난다 (StationExits 가 준비 전이면 중심점).
+let exitsRequested = false;
+const EXITS_PRELOAD_ZOOM = 15.5;   // 줌 16(출구 표시 시작) 직전에 받기 시작해 16에서 바로 보이게
+function loadExits() {
+  if (exitsRequested || typeof StationExits === 'undefined') return;
+  exitsRequested = true;
+  StationExits.load('data/exits.geojson').then(() => {
+    addExitLayers();
+    if (typeof StationArea !== 'undefined' && StationArea.isOn && StationArea.isOn()) StationArea.refresh();
+    if (typeof StationDetail !== 'undefined') StationDetail.refresh();
+    if (typeof InvestAnalyzer !== 'undefined' && InvestAnalyzer.refresh) InvestAnalyzer.refresh();
+  }).catch(() => null);
+}
+window.KR_loadExits = loadExits;   // station-area.js 가 역세권을 켤 때 부른다
+
+function loadDetailData(opts) {
+  // 쉬는 동안 미리 받기(prefetch)에서는 출구까지 받지 않는다 — 역을 열거나 분석을 켤 때만
+  if (!(opts && opts.prefetch)) loadExits();
   if (detailDataRequested) return;
   detailDataRequested = true;
   const redraw = ok => {
@@ -1290,7 +1307,7 @@ if (typeof StationDetail !== 'undefined') StationDetail.beforeShow = loadDetailD
 // 브라우저가 한가할 때(requestIdleCallback, 없으면 2초 뒤) loadDetailData() 를 부른다.
 // 이미 받았거나 받는 중이면 loadDetailData() 가 그냥 돌아온다(한 번만 받기). 그 전에 역을 열면 즉시 받기 그대로.
 function prefetchDetailData() {
-  const go = () => loadDetailData();
+  const go = () => loadDetailData({ prefetch: true });
   if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(go, { timeout: 5000 });
   else setTimeout(go, 2000);
 }
@@ -1300,6 +1317,9 @@ map.on('load', async () => {
   map.once('idle', prefetchDetailData);   // 첫 화면 준비를 방해하지 않게 준비 완료 뒤에만
   addDataLayers(); updateFilters();
   addExitLayers();
+  // 출구 표시 줌에 가까워지면 출구 자료를 받는다 (첫 화면이 이미 그 줌이면 바로)
+  const exitsByZoom = () => { if (map.getZoom() >= EXITS_PRELOAD_ZOOM) loadExits(); };
+  map.on('zoomend', exitsByZoom); exitsByZoom();
   DrawTools.setStations(STATIONS);
   DrawTools.refreshMyLines(); DrawTools.renderMyLineList();
   DrawTools.refreshMemos();

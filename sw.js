@@ -4,8 +4,8 @@
  *  - GeoJSON 데이터: Cache First (최초 로드 후 캐시)
  *  - 지도 타일: Network First (오프라인이면 캐시된 타일만, 최대 200개)
  */
-const APP_CACHE = 'kr-rail-map-app-v61';
-const DATA_CACHE = 'kr-rail-map-data-v61';
+const APP_CACHE = 'kr-rail-map-app-v62';
+const DATA_CACHE = 'kr-rail-map-data-v62';
 const TILE_CACHE = 'kr-rail-map-tiles-v1';
 const MAX_TILE_ENTRIES = 200;
 
@@ -127,15 +127,17 @@ self.addEventListener('fetch', (event) => {
       caches.match(request).then((cached) => {
         if (cached) return cached;
         return fetch(request).then((res) => {
-          // index.html 내비게이션 요청도 캐시에 저장
+          // 내비게이션 응답은 **그 요청 주소로** 저장한다 (IMPL12 건 3).
+          // 예전엔 고정 키 './index.html' 에 넣어서, 노선 상세(line/*.html)를 본 뒤 index.html 로 오면
+          // 메인 대신 상세 페이지가 떴다 (온라인에서도 — 앱 셸은 Cache First 다).
           if (res.ok && request.mode === 'navigate') {
             const copy = res.clone();
-            caches.open(APP_CACHE).then((cache) => cache.put('./index.html', copy));
+            caches.open(APP_CACHE).then((cache) => cache.put(request, copy));
           }
           return res;
         }).catch(() => {
           // 오프라인 내비게이션 폴백
-          if (request.mode === 'navigate') return caches.match('./index.html');
+          if (request.mode === 'navigate') return caches.match('./index.html');   // 설치 때 받은 메인 (덮어쓰지 않음)
           throw new Error('offline');
         });
       })

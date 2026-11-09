@@ -267,7 +267,7 @@ def load_key():
         return k
     if SECRET.exists():
         try:
-            d = json.loads(SECRET.read_text("utf8"))
+            d = json.loads(SECRET.read_text("utf-8-sig"))
         except Exception:                        # noqa: BLE001
             return ""
         return ((d.get("data_go_kr_dev") or d.get("data_go_kr") or "").strip())

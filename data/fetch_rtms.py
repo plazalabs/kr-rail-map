@@ -27,6 +27,7 @@ import pathlib
 import statistics
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -35,6 +36,38 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CACHE = ROOT / "data" / "_rtms"
 SECRET = ROOT / "data" / ".secrets.json"
 BASE = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"
+FIXTURES = ROOT / "tests" / "fixtures" / "rtms"
+
+# 실거래 1단계 7종 (2026-11-09). 같은 입력(LAWD_CD·DEAL_YMD)·같은 XML 형식이다.
+# 서비스 이름은 공식 상세 페이지(docs/api-survey-20261109/det.json)와 2026-11-09 실제 호출로 확인했다.
+#   연립다세대는 'RTMSDataSvcRHTrade2' 다. 옛 이름 RTMSDataSvcRHTrade 는 우리 키로 403
+#   (SERVICE_KEY_IS_NOT_REGISTERED — 그 서비스에 활용신청을 안 했으니 당연, 폐지 여부는 모름).
+# 하루 호출(개발계정): 토지만 1,000, 나머지 10,000.
+KINDS = {
+    "apt-trade":  ("RTMSDataSvcAptTrade",  "아파트 매매"),
+    "apt-rent":   ("RTMSDataSvcAptRent",   "아파트 전월세"),
+    "silv-trade": ("RTMSDataSvcSilvTrade", "아파트 분양권전매"),
+    "offi-trade": ("RTMSDataSvcOffiTrade", "오피스텔 매매"),
+    "offi-rent":  ("RTMSDataSvcOffiRent",  "오피스텔 전월세"),
+    "rh-trade":   ("RTMSDataSvcRHTrade2",  "연립다세대 매매"),
+    "land-trade": ("RTMSDataSvcLandTrade", "토지 매매"),
+    "nrg-trade":  ("RTMSDataSvcNrgTrade",  "상업업무용 매매"),
+}
+NEW7 = [k for k in KINDS if k != "apt-trade"]
+
+
+def url_of(kind):
+    svc = KINDS[kind][0]
+    return f"https://apis.data.go.kr/1613000/{svc}/get{svc}"
+
+
+def cache_dir(kind):
+    # 아파트 매매는 예전 자리(data/_rtms/) 그대로 — build_station_price.py 가 거기를 읽는다.
+    return CACHE if kind == "apt-trade" else CACHE / kind
+
+
+class QuotaExceeded(SystemExit):
+    """하루 호출 한도 초과(resultCode 22). 받은 달은 캐시에 있으니 다음 날 같은 명령으로 이어 받는다."""
 
 # 시군구 코드표는 data/lawd.py 한 곳에만 둔다. 여기서 또 관리하면 반드시
 # 어긋난다 — 실제로 서울 표를 따로 들고 있다가, 경기·인천을 넣으려니
@@ -55,7 +88,7 @@ def load_key():
         return k
     if SECRET.exists():
         try:
-            return (json.loads(SECRET.read_text("utf8")).get("data_go_kr") or "").strip()
+            return (json.loads(SECRET.read_text("utf-8-sig")).get("data_go_kr") or "").strip()
         except Exception:                    # noqa: BLE001
             return ""
     return ""
@@ -73,34 +106,53 @@ def months(a, b):
     return out
 
 
-def fetch(lawd, ym, key, rows=1000):
+def parse_xml(raw):
+    """응답 한 쪽 → (items, totalCount). 오류면 SystemExit (한도 초과는 QuotaExceeded)."""
+    # 키 오류는 XML 이 아니라 평문/JSON 으로 떨어질 때가 있다.
+    if not raw.lstrip().startswith("<"):
+        raise SystemExit("응답이 XML 이 아닙니다. 인증키를 확인하세요:\n" + raw[:400])
+    root = ET.fromstring(raw)
+    # 게이트웨이 오류는 <OpenAPI_ServiceResponse><cmmMsgHeader><errMsg> 로 온다 (예: 활용신청 안 한 서비스)
+    gw = (root.findtext(".//errMsg") or "").strip()
+    if gw and ("LIMITED_NUMBER" in gw or (root.findtext(".//returnReasonCode") or "").strip() == "22"):
+        raise QuotaExceeded(f"하루 호출 한도 초과 ({gw}). 내일 같은 명령을 다시 돌리면 받은 달은 건너뛰고 이어 받는다.")
+    if gw:
+        raise SystemExit(f"게이트웨이 오류: {gw} {(root.findtext('.//returnAuthMsg') or '').strip()}")
+    code = (root.findtext(".//resultCode") or "").strip()
+    msg = (root.findtext(".//resultMsg") or "").strip()
+    if code == "22":
+        raise QuotaExceeded(f"하루 호출 한도 초과 ({msg}). 내일 같은 명령을 다시 돌리면 받은 달은 건너뛰고 이어 받는다.")
+    if code and code != "000":
+        raise SystemExit(f"API 오류 {code}: {msg}")
+    total = int((root.findtext(".//totalCount") or "0").strip() or 0)
+    items = []
+    for it in root.iter("item"):
+        rec = {c.tag: (c.text or "").strip() for c in it}
+        if rec:
+            items.append(rec)
+    return items, total
+
+
+def fetch(lawd, ym, key, rows=1000, kind="apt-trade"):
     """한 달치를 페이지 끝까지 받아온다. XML 이라 ElementTree 로 판다."""
     items, page = [], 1
+    base = url_of(kind)
     while True:
         q = urllib.parse.urlencode({
             "serviceKey": key, "LAWD_CD": lawd, "DEAL_YMD": ym,
             "numOfRows": rows, "pageNo": page,
         })
-        req = urllib.request.Request(BASE + "?" + q,
+        req = urllib.request.Request(base + "?" + q,
                                      headers={"User-Agent": "kr-rail-map/1.0"})
-        with urllib.request.urlopen(req, timeout=40) as r:
-            raw = r.read().decode("utf-8", "replace")
+        try:
+            with urllib.request.urlopen(req, timeout=40) as r:
+                raw = r.read().decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:   # 403 등도 본문(errMsg)을 읽어 원인을 보여 준다
+            raw = e.read().decode("utf-8", "replace")
+        raw = raw.replace(key, "<KEY>")       # 혹시 응답이 키를 되돌려 줘도 화면·캐시에 남기지 않는다
 
-        # 키 오류는 XML 이 아니라 평문/JSON 으로 떨어질 때가 있다.
-        if not raw.lstrip().startswith("<"):
-            raise SystemExit("응답이 XML 이 아닙니다. 인증키를 확인하세요:\n" + raw[:400])
-
-        root = ET.fromstring(raw)
-        code = (root.findtext(".//resultCode") or "").strip()
-        msg = (root.findtext(".//resultMsg") or "").strip()
-        if code and code != "000":
-            raise SystemExit(f"API 오류 {code}: {msg}")
-
-        total = int((root.findtext(".//totalCount") or "0").strip() or 0)
-        for it in root.iter("item"):
-            rec = {c.tag: (c.text or "").strip() for c in it}
-            if rec:
-                items.append(rec)
+        got, total = parse_xml(raw)
+        items.extend(got)
         if page * rows >= total or not total:
             break
         page += 1
@@ -166,6 +218,57 @@ def to_record(r):
         # 토지임대부 여부 — Y 면 건물만 거래된 것이라 평당가가 낮게 보인다
         "landLease": pick(r, "landLeaseholdGbn").upper() == "Y",
     }
+
+
+def to_record_kind(kind, r):
+    """7종 공통 레코드. 필드 이름은 2026-11-09 실제 응답(tests/fixtures/rtms/*.xml)에서 확인했다.
+
+    매매: price(만원) + area(㎡) → perPyeong(만원/평). 토지는 perM2(만원/㎡).
+    전월세: deposit·monthlyRent(만원). monthlyRent 0 = 전세. 전월세 응답에는 해제 필드(cdealType)가 없다.
+    지분거래(토지·상업업무용 shareDealingType='지분')는 일부만 산 값이라 단가에서 뺀다 → share=True 로 표시.
+    """
+    if kind == "apt-trade":
+        return to_record(r)
+    area_tag = {"land-trade": "dealArea", "nrg-trade": "buildingAr"}.get(kind, "excluUseAr")
+    name_tag = {"apt-rent": "aptNm", "silv-trade": "aptNm", "offi-trade": "offiNm",
+                "offi-rent": "offiNm", "rh-trade": "mhouseNm"}.get(kind)
+    area = num(pick(r, area_tag))
+    rec = {
+        "name": pick(r, name_tag) if name_tag else "",
+        "umd": pick(r, "umdNm"),
+        "jibun": pick(r, "jibun"),          # 토지·상업업무용은 '6**' 처럼 가려져 온다
+        "area": area,
+        "buildYear": int(num(pick(r, "buildYear")) or 0),
+        "year": int(num(pick(r, "dealYear")) or 0),
+        "month": int(num(pick(r, "dealMonth")) or 0),
+        "day": int(num(pick(r, "dealDay")) or 0),
+        "cancelled": pick(r, "cdealType").upper() == "O",
+    }
+    if kind.endswith("-rent"):
+        rec["deposit"] = num(pick(r, "deposit"))
+        rec["monthlyRent"] = num(pick(r, "monthlyRent")) or 0
+        rec["contractType"] = pick(r, "contractType")     # 신규/갱신 (빈 값 많음)
+        return rec
+    price = num(pick(r, "dealAmount"))
+    rec["price"] = price
+    rec["dealType"] = pick(r, "dealingGbn")
+    rec["share"] = pick(r, "shareDealingType") == "지분"
+    if kind == "land-trade":
+        rec["perM2"] = round(price / area, 2) if price and area else None
+        rec["jimok"] = pick(r, "jimok")
+        rec["landUse"] = pick(r, "landUse")
+    else:
+        rec["perPyeong"] = round(price / (area / M2_PER_PYEONG), 1) if price and area else None
+        rec["floor"] = int(num(pick(r, "floor")) or 0)
+    if kind == "silv-trade":
+        rec["ownership"] = pick(r, "ownershipGbn")         # 실측 '입'(입주권). 분양권 쪽 값은 수집 결과로 확인
+    if kind == "rh-trade":
+        rec["houseType"] = pick(r, "houseType")
+    if kind == "nrg-trade":
+        rec["buildingUse"] = pick(r, "buildingUse")
+        rec["buildingType"] = pick(r, "buildingType")      # 일반/집합
+        rec["landUse"] = pick(r, "landUse")
+    return rec
 
 
 def summarize(recs):
@@ -280,29 +383,78 @@ def selftest():
                         "<resultMsg>SERVICE KEY IS NOT REGISTERED</resultMsg></header></response>")
     ck("오류 코드 읽기", (err.findtext(".//resultCode") or "") == "30")
 
+    print("\n[7종 — 2026-11-09 실제 응답 샘플 (tests/fixtures/rtms, 강남구 2026-09, 앞 5건)]")
+    # 지어낸 XML 이 아니라 실제로 받은 응답이다. 기대값도 그 응답에서 읽은 값이다.
+    def load(kind):
+        return parse_xml((FIXTURES / f"{kind}.xml").read_text("utf-8"))
+    exp_total = {"apt-rent": 1275, "silv-trade": 3, "offi-trade": 60, "offi-rent": 266,
+                 "rh-trade": 72, "land-trade": 230, "nrg-trade": 60}
+    for kind in NEW7:
+        items, total = load(kind)
+        recs = [to_record_kind(kind, r) for r in items]
+        ck(f"{kind}: totalCount {exp_total[kind]}", total == exp_total[kind], total)
+        ck(f"{kind}: 모든 건에 법정동·계약년월·면적",
+           bool(recs) and all(x["umd"] and x["year"] == 2026 and x["month"] == 9 and x["area"] for x in recs))
+        if kind.endswith("-rent"):
+            ck(f"{kind}: 보증금 숫자", all(isinstance(x["deposit"], float) for x in recs))
+        else:
+            ck(f"{kind}: 거래금액 숫자", all(isinstance(x["price"], float) for x in recs))
+    r = [to_record_kind("apt-rent", x) for x in load("apt-rent")[0]]
+    ck("전월세: 보증금 10,000 · 월세 150 (첫 건)", r[0]["deposit"] == 10000 and r[0]["monthlyRent"] == 150)
+    ck("전월세: 월세 0 = 전세 (둘째 건 보증금 160,500)", r[1]["monthlyRent"] == 0 and r[1]["deposit"] == 160500)
+    r = [to_record_kind("land-trade", x) for x in load("land-trade")[0]]
+    ck("토지: ㎡당 = 5,550 / 10㎡ = 555", r[0]["perM2"] == 555.0, r[0]["perM2"])
+    ck("토지: 지분거래 표시", r[0]["share"] is True)
+    ck("토지: 지번은 가려져 옴 (6**)", r[0]["jibun"] == "6**")
+    raw_nrg = load("nrg-trade")[0]
+    r = [to_record_kind("nrg-trade", x) for x in raw_nrg]
+    ck("상업업무용: 건물면적 645.08 · 거래금액 580,000", r[0]["area"] == 645.08 and r[0]["price"] == 580000)
+    ck("상업업무용: 해제 필드는 cdealType (k-skill 코드의 소문자 cdealtype 아님)",
+       all("cdealType" in x for x in raw_nrg) and not any("cdealtype" in x for x in raw_nrg))
+    r = [to_record_kind("rh-trade", x) for x in load("rh-trade")[0]]
+    ck("연립다세대: 이름·주택유형 다세대", r[0]["houseType"] == "다세대" and r[0]["name"] != "")
+    r = [to_record_kind("silv-trade", x) for x in load("silv-trade")[0]]
+    ck("분양권: 구분 '입'(입주권) · 445,000", r[0]["ownership"] == "입" and r[0]["price"] == 445000)
+
+    print("\n[게이트웨이 오류 · 한도 초과]")
+    try:
+        parse_xml("<OpenAPI_ServiceResponse><cmmMsgHeader><errMsg>SERVICE_KEY_IS_NOT_REGISTERED_ERROR"
+                  "</errMsg></cmmMsgHeader></OpenAPI_ServiceResponse>")
+        ck("미등록 서비스 → 멈춤", False)
+    except SystemExit as e:
+        ck("미등록 서비스 → 멈춤", "SERVICE_KEY_IS_NOT_REGISTERED" in str(e))
+    try:
+        parse_xml("<response><header><resultCode>22</resultCode>"
+                  "<resultMsg>LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR</resultMsg></header></response>")
+        ck("코드 22 → QuotaExceeded (이어 받기)", False)
+    except QuotaExceeded:
+        ck("코드 22 → QuotaExceeded (이어 받기)", True)
+
     print(f"\n결과: {ok} 통과 / {bad} 실패")
     return 1 if bad else 0
 
 
-def fetch_one(code, a, b, key, quiet=False):
+def fetch_one(code, a, b, key, quiet=False, kind="apt-trade"):
     """한 시군구의 기간 거래를 모아 캐시에 쓰고 레코드를 돌려준다."""
     sd, sgg, _parent = LAWD.CODE.get(code, (None, None, ""))
     recs_all = []
+    cdir = cache_dir(kind)
+    cdir.mkdir(parents=True, exist_ok=True)
     for ym in months(a, b):
-        path = CACHE / f"{code}_{ym}.json"
+        path = cdir / f"{code}_{ym}.json"
         if path.exists():
             recs = json.loads(path.read_text("utf8"))
             if not quiet:
                 print(f"  {ym}: 캐시 {len(recs)}건")
         else:
             try:
-                items, total = fetch(code, ym, key)
+                items, total = fetch(code, ym, key, kind=kind)
             except SystemExit:
                 raise
             except Exception as e:        # noqa: BLE001
                 print(f"  {ym}: 실패 {type(e).__name__} {str(e)[:80]}")
                 continue
-            recs = [to_record(r) for r in items]
+            recs = [to_record_kind(kind, r) for r in items]
             # 시군구를 붙인다. 실거래가는 법정동 이름만 주기 때문에 같은
             # 이름의 법정동(중구: 서울/인천, 서구: 인천/대구/광주/부산)을
             # 구분할 수 없다. 코드까지 넣어야 나중에 안 섞인다.
@@ -315,7 +467,7 @@ def fetch_one(code, a, b, key, quiet=False):
                 print(f"  {ym}: {len(recs)}건 (totalCount {total})")
             time.sleep(0.25)
         recs_all.extend(recs)
-    out = CACHE / f"{code}_{a}_{b}.json"
+    out = cdir / f"{code}_{a}_{b}.json"
     out.write_text(json.dumps(recs_all, ensure_ascii=False, indent=1), "utf8")
     return recs_all
 
@@ -329,6 +481,8 @@ def main():
     ap.add_argument("--from", dest="a", help="시작 계약년월 YYYYMM")
     ap.add_argument("--to", dest="b", help="끝 계약년월 YYYYMM")
     ap.add_argument("--summary", action="store_true")
+    ap.add_argument("--kind", default="apt-trade", choices=list(KINDS) + ["new7"],
+                    help="어떤 실거래를 받을지 (new7 = 1단계 7종 전부). 기본 apt-trade")
     args = ap.parse_args()
 
     if args.selftest:
@@ -354,6 +508,22 @@ def main():
         return 2
 
     CACHE.mkdir(parents=True, exist_ok=True)
+    if args.kind != "apt-trade":
+        # 7종: 시군구 × 달 단위로 캐시하므로, 한도 초과로 멈춰도 다시 돌리면 이어 받는다.
+        kinds = NEW7 if args.kind == "new7" else [args.kind]
+        for kind in kinds:
+            n = 0
+            print(f"=== {kind} {KINDS[kind][1]} ({KINDS[kind][0]}) · 시군구 {len(targets)}곳")
+            try:
+                for i, code in enumerate(targets, 1):
+                    n += len(fetch_one(code, args.a, args.b, key, quiet=True, kind=kind))
+                    if i % 10 == 0:
+                        print(f"  {i}/{len(targets)} … 누적 {n:,}건")
+            except QuotaExceeded as e:
+                print(f"  ⚠ {kind}: {e}")
+                continue
+            print(f"  {kind}: 거래 {n:,}건")
+        return 0
     if args.metro:
         allrecs = []
         done = 0

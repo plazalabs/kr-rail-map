@@ -27,7 +27,7 @@ async function withData(d) {
     'st-a': {
       'apt-rent': { n: 40, jn: 30, wn: 10, jd: 52000, wd: 5000, wr: 180, d: '역삼동' },
       'offi-trade': { n: 3, few: true, sh: 0, d: '역삼동' },
-      'land-trade': { n: 8, sh: 2, med: 90000, m2: 3200.5, top: [['대', 6]], d: '역삼동' },
+      'land-trade': { n: 8, sh: 2, ex: 11, med: 90000, m2: 3200.5, d: '역삼동' },
       'nrg-trade': { n: 6, sh: 0, med: 150000, pp: 9000, top: [['제2종근린생활', 4]], d: '역삼동' }
     } } });
   const h = M.sectionHtml('st-a');
@@ -36,7 +36,8 @@ async function withData(d) {
   check('전월세: 전세 5억 2,000만 (30건)', /전세 <b>5억 2,000만<\/b> \(30건\)/.test(row('apt-rent')), row('apt-rent'));
   check('전월세: 월세 보증금 / 월세', /월세 <b>5,000만 \/ 180만<\/b> \(10건\)/.test(row('apt-rent')), row('apt-rent'));
   check('5건 미만 → 거래 적음 (3건), 값 없음', /거래 적음 \(3건\)/.test(row('offi-trade')) && !/<b>/.test(row('offi-trade')), row('offi-trade'));
-  check('토지: ㎡당 + 지분 제외 표시', /3,201만<\/b>\/㎡/.test(row('land-trade')) && /지분거래 2건 제외/.test(row('land-trade')), row('land-trade'));
+  check('토지: 대지 ㎡당 + "도로 등 N건 · 지분거래 N건 제외" (결정 나안)', /대지 <b>3,201만<\/b>\/㎡/.test(row('land-trade')) && /대지만 · 도로 등 11건 · 지분거래 2건 제외/.test(row('land-trade')), row('land-trade'));
+  check('토지: 지목별 분리 표시 없음', !/지목/.test(row('land-trade')), row('land-trade'));
   check('상가: 용도 상위', /제2종근린생활 4/.test(row('nrg-trade')));
   check('없는 종류 → 자료 없음', /자료 없음/.test(row('silv-trade')) && /자료 없음/.test(row('rh-trade')));
   check('없는 역 → 7칸 모두 자료 없음', (M.sectionHtml('st-zzz').match(/자료 없음/g) || []).length === 7);
@@ -60,6 +61,8 @@ async function withData(d) {
     check('중위값 있는 칸은 5건 이상', cells.every(([k, s]) => /-rent$/.test(k) || s.med == null || s.n >= 5));
     check('전월세 전세·월세 중위도 5건 이상일 때만', cells.every(([k, s]) => !/-rent$/.test(k) || ((s.jd == null || s.jn >= 5) && (s.wr == null || s.wn >= 5))));
     check('수익률 필드 없음', !/yield|수익률/.test(JSON.stringify(d.stations)));
+    const lands = keys.map(k => d.stations[k]['land-trade']).filter(Boolean);
+    check('토지: 지목별 목록(top) 없음 · 도로 등 제외 건수(ex) 있음', lands.length > 0 && lands.every(s => !s.top && typeof s.ex === 'number'), lands.length);
     check('보고서에 연결 근거 없는 거래 수가 있음', Object.values(d.report).every(r => typeof r.unlinked === 'number' && typeof r.linked === 'number'));
     check('압축 저장 (들여쓰기 없음)', !/\n\s+"/.test(fs.readFileSync(f, 'utf8').slice(0, 5000)));
   }

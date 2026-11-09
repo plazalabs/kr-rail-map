@@ -68,6 +68,12 @@ def summarize(kind, rows):
         return out
     whole = [r for r in rows if not r.get("share")]
     out["sh"] = n - len(whole)                                        # 지분거래 건수 (단가에서 뺌)
+    if kind == "land-trade":
+        # 토지는 대지(지목 '대')만 쓴다 — 2026-11-09 회장님 결정(나안). 도로·전·답·임야가 섞이면
+        # ㎡당 중위값이 끌려 내려간다(강남 역삼동 121만/㎡, 17건 중 도로 11). 지목별로 나눠 보여 주지 않는다.
+        land_all = whole
+        whole = [r for r in land_all if r.get("jimok") == "대"]
+        out["ex"] = len(land_all) - len(whole)                        # 도로 등 대지 아닌 거래 (뺀 건수)
     out["n"] = len(whole)
     if len(whole) < MIN_DEALS:
         out["few"] = True
@@ -77,8 +83,6 @@ def summarize(kind, rows):
             out["m2"] = med([r["perM2"] for r in whole], 1)           # ㎡당 중위 (만원/㎡)
         else:
             out["pp"] = med([r["perPyeong"] for r in whole], 1)       # 평당 중위 (만원/평)
-    if kind == "land-trade":
-        out["top"] = top(collections.Counter(r.get("jimok") for r in whole))
     if kind == "nrg-trade":
         out["top"] = top(collections.Counter(r.get("buildingUse") for r in whole))
     if kind == "silv-trade":
@@ -210,9 +214,15 @@ def selftest():
            [{"price": 50, "perM2": 5.0, "share": True, "jimok": "도로"}] * 3
     s = summarize("land-trade", land)
     ck("토지: 지분 3건은 단가에서 빠지고 따로 셈", s["sh"] == 3 and s["n"] == 5 and s["m2"] == 100.0, s)
-    ck("토지: 지목 상위는 지분 아닌 거래로", s["top"] == [["대", 5]], s)
+    ck("토지: 지목별 분리 표시 없음 (결정 나안)", "top" not in s, s)
     s = summarize("land-trade", land[:4] + land[5:])
     ck("토지: 지분 빼고 4건 → 거래 적음", s.get("few") and s["n"] == 4 and "m2" not in s, s)
+    mixed = [{"price": 1000, "perM2": 1000.0, "share": False, "jimok": "대"}] * 5 + \
+            [{"price": 10, "perM2": 1.0, "share": False, "jimok": "도로"}] * 11
+    s = summarize("land-trade", mixed)
+    ck("토지: 대지만 — 도로 11건이 섞여도 ㎡당 1,000 (도로 등 제외 11)", s["m2"] == 1000.0 and s["n"] == 5 and s["ex"] == 11, s)
+    s = summarize("land-trade", mixed[1:])
+    ck("토지: 대지 4건 + 도로 11건 → 거래 적음 (대지 기준)", s.get("few") and s["n"] == 4 and s["ex"] == 11, s)
     s = summarize("nrg-trade", [{"price": p, "perPyeong": 1, "share": False, "buildingUse": u}
                                 for p, u in [(1, "근생"), (2, "근생"), (3, "업무"), (4, "근생"), (5, "판매")]])
     ck("상업업무용: 중위 3 · 용도 상위 근생 3건", s["med"] == 3 and s["top"][0] == ["근생", 3], s)

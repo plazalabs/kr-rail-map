@@ -62,20 +62,24 @@
         : '월세 ' + (s.wn ? '거래 적음 (' + s.wn + '건)' : '없음'));
       return parts.join('<br>') + '<br>' + where;
     }
+    // 토지는 대지(지목 '대')만 (2026-11-09 결정). 도로 등 대지 아닌 거래·지분거래는 뺀 건수만 적는다 — 지목별로 나누지 않는다.
+    var land = kind === 'land-trade';
+    var dropped = [];
+    if (land && s.ex) dropped.push('도로 등 ' + s.ex + '건');
+    if (s.sh) dropped.push('지분거래 ' + s.sh + '건');
+    var dropTxt = dropped.length ? '<br><span class="mk-where">' + (land ? '대지만 · ' : '') + dropped.join(' · ') + ' 제외</span>'
+      : (land ? '<br><span class="mk-where">대지만 · 도로 등 제외</span>' : '');
     if (s.few) {
-      return '<span class="mk-few">거래 적음 (' + s.n + '건)</span>' +
-        (s.sh ? '<br><span class="mk-where">' + esc(s.d) + ' · 지분거래 ' + s.sh + '건 별도</span>' : '<br><span class="mk-where">' + esc(s.d) + '</span>');
+      return '<span class="mk-few">' + (land ? '대지 ' : '') + '거래 적음 (' + s.n + '건)</span>' +
+        '<br><span class="mk-where">' + esc(s.d) + '</span>' + dropTxt;
     }
     var h;
-    if (kind === 'land-trade') h = '<b>' + num(s.m2) + '만</b>/㎡';
+    if (land) h = '대지 <b>' + num(s.m2) + '만</b>/㎡';
     else h = '<b>' + num(s.pp) + '만</b>/평 · 중위 ' + won(s.med);
     if (kind === 'nrg-trade' && s.top && s.top.length) {
       h += '<br><span class="mk-where">많이 거래된 용도: ' + s.top.map(function (t) { return esc(t[0]) + ' ' + t[1]; }).join(', ') + '</span>';
     }
-    if (kind === 'land-trade' && s.top && s.top.length) {
-      h += '<br><span class="mk-where">지목: ' + s.top.map(function (t) { return esc(t[0]) + ' ' + t[1]; }).join(', ') + '</span>';
-    }
-    return h + '<br>' + where + (s.sh ? '<span class="mk-where"> · 지분거래 ' + s.sh + '건 제외</span>' : '');
+    return h + '<br>' + where + dropTxt;
   }
 
   function sectionHtml(sid) {
@@ -88,7 +92,7 @@
     h += '</tbody></table>';
     h += '<div class="sd-note">※ 국토교통부 실거래가 ' + esc(data.period[0]) + '~' + esc(data.period[1]) +
       ', 역이 있는 <b>법정동 단위</b> 중위값입니다. 거래 ' + data.minDeals + '건 미만은 값을 내지 않고, ' +
-      '지분거래는 단가에서 뺐습니다. 월세 칸은 보증금 / 월세. 최근 1~2개월은 신고 지연으로 건수가 적습니다.</div>';
+      '지분거래는 단가에서 뺐습니다. 토지는 대지만 셉니다(도로 등 제외). 월세 칸은 보증금 / 월세. 최근 1~2개월은 신고 지연으로 건수가 적습니다.</div>';
     return h;
   }
 

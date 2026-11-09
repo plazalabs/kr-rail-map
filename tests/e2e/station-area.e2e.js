@@ -160,12 +160,18 @@ async function clickSel(b, sel) {
   await m.send('Network.setBypassServiceWorker', { bypass: true });
   await m.goto(BASE + '#normal', 800); await ready(m);
   await clickSel(m, '#sidebar-toggle'); await sleep(600);
-  const mh = await clickSel(m, '#layer-station-area'); await sleep(400);
+  // 서랍이 다 열리기 전에 누르면 빗나간다(2026-11-09 부하 아래 재현: 토글 안 켜짐 → 범례 없음 → 아래 평가가 null 로 멈춤).
+  // 켜졌는지 보고, 안 켜졌으면 다시 누른다 (상한 20초).
+  let mh = 'missing', clicks = 0;
+  await until(async () => {
+    if (!(await m.evaluate(`document.getElementById('layer-station-area').checked`))) { clicks++; mh = await clickSel(m, '#layer-station-area'); await sleep(400); }
+    return m.evaluate(`document.getElementById('layer-station-area').checked`);
+  }, x => x);
   await clickSel(m, '#sidebar-close'); await sleep(500);
   await m.evaluate(`(() => { const s = STATIONS.find(x => x.properties.id === '${gangnam}'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`); await idle(m);
   await until(() => m.evaluate(`map.queryRenderedFeatures({ layers: ['station-area-r1'] }).length`), n => n > 0);
-  const mob = await m.evaluate(`(() => { const r = document.getElementById('sa-legend').getBoundingClientRect(); const t = document.getElementById('sidebar-toggle').getBoundingClientRect(); const tb = document.getElementById('toolbar').getBoundingClientRect(); return { legend: [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)], inView: r.right <= innerWidth && r.bottom <= innerHeight && r.x >= 0, overlapsToggle: !(r.right < t.left || r.left > t.right || r.bottom < t.top || r.top > t.bottom), overlapsToolbar: r.bottom > tb.top, n: map.queryRenderedFeatures({ layers: ['station-area-r1'] }).length }; })()`);
-  check('모바일 390: 범례가 화면 안·토글/툴바와 안 겹침·범위 그려짐', mob.inView && !mob.overlapsToggle && !mob.overlapsToolbar && mob.n > 0, { how: mh, ...mob });
+  const mob = await m.evaluate(`(() => { const lg = document.getElementById('sa-legend'); if (!lg) return { noLegend: true, checked: document.getElementById('layer-station-area').checked }; const r = lg.getBoundingClientRect(); const t = document.getElementById('sidebar-toggle').getBoundingClientRect(); const tb = document.getElementById('toolbar').getBoundingClientRect(); return { legend: [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)], inView: r.right <= innerWidth && r.bottom <= innerHeight && r.x >= 0, overlapsToggle: !(r.right < t.left || r.left > t.right || r.bottom < t.top || r.top > t.bottom), overlapsToolbar: r.bottom > tb.top, n: map.queryRenderedFeatures({ layers: ['station-area-r1'] }).length }; })()`);
+  check('모바일 390: 범례가 화면 안·토글/툴바와 안 겹침·범위 그려짐', mob.inView && !mob.overlapsToggle && !mob.overlapsToolbar && mob.n > 0, { how: mh, clicks, ...mob });
   await m.shot(path.join(OUT, `mobile.png`));
   m.close();
 

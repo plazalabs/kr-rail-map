@@ -5,11 +5,11 @@
  "near_km": 0.3,
  "summary": {
   "lines": 78,
-  "open_lines": 67,
-  "open_pairs": 1483,
-  "open_confirmed": 1472,
-  "open_confirmed_pct": 99.3,
-  "open_lines_all_confirmed": 62
+  "open_lines": 66,
+  "open_pairs": 1478,
+  "open_confirmed": 1469,
+  "open_confirmed_pct": 99.4,
+  "open_lines_all_confirmed": 63
  },
  "lines": {
   "arex": {
@@ -167,14 +167,14 @@
   },
   "daegusaneop-line": {
    "name": "대구산업선",
-   "status": "open",
+   "status": "construction",
    "stations": 3,
    "confirmed": 3,
    "sources": [
     "osm-geometry"
    ],
    "unconfirmed": [],
-   "provisional": false,
+   "provisional": true,
    "partial": false,
    "gap_reason": ""
   },
@@ -597,17 +597,15 @@
   "honam-line-ktx": {
    "name": "KTX 호남선",
    "status": "open",
-   "stations": 15,
+   "stations": 14,
    "confirmed": 14,
    "sources": [
     "osm-geometry",
     "osm-relation"
    ],
-   "unconfirmed": [
-    "강경"
-   ],
+   "unconfirmed": [],
    "provisional": false,
-   "partial": true,
+   "partial": false,
    "gap_reason": ""
   },
   "incheon-airport-maglev-line-eastbound": {
@@ -812,16 +810,14 @@
   "saemaeul-ho-janghang-line": {
    "name": "장항선",
    "status": "open",
-   "stations": 21,
+   "stations": 20,
    "confirmed": 20,
    "sources": [
     "osm-geometry"
    ],
-   "unconfirmed": [
-    "간치"
-   ],
+   "unconfirmed": [],
    "provisional": false,
-   "partial": true,
+   "partial": false,
    "gap_reason": ""
   },
   "samcheok-line": {

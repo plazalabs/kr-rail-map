@@ -342,6 +342,12 @@ def main(argv):
                     "length_km": round(km, 3), "relations": [], "accept": ok,
                     "notes": fail, "straight": len(straight), "via": "graph"}
 
+    # 노선을 골라 돌렸으면(only) 다른 노선의 결과는 그대로 두고 고른 것만 바꾼다.
+    # 예전에는 통째로 덮어써서, 몇 개만 다시 돌리면 나머지 노선 결과가 사라졌다(2026-11-10).
+    if only and OUT.exists():
+        prev = json.loads(OUT.read_text("utf8"))
+        prev.update(out)
+        out = prev
     OUT.write_text(json.dumps(out, ensure_ascii=False), "utf8")
     print(f"\n저장: {OUT.relative_to(ROOT)} ({len(out)}개)")
     return 0

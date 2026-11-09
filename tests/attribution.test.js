@@ -87,7 +87,7 @@ check('역 수', dataPage.includes('<b>' + fmt(stations.features.length) + '</b>
 check('출구 수', dataPage.includes('<b>' + fmt(exits.features.length) + '</b>출구'),
   fmt(exits.features.length) + '개');
 {
-  // 출구 커버리지 — data.html 은 '역의 75%(938/1,246)' 이라고 적는다.
+  // 출구 커버리지 — data.html 은 '역의 75%(938/1,245)' 이라고 적는다.
   const ids = new Set(exits.features.map(f => f.properties.station).filter(Boolean));
   const covered = stations.features.filter(f => ids.has(f.properties.id)).length;
   const pct = Math.round(covered / stations.features.length * 100);

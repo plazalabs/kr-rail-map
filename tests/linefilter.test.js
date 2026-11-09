@@ -57,7 +57,8 @@ const props = s => Object.assign({}, s.properties, { lines_key: F.linesKey(s.pro
 
 console.log('\n[필터] 환승역');
 const multi = ST.filter(s => (s.properties.lines || []).length >= 2);
-check(`환승역 수 ${multi.length}개 (lines 2개 이상)`, multi.length >= 274);
+// 2026-11-10: 강경이 KTX 호남선에서 빠져(고속선은 강경을 지나지 않음) 274 → 273
+check(`환승역 수 ${multi.length}개 (lines 2개 이상)`, multi.length >= 273);
 let lost = [];
 for (const s of multi) {
   const p = props(s);

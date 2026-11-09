@@ -3,8 +3,19 @@ name: e2e
 # 화면 점검(tests/e2e) — 헤드리스 Chrome 으로 실제로 눌러 본다.
 # 단위 테스트(test.yml)와 분리했다. 화면 점검은 네트워크(배경 지도 타일·글꼴)와 브라우저 타이밍에
 # 기대므로, 아직 CI 에서의 안정성을 재지 못했다(2026-11-07 기준 로컬 Windows 에서만 측정).
-# 그래서 푸시 게이트에 넣지 않고 수동 실행 + 야간 실행으로 시작한다. 게이트 편입은 안정성을 본 뒤 결정.
+# 그래서 푸시 게이트에 넣지 않고 수동 실행 + 야간 실행으로 시작했다.
+#
+# 2026-11-09 회장님 결정 5: main 에 올릴 때마다 자동으로 돈다. 단 '처음에는 알림만' —
+#   이 워크플로가 실패해도 배포(GitHub Pages, 브랜치 배포)는 막지 않는다. 실패하면 GitHub 이 올린 사람에게 알리고,
+#   결과·스크린샷은 아티팩트(e2e-out)로 남는다.
+#   야간 실행이 5번 연속 성공하면 그때 '실패 시 배포를 막는' 단계로 바꾼다
+#   (Pages 를 Actions 배포로 돌리고 deploy 가 이 작업에 needs 로 걸리게 — 별도 커밋, 회장님 승인 뒤).
 on:
+  push:
+    branches: [main]
+    # 문서·보고서만 바뀐 푸시에는 돌리지 않는다 (화면이 바뀌지 않는다)
+    paths-ignore:
+      - '**.md'
   workflow_dispatch:
     inputs:
       only:
@@ -13,6 +24,11 @@ on:
         default: ''
   schedule:
     - cron: '30 18 * * *'   # 매일 03:30 KST
+
+# 짧은 간격으로 여러 번 올리면 앞선 실행은 취소하고 마지막 것만 끝까지 돈다 (한 번에 약 27분)
+concurrency:
+  group: e2e-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
 
 jobs:
   e2e:

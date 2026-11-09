@@ -34,7 +34,7 @@ node tests/e2e/run.js            # 전 항목
 node tests/e2e/run.js --list     # 항목 목록
 ```
 
-화면 점검의 항목·환경 변수·판정 규칙은 [`tests/e2e/README.md`](tests/e2e/README.md). CI 에서는 `e2e.yml` 이 수동 실행·야간 실행으로 돈다.
+화면 점검의 항목·환경 변수·판정 규칙은 [`tests/e2e/README.md`](tests/e2e/README.md). CI 에서는 `e2e.yml` 이 main 푸시마다(문서만 바뀐 푸시 제외)·야간·수동으로 돈다. 지금은 실패해도 배포를 막지 않고 알림만 한다 — 야간 실행이 5번 연속 성공하면 배포를 막는 단계로 바꾼다(2026-11-09 결정 5).
 
 ## 구조
 

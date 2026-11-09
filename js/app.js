@@ -1314,6 +1314,13 @@ const dataPromise = loadData().then(() => {
     .then(r => r.ok ? r.json() : null)
     .then(doc => { if (doc) RouteFinder.loadTransfers(doc); })
     .catch(() => null));
+  // KTX 공식 운임표(2026-09-01, 약 15KB). 없거나 실패하면 KTX 요금은 모두 '추정'으로 표시된다.
+  if (typeof RouteCompare !== 'undefined' && RouteCompare.loadKtxFares) {
+    extra.push(fetch('data/ktx-fares.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(doc => { if (doc) RouteCompare.loadKtxFares(doc); })
+      .catch(() => null));
+  }
   return Promise.all(extra);
 });
 

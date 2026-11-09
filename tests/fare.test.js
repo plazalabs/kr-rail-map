@@ -2,7 +2,7 @@
  *
  * 요금은 '지도에서 확인 가능한 사실'과 맞아야 한다.
  * 수도권 전철은 거리비례 1,400원부터지만, KTX·일반철도는 요금표가 따로다.
- * 서울→부산 무궁화 28,600원 / KTX 59,800원이 기준값이다.
+ * 서울→부산 무궁화 28,600원 / KTX 54,400원(2026-09-01 통합 운임, 공식 운임표)이 기준값이다. 통합 전 KTX 59,800원은 추정 공식의 바탕.
  */
 'use strict';
 const fs = require('fs');
@@ -55,11 +55,11 @@ check('중앙선 240km 가 16,000원 근처', near(jungang, 16000, 700), `${jung
 
 console.log('\n[KTX] 거리비례 아님');
 // 우리 선형으로 잰 서울→부산 KTX 거리는 428km 남짓 (실제 영업거리 423.8km)
-const ktx = RC.calcFareOfRoute(routeOf('gyeongbu-line-ktx', 428.3), 428.3);
-check('서울→부산 KTX 가 59,800원 근처', near(ktx, 59800, 400), `${ktx}원`);
+const ktx = RC.calcKtxFare(428.3);
+check('통합 전 공식: 서울→부산 KTX 가 59,800원 근처', near(ktx, 59800, 400), `${ktx}원`);
 // 강릉선은 같은 KTX 라도 km당 단가가 낮다 (215km 27,600원)
-const ktxG = RC.calcFareOfRoute(routeOf('gangneung-line-ktx', 215), 215);
-check('서울→강릉 KTX 가 27,600원 근처', near(ktxG, 27600, 500), `${ktxG}원`);
+const ktxG = RC.calcKtxFare(215);
+check('통합 전 공식: 서울→강릉 KTX 가 27,600원 근처', near(ktxG, 27600, 500), `${ktxG}원`);
 check('짧은 KTX 가 긴 KTX 보다 km당 비싸지 않음',
   (ktxG / 215) < (ktx / 428.3) * 1.02, `${(ktxG / 215).toFixed(0)} vs ${(ktx / 428.3).toFixed(0)}`);
 
@@ -85,5 +85,42 @@ check('서울→부산 최단시간이 KTX', r.time && r.time.legs.some(l => l.l
 const r2 = RC.findAll(id('강남'), id('역삼'));
 check('강남→역삼 요금 1,400원', r2.time && r2.time.fare === 1400, r2.time && r2.time.fare);
 
+
+console.log('\n[KTX 공식 운임표] 2026-09-01 통합 운임 (data/ktx-fares.json)');
+{
+  const fares = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/ktx-fares.json'), 'utf8'));
+  check('운임표 기준일 2026-09-01', fares.meta.effective === '2026-09-01', fares.meta.effective);
+  check('출처 라이선스가 공공데이터(제한 없음)', fares.meta.licence === 'data-go-kr-open');
+  // 표 자체 값 — 기사·보도자료와 대조 (서울~부산 59,800 → 54,400)
+  check('표: 서울~부산 54,400원', fares.lines['gyeongbu-line-ktx'].pairs['부산|서울'] === 54400);
+  check('표: 서울~강릉 27,600원 (강릉선은 통합 전과 같음)', fares.lines['gangneung-line-ktx'].pairs['강릉|서울'] === 27600);
+
+  // 표를 싣기 전에는 KTX 가 모두 '추정'
+  const seoul = id('서울'), busan = id('부산');
+  const before = RC.findAll(seoul, busan).time;
+  check('표가 없으면 KTX 구간은 추정', before.fareDetail.parts.filter(p => p.kind === 'ktx').every(p => p.basis === 'estimate') && before.fareDetail.estimated);
+
+  RC.loadKtxFares(fares);
+  const t = RC.findAll(seoul, busan).time;
+  const kp = t.fareDetail.parts.filter(p => p.kind === 'ktx');
+  check('서울→부산 최단시간의 KTX 구간 = 공식 54,400원', kp.length === 1 && kp[0].fare === 54400 && kp[0].basis === 'official',
+    kp.map(p => `${p.fare}원 ${p.basis}`).join(','));
+  check('합계 = 내역의 합', t.fare === t.fareDetail.parts.reduce((a, p) => a + p.fare, 0), `${t.fare}원`);
+  check('KTX 만 탄 서울→부산에 전철 요금이 붙지 않음 (합계 54,400원)', t.fare === 54400 && !t.fareDetail.parts.some(p => p.kind === 'metro'), `${t.fare}원`);
+  check('공식 값만이면 추정 표시 없음 (전철 거리 계산은 추정 아님)', t.fareDetail.estimated === false);
+
+  // 표에 없는 쌍(영등포↔광명: 영등포 정차 KTX 는 수원 경유라 광명을 지나지 않음) → 추정 = 통합 전 공식 × 0.9
+  const leg = { lineId: 'gyeongbu-line-ktx', from: id('영등포'), to: id('광명'), distKm: 12 };
+  const d = RC.calcFareDetail({ legs: [leg] }, 12);
+  check('표에 없는 KTX 구간은 추정 + 인하율 10%', d.estimated && d.parts[0].basis === 'estimate' &&
+    d.parts[0].fare === Math.round(RC.calcKtxFare(12) * 0.9 / 100) * 100, `${d.parts[0].fare}원`);
+
+  const html = RC.fareBreakdownHtml(t.fareDetail);
+  check('내역에 "공식 운임표 (2026.9.1 기준)"', html.includes('공식 운임표 (2026.9.1 기준)'), html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 100));
+  const h2 = RC.fareBreakdownHtml(d);
+  check('추정 구간은 "추정"이라고 적음', h2.includes('추정') && h2.includes('약 '), h2.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 100));
+  check('일반철도는 추정이라고 적음', RC.fareBreakdownHtml(RC.calcFareDetail(routeOf('gyeongbu-line', 100), 100)).includes('추정'));
+  check('수도권 전철만 탄 경로는 내역 생략', RC.fareBreakdownHtml(RC.findAll(id('강남'), id('역삼')).time.fareDetail) === '');
+}
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

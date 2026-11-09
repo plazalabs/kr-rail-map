@@ -73,21 +73,57 @@ const RouteCompare = (() => {
     return CONV_BASE + Math.round(CONV_PER_KM * Math.max(0, distKm - 10) / 100) * 100;
   }
 
-  // legs 를 보면서 구간 종류별 거리를 뽑아 요금을 합산한다.
-  // 수도권 전철은 거리비례, KTX·일반철도는 각자의 요금표를 쓴다.
-  function calcFareOfRoute(r, distKm) {
-    let ktxKm = 0, convKm = 0;
-    (r.legs || []).forEach(l => {
-      const cat = l.lineId && RF.categoryOf(l.lineId);
-      if (cat === 'ktx') ktxKm += (l.distKm || 0);
-      else if (cat === 'conventional') convKm += (l.distKm || 0);
-    });
-    const metroKm = Math.max(0, distKm - ktxKm - convKm);
-    let fare = calcFare(metroKm);
-    if (convKm > 0) fare += calcConvFare(convKm);
-    if (ktxKm > 0) fare += calcKtxFare(ktxKm);
-    return fare;
+  // KTX 공식 운임 (2026-09-01 KTX·SRT 통합 운임표, data/ktx-fares.json — build_ktx_fares.py).
+  // 노선별 '역 쌍 → 일반실 운임'. 표에 있는 쌍은 그 값을 그대로 쓰고(공식), 없는 쌍만 위 공식으로 추정한다.
+  // 위 공식(calcKtxFare)은 통합 전 실측 두 개(서울→부산 59,800원·서울→강릉 27,600원)에 맞춘 것이라,
+  // 추정에는 통합 인하율(평균 10%, 공정위·국토부 2026-08-02)을 곱한다 — 화면에 '추정'이라고 적는다.
+  const KTX_CUT = 0.9;
+  let ktxFares = null;           // { lines: { lineId: { pairs: { '가|나': 원 } } }, meta }
+  function loadKtxFares(doc) { ktxFares = (doc && doc.lines) ? doc : null; }
+  const fareNorm = s => String(s || '').trim().replace(/[()]/g, '').replace(/역$/, '').replace(/\s/g, '');
+  function officialKtxFare(lineId, fromId, toId) {
+    const t = ktxFares && ktxFares.lines[lineId];
+    if (!t) return null;
+    const k = [fareNorm(sname(fromId)), fareNorm(sname(toId))].sort().join('|');
+    return Object.prototype.hasOwnProperty.call(t.pairs, k) ? t.pairs[k] : null;
   }
+  function estimatedKtxFare(km) { return Math.round(calcKtxFare(km) * KTX_CUT / 100) * 100; }
+
+  // legs 를 보면서 구간 종류별 요금을 합산하고, 어디서 나온 값인지(공식표·계산·추정)를 함께 돌려준다.
+  // 수도권 전철은 거리비례, 일반철도는 맞춘 공식(추정), KTX 는 탄 구간마다 공식 운임표 → 없으면 추정.
+  function calcFareDetail(r, distKm) {
+    let convKm = 0, ktxKm = 0, metroLegKm = 0, legKmKnown = false;
+    const ktxParts = [];
+    const order = [];   // 내역을 타는 순서대로 — 전철·일반철도는 합산 요금이라 처음 탄 자리에 한 줄
+    (r.legs || []).forEach(l => {
+      if (typeof l.distKm === 'number') legKmKnown = true;
+      const cat = l.lineId && RF.categoryOf(l.lineId);
+      if (l.lineId && cat !== 'ktx' && cat !== 'conventional') {
+        metroLegKm += (l.distKm || 0);
+        if (!order.includes('metro')) order.push('metro');
+      }
+      if (cat === 'conventional' && !order.includes('conventional')) order.push('conventional');
+      if (cat === 'ktx') {
+        order.push(ktxParts.length);
+        ktxKm += (l.distKm || 0);
+        const off = officialKtxFare(l.lineId, l.from, l.to);
+        ktxParts.push(off !== null
+          ? { kind: 'ktx', from: l.from, to: l.to, fare: off, basis: 'official' }
+          : { kind: 'ktx', from: l.from, to: l.to, fare: estimatedKtxFare(l.distKm || 0), basis: 'estimate' });
+      } else if (cat === 'conventional') convKm += (l.distKm || 0);
+    });
+    // 전철 거리는 실제로 탄 전철 구간(legs)만 더한다. 예전에는 '전체 거리 − KTX − 일반철도' 의 나머지로 셌는데,
+    // 전체 거리(선형을 따라 잰 값)와 구간 거리 합이 몇 km 어긋나서 KTX 만 탄 서울→부산에도 전철 1,400원이 붙었다.
+    // 구간 거리가 없는 옛 모양의 결과에서만 예전 방식으로 물러난다.
+    const metroKm = legKmKnown ? metroLegKm : Math.max(0, distKm - ktxKm - convKm);
+    const metroPart = metroKm > 0 ? { kind: 'metro', fare: calcFare(metroKm), basis: 'formula' } : null;
+    const convPart = convKm > 0 ? { kind: 'conventional', fare: calcConvFare(convKm), basis: 'estimate' } : null;
+    if (metroPart && !order.includes('metro')) order.unshift('metro');   // 옛 모양(구간 거리 없음)
+    const parts = order.map(o => o === 'metro' ? metroPart : o === 'conventional' ? convPart : ktxParts[o]).filter(Boolean);
+    const total = parts.reduce((a, p) => a + p.fare, 0);
+    return { total, parts, estimated: parts.some(p => p.basis === 'estimate') };
+  }
+  function calcFareOfRoute(r, distKm) { return calcFareDetail(r, distKm).total; }
   function routeDistance(path) {
     // 선로를 따라간 실제 거리. 예전에는 역 좌표끼리 직선거리를 더해서
     // 곡선 구간이 실제보다 짧게 나왔다 (강남→원주 93km, 실제 107km).
@@ -274,7 +310,8 @@ const RouteCompare = (() => {
   function enrich(r) {
     if (!r) return null;
     const distKm = routeDistance(r.path);
-    return markUnopened({ ...r, distKm, fare: calcFareOfRoute(r, distKm) });
+    const fd = calcFareDetail(r, distKm);
+    return markUnopened({ ...r, distKm, fare: fd.total, fareDetail: fd });
   }
 
   // 운행 중인 노선만 쓰는 3종 (길찾기 기본 — 2026-11-09 결정 1: 미개통은 켠 사람에게만).
@@ -350,6 +387,11 @@ const RouteCompare = (() => {
       .rc-oo-hint { font-size: 12px; line-height: 1.6; margin: 0 0 8px; padding: 6px 10px; border-radius: 8px;
         border: 1px dashed var(--border, #c9ced6); color: var(--text, #222); background: var(--surface, #f6f7f9); }
       .rc-oo-how { display: block; color: var(--muted, #666); }
+      /* 요금 내역 — 줄마다 출처(공식 운임표·계산·추정) */
+      .rc-fare { list-style: none; margin: -2px 0 8px; padding: 6px 10px; font-size: 12px; line-height: 1.6;
+        border-left: 3px solid var(--border, #d6dae0); color: var(--text, #222); }
+      .rc-src { color: var(--muted, #666); font-size: 11px; }
+      .rc-est { color: var(--warn-text, #8a5300); font-size: 11px; }
       /* '지금 vs 개통 후' 비교 */
       .rc-nf { border: 1px solid var(--border, #e3e6ea); border-radius: 10px; padding: 10px 12px;
         margin-bottom: 10px; background: var(--surface, #f6f7f9); }
@@ -373,6 +415,25 @@ const RouteCompare = (() => {
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // 요금 내역 — 공식 운임표 값과 계산·추정 값을 섞어 하나의 확정 금액처럼 보이지 않게 줄마다 출처를 적는다.
+  // 수도권 전철만 탄 경로는 내역을 생략한다(한 줄짜리 거리 요금이라 위 합계와 같다).
+  function fareBreakdownHtml(fd) {
+    if (!fd || !fd.parts || !fd.parts.some(p => p.kind !== 'metro')) return '';
+    const eff = ktxFares && ktxFares.meta && ktxFares.meta.effective ? ktxFares.meta.effective.replace(/-/g, '.').replace(/\.0/g, '.') : '';
+    const rows = fd.parts.map(p => {
+      const won = p.fare.toLocaleString() + '원';
+      if (p.kind === 'ktx') {
+        const seg = `KTX ${escapeHtml(sname(p.from))}→${escapeHtml(sname(p.to))}`;
+        return p.basis === 'official'
+          ? `<li>${seg} <b>${won}</b> <span class="rc-src">공식 운임표${eff ? ' (' + eff + ' 기준)' : ''}</span></li>`
+          : `<li>${seg} 약 ${won} <span class="rc-est">추정 — 공식 운임표에 없는 구간이라 통합 전 요금에 인하율 10%를 적용</span></li>`;
+      }
+      if (p.kind === 'conventional') return `<li>일반철도 약 ${won} <span class="rc-est">추정 — 거리로 계산</span></li>`;
+      return `<li>수도권 전철 ${won} <span class="rc-src">거리 기준 계산</span></li>`;
+    }).join('');
+    return `<ul class="rc-fare">${rows}</ul>`;
   }
 
   // '지금 vs 개통 후' 비교 카드.
@@ -429,7 +490,10 @@ const RouteCompare = (() => {
   }
 
   function variantHtml(r, tabId, badge) {
-    let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분 · 환승 ${r.transfers}회 · 예상 요금 ${r.fare.toLocaleString()}원 · ${r.distKm.toFixed(1)}km</div>`;
+    const fd = r.fareDetail;
+    const fareTxt = `예상 요금 ${r.fare.toLocaleString()}원${fd && fd.estimated ? ' <span class="rc-est">(일부 추정)</span>' : ''}`;
+    let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분 · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
+    html += fareBreakdownHtml(fd);
     // 미개통 노선을 지나는 경로는 명시한다.
     // 이 지도는 착공·계획 노선까지 그리므로 '지금 갈 수 있는 길'로 오해하면 안 된다.
     if (r.unopenedLines && r.unopenedLines.length) {
@@ -564,7 +628,7 @@ const RouteCompare = (() => {
 
   // 테스트에서 요금표를 직접 검증할 수 있도록 노출한다.
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
-  return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute,
+  return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, fareBreakdownHtml,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
     compareNowFuture, nowFutureHtml, openOnlyHintHtml,
     _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich } };

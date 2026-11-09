@@ -934,3 +934,8 @@ body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
   /* 모바일: 툴바가 아래로 가므로 우상단 맨 위에 붙인다 */
   .sa-legend { top: 10px; right: 10px; width: min(236px, calc(100vw - 80px)); }
 }
+
+/* 길찾기 요금 내역의 '추정' 글자색 (js/route-compare.js .rc-est). 밝은 배경은 짙은 황토, 어두운 테마는 밝은 노랑 — 글자 대비 4.5:1 이상 */
+:root { --warn-text: #8a5300; }
+body[data-theme="dark"], body[data-theme="eclipse"], body[data-theme="neon"] { --warn-text: #f5c04a; }
+body[data-theme="win95"] { --warn-text: #5c3600; }

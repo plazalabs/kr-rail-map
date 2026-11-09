@@ -6,7 +6,7 @@
  * 실행: node tests/e2e/run.js --only focus-return
  */
 'use strict';
-const { launch, sleep, BASE, recorder } = require('./lib/cdp');
+const { launch, sleep, BASE, recorder, clickStation } = require('./lib/cdp');
 const R = recorder('focus-return');
 
 async function ready(b) {
@@ -72,14 +72,13 @@ async function waitOpen(b, id, want = true, ms = 5000) { const t0 = Date.now(); 
   R.check("Esc 로 닫으면 포커스가 '분석' 버튼으로 (메뉴 항목은 닫혀 안 보이므로)", rsClosed && /tb-dropbtn/.test(a5), { rsClosed, a5 });
 
   // 4. 마우스 동작은 그대로: 지도에서 역 클릭 → 상세 열림, ✕ 클릭 → 닫힘
-  await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.name_ko === '서울'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`); await sleep(1800);
-  const p = await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.name_ko === '서울'); const p = map.project(s.geometry.coordinates); const r = map.getCanvas().getBoundingClientRect(); return [r.x + p.x, r.y + p.y]; })()`);
-  await b.click(p[0], p[1]);
+  const seoulId = await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.name_ko === '서울'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); return s.properties.id; })()`);
+  const cs = await clickStation(b, seoulId);   // 클릭으로 잡힐 때까지 기다린 뒤 클릭 (2026-11-09 FLAKY 원인)
   const mo = await waitOpen(b, 'sd-panel'); await sleep(600);   // 패널이 미끄러져 들어오는 동안 기다림
   const cx = await b.evaluate(`(() => { const r = document.getElementById('sd-close').getBoundingClientRect(); return [r.x + r.width/2, r.y + r.height/2]; })()`);
   await b.click(cx[0], cx[1]);
   const mc = await waitOpen(b, 'sd-panel', false);
-  R.check('마우스: 지도에서 역 클릭 → 상세, ✕ 클릭 → 닫힘 (기존 동작)', mo && mc, { mo, mc });
+  R.check('마우스: 지도에서 역 클릭 → 상세, ✕ 클릭 → 닫힘 (기존 동작)', cs.ok && mo && mc, { cs, mo, mc });
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0', exc.length === 0, exc.slice(0, 3));
   b.close();

@@ -5,7 +5,7 @@
  * 실행: node tests/e2e/run.js --only fav-stations
  */
 'use strict';
-const { launch, sleep, BASE, recorder } = require('./lib/cdp');
+const { launch, sleep, BASE, recorder, clickStation } = require('./lib/cdp');
 const R = recorder('fav-stations');
 const KEY = 'kr-rail-map-favorites-v1';
 
@@ -24,10 +24,10 @@ async function press(b, sel) {
 }
 // 지도에서 그 역을 실제로 클릭해 역 상세를 연다
 async function openOnMap(b, id) {
-  await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.id === '${id}'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`); await sleep(1800);
-  const p = await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.id === '${id}'); const p = map.project(s.geometry.coordinates); const r = map.getCanvas().getBoundingClientRect(); return [r.x + p.x, r.y + p.y]; })()`);
-  await b.click(p[0], p[1]); await sleep(1200);
-  return b.evaluate(`document.getElementById('sd-panel').classList.contains('sd-open')`);
+  await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.id === '${id}'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`);
+  // 고정 1.8초 대기 뒤 눈감고 클릭하던 것을, 그 역이 클릭으로 잡힐 때까지 기다리게 (2026-11-09 FLAKY 원인)
+  const c = await clickStation(b, id); await sleep(1200);
+  return c.ok && b.evaluate(`document.getElementById('sd-panel').classList.contains('sd-open')`);
 }
 const favRows = b => b.evaluate(`[...document.querySelectorAll('#fav-list .fav-item')].filter(d => !/→/.test(d.textContent)).map(d => d.textContent.replace('✕', '').trim())`);
 const stored = b => b.evaluate(`JSON.parse(localStorage.getItem('${KEY}') || '{}').stations || []`);
@@ -67,9 +67,10 @@ const centerNear = (b, id) => b.evaluate(`(() => { const s = STATIONS.find(f => 
   }
 
   // 3. 서울만 해제 → 부산은 남음
-  await openOnMap(b, I.seoul); await press(b, '#sd-panel .sd-actions [data-act=fav]'); await press(b, '#sd-close');
+  const o3 = await openOnMap(b, I.seoul); const f3 = await press(b, '#sd-panel .sd-actions [data-act=fav]'); await press(b, '#sd-close');
   const st2 = await stored(b);
-  R.check('서울 시청만 해제 → 부산 시청은 남음', st2.length === 1 && st2[0] && st2[0].id === I.busan, st2);
+  // 열기·누르기 결과도 같이 남긴다 — 예전엔 안 남겨서 실패해도 앱 문제인지 클릭이 빗나간 건지 알 수 없었다
+  R.check('서울 시청만 해제 → 부산 시청은 남음', o3 && f3.ok && st2.length === 1 && st2[0] && st2[0].id === I.busan, { o3, f3, st2 });
 
   // 4. 옛 저장분(이름만)
   await b.evaluate(`localStorage.setItem('${KEY}', JSON.stringify({ stations: ['시청', '강남'], routes: [] })); 0`);

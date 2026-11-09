@@ -121,4 +121,29 @@ function recorder(name) {
   return { check, finish, rows };
 }
 
-module.exports = { launch, sleep, BASE, outDir, recorder, findChrome };
+/* 지도에서 역을 실제로 클릭한다 — 그 역이 '클릭으로 잡히는' 상태가 될 때까지 기다린 뒤에.
+ *
+ * 지도를 처음 가 보는 곳으로 옮기면(jumpTo) 역 점이 그려져 queryRenderedFeatures 에 잡히기까지 시간이 걸린다.
+ * 2026-11-09 측정: 보통 속도에서 0.3초 안에 못 잡힘 6/15, CPU 6배 느리게 하면 1.8초 뒤에도 못 잡힘 1/15.
+ * 예전 테스트는 1.8초 고정으로 기다린 뒤 눈감고 클릭해서, 전체 e2e 처럼 바쁠 때 가끔 빗나갔다
+ * (fav-stations '서울 시청만 해제', focus-return '마우스: 지도에서 역 클릭' FLAKY 의 원인).
+ * 앱의 클릭 처리(app.js map.on('click') — 클릭 지점 18px 안의 역)와 같은 조건으로 잡히는지 본다.
+ * 반환: { ok, waitedMs, why } — ok 면 클릭까지 했다. */
+async function clickStation(b, id, { timeout = 10000 } = {}) {
+  const t0 = Date.now();
+  let pt = null;
+  while (Date.now() - t0 < timeout) {
+    pt = await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.id === ${JSON.stringify(id)}); if (!s) return null;
+      const p = map.project(s.geometry.coordinates); const r = map.getCanvas().getBoundingClientRect();
+      const hit = map.queryRenderedFeatures([[p.x - 18, p.y - 18], [p.x + 18, p.y + 18]], { layers: ['rail-stations'] });
+      return { x: r.x + p.x, y: r.y + p.y, first: hit.length ? hit[0].properties.id : null }; })()`).catch(() => null);
+    if (pt && pt.first === id) break;
+    await sleep(150);
+  }
+  if (!pt) return { ok: false, waitedMs: Date.now() - t0, why: '역 없음' };
+  if (pt.first !== id) return { ok: false, waitedMs: Date.now() - t0, why: '시간 안에 클릭으로 잡히지 않음 (잡힌 것: ' + pt.first + ')' };
+  await b.click(pt.x, pt.y);
+  return { ok: true, waitedMs: Date.now() - t0 };
+}
+
+module.exports = { launch, sleep, BASE, outDir, recorder, findChrome, clickStation };

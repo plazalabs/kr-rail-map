@@ -7,7 +7,7 @@
 // 판정: 이름 N 을 출발칸에 입력 → 자동완성에서 이름이 정확히 N 인 항목을 하나씩 클릭 → 도착칸에 '강남' 선택 →
 //       길찾기 클릭 → RouteCompare.show 로 넘어간 출발 ID 를 기록. N 의 모든 역 ID 가 한 번씩 잡히면 통과.
 //       (전수 열거 동안은 RouteCompare.show 를 기록용 스텁으로 바꾼다 — 테스트 하네스 한정. 시청→강남 본 검증은 원본 실행)
-const { launch, sleep, BASE, outDir } = require('./lib/cdp');
+const { launch, sleep, BASE, outDir, clickStation } = require('./lib/cdp');
 const fs = require('fs'), path = require('path');
 const OUT = outDir('same-name-stations');
 const METRO14 = ['시청', '양정', '금곡', '증산', '중앙', '판교', '고촌', '평창', '박물관', '교대', '송정', '양평', '마산', '운천'];
@@ -120,9 +120,8 @@ const acItems = (b, id) => b.evaluate(`[...document.getElementById('${id}').pare
   // F. 역 상세 '여기서 출발' (지도에서 서울 시청 실클릭 → 패널 버튼 실클릭)
   await b.goto('about:blank', 200); await b.goto(BASE + '#normal', 800); await ready(b);
   await b.evaluate(`window.__rc5 = []; RouteCompare.show = (f, t) => { __rc5.push([f, t]); }; 0`);
-  await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.id === '${seoulSicheong}'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`); await sleep(1800);
-  const p = await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.id === '${seoulSicheong}'); const p = map.project(s.geometry.coordinates); const r = map.getCanvas().getBoundingClientRect(); return [r.x + p.x, r.y + p.y]; })()`);
-  await b.click(p[0], p[1]); await sleep(1300);
+  await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.id === '${seoulSicheong}'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`);
+  await clickStation(b, seoulSicheong); await sleep(1300);   // 클릭으로 잡힐 때까지 기다린 뒤 클릭 (2026-11-09)
   const head = await b.evaluate(`(document.querySelector('#sd-head h2, #sd-panel b')||{}).textContent || null`);
   const fb = await b.evaluate(`(() => { const e = document.querySelector('#sd-panel .sd-actions [data-act=from]'); if (!e) return null; e.scrollIntoView({block:'center'}); const r = e.getBoundingClientRect(); return [r.x + r.width/2, r.y + r.height/2]; })()`);
   if (fb) { await b.click(fb[0], fb[1]); await sleep(400); }

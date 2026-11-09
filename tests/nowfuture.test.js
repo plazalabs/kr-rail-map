@@ -120,6 +120,28 @@ console.log('\n[비교] 숫자가 서로 맞는가');
     all.now.legs.map(l => l.lineId || '도보').join(' → '));
 }
 
+console.log('\n[기본 길찾기] 운행 중인 노선만 (2026-11-09 결정 1)');
+{
+  const A = pick('강남', 127.02756, 37.49795), B = pick('원주', 127.92282, 37.31641);
+  const oo = RC.findAll(A.id, B.id, { openOnly: true });
+  check('기본 3종 모두 미개통 노선을 쓰지 않음',
+    ['time', 'transfer', 'fare'].every(k => oo[k] && unopenedIn(oo[k]).length === 0),
+    ['time', 'transfer', 'fare'].map(k => k + ':' + (oo[k] ? oo[k].minutes + '분' : '없음')).join(' '));
+  check('기본 최단시간 = 지금 바로 경로와 같은 시간', oo.time && oo.time.minutes === RC.findAll(A.id, B.id).now.minutes);
+  check('개통 후 경로(future)를 따로 알고 있음', oo.future && unopenedIn(oo.future).length > 0);
+  const hint = RC.openOnlyHintHtml(oo);
+  check('켜면 몇 분 단축되는지 한 줄로 알림', /\d+분 단축 예상/.test(hint) && hint.includes('개통 예정 노선 포함'), hint.replace(/<[^>]+>/g, '').slice(0, 80));
+
+  const S = pick('교산', 127.2035, 37.52612), G = pick('강남', 127.02756, 37.49795);
+  const none = RC.findAll(S.id, G.id, { openOnly: true });
+  check('미개통 노선에만 있는 역: 기본 3종 모두 없음', !none.time && !none.transfer && !none.fare);
+  check('그래도 개통 후 경로는 안내함', !!none.future && RC.openOnlyHintHtml(none).includes('지금은 갈 수 없음'));
+
+  const E = pick('역삼', 127.03696, 37.50082);
+  check('미개통이 상관없는 경로는 안내 줄 없음', RC.openOnlyHintHtml(RC.findAll(A.id, E.id, { openOnly: true })) === '');
+  check('옵션 없이 부르면 예전 동작(개통 예정 포함)', unopenedIn(RC.findAll(A.id, B.id).time).length > 0);
+}
+
 console.log('\n[표시] nowFutureHtml 문구');
 {
   const A = pick('강남', 127.02756, 37.49795), B = pick('원주', 127.92282, 37.31641);

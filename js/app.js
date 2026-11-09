@@ -172,16 +172,52 @@ async function loadData() {
   annotateStations();
 }
 
+// 노선 필터 + 개통 상태. open=true 면 운행 중만, false 면 미개통(공사중·계획중·구상중)만.
+// status 가 비어 있으면 운행 중으로 본다 (route.js 와 같은 기준).
+const UNOPENED_OPACITY = 0.75;
+function lineFilterWithStatus(ids, open) {
+  const isOpen = ['==', ['coalesce', ['get', 'status'], 'open'], 'open'];
+  return ['all', ['in', ['get', 'id'], ['literal', ids]], open ? isOpen : ['!', isOpen]];
+}
+const UNOPENED_LAYERS = ['rail-lines-unopened', 'rail-lines-unopened-label'];
+
 function addDataLayers() {
   if (map.getSource('lines')) return; // 스타일 교체 후 중복 방지
   map.addSource('lines', { type: 'geojson', data: { type: 'FeatureCollection', features: LINES } });
   map.addLayer({
     id: 'rail-lines', type: 'line', source: 'lines',
+    filter: lineFilterWithStatus([...visibleLines], true),
     paint: {
       'line-color': ['coalesce', ['get', 'color'], '#888888'],
       'line-width': ['interpolate', ['linear'], ['zoom'], 7, 2.2, 12, 5, 16, 8],
       'line-opacity': 0.9
     }
+  });
+  // 미개통 노선(공사중·계획중·구상중) — 점선 + '개통 예정' 글자 (2026-11-09 결정 1).
+  // 예전에는 운행 중인 노선과 똑같은 실선이라 지금 탈 수 있는 노선처럼 보였다.
+  // rail-lines 는 운행 중만, 이 두 레이어는 미개통만 그린다 (노선 필터는 updateFilters() 가 같이 건다).
+  map.addLayer({
+    id: 'rail-lines-unopened', type: 'line', source: 'lines',
+    filter: lineFilterWithStatus([...visibleLines], false),
+    paint: {
+      'line-color': ['coalesce', ['get', 'color'], '#888888'],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 7, 2, 12, 4, 16, 6],
+      'line-opacity': UNOPENED_OPACITY,
+      'line-dasharray': [2, 1.5]
+    }
+  });
+  map.addLayer({
+    id: 'rail-lines-unopened-label', type: 'symbol', source: 'lines', minzoom: 9,
+    filter: lineFilterWithStatus([...visibleLines], false),
+    layout: {
+      'symbol-placement': 'line', 'symbol-spacing': 400,
+      'text-field': ['concat', ['get', 'name_ko'], ' 개통 예정',
+        ['match', ['get', 'status'], 'construction', ' (공사중)', 'planned', ' (계획중)', 'proposed', ' (구상중)', '']],
+      'text-size': 11, 'text-font': ['Noto Sans Regular']
+    },
+    paint: modeFromHash() === 'satellite'
+      ? { 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 1.6 }
+      : { 'text-color': '#333333', 'text-halo-color': '#ffffff', 'text-halo-width': 1.4 }
   });
   // 노선 하이라이트 레이어 (사이드바 호버용)
   map.addSource('line-highlight', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -262,10 +298,10 @@ function annotateStations() {
 
 function updateFilters() {
   const ids = [...visibleLines];
-  const f = ['in', ['get', 'id'], ['literal', ids]];
   // 역은 지나는 노선(lines) 중 하나라도 켜져 있으면 보인다 (환승역이 대표 노선만으로 걸러지던 결함 수정)
   const sf = UI.lineFilterExpr(ids);
-  if (map.getLayer('rail-lines')) map.setFilter('rail-lines', f);
+  if (map.getLayer('rail-lines')) map.setFilter('rail-lines', lineFilterWithStatus(ids, true));
+  UNOPENED_LAYERS.forEach(id => { if (map.getLayer(id)) map.setFilter(id, lineFilterWithStatus(ids, false)); });
   if (map.getLayer('rail-stations')) map.setFilter('rail-stations', sf);
   if (map.getLayer('station-labels')) map.setFilter('station-labels', sf);
   // 역세권 범위도 역 점과 같은 기준(lines)으로 거른다
@@ -863,6 +899,20 @@ document.getElementById('route-save').addEventListener('click', () => {
   saveFavorites(); renderFavorites();
   setStatus(`⭐ 경로 저장됨: ${from} → ${to}`);
 });
+// 개통 예정 노선 포함 (2026-11-09 결정 1) — 기본은 꺼짐(지금 운행 중인 노선만). 켠 사람에게는 다음 방문에도 켜 둔다.
+const UNOPENED_KEY = 'krrail-route-unopened';
+const routeUnopenedEl = document.getElementById('route-unopened');
+if (routeUnopenedEl) {
+  try { routeUnopenedEl.checked = localStorage.getItem(UNOPENED_KEY) === '1'; } catch (e) { /* 저장소 없음 → 기본(꺼짐) */ }
+  routeUnopenedEl.addEventListener('change', () => {
+    try { localStorage.setItem(UNOPENED_KEY, routeUnopenedEl.checked ? '1' : '0'); } catch (e) {}
+    // 이미 결과가 떠 있으면 바뀐 기준으로 다시 찾는다
+    const box = document.getElementById('route-result');
+    if (box && box.innerHTML.trim()) document.getElementById('route-go').click();
+  });
+}
+function routeIncludeUnopened() { return !!(routeUnopenedEl && routeUnopenedEl.checked); }
+
 document.getElementById('route-go').addEventListener('click', () => {
   const box = document.getElementById('route-result');
   const pair = resolveRoutePair(document.getElementById('route-from'), document.getElementById('route-to'));
@@ -874,10 +924,11 @@ document.getElementById('route-go').addEventListener('click', () => {
   }
   // 3종 비교 모듈이 있으면 사용, 없으면 기존 단일 경로
   if (typeof RouteCompare !== 'undefined') {
-    RouteCompare.show(from.properties.id, to.properties.id);
+    RouteCompare.show(from.properties.id, to.properties.id, { includeUnopened: routeIncludeUnopened() });
     return;
   }
-  const r = RouteFinder.findRoute(from.properties.id, to.properties.id);
+  const r = RouteFinder.findRoute(from.properties.id, to.properties.id,
+    routeIncludeUnopened() ? undefined : { openOnly: true });
   if (!r) { box.innerHTML = '경로를 찾을 수 없습니다.'; return; }
   const sname = id => {
     const s = STATIONS.find(x => x.properties.id === id);
@@ -1026,6 +1077,8 @@ function highlightRoute(path, legs) {
   const pathSet = new Set(path);
   // 노선 레이어는 전부 숨기고, 경로만 따로 그린다
   if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0);
+  if (map.getLayer('rail-lines-unopened')) map.setPaintProperty('rail-lines-unopened', 'line-opacity', 0);
+  if (map.getLayer('rail-lines-unopened-label')) map.setLayoutProperty('rail-lines-unopened-label', 'visibility', 'none');
   if (map.getLayer('rail-stations')) {
     const only = ['case', ['in', ['get', 'id'], ['literal', [...pathSet]]], 1, 0];
     map.setPaintProperty('rail-stations', 'circle-opacity', only);
@@ -1210,6 +1263,8 @@ function clearRouteHighlight() {
     try { mk.remove(); } catch (e) {}
   }
   if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0.9);
+  if (map.getLayer('rail-lines-unopened')) map.setPaintProperty('rail-lines-unopened', 'line-opacity', UNOPENED_OPACITY);
+  if (map.getLayer('rail-lines-unopened-label')) map.setLayoutProperty('rail-lines-unopened-label', 'visibility', 'visible');
   if (map.getLayer('rail-stations')) {
     map.setPaintProperty('rail-stations', 'circle-opacity', 1);
     map.setPaintProperty('rail-stations', 'circle-stroke-opacity', 1);

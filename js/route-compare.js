@@ -277,7 +277,19 @@ const RouteCompare = (() => {
     return markUnopened({ ...r, distKm, fare: calcFareOfRoute(r, distKm) });
   }
 
-  function findAll(fromId, toId) {
+  // 운행 중인 노선만 쓰는 3종 (길찾기 기본 — 2026-11-09 결정 1: 미개통은 켠 사람에게만).
+  // future 는 '개통 예정 노선까지 쓰면' 의 최단시간 — 결과에 '켜면 몇 분' 한 줄을 붙이는 데만 쓴다.
+  function findAllOpen(fromId, toId) {
+    if (!RF) return { time: null, transfer: null, fare: null, now: null, future: null, openOnly: true };
+    const time = enrich(RF.findRoute(fromId, toId, { openOnly: true }));
+    const transfer = enrich(findMinTransfer(fromId, toId, true));
+    const fare = enrich(findMinFare(fromId, toId, true));
+    const future = enrich(RF.findRoute(fromId, toId));
+    return { time, transfer, fare, now: time, future, openOnly: true };
+  }
+
+  function findAll(fromId, toId, opts) {
+    if (opts && opts.openOnly) return findAllOpen(fromId, toId);
     if (!RF) return { time: null, transfer: null, fare: null, now: null };
     // 최단시간 탐색에는 환승 페널티를 더 세게 준다 — route.js 기본값이
     // '역의 실제 도보 시간 + 4분' 이므로, 표시 시간과 같은 잣대로 고른다.
@@ -334,6 +346,10 @@ const RouteCompare = (() => {
       .rc-badge { display: inline-block; font-size: 11px; background: var(--accent, #3388ff); color: #fff;
         border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
       .rc-insight { font-size: 12px; color: var(--muted, #666); margin: 8px 0; line-height: 1.6; }
+      /* 기본(운행 중인 노선만) 결과 위의 '개통 예정 노선 포함' 안내 한 줄 */
+      .rc-oo-hint { font-size: 12px; line-height: 1.6; margin: 0 0 8px; padding: 6px 10px; border-radius: 8px;
+        border: 1px dashed var(--border, #c9ced6); color: var(--text, #222); background: var(--surface, #f6f7f9); }
+      .rc-oo-how { display: block; color: var(--muted, #666); }
       /* '지금 vs 개통 후' 비교 */
       .rc-nf { border: 1px solid var(--border, #e3e6ea); border-radius: 10px; padding: 10px 12px;
         margin-bottom: 10px; background: var(--surface, #f6f7f9); }
@@ -448,16 +464,32 @@ const RouteCompare = (() => {
     return html;
   }
 
-  function show(fromId, toId) {
+  // 기본(운행 중인 노선만)일 때, 개통 예정 노선을 켜면 달라지는 점을 한 줄로 알린다.
+  function openOnlyHintHtml(all) {
+    const f = all.future;
+    if (!f || !(f.unopenedLines || []).length) return '';
+    const names = escapeHtml(f.unopenedLines.map(id => lineNameOf.get(id) || id).join(' · '));
+    const how = `<span class="rc-oo-how">위 <b>개통 예정 노선 포함</b>을 켜면 개통 후 경로를 볼 수 있습니다.</span>`;
+    if (!all.time) return `<div class="rc-oo-hint">🕓 개통 예정 <b>${names}</b> 개통 후에는 약 ${f.minutes}분 (지금은 갈 수 없음). ${how}</div>`;
+    const saved = all.time.minutes - f.minutes;
+    if (saved <= 0) return '';
+    return `<div class="rc-oo-hint">🕓 개통 예정 <b>${names}</b> 개통 후에는 약 ${f.minutes}분 (${saved}분 단축 예상). ${how}</div>`;
+  }
+
+  // opts.includeUnopened: true 면 개통 예정 노선까지 쓴 경로(예전 동작), 아니면 운행 중인 노선만.
+  function show(fromId, toId, opts) {
     ensureStyle();
     const box = document.getElementById('route-result');
     if (!box) return;
-    const all = findAll(fromId, toId);
+    const include = !!(opts && opts.includeUnopened);
+    const all = include ? findAll(fromId, toId) : findAllOpen(fromId, toId);
     if (!all.time && !all.transfer && !all.fare) {
-      box.innerHTML = '경로를 찾을 수 없습니다.';
+      box.innerHTML = include ? '경로를 찾을 수 없습니다.'
+        : '지금 운행 중인 노선으로는 갈 수 없습니다.' + openOnlyHintHtml(all);
       return;
     }
-    const cmp = compareNowFuture(fromId, toId, all);
+    // 기본(운행 중만)에서는 '지금 vs 개통 후' 상자를 그리지 않는다 — 대신 한 줄 안내.
+    const cmp = include ? compareNowFuture(fromId, toId, all) : { status: 'none' };
     const tabs = [
       { id: 'time', label: '⚡ 최단시간', r: all.time },
       // 개통 예정 노선을 안 쓰는 경로가 따로 있을 때만 '지금' 탭을 붙인다.
@@ -478,7 +510,7 @@ const RouteCompare = (() => {
       insight += `💰 최소요금은 ${(all.time.fare - all.fare.fare).toLocaleString()}원 절약${dm > 0 ? ` (${dm}분 더 소요)` : ''}`;
     }
 
-    let html = nowFutureHtml(cmp);
+    let html = include ? nowFutureHtml(cmp) : openOnlyHintHtml(all);
     html += `<div class="rc-tabs${tabs.length > 3 ? ' four' : ''}">` + tabs.map((t, i) =>
       `<button class="rc-tab${i === 0 ? ' active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('') + `</div>`;
     if (insight) html += `<div class="rc-insight">${insight}</div>`;
@@ -534,6 +566,6 @@ const RouteCompare = (() => {
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
   return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
-    compareNowFuture, nowFutureHtml,
+    compareNowFuture, nowFutureHtml, openOnlyHintHtml,
     _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich } };
 })();

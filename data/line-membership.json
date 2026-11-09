@@ -5,11 +5,11 @@
  "near_km": 0.3,
  "summary": {
   "lines": 78,
-  "open_lines": 68,
-  "open_pairs": 1489,
-  "open_confirmed": 1478,
+  "open_lines": 67,
+  "open_pairs": 1483,
+  "open_confirmed": 1472,
   "open_confirmed_pct": 99.3,
-  "open_lines_all_confirmed": 63
+  "open_lines_all_confirmed": 62
  },
  "lines": {
   "arex": {
@@ -208,14 +208,14 @@
   },
   "daejeon-metro-line-2": {
    "name": "대전 도시철도 2호선",
-   "status": "open",
+   "status": "construction",
    "stations": 6,
    "confirmed": 6,
    "sources": [
     "osm-geometry"
    ],
    "unconfirmed": [],
-   "provisional": false,
+   "provisional": true,
    "partial": false,
    "gap_reason": ""
   },

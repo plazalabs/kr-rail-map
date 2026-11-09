@@ -37,10 +37,12 @@ const RouteCompare = (() => {
     return RF.edgeMinutes(e);
   }
 
-  // 요금 (수도권 전철 기준, 2024년 인상 후)
+  // 요금 (수도권 전철, 성인 교통카드). 기본 1,550원(10km) — 2025-06-28 첫차부터 1,400 → 1,550원 (서울시 발표, 인천·경기·코레일 수도권 전철 동일).
+  // 거리 추가운임은 그대로: 10~50km 5km마다 100원, 50km 초과 8km마다 100원.
+  const METRO_BASE = 1550;
   function calcFare(distKm) {
     if (distKm <= 0) return 0;
-    let fare = 1400;
+    let fare = METRO_BASE;
     if (distKm > 10) fare += Math.ceil(Math.min(distKm - 10, 40) / 5) * 100;
     if (distKm > 50) fare += Math.ceil((distKm - 50) / 8) * 100;
     return fare;

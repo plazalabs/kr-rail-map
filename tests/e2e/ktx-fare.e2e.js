@@ -2,7 +2,7 @@
  *  A. data/ktx-fares.json 을 첫 화면에서 한 번 받는다
  *  B. 서울→부산(최단시간, KTX 만): 예상 요금 54,400원, 내역 'KTX 서울→부산 54,400원 공식 운임표 (2026.9.1 기준)', '추정' 없음
  *  C. 청량리→동해(KTX + 일반철도): 합계에 '(일부 추정)', 내역에 공식 줄과 추정 줄이 따로
- *  D. 강남→역삼(전철만): 요금 내역 없음 (1,400원 한 줄)
+ *  D. 강남→역삼(전철만): 요금 내역 없음 (1,550원 한 줄)
  * 실행: node tests/e2e/run.js --only ktx-fare
  */
 'use strict';
@@ -64,7 +64,7 @@ async function route(b, from, to) {
     await b.shot(path.join(OUT, 'c-donghae.png'));
 
     const D = await route(b, '강남', '역삼');
-    R.check('D1 전철만 탄 경로는 내역 없음', /예상 요금 1,400원/.test(D.total) && D.rows.length === 0, D.total);
+    R.check('D1 전철만 탄 경로는 내역 없음', /예상 요금 1,550원/.test(D.total) && D.rows.length === 0, D.total);
   } catch (e) {
     R.check('실행 오류', false, String(e && e.stack || e).slice(0, 300));
   } finally {

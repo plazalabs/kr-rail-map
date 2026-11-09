@@ -934,9 +934,9 @@ document.getElementById('route-go').addEventListener('click', () => {
     const s = STATIONS.find(x => x.properties.id === id);
     return s ? s.properties.name_ko : id;
   };
-  // 요금 계산 (수도권 전철 기준, 2024년 인상 후)
+  // 요금 계산 (수도권 전철, 2025-06-28 인상 후 기본 1,550원) — RouteCompare 가 없을 때만 쓰는 예비 경로
   function calcFare(distKm) {
-    let fare = 1400; // 기본 10km
+    let fare = 1550; // 기본 10km
     if (distKm > 10) {
       const extra1 = Math.min(distKm - 10, 40); // 10~50km
       fare += Math.ceil(extra1 / 5) * 100;

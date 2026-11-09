@@ -1,7 +1,7 @@
 /* 요금 계산 테스트 — 의존성 없이 실행: node tests/fare.test.js
  *
  * 요금은 '지도에서 확인 가능한 사실'과 맞아야 한다.
- * 수도권 전철은 거리비례 1,400원부터지만, KTX·일반철도는 요금표가 따로다.
+ * 수도권 전철은 거리비례 1,550원부터(2025-06-28 인상)지만, KTX·일반철도는 요금표가 따로다.
  * 서울→부산 무궁화 28,600원 / KTX 54,400원(2026-09-01 통합 운임, 공식 운임표)이 기준값이다. 통합 전 KTX 59,800원은 추정 공식의 바탕.
  */
 'use strict';
@@ -40,9 +40,9 @@ const near = (v, target, tol) => Math.abs(v - target) <= tol;
 const routeOf = (lineId, km) => ({ legs: [{ lineId, distKm: km }] });
 
 console.log('\n[수도권 전철] 거리비례');
-check('기본요금 1,400원 (5km)', RC.calcFare(5) === 1400, RC.calcFare(5));
-check('15km 는 1,500원', RC.calcFare(15) === 1500, RC.calcFare(15));
-check('50km 는 2,200원', RC.calcFare(50) === 2200, RC.calcFare(50));
+check('기본요금 1,550원 (5km, 2025-06-28 인상)', RC.calcFare(5) === 1550, RC.calcFare(5));
+check('15km 는 1,650원', RC.calcFare(15) === 1650, RC.calcFare(15));
+check('50km 는 2,350원', RC.calcFare(50) === 2350, RC.calcFare(50));
 check('거리 0 이면 0원 (다른 수단과 합산할 때)', RC.calcFare(0) === 0, RC.calcFare(0));
 
 console.log('\n[일반철도] 무궁화·ITX — 수도권 공식을 쓰면 안 됨');
@@ -66,8 +66,8 @@ check('짧은 KTX 가 긴 KTX 보다 km당 비싸지 않음',
 console.log('\n[혼합] 전철 + 일반철도');
 const mixed = RC.calcFareOfRoute(
   { legs: [{ lineId: 'seoul-subway-line-2', distKm: 12 }, { lineId: 'gyeongbu-line', distKm: 400 }] }, 412);
-// 전철 12km 1,500원 + 무궁화 400km 26,000원 = 27,500원
-check('전철 12km + 무궁화 400km 가 27,500원', near(mixed, 27500, 400), `${mixed}원`);
+// 전철 12km 1,650원 + 무궁화 400km 26,000원 = 27,650원
+check('전철 12km + 무궁화 400km 가 27,650원', near(mixed, 27650, 400), `${mixed}원`);
 
 console.log('\n[실제 경로] 앱이 계산한 값');
 const id = n => {
@@ -83,7 +83,7 @@ check('서울→부산 최단시간이 KTX', r.time && r.time.legs.some(l => l.l
   r.time && r.time.legs.map(l => l.lineId).join(','));
 
 const r2 = RC.findAll(id('강남'), id('역삼'));
-check('강남→역삼 요금 1,400원', r2.time && r2.time.fare === 1400, r2.time && r2.time.fare);
+check('강남→역삼 요금 1,550원', r2.time && r2.time.fare === 1550, r2.time && r2.time.fare);
 
 
 console.log('\n[KTX 공식 운임표] 2026-09-01 통합 운임 (data/ktx-fares.json)');

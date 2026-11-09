@@ -37,7 +37,7 @@ function watch(b) {
 
 (async () => {
   // ── A·B·C: 첫 화면 → 키보드로 강남 열기 → 네 절
-  const b = await launch({ port: 9661, w: 1440, h: 1000 });
+  const b = await launch({ port: 9661, w: 1440, h: 1000, invest: true });
   await b.send('Network.setBypassServiceWorker', { bypass: true });
   await b.send('Network.setCacheDisabled', { cacheDisabled: true });
   const got = watch(b);
@@ -81,7 +81,7 @@ function watch(b) {
   b.close(); await sleep(1000);
 
   // ── D: 느린 회선에서 투자분석을 켜자마자 지점 찍기 → 자료 도착 후 카드 채움
-  const v = await launch({ port: 9662, w: 1440, h: 1000 });
+  const v = await launch({ port: 9662, w: 1440, h: 1000, invest: true });
   await v.send('Network.setBypassServiceWorker', { bypass: true });
   await v.send('Network.setCacheDisabled', { cacheDisabled: true });
   const got2 = watch(v);
@@ -108,7 +108,7 @@ function watch(b) {
   v.close(); await sleep(1000);
 
   // ── E: 느린 회선에서 미리 받기 도중(준비 직후)에 역을 열기 → 깨지지 않고 네 절이 뜨고, 중복 없이 받음
-  const w = await launch({ port: 9663, w: 1440, h: 1000 });
+  const w = await launch({ port: 9663, w: 1440, h: 1000, invest: true });
   await w.send('Network.setBypassServiceWorker', { bypass: true });
   await w.send('Network.setCacheDisabled', { cacheDisabled: true });
   await w.send('Network.emulateNetworkConditions', { offline: false, latency: 562.5, downloadThroughput: 180000, uploadThroughput: 84375 });

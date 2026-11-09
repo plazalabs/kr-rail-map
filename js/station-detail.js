@@ -39,6 +39,17 @@
     '#sd-body{padding:14px 16px}' +
     '.sd-en{color:var(--muted,#6b7280);font-size:13px;margin-top:2px}' +
     '.sd-sec{margin-top:16px}' +
+    '.mk-table{width:100%;border-collapse:collapse;font-size:12.5px}' +
+    '.mk-table th{text-align:left;font-weight:500;color:var(--text-2,#4b5563);padding:6px 8px 6px 0;vertical-align:top;white-space:nowrap;width:1%}' +
+    '.mk-table td{padding:6px 0;border-bottom:1px solid var(--border,#e5e7eb);line-height:1.45}' +
+    '.mk-table th{border-bottom:1px solid var(--border,#e5e7eb)}' +
+    '.mk-table b{font-variant-numeric:tabular-nums}' +
+    '.mk-where{font-size:11.5px;color:var(--muted,#6b7280)}' +
+    '.mk-none,.mk-few{color:var(--muted,#6b7280)}' +
+    '.sd-mode-hint{margin-top:18px;padding-top:12px;border-top:1px solid var(--border,#e5e7eb)}' +
+    '.sd-mode-on{width:100%;text-align:left;padding:9px 12px;border-radius:8px;cursor:pointer;' +
+      'border:1px dashed var(--border,#d1d5db);background:var(--surface-2,transparent);color:var(--text,inherit);font-size:13px}' +
+    '.sd-mode-on:hover{background:var(--hover,#f3f4f6)}' +
     '.sd-sec h3{font-size:13px;color:var(--muted,#6b7280);margin:0 0 8px;font-weight:600}' +
     '.sd-line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border,#f4f4f4);font-size:14px}' +
     '.sd-dot{width:12px;height:12px;border-radius:50%;flex:none}' +
@@ -483,8 +494,12 @@
       '<span class="sd-ico">⭐</span></button>' +
       '</div>';
 
+    // 투자 모드(js/mode.js)가 꺼져 있으면 시세·단지·공급을 그리지 않는다 — 자료를 이미 받았더라도.
+    // KR_MODE 가 없으면(모듈 없음) 예전처럼 그린다.
+    var invest = typeof KR_MODE === 'undefined' || KR_MODE.isInvest();
+
     // 시세를 먼저. 없으면 빈 문자열이라 자연스럽게 노선부터 시작한다.
-    html += priceSection(sid);
+    if (invest) html += priceSection(sid);
 
     // 도심 접근성 — 시세 다음으로 중요한 값. '이 집에서 강남까지 몇 분'은
     // 부동산에서 실제로 비교하는 축이고, 개통으로 얼마나 줄어드는지까지 보여준다.
@@ -496,12 +511,17 @@
 
     // 공급 — '앞으로 이 동네에 몇 세대가 들어오나'. 시세(지금)·접근성(시간)에
     // 이어 세 번째 축이다. 자료가 없으면 절을 건너뛴다.
-    if (typeof StationDev !== 'undefined' && StationDev.isReady()) {
+    if (invest && typeof StationDev !== 'undefined' && StationDev.isReady()) {
       var dv = StationDev.of(sid);
       if (dv) {
         html += '<div class="sd-sec"><h3>앞으로 들어올 세대</h3>' +
           StationDev.sectionHtml(sid) + '</div>';
       }
+    }
+
+    // 실거래 7종 (1단계, 2026-11-09) — 투자 모드에서만. 자료 없는 종류는 '자료 없음', 5건 미만은 '거래 적음'.
+    if (invest && typeof StationMarket !== 'undefined' && StationMarket.isReady()) {
+      html += '<div class="sd-sec sd-market-sec"><h3>실거래 (7종)</h3>' + StationMarket.sectionHtml(sid) + '</div>';
     }
 
     // 역세권 범위(근사) — 1차 250m 안 출구·다른 역 수. 모듈이 없으면 건너뛴다.
@@ -561,6 +581,13 @@
     }
     html += '</details>';
 
+    // 철도 모드에서는 맨 아래에 투자 모드 안내 한 줄 (2026-11-09 회장님 결정).
+    // 철도만 보는 사람은 지나치면 되고, 집값을 찾는 사람은 여기서 바로 켠다.
+    if (!invest) {
+      html += '<div class="sd-mode-hint"><button type="button" class="sd-mode-on" ' +
+        'title="역 상세에 시세·단지·공급을 보여 줍니다">🏠 이 역의 집값·공급 보기 → 투자 모드 켜기</button></div>';
+    }
+
     // '첫차 / 막차' 칸은 없앴다. 자료가 없어서 '시간표 데이터 없음' 한 줄만
     // 남는 빈 칸이었고, 그 빈 칸이 액션 버튼을 화면 밖으로 밀어내고 있었다.
 
@@ -607,6 +634,12 @@
         }).join('');
         btn.remove();
       });
+    });
+
+    // 투자 모드 켜기 (안내 줄) — 켜면 KR_MODE 구독자(app.js)가 자료를 받고 패널을 다시 그린다
+    var modeOn = body.querySelector('.sd-mode-on');
+    if (modeOn) modeOn.addEventListener('click', function () {
+      if (typeof KR_MODE !== 'undefined') KR_MODE.set('invest');
     });
 
     // 액션 버튼

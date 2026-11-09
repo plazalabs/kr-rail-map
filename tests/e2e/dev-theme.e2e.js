@@ -28,7 +28,7 @@ const CONTRAST = `(() => {
 })()`;
 
 (async () => {
-  const b = await launch({ port: 9693, w: 1280, h: 900 });
+  const b = await launch({ port: 9693, w: 1280, h: 900, invest: true });
   await b.send('Network.setBypassServiceWorker', { bypass: true });
   await b.goto(BASE, 3000);
   for (let i = 0; i < 120; i++) { await sleep(400); if (await b.evaluate(`typeof dataReady!=='undefined'&&dataReady&&map.loaded()`).catch(() => false)) break; }

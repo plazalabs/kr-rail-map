@@ -1284,22 +1284,33 @@ function loadExits() {
 }
 window.KR_loadExits = loadExits;   // station-area.js 가 역세권을 켤 때 부른다
 
+// 투자 모드(js/mode.js) — 꺼져 있으면 시세·단지·공급을 받지 않는다(철도만 보는 사람은 약 2MB 절약).
+// 도심 접근성(access.json)은 소요시간 = 철도 정보라 모드와 상관없이 받는다.
+// KR_MODE 가 없으면(모듈을 못 불러옴) 예전 동작(전부 보임)으로 물러난다.
+const investOn = () => typeof KR_MODE === 'undefined' || KR_MODE.isInvest();
+let investDataRequested = false;
+function detailRedraw(ok) {
+  if (ok === false) return;
+  if (typeof StationDetail !== 'undefined') StationDetail.refresh();
+  if (typeof InvestAnalyzer !== 'undefined' && InvestAnalyzer.refresh) InvestAnalyzer.refresh();
+}
+function loadInvestData() {
+  if (investDataRequested || !investOn()) return;
+  investDataRequested = true;
+  if (typeof StationPrice !== 'undefined') {
+    StationPrice.load('data/station-price.json').then(detailRedraw).catch(() => null);
+    StationPrice.loadComplexes('data/station-complex.json').then(detailRedraw);
+  }
+  if (typeof StationDev !== 'undefined') StationDev.load('data/station-dev.json').then(detailRedraw);
+  if (typeof StationMarket !== 'undefined') StationMarket.load('data/station-market.json').then(detailRedraw);   // 실거래 7종 (2026-11-09)
+}
 function loadDetailData(opts) {
   // 쉬는 동안 미리 받기(prefetch)에서는 출구까지 받지 않는다 — 역을 열거나 분석을 켤 때만
   if (!(opts && opts.prefetch)) loadExits();
+  loadInvestData();   // 투자 모드일 때만, 한 번만
   if (detailDataRequested) return;
   detailDataRequested = true;
-  const redraw = ok => {
-    if (ok === false) return;
-    if (typeof StationDetail !== 'undefined') StationDetail.refresh();
-    if (typeof InvestAnalyzer !== 'undefined' && InvestAnalyzer.refresh) InvestAnalyzer.refresh();
-  };
-  if (typeof StationPrice !== 'undefined') {
-    StationPrice.load('data/station-price.json').then(redraw).catch(() => null);
-    StationPrice.loadComplexes('data/station-complex.json').then(redraw);
-  }
-  if (typeof StationAccess !== 'undefined') StationAccess.load('data/access.json').then(redraw);
-  if (typeof StationDev !== 'undefined') StationDev.load('data/station-dev.json').then(redraw);
+  if (typeof StationAccess !== 'undefined') StationAccess.load('data/access.json').then(detailRedraw);
 }
 // 역 상세 패널이 처음 열릴 때 (지도 load 전에 검색으로 여는 경우도 포함)
 if (typeof StationDetail !== 'undefined') StationDetail.beforeShow = loadDetailData;
@@ -1615,6 +1626,23 @@ document.getElementById('invest-btn').addEventListener('click', () => {
   document.getElementById('invest-btn').classList.toggle('active', on);
   if (on) setStatus('투자분석: 분석할 지점을 클릭하세요 (Esc 취소)');
 });
+// 투자 모드 스위치 — 툴바 '🏠 투자' 와 역 상세 맨 아래 안내 줄이 같은 KR_MODE 를 바꾼다.
+if (typeof KR_MODE !== 'undefined') {
+  document.getElementById('mode-btn').addEventListener('click', () => KR_MODE.toggle());
+  KR_MODE.onChange(mode => {
+    if (mode === 'invest') {
+      loadDetailData({ prefetch: true });   // 시세·단지·공급을 지금 받기 시작 (출구는 원래 규칙대로)
+      setStatus('투자 모드: 역 상세에 시세·단지·공급이 보입니다');
+    } else {
+      if (typeof InvestAnalyzer !== 'undefined' && InvestAnalyzer.isActive()) {
+        InvestAnalyzer.setMode(false);
+        document.getElementById('invest-btn').classList.remove('active');
+      }
+      setStatus('철도 모드: 부동산 정보를 숨겼습니다');
+    }
+    if (typeof StationDetail !== 'undefined') StationDetail.refresh();
+  });
+}
 document.getElementById('coverage-btn').addEventListener('click', () => {
   if (typeof CoverageMap === 'undefined') { setStatus('영향권 모듈을 불러오지 못했습니다.'); return; }
   // 버튼 켜짐 표시는 CoverageMap.show()/hide() 가 맡는다 (패널 ✕ 로 닫을 때도 같이 꺼지게)

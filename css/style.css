@@ -434,6 +434,8 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
 }
 #route-btn.tb-primary:hover { filter: brightness(1.06); }
 #locate-btn.tb-icon { padding: 7px 10px; font-size: 15px; line-height: 1; }
+/* 투자 모드 스위치 (js/mode.js) — 꺼짐이면 투자분석 메뉴를 숨긴다 */
+#toolbar [hidden] { display: none !important; }
 
 /* 드롭다운 */
 .tb-dropdown { position: relative; display: inline-block; }

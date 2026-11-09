@@ -38,6 +38,7 @@ E2E_BASE=https://plazalabs.github.io/kr-rail-map/index.html node tests/e2e/run.j
 | `station-area` | `station-area.e2e.js` | 역세권 범위(근사): 토글, 출구/역 좌표 기준, 경계 거리 ±1m, 전환 후 복원, 노선 필터, 역 패널 한 줄, 범례 ✕, 모바일 |
 | `station-detail-data` | `station-detail-data.e2e.js` | 역 상세·투자분석 데이터: 지도 준비 뒤에만 쉬는 동안 미리 받기(파일마다 1번, IMPL10), 미리 받은 뒤 열면 1.5초 안, 느린 회선에서 미리 받기 도중 열기, 키보드(/ → 이름 → Enter)로 역 열기, 네 절(시세·단지·도심 접근성·공급) 표시, 느린 회선에서 투자분석 카드 채움 (IMPL9) |
 | `region-labels` | `region-labels.e2e.js` | 동명역 지역 표시: 길찾기 자동완성·상단 검색에서 지역을 확정한 동명역에만 '· 서울 중구', 동명 없는 역·미확정 역에는 없음 (IMPL9) |
+| `invest-mode` | `invest-mode.e2e.js` | 투자 모드 스위치(2026-11-09): 처음 온 사람은 철도 모드(투자분석 메뉴·시세·공급 절 없음, 투자 자료 3종 요청 0건), 역 상세 맨 아래 '투자 모드 켜기' 한 줄 실클릭으로 켜기, 새로고침 유지, 툴바 `🏠 투자`로 끄기, `?mode=invest` 링크는 그 방문만. 다른 항목은 `launch({ invest: true })`로 투자 모드에서 돈다 |
 | `nearby-first` | `nearby-first.e2e.js` | 길찾기 자동완성: 지도 중심(서울·부산·대전)에 따라 그 도시의 '시청'이 맨 위, 다른 이름의 순서는 그대로, 고른 역 ID 저장 (IMPL9) |
 | `fav-stations` | `fav-stations.e2e.js` | 역 즐겨찾기를 역 ID로: 서울·부산 시청 ⭐가 따로 저장·표시, 사이드바 클릭 시 그 역, 한쪽 해제, 옛 저장분(이름만) 열림 (IMPL9) |
 | `focus-return` | `focus-return.e2e.js` | 키보드만으로 역 고르기(/ → 이름 → ↓ → Enter), 패널이 열리면 포커스가 패널 안으로, Esc·✕로 닫으면 원래 자리(검색창·메뉴 버튼)로, 마우스 동작은 그대로 (IMPL9) |

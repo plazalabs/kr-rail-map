@@ -28,7 +28,7 @@ const ddSel = name => `[...document.querySelectorAll('#toolbar .tb-dropdown')].f
   let port = 9611;
   for (const vk of VPS) {
     const v = VP[vk];
-    const b = await launch({ port: port++, w: v.w, h: v.h, mobile: v.mobile });
+    const b = await launch({ port: port++, w: v.w, h: v.h, mobile: v.mobile, invest: true });
     await b.send('Network.setBypassServiceWorker', { bypass: true });
     await b.send('Network.setCacheDisabled', { cacheDisabled: true });
     await b.send('Page.setDownloadBehavior', { behavior: 'deny' }).catch(() => {});

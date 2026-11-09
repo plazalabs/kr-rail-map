@@ -384,9 +384,15 @@ console.log('\n[지연 로딩] 역 상세 전용 데이터는 첫 화면에서 �
   const boot = app.slice(a, z);
   check('첫 화면 구간에 시세·단지·접근성·공급 로드가 없음',
     a > 0 && z > a && !/station-price|station-complex|access\.json|station-dev/.test(boot));
-  const fn = app.slice(app.indexOf('function loadDetailData('), app.indexOf('function loadDetailData(') + 1400);   // IMPL12: (opts) 인자·출구 지연 로딩 줄 추가
-  check('loadDetailData() 가 4종을 한 번만 받음',
-    /detailDataRequested = true/.test(fn) && ['station-price.json', 'station-complex.json', 'access.json', 'station-dev.json'].every(f => fn.includes(f)));
+  // 투자 모드(2026-11-09): 접근성은 loadDetailData, 시세·단지·공급은 loadInvestData(투자 모드일 때만) 로 나뉘었다
+  const fn = app.slice(app.indexOf('function loadDetailData('), app.indexOf('function loadDetailData(') + 1400);
+  const inv0 = app.indexOf('function loadInvestData(');
+  const ifn = app.slice(inv0, app.indexOf('\n}', inv0));
+  check('loadDetailData() 가 접근성을 한 번만 받고, 투자 자료는 loadInvestData() 로 넘김',
+    /detailDataRequested = true/.test(fn) && fn.includes('access.json') && /loadInvestData\(\)/.test(fn));
+  check('loadInvestData() 가 시세·단지·공급을 투자 모드일 때만 한 번 받음',
+    inv0 > 0 && /if \(investDataRequested \|\| !investOn\(\)\) return;\s*investDataRequested = true/.test(ifn) &&
+    ['station-price.json', 'station-complex.json', 'station-dev.json'].every(f => ifn.includes(f)));
   check('역 상세를 열 때(beforeShow)와 투자분석을 켤 때 loadDetailData() 호출',
     /StationDetail\.beforeShow = loadDetailData/.test(app) && /if \(on\) loadDetailData\(\)/.test(app) && /api\.beforeShow\(feature\)/.test(sd));
   check('자료 도착 시 투자분석 결과도 다시 그림 (InvestAnalyzer.refresh)',

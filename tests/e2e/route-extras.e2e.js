@@ -18,7 +18,11 @@ const R = recorder('route-extras');
       gangnam: f('강남').find(s => s.properties.lines.includes('seoul-subway-line-2')).properties.id }; })()`);
 
   // 1. 옛 링크(이름만) — 서울 시청으로 해석 + 상태줄 안내
-  await b.goto(BASE + '?from=' + encodeURIComponent('시청') + '&to=' + encodeURIComponent('강남') + '#normal', 800); await ready(); await sleep(1500);
+  await b.goto(BASE + '?from=' + encodeURIComponent('시청') + '&to=' + encodeURIComponent('강남') + '#normal', 800); await ready();
+  // 링크 복원은 데이터 준비 0.8초 뒤 '경로 찾기'를 자동으로 누르고, 그 처리(동명역 해석 + 3종 경로 계산)가 끝나야 sid 가 채워진다.
+  // 예전엔 1.5초 고정으로 기다렸는데, CPU 6배 느리게 하면 누른 뒤 2.1초 걸려 GitHub 러너에서 매번 실패했다(2026-11-09 첫 푸시 e2e).
+  // 채워질 때까지(최대 15초) 기다린다.
+  for (let i = 0; i < 75; i++) { if (await ev(`!!document.getElementById('route-from').dataset.sid`).catch(() => false)) break; await sleep(200); }
   const I = await ids();
   const leg = await ev(`({ status: document.getElementById('status').textContent, sid: document.getElementById('route-from').dataset.sid || null })`);
   R.check('옛 링크 ?from=시청&to=강남 → 서울 시청 ID', leg.sid === I.seoulSi, leg);

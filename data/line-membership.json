@@ -6,8 +6,8 @@
  "summary": {
   "lines": 78,
   "open_lines": 66,
-  "open_pairs": 1478,
-  "open_confirmed": 1469,
+  "open_pairs": 1475,
+  "open_confirmed": 1466,
   "open_confirmed_pct": 99.4,
   "open_lines_all_confirmed": 63
  },
@@ -311,8 +311,8 @@
   "great-train-express-line-a": {
    "name": "GTX-A",
    "status": "open",
-   "stations": 11,
-   "confirmed": 11,
+   "stations": 10,
+   "confirmed": 10,
    "sources": [
     "osm-geometry",
     "osm-relation"
@@ -1130,8 +1130,8 @@
   "yeongdong-line": {
    "name": "영동선",
    "status": "open",
-   "stations": 20,
-   "confirmed": 20,
+   "stations": 18,
+   "confirmed": 18,
    "sources": [
     "osm-geometry"
    ],

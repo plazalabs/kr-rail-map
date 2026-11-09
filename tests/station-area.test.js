@@ -118,8 +118,8 @@ console.log('\n[실데이터] 전 역 — 방식별 역 수와 경계 오차');
     for (const p of anc.points) { exitTotal++; if (!inGeom(p, a.geoms[250])) exitOutside++; }
   }
   check('출구 기준 역 938곳', nExit === 938, nExit);
-  // 2026-11-10: 간치(2020년 폐역) 제거로 308 → 307
-  check('역 좌표 기준 역 307곳', nCenter === 307, nCenter);
+  // 2026-11-10: 간치(2020년 폐역)·추추스테이션·흥전삭도마을(추추파크 관광 정류장) 제거로 308 → 305
+  check('역 좌표 기준 역 305곳', nCenter === 305, nCenter);
   check('전 역 꼭짓점 오차 ±1m', worstV <= 1, worstV.toFixed(3) + 'm');
   check('전 역 변 중점 오차 ±1m', worstM <= 1, worstM.toFixed(3) + 'm (' + worstName + ')');
   check('모든 기준점(출구·역 좌표)이 자기 1차 범위 안', exitOutside === 0, `${exitOutside}/${exitTotal}`);

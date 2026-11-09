@@ -331,9 +331,10 @@ check('KTX 호남선 정차 순서가 용산→목포', honamKtx.properties.stop
 const gtxa = lineById.get('great-train-express-line-a');
 const gtxaPieces = flatCoords(gtxa).length;
 check('GTX-A 선형이 4구간으로 이어짐', gtxaPieces === 4, `${gtxaPieces}조각`);
+// 삼성은 GTX-A 무정차(2028년 정차 예정)라 GTX-A 역이 아니다 — 선형이 삼성 아래를 지나는지만 본다
 for (const nm of ['삼성', '평택지제']) {
   const s = stations.features.find(f => f.properties.name_ko === nm &&
-    f.properties.lines.includes('great-train-express-line-a'));
+    (nm === '삼성' || f.properties.lines.includes('great-train-express-line-a')));
   const d = s ? Math.min(...flatCoords(gtxa).map(c => distToLine(
     [s.geometry.coordinates[1], s.geometry.coordinates[0]], c))) : Infinity;
   check(`GTX-A ${nm}역이 선형 위에 있음`, d < 0.15, `${(d * 1000).toFixed(0)}m`);

@@ -102,7 +102,7 @@ async function main() {
   RF.buildGraph(read('data/lines.geojson').features, ST);
   const seoul = ids('서울')[0].properties.id;
   const off = (lid) => (RF.adjacency().get(seoul) || []).filter(e => e.lineId === lid && e.officialMin != null).map(e => e.officialMin).sort();
-  check("GTX-A '서울역' 공식 간선이 '서울' 역에 붙음 (연신내 6분 · 삼성 6분)", JSON.stringify(off('great-train-express-line-a')) === '[6,6]', JSON.stringify(off('great-train-express-line-a')));
+  check("GTX-A '서울역' 공식 간선이 '서울' 역에 붙음 (연신내 6분 · 수서 9분, 삼성 무정차)", JSON.stringify(off('great-train-express-line-a')) === '[6,9]', JSON.stringify(off('great-train-express-line-a')));
   check("GTX-B '서울역' 공식 간선이 '서울' 역에 붙음 (용산 3분 · 청량리 5분)", JSON.stringify(off('gtx-b')) === '[3,5]', JSON.stringify(off('gtx-b')));
 
   console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);

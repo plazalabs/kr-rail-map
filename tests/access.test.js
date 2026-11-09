@@ -182,7 +182,9 @@ check('강남→강남은 0분', g && g.rows.find(r => r.id === 'gbd').after ===
 check('순위가 매겨진다', !!(g && g.rank.after), g && JSON.stringify(g.rank));
 check('순위는 전체 수보다 작거나 같다',
   g && g.rank.after && g.rank.after.rank <= g.rank.after.total);
-check('강남이 상위 5% 안에 든다', g && g.rank.after.rank / g.rank.after.total <= 0.05,
+// 2026-11-10: GTX-A 가 삼성에 서지 않게 바로잡자(2028년 정차 예정) 강남→서울역이 20 → 33분이 되어
+// 순위가 61 → 68위(5.5%)로 내려갔다. 사실에 맞춘 결과라 기준을 6% 로 둔다.
+check('강남이 상위 6% 안에 든다', g && g.rank.after.rank / g.rank.after.total <= 0.06,
   g && g.rank.after.rank + '/' + g.rank.after.total);
 check('3대 업무지구 평균이 계산된다', g && g.score.after != null && g.score.after < 40,
   g && g.score.after);

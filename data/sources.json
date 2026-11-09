@@ -56,7 +56,7 @@
  "sources": [
   {
    "id": "oldref",
-   "title": "역 좌표·노선 선형 (32개 노선)",
+   "title": "역 좌표·노선 선형 (28개 노선)",
    "provider": "옛 참고선 (옛 참고선)",
    "attribution": "옛 참고선(옛 참고선) 표시 좌표",
    "url": "",
@@ -74,11 +74,11 @@
     "lines[].geometry"
    ],
    "commercial": "unverified",
-   "caveat": "선형 52개는 OSM 으로 옮겼다. 남은 32개는 OSM 쪽 선로가 끊겼거나(동해선 포항~삼척, 태백선 고한~갈래호), 아직 지어지지 않았거나(GTX-D~H, 동북선, 대전·광주 2호선), 길이가 지금 선형과 15% 넘게어긋나 어느 쪽이 맞는지 확인 중인 노선이다."
+   "caveat": "선형 56개는 OSM 으로 옮겼다(2026-11-09 충북선·서해선·KTX 경강선·KTX 중부내륙선 추가 — 선로를 따라 모든 역을 지나는 것 확인). 남은 28개는 OSM 쪽 선로가 끊겼거나(동해선 포항~삼척, 태백선 고한~갈래호), 아직 지어지지 않았거나(GTX-D~H, 동북선, 대전·광주 2호선), 길이가 지금 선형과 15% 넘게어긋나 어느 쪽이 맞는지 확인 중인 노선이다."
   },
   {
    "id": "osm-rails",
-   "title": "노선 선형 (52개 노선)",
+   "title": "노선 선형 (56개 노선)",
    "provider": "OpenStreetMap contributors",
    "attribution": "© OpenStreetMap contributors",
    "url": "https://www.openstreetmap.org/copyright",

@@ -47,6 +47,11 @@ TOL_OFFICIAL = 0.08
 # 중부내륙선이 83km(실제 135km), 장항선이 114km(실제 154km)로 나왔다.
 # 둘이 맞아떨어질 때만 바꾼다. 어긋나면 지금 선형을 두고 따로 확인한다.
 AGREE = 0.15
+# 단, '선로 그래프를 따라 역과 역을 이은' 후보(via=graph)가 채택 판정을 받았으면 이 비교를 건너뛴다
+# (--trust-graph 를 줄 때만). 그래프 채택은 이미 (1) 직선으로 메운 구간 0 (2) 역 순서대로 지나는 직선 합보다
+# 짧지 않음 (3) 역 커버·중앙 이탈 기준을 통과한 것이고, 아래 '역이 선 밖' 검사도 그대로 한다.
+# 길이 비교의 상대(지금 선형)가 옛 참고선(옛 참고선) 화면을 따라 그린 것이라, 그 자료를 걷어내는
+# 작업(2026-11-09 결정 4-2)에서는 비교 기준으로 쓸 수 없다.
 # 역이 선에서 이만큼 떨어지면 눈에 띈다. 300m 를 넘으면 지도에서
 # 아이콘이 선 밖에 뜨므로 그 노선은 반영하지 않는다.
 MAX_DEV = 0.40
@@ -107,6 +112,8 @@ def new_note(old, med_m, via="relation"):
 
 def main(argv):
     apply = "--apply" in argv
+    trust_graph = "--trust-graph" in argv
+    only = {a for a in argv[1:] if not a.startswith("--")}
     cands = json.loads(CANDS.read_text("utf8"))
     # 그래프 방식(역→역 선로 탐색)은 역 좌표를 그대로 지나가므로 relation 보다
     # 역 이탈이 작다. 채택된 그래프 후보가 있으면 그쪽을 쓴다.
@@ -121,6 +128,8 @@ def main(argv):
 
     rows, applied, skipped = [], 0, []
     for lid, c in cands.items():
+        if only and lid not in only:
+            continue
         feat = by_id.get(lid)
         if feat is None:
             skipped.append((lid, "lines.geojson 에 없음"))
@@ -139,7 +148,8 @@ def main(argv):
             off = OFFICIAL[lid]
             if abs(new_km - off) / off > TOL_OFFICIAL:
                 why.append(f"공식 {off}km 대비 {new_km:.1f}km")
-        if cur_km > 1.0 and abs(new_km - cur_km) / cur_km > AGREE:
+        graph_ok = trust_graph and c.get("via") == "graph" and c.get("accept")
+        if cur_km > 1.0 and abs(new_km - cur_km) / cur_km > AGREE and not graph_ok:
             why.append(f"지금 {cur_km:.0f}km ↔ OSM {new_km:.0f}km")
         # 지금 선형의 커버율과 비교하지 않는다. 지금 선형은 역을 이어서 그린
         # 것이라 정의상 100% 가 나온다 — 기준으로 쓸 수 없는 숫자다.

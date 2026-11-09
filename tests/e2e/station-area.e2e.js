@@ -16,6 +16,13 @@ async function ready(b) {
   for (let i = 0; i < 20; i++) { if (await b.evaluate(`StationExits.isReady()`).catch(() => false)) break; await sleep(500); }
 }
 const idle = b => b.evaluate(`new Promise(r => { let done = false; const f = () => { if (!done) { done = true; r(); } }; map.once('idle', f); setTimeout(f, 6000); })`).then(() => sleep(300));
+// 그려졌나를 '한 번만' 재면 바쁠 때 아직 안 그려진 순간을 잴 수 있다 (2026-11-09 측정: 부하 없을 때도 범위가 그려지기까지 0.3~6.2초 — 예전 6초 상한과 맞닿음. CPU 부하 아래 '노선 다시 체크 → 범위 복귀' 등 FLAKY).
+// clickStation 과 같은 방식: 조건이 맞을 때까지 다시 재고, 상한(20초)을 넘기면 마지막 값으로 판정한다. 앱 동작은 그대로 본다.
+async function until(get, ok, timeout = 20000) {
+  const t0 = Date.now(); let v;
+  for (;;) { v = await get(); if (ok(v) || Date.now() - t0 > timeout) return v; await sleep(250); }
+}
+const drawn = rr => rr['station-area-fill'] > 0 && rr['station-area-r1'] > 0 && rr['station-area-r2'] > 0;
 const rendered = (b) => b.evaluate(`(() => { const o = {}; for (const id of ['station-area-fill','station-area-r1','station-area-r2','station-area-label-r1','station-area-label-r2']) o[id] = map.getLayer(id) ? map.queryRenderedFeatures({ layers: [id] }).length : -1; return o; })()`);
 async function clickSel(b, sel) {
   const c = await b.evaluate(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null; e.scrollIntoView({block:'center'}); const r = e.getBoundingClientRect(); const t = document.elementFromPoint(r.x + r.width/2, r.y + r.height/2); return [r.x + r.width/2, r.y + r.height/2, t === e || e.contains(t) || (t && t.contains && t.contains(e))]; })()`);
@@ -40,7 +47,7 @@ async function clickSel(b, sel) {
   // 2. 강남 z15
   const gangnam = await b.evaluate(`STATIONS.find(s => s.properties.name_ko === '강남' && (s.properties.lines||[]).includes('seoul-subway-line-2')).properties.id`);
   await b.evaluate(`(() => { const s = STATIONS.find(x => x.properties.id === '${gangnam}'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`); await idle(b);
-  let r = await rendered(b);
+  let r = await until(() => rendered(b), x => drawn(x) && x['station-area-label-r1'] > 0 && x['station-area-label-r2'] > 0);
   const src = await b.evaluate(`(() => { const d = map.getSource('station-area')._data; const fs = (d && d.features) || []; const k = {}; fs.forEach(f => { k[f.properties.kind] = (k[f.properties.kind]||0) + 1; }); return { n: fs.length, kinds: k, hasGangnam: fs.some(f => f.properties.sid === '${gangnam}'), gk: (fs.find(f => f.properties.sid === '${gangnam}')||{properties:{}}).properties.kind }; })()`);
   check('강남 z15: 범위가 그려짐 (fill·1차·2차 선)', r['station-area-fill'] > 0 && r['station-area-r1'] > 0 && r['station-area-r2'] > 0, { rendered: r, source: src });
   check('강남 z15: 거리 라벨(250m/350m) 표시', r['station-area-label-r1'] > 0 && r['station-area-label-r2'] > 0, r);
@@ -53,7 +60,7 @@ async function clickSel(b, sel) {
   if (noExit) {
     await b.evaluate(`map.jumpTo({ center: [${noExit.c}], zoom: 15 }); 0`); await idle(b);
     const k = await b.evaluate(`(() => { const fs = map.getSource('station-area')._data.features.filter(f => f.properties.sid === '${noExit.id}'); return fs.map(f => f.properties.kind + ':' + f.properties.r); })()`);
-    const rr = await rendered(b);
+    const rr = await until(() => rendered(b), x => x['station-area-r1'] > 0);
     check('출구 없는 역은 역 좌표 기준(center)', k.length === 2 && k.every(x => x.startsWith('center')), { station: noExit.name, k, rendered: rr['station-area-r1'] });
     await b.shot(path.join(OUT, `center-${noExit.name}.png`));
   } else check('출구 없는 역 표본 찾기', false, '수도권에 없음');
@@ -82,7 +89,7 @@ async function clickSel(b, sel) {
   for (const [kind, target] of [['theme', 'dark'], ['style', 'satellite'], ['style', 'gray'], ['theme', 'light'], ['style', 'normal']]) {
     const sel = kind === 'theme' ? `#theme-row .theme-btn[data-theme=${target}]` : `#toolbar [data-style=${target}]`;
     const h = await clickSel(b, sel); await sleep(1500); await idle(b);
-    const rr = await rendered(b);
+    const rr = await until(() => rendered(b), x => drawn(x) && (target !== 'satellite' || (x['station-area-label-r1'] > 0 && x['station-area-label-r2'] > 0)));
     const chk = await b.evaluate(`document.getElementById('layer-station-area').checked && !document.getElementById('sa-legend').hidden`);
     const ok = rr['station-area-r1'] > 0 && rr['station-area-r2'] > 0 && rr['station-area-fill'] > 0 && chk;
     check(`${kind}:${target} 후 복원`, ok, { how: h, rendered: rr, toggleOn: chk });
@@ -101,8 +108,8 @@ async function clickSel(b, sel) {
   if (hasCb) {
     await b.evaluate(`(() => { const e = document.querySelector(${JSON.stringify(cbSel)}); const d = e.closest('details'); if (d) d.open = true; 0 })()`); await sleep(200);
     const h = await clickSel(b, cbSel); await sleep(800); await idle(b);
-    const sidsAfter = await b.evaluate(`[...new Set(map.queryRenderedFeatures({ layers: ['station-area-r1'] }).map(f => f.properties.sid))]`);
-    const dotAfter = await b.evaluate(`map.queryRenderedFeatures({ layers: ['rail-stations'] }).some(f => f.properties.id === '${gangnam}')`);
+    const sidsAfter = await until(() => b.evaluate(`[...new Set(map.queryRenderedFeatures({ layers: ['station-area-r1'] }).map(f => f.properties.sid))]`), x => x.includes(gangnam));
+    const dotAfter = await until(() => b.evaluate(`map.queryRenderedFeatures({ layers: ['rail-stations'] }).some(f => f.properties.id === '${gangnam}')`), x => x);
     filt = { how: h, lid, before: sidsBefore.includes(gangnam), after: sidsAfter.includes(gangnam), dotAfter };
     // IMPL12 건 1: 환승역은 지나는 노선(lines) 중 하나라도 켜져 있으면 보인다. 강남은 2호선+신분당선이라
     // 대표 노선(2호선)만 꺼도 신분당선이 켜져 있으면 남는다. 범위와 역 점은 같은 기준으로 움직여야 한다.
@@ -116,14 +123,14 @@ async function clickSel(b, sel) {
       await clickSel(b, sel); await sleep(500);
     }
     await idle(b);
-    const allOffArea = await b.evaluate(`map.queryRenderedFeatures({ layers: ['station-area-r1'] }).some(f => f.properties.sid === '${gangnam}')`);
-    const allOffDot = await b.evaluate(`map.queryRenderedFeatures({ layers: ['rail-stations'] }).some(f => f.properties.id === '${gangnam}')`);
+    const allOffArea = await until(() => b.evaluate(`map.queryRenderedFeatures({ layers: ['station-area-r1'] }).some(f => f.properties.sid === '${gangnam}')`), x => !x);
+    const allOffDot = await until(() => b.evaluate(`map.queryRenderedFeatures({ layers: ['rail-stations'] }).some(f => f.properties.id === '${gangnam}')`), x => !x);
     check('지나는 노선을 모두 끄면 범위도 빠짐 (역 점과 같은 기준)', !allOffArea && !allOffDot, { allOffArea, allOffDot });
     for (const o of others) {
       await clickSel(b, `#line-list label.line-item[data-line-id="${o}"] input[type=checkbox]`); await sleep(400);
     }
     await clickSel(b, cbSel); await sleep(800); await idle(b);
-    const back = await b.evaluate(`map.queryRenderedFeatures({ layers: ['station-area-r1'] }).some(f => f.properties.sid === '${gangnam}')`);
+    const back = await until(() => b.evaluate(`map.queryRenderedFeatures({ layers: ['station-area-r1'] }).some(f => f.properties.sid === '${gangnam}')`), x => x);
     check('노선 다시 체크 → 범위 복귀', back);
   } else {
     const cbs = await b.evaluate(`[...document.querySelectorAll('#line-list input[type=checkbox]')].slice(0,3).map(e => e.outerHTML.slice(0,160))`);
@@ -156,6 +163,7 @@ async function clickSel(b, sel) {
   const mh = await clickSel(m, '#layer-station-area'); await sleep(400);
   await clickSel(m, '#sidebar-close'); await sleep(500);
   await m.evaluate(`(() => { const s = STATIONS.find(x => x.properties.id === '${gangnam}'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`); await idle(m);
+  await until(() => m.evaluate(`map.queryRenderedFeatures({ layers: ['station-area-r1'] }).length`), n => n > 0);
   const mob = await m.evaluate(`(() => { const r = document.getElementById('sa-legend').getBoundingClientRect(); const t = document.getElementById('sidebar-toggle').getBoundingClientRect(); const tb = document.getElementById('toolbar').getBoundingClientRect(); return { legend: [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)], inView: r.right <= innerWidth && r.bottom <= innerHeight && r.x >= 0, overlapsToggle: !(r.right < t.left || r.left > t.right || r.bottom < t.top || r.top > t.bottom), overlapsToolbar: r.bottom > tb.top, n: map.queryRenderedFeatures({ layers: ['station-area-r1'] }).length }; })()`);
   check('모바일 390: 범례가 화면 안·토글/툴바와 안 겹침·범위 그려짐', mob.inView && !mob.overlapsToggle && !mob.overlapsToolbar && mob.n > 0, { how: mh, ...mob });
   await m.shot(path.join(OUT, `mobile.png`));

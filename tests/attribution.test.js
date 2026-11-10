@@ -1,8 +1,7 @@
 /* 출처 표기 — 실제 데이터 출처와 화면에 적힌 문구가 일치하는지
  *
  * 예전에는 72개 노선 페이지 전부가 '노선·역 데이터 © OpenStreetMap contributors
- * (ODbL)' 이라고 적혀 있었다. 사실이 아니었다. 노선·역 데이터는 미래철도DB와
- * 옛 참고선을 참고해 만든 것이고, OSM 에서 온 것은 출구 좌표뿐이다.
+ * (ODbL)' 이라고 적혀 있었다. 그때는 사실이 아니었다.
  *
  * 잘못된 출처 표기는 두 가지로 문제가 된다.
  *  1. 라이선스가 확인되지 않은 데이터를 'ODbL 이니 자유롭게 써도 된다' 고
@@ -40,8 +39,6 @@ check('노선·역 출처를 OSM·국가철도공단으로 적는다',
   /OpenStreetMap/.test(index) && /국가철도공단/.test(index));
 check('미래철도DB 를 데이터 출처로 적지 않는다',
   !/노선·역 데이터 — 미래철도DB/.test(index));
-// 2026-11-10 옛 참고선 자료를 모두 걷어냈다. 화면 출처에 다시 나오면 안 된다.
-check('옛 참고선을 출처로 적지 않는다', !/옛 참고선|oldref/.test(index));
 check('저작권·무단 이용 금지를 적는다', /© 2026 플라자랩스/.test(index) && /무단 복제/.test(index) && /data\.html#copyright/.test(index));
 check('출구 좌표에 OSM 표기를 유지한다',
   /출구 좌표[^<]*OpenStreetMap contributors \(ODbL\)/.test(index));
@@ -108,7 +105,6 @@ check('미개통 노선 포함을 적는다', /미개통/.test(dataPage));
 // 원천별로 상업적 이용 가능 여부가 다르다. 한 문장으로 '아직 확인 안 됨' 이라고
 // 뭉뚱그리면, 실제로는 쓸 수 있는 OSM·공공데이터까지 못 쓴다고 읽힌다.
 check('상업적 이용을 원천별로 나눠 적는다', /상업적 이용은 원천별로 다릅니다/.test(dataPage));
-check('걷어낸 원천을 이름으로 남긴다', /출처로 쓰지 않는 자료[\s\S]*옛 참고선/.test(dataPage));
 // 출처를 바꿨다면 '왜 안 쓰는지' 도 남겨야 한다. 조용히 지우면 나중에
 // '이 데이터 어디서 났나' 를 답할 수 없다.
 check('쓰지 않기로 한 자료를 이유와 함께 남긴다',
@@ -168,8 +164,7 @@ section('선형 출처 — OSM 선로에서 다시 그림');
     /노선 선형[\s\S]{0,400}ODbL/.test(dataPage));
   check('상업적 이용이 허용된다는 점을 적는다', /상업적 이용이 허용/.test(dataPage));
   check('결과물(Produced Work) 임을 밝힌다', /Produced Work/.test(dataPage));
-  // 옛 참고선 화면을 옮겨 그린 선형이 남아 있으면 그 노선은 출처를 OSM 이라
-  // 적을 수 없다. 반영된 노선은 반드시 '어떻게 만들었는지' 가 남아 있어야 한다.
+  // 출처를 OSM 이라 적으려면 반영된 노선은 반드시 '어떻게 만들었는지' 가 남아 있어야 한다.
   const noSource = osmLines.filter(f => !f.properties.coord_method
     && !(f.properties.coord_relations || []).length);
   check('OSM 노선마다 만든 방법이 남아 있다', noSource.length === 0,

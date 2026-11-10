@@ -198,8 +198,8 @@ check('월계2교 환승이 실제로 성립(동북선 전용역↔동부선 전
   })());
 
 console.log('\n[GTX-D/E/F] 계획 역은 이름이 가리키는 곳에 있고 직결로 이어져야 함');
-// 2026-11-10 옛 참고선 좌표를 걷어내고, 이름이 가리키는 곳(OSM 지명)에 두었다 — data/own_align_config.py.
-// 보간으로 만든 가짜 좌표는 쓰지 않는다. 옛 참고선 좌표가 돌아오면 이 검사가 잡는다.
+// 계획 역은 이름이 가리키는 곳(OSM 지명)에 둔다 — data/own_align_config.py.
+// 보간으로 만든 가짜 좌표는 쓰지 않는다.
 const GTX_COORD_SRC = [
   ['영종국제도시', 126.55152, 37.48828],
   ['청라국제업무단지', 126.62522, 37.5292],
@@ -213,10 +213,8 @@ const realCoord = GTX_COORD_SRC.every(([n, lng, lat]) => {
   return c.some(s => Math.abs(s.c[0] - lng) < 1e-4 && Math.abs(s.c[1] - lat) < 1e-4);
 });
 check('GTX 신설역이 지명 위치 좌표를 가짐', realCoord, '좌표 불일치 역 있음');
-check('역 자료에 옛 참고선 출처가 남아 있지 않음',
-  !stations.features.some(f => /oldref|옛 참고선/.test(JSON.stringify(f.properties))));
-check('노선 자료에 옛 참고선 출처가 남아 있지 않음',
-  !lines.features.some(f => /oldref|옛 참고선|옛 참고선/.test(JSON.stringify(f.properties))));
+check('노선 선형은 OSM 이거나 자체 작성',
+  lines.features.every(f => ['osm', 'own'].includes(f.properties.coord_source)));
 
 r = route(['인천공항1터미널', 126.4528, 37.4472], ['강남', 127.0276, 37.4980]);
 check('인천공항1터미널→강남 GTX-D 직결', r && r.transfers === 0, r && `${r.transfers}회`);

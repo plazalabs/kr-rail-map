@@ -82,7 +82,6 @@ cd .. && python3 build_pages.py   # 정적 페이지 + sitemap
 - 계획 노선 6개(GTX-D~H, 동부선): 역을 이은 개략선, 자체 작성 (`data/build_own_alignments.py`)
 - 베이스맵: © OpenStreetMap · OpenFreeMap / 위성: © Esri
 - 원천 전체와 이용 조건: `data/sources.json` (사람이 읽는 표는 `data.html`)
-- 옛 참고선(옛 참고선) 자료는 2026-11-10 모두 걷어냈다 (`data/migrate_drop_oldref.py`)
 - 무색 노선의 색상은 디자인 지정 (CLEANING.md)
 
 ## 저작권

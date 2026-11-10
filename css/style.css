@@ -974,3 +974,24 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
   #route-panel .rc-tab { padding: 7px 1px; font-size: 11.5px; }
 }
 
+/* ---------- 처음 온 사람 안내 (js/guide.js) ---------- */
+#guide-card {
+  position: absolute; left: 12px; bottom: 34px; z-index: 36; width: 300px;
+  background: var(--panel); color: var(--text); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: var(--shadow-lg); padding: 10px 12px; font-size: 13px;
+}
+#guide-card .gd-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: var(--text-2, var(--muted)); }
+#guide-card .gd-head b { color: var(--text); }
+#guide-card .gd-close { margin-left: auto; border: 0; background: none; color: var(--muted); font-size: 14px; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+#guide-card .gd-close:hover { background: var(--hover); }
+#guide-card .gd-list { display: grid; gap: 4px; }
+#guide-card .gd-item { display: flex; gap: 8px; align-items: center; text-align: left; width: 100%;
+  border: 1px solid var(--border); background: var(--btn-bg); color: var(--btn-text);
+  border-radius: 8px; padding: 6px 8px; font: inherit; cursor: pointer; }
+#guide-card .gd-item:hover { background: var(--hover); }
+#guide-card .gd-item small { display: block; color: var(--text-2, var(--muted)); font-size: 11.5px; }
+#guide-card .gd-ic { font-size: 18px; width: 22px; text-align: center; }
+@media (max-width: 768px) {
+  #guide-card { left: 8px; right: 8px; width: auto; bottom: calc(66px + env(safe-area-inset-bottom)); }
+}
+

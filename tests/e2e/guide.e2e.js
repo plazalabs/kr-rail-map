@@ -1,0 +1,49 @@
+/* e2e: 처음 온 사람 안내 카드 (js/guide.js, 2026-11-11)
+ *  - 첫 방문(저장 없음)에는 지도가 뜬 뒤 카드가 보인다 — 데스크톱·휴대폰 모두 화면 안, 툴바를 가리지 않음
+ *  - '통근권 찾기' 를 누르면 카드가 닫히고 통근권 패널이 열린다
+ *  - 다시 열면(새로고침) 카드가 다시 뜨지 않는다
+ *  - 링크로 들어오면(?line=…) 처음이어도 뜨지 않는다
+ *  - ✕ 로 닫힌다
+ * 실행: node tests/e2e/run.js --only guide
+ */
+'use strict';
+const { launch, sleep, BASE, recorder } = require('./lib/cdp');
+const R = recorder('guide');
+
+async function ready(b) {
+  for (let i = 0; i < 120; i++) { await sleep(400); if (await b.evaluate(`typeof dataReady!=='undefined'&&dataReady&&map.loaded()`).catch(() => false)) break; }
+  await sleep(1200);
+}
+const card = b => b.evaluate(`(() => { const e = document.getElementById('guide-card'); if (!e) return null; const r = e.getBoundingClientRect();
+  const tb = document.getElementById('toolbar').getBoundingClientRect();
+  const overlapTb = !(r.right <= tb.left || r.left >= tb.right || r.bottom <= tb.top || r.top >= tb.bottom);
+  return { inVp: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, items: e.querySelectorAll('.gd-item').length, overlapTb }; })()`);
+
+(async () => {
+  for (const [w, h, mobile] of [[1440, 900, false], [390, 844, true]]) {
+    const b = await launch({ port: 9791, w, h, mobile, guide: true });
+    await b.send('Network.setBypassServiceWorker', { bypass: true });
+    await b.goto(BASE + '#normal', 800); await ready(b);
+    const c1 = await card(b);
+    R.check(`${w}px 첫 방문: 안내 카드가 화면 안에 4항목, 툴바를 가리지 않음`, !!c1 && c1.inVp && c1.items === 4 && !c1.overlapTb, c1);
+    await b.evaluate(`[...document.querySelectorAll('#guide-card .gd-item')].find(e => e.textContent.includes('통근권')).click()`); await sleep(1200);
+    const after = await b.evaluate(`({ card: !!document.getElementById('guide-card'), cm: !!document.getElementById('cm-panel') && document.getElementById('cm-panel').style.display !== 'none' })`);
+    R.check(`${w}px '통근권 찾기' → 카드 닫힘·통근권 열림`, !after.card && after.cm, after);
+    await b.goto(BASE + '#normal', 800); await ready(b);
+    R.check(`${w}px 다시 열면 카드가 안 뜬다`, (await card(b)) === null);
+    b.close(); await sleep(800);
+  }
+  // 링크로 들어온 첫 방문 · ✕ 닫기
+  const b = await launch({ port: 9792, w: 1440, h: 900, guide: true });
+  await b.send('Network.setBypassServiceWorker', { bypass: true });
+  await b.goto(BASE.replace(/#.*$/, '') + '?line=seoul-subway-line-2#normal', 800); await ready(b);
+  R.check('링크(?line=)로 들어오면 첫 방문이어도 안 뜬다', (await card(b)) === null);
+  await b.evaluate(`localStorage.removeItem('krrail-guide-seen'); history.replaceState(null, '', location.pathname + '#normal'); Guide.show(); true`); await sleep(300);
+  await b.evaluate(`document.querySelector('#guide-card .gd-close').click()`); await sleep(300);
+  const closed = await b.evaluate(`!document.getElementById('guide-card') && localStorage.getItem('krrail-guide-seen') === '1'`);
+  R.check('✕ 로 닫히고 다시 안 뜨게 기억', closed);
+  const exc = b.logs.filter(l => /EXC/.test(l));
+  R.check('예외 0', exc.length === 0, exc.slice(0, 3));
+  b.close();
+  R.finish();
+})().catch(e => { console.error(e); process.exit(1); });

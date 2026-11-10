@@ -1406,6 +1406,8 @@ map.on('load', async () => {
   await dataPromise;
   dataReady = true;
   map.once('idle', prefetchDetailData);   // 첫 화면 준비를 방해하지 않게 준비 완료 뒤에만
+  // 처음 온 사람 안내 (js/guide.js) — 지도가 다 뜬 뒤 한 번
+  map.once('idle', () => { if (typeof Guide !== 'undefined') Guide.show(); });
   addDataLayers(); updateFilters();
   addExitLayers();
   // 출구 표시 줌에 가까워지면 출구 자료를 받는다 (첫 화면이 이미 그 줌이면 바로)

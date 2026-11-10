@@ -31,7 +31,7 @@ E2E_BASE=https://plazalabs.github.io/kr-rail-map/index.html node tests/e2e/run.j
 | 이름 | 파일 | 보는 것 |
 |---|---|---|
 | `theme-switch` | `theme-switch.e2e.js` | 테마(다크·이클립스·네온)·배경(위성·흑백·일반) 전환 후 노선·역·역 라벨·출구·내 위치 레이어 복원. 8가지 전환과 연쇄 7단계 (버그 ①) |
-| `toolbar-menus` | `toolbar-menus.e2e.js` | 툴바 `도구`·`분석`·`저장` 메뉴 13항목이 390·768·1440 폭에서 화면 안에 보이고, 맨 위에 있고, 실제로 눌림 (버그 ②) |
+| `toolbar-menus` | `toolbar-menus.e2e.js` | 툴바 `도구`·`분석`·`저장` 메뉴 14항목이 390·768·1440 폭에서 화면 안에 보이고, 맨 위에 있고, 실제로 눌림 (버그 ②) |
 | `same-name-stations` | `same-name-stations.e2e.js` | 동명역 37개 이름의 모든 역을 자동완성으로 고를 수 있고 길찾기에 그 역 ID가 들어감. 시청→강남, 공유 링크, 옛 링크, 역 상세 `여기서 출발` (버그 ③) |
 | `route-extras` | `route-extras.e2e.js` | 옛 링크 해석 안내, 키보드 ↓↓Enter 선택, ID로 지정한 쌍 유지, ⇄ 교체, 즐겨찾기 경로 저장·복원, 옛 즐겨찾기 |
 | `satellite-labels` | `satellite-labels.e2e.js` | 위성(직접 열기·전환)·일반·다크·흑백에서 역 이름(줌 13)·출구 번호(줌 17.5) 글자가 화면에 나옴 (버그 ⑦) |
@@ -46,6 +46,7 @@ E2E_BASE=https://plazalabs.github.io/kr-rail-map/index.html node tests/e2e/run.j
 | `focus-return` | `focus-return.e2e.js` | 키보드만으로 역 고르기(/ → 이름 → ↓ → Enter), 패널이 열리면 포커스가 패널 안으로, Esc·✕로 닫으면 원래 자리(검색창·메뉴 버튼)로, 마우스 동작은 그대로 (IMPL9) |
 | `map-keyboard` | `map-keyboard.e2e.js` | 지도 캔버스 포커스 → N/] 다음 역·P/[ 이전 역(화면 가운데 가까운 순), 테두리·상태 줄 안내, Enter 로 상세, Esc 로 끝, 한글 자판(e.code), 화살표는 지도 이동 그대로 |
 | `diagram-layout` | `diagram-layout.e2e.js` | 개략 노선도 배치 품질: 6px 안 포개진 역 0쌍(예전 228~243), 닿는 쌍 20 이하, 선분 90% 이상 0·45·90°, 3초 안 |
+| `commute` | `commute.e2e.js` | 통근권 찾기: 분석 메뉴(키보드)로 열기, 강남 45분 안 역 점, 목록 분 = 길찾기 분, 30분·개통 예정 포함, 투자 모드 시세·시세 낮은 순, 목록 → 역 상세, Esc 로 닫기, 동명 목적지 |
 | `panel-state` | `panel-state.e2e.js` | 영향권을 켠 채 메뉴로 끄기(데스크톱·모바일), 노선도를 막대 닫기·Esc·카드로 닫으면 툴바 버튼도 꺼짐, 메모 핀이 테마·배경 전환 뒤에도 보임 (IMPL9) |
 | `ui-fixes` | `ui-fixes.e2e.js` | 노선 비교 목록(④), 노선도 카드 출발·도착과 동명역 ID(⑤), 노선도를 켠 상태의 툴바·`노선도 PNG`(⑥), 영향권 버튼 상태(⑧), `?style=local`(⑨), 전환 후 그린 노선·내 위치 점 유지 |
 | `ui-fixes-mobile` | 위와 같음 (`MOBILE=1`) | 같은 항목을 390×844 모바일 에뮬레이션으로 |

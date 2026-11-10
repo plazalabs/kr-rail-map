@@ -50,6 +50,7 @@ const UI = (() => {
     { panel: 'lc-panel', close: 'lc-close' },
     { panel: 'iv-panel', close: 'iv-close' },
     { panel: 'cv-panel', close: 'cv-close' },
+    { panel: 'cm-panel', close: 'cm-close' },
     { panel: 'sd-panel', close: 'sd-close', visibleClass: 'sd-open' },
     { panel: 'rt-panel', close: 'rt-close', visibleEl: 'rt-backdrop', watchEl: 'rt-backdrop' },
   ];

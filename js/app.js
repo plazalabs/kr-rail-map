@@ -1354,6 +1354,7 @@ function loadExits() {
   }).catch(() => null);
 }
 window.KR_loadExits = loadExits;   // station-area.js 가 역세권을 켤 때 부른다
+window.KR_regionOf = id => regionOf.get(id) || '';   // commute.js — 동명역 지역 표시
 
 // 투자 모드(js/mode.js) — 꺼져 있으면 시세·단지·공급을 받지 않는다(철도만 보는 사람은 약 2MB 절약).
 // 도심 접근성(access.json)은 소요시간 = 철도 정보라 모드와 상관없이 받는다.
@@ -1434,6 +1435,7 @@ map.on('load', async () => {
   if (typeof RouteCompare !== 'undefined') RouteCompare.init(RouteFinder, STATIONS, LINES);
   if (typeof InvestAnalyzer !== 'undefined') InvestAnalyzer.init(map, STATIONS, LINES);
   if (typeof CoverageMap !== 'undefined') CoverageMap.init(map, STATIONS, LINES);
+  if (typeof CommuteMap !== 'undefined') CommuteMap.init(map, STATIONS);
   if (typeof StationArea !== 'undefined') { StationArea.init(map, STATIONS); StationArea.setLines([...visibleLines]); }
   if (!focusLineFromUrl()) restoreFromUrl();
 });
@@ -1672,6 +1674,7 @@ document.getElementById('compare-btn').addEventListener('click', () => {
 
 // DiagramMode에서 역 클릭 시 팝업을 띄우기 위한 전역 노출
 window.openStationPopup = openStationPopup;
+window.showStation = showStation;   // commute.js 목록에서 역 상세 열기
 
 // 통계 / 타임라인 버튼
 document.getElementById('stats-btn').addEventListener('click', () => {
@@ -1714,6 +1717,11 @@ if (typeof KR_MODE !== 'undefined') {
     if (typeof StationDetail !== 'undefined') StationDetail.refresh();
   });
 }
+document.getElementById('commute-btn').addEventListener('click', () => {
+  if (typeof CommuteMap === 'undefined') { setStatus('통근권 모듈을 불러오지 못했습니다.'); return; }
+  if (!dataReady) { setStatus('노선 데이터를 불러오는 중입니다'); return; }
+  CommuteMap.isActive() ? CommuteMap.hide() : CommuteMap.show();
+});
 document.getElementById('coverage-btn').addEventListener('click', () => {
   if (typeof CoverageMap === 'undefined') { setStatus('영향권 모듈을 불러오지 못했습니다.'); return; }
   // 버튼 켜짐 표시는 CoverageMap.show()/hide() 가 맡는다 (패널 ✕ 로 닫을 때도 같이 꺼지게)

@@ -51,7 +51,8 @@ async function typeInto(b, id, text) {
   }
   // 표본 고정값 (지도 데이터가 바뀌면 다시 확인할 값)
   const sicheong = (await expect('시청')).map(w => w.region).filter(Boolean);
-  R.check("표본: 시청 → '서울 중구' 하나만 (부산·대전은 주소데이터 노선 표기가 겹쳐 확정 못 함)", sicheong.length === 1 && sicheong[0] === '서울 중구', sicheong);
+  // 2026-11-11: 부산·대전 시청은 주소데이터로 확정 못 했지만 OSM 행정경계로 채웠다 (data/build_station_region.py)
+  R.check("표본: 시청 → '서울 중구'·'부산 연제구'·'대전 서구'", JSON.stringify([...sicheong].sort()) === JSON.stringify(['대전 서구', '부산 연제구', '서울 중구']), sicheong);
   const yp = (await expect('양평')).map(w => w.region).sort();
   R.check("표본: 양평 → '경기 양평군'·'서울 영등포구'", JSON.stringify(yp) === JSON.stringify(['경기 양평군', '서울 영등포구']), yp);
   const nonDup = await b.evaluate(`(() => { const c = {}; STATIONS.forEach(s => c[s.properties.name_ko] = (c[s.properties.name_ko] || 0) + 1);

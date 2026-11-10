@@ -238,6 +238,26 @@
    "caveat": "주소데이터에는 역 ID 가 없고 노선 표기에 도시가 없다('1호선'). 그래서 이름+노선으로 그 역 하나에만 맞을 때만 붙이고, 모호하거나 안 맞는 역은 붙이지 않는다(data/build_station_region.py)."
   },
   {
+   "id": "osm-region",
+   "title": "동명역 지역 표시 (빈 곳 채움·대조)",
+   "provider": "OpenStreetMap — 행정경계 (Nominatim 역지오코딩)",
+   "attribution": "© OpenStreetMap contributors",
+   "url": "https://nominatim.openstreetmap.org/",
+   "licence": "ODbL-1.0",
+   "obtained": "동명역 76곳의 역 좌표를 Nominatim 역지오코딩으로 물어 행정구역 주소 문자열을 받고(data/fetch_region_osm.py, 1초에 1번), 시도·시군구로 푼다. OSM 에 광역시 안 군 경계가 빠진 곳(기장군·달성군)은 법정동 표(data/_gov/bjd_codes.json)로 찾는다",
+   "snapshot": "2026-11",
+   "used_for": "역 주소데이터로 지역을 못 붙인 동명역 36곳을 채우고, 주소데이터로 붙인 40곳은 대조한다(일치 39, 다름 1 — 다르면 주소데이터를 쓴다)",
+   "feeds": [],
+   "affects": [
+    "data/station-region.json"
+   ],
+   "intermediate": [
+    "data/_region_osm.json"
+   ],
+   "commercial": "allowed",
+   "caveat": "행정구역 이름이라는 사실 정보만 쓴다. 좌표를 새로 받지 않는다(좌표는 우리 역 자료)."
+  },
+  {
    "id": "molit-rtms",
    "title": "주변 시세",
    "provider": "국토교통부 — 아파트 매매 실거래가",

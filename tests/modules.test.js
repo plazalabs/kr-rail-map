@@ -416,6 +416,15 @@ console.log('\n[동명역 지역] data/station-region.json (IMPL9 건 3)');
   check('붙임 수 = 항목 수', reg.summary.labeled === ids.length);
   const seoulSi = all.find(s => s.properties.name_ko === '시청' && s.properties.lines.includes('seoul-subway-line-2')).properties.id;
   check("서울 시청 → '서울 중구'", reg.stations[seoulSi] && reg.stations[seoulSi].label === '서울 중구');
+  // 2026-11-11: 빈 36곳을 OSM 행정경계로 채움 — 동명역 전부에 지역이 있어야 한다
+  check('동명역 전부에 지역이 붙음', reg.summary.unlabeled === 0 && ids.length === dupStations, `${ids.length}/${dupStations}`);
+  check('항목마다 출처(korail-addr / osm)가 적혀 있음', ids.every(id => ['korail-addr', 'osm'].includes(reg.stations[id].src)));
+  check('주소데이터와 OSM 대조 결과를 남김 (다름은 3곳 이하)', reg.summary.check_vs_osm && reg.summary.check_vs_osm.agree >= 35 && reg.summary.check_vs_osm.disagree.length <= 3,
+    JSON.stringify(reg.summary.check_vs_osm && reg.summary.check_vs_osm.disagree));
+  const busanSi = all.find(s => s.properties.name_ko === '시청' && s.properties.lines.includes('busan-metro-line-1')).properties.id;
+  check("부산 시청 → '부산 연제구' (OSM 으로 채움)", reg.stations[busanSi] && reg.stations[busanSi].label === '부산 연제구');
+  const daeguGok = all.find(s => s.properties.name_ko === '대곡' && s.properties.lines.includes('daegu-metro-line-1')).properties.id;
+  check("대구 대곡 → '대구 달성군' (군 경계 없는 곳은 법정동 표로)", reg.stations[daeguGok] && reg.stations[daeguGok].label === '대구 달성군');
   const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
   check('app.js 가 역 ID 로 지역을 찾음 (이름으로 찾지 않음)', /regionOf\.get\(it\.id\)/.test(app) && /regionOf\.get\(p\.id\)/.test(app));
 }

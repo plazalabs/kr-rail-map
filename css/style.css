@@ -946,3 +946,31 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
   border: 3px solid #1a73e8; box-shadow: 0 0 0 3px #fff, 0 0 8px rgba(0,0,0,.45);
   pointer-events: none;
 }
+
+/* ---------- 길찾기 한눈에 (2026-11-11) ----------
+ * 결과 칸이 300px 로 묶여 그 안에서만 따로 스크롤됐다(광운대→여의도: 439px 중 300px 만 보임).
+ * 데스크톱에서는 창을 넓히고(288 → 400px) 출발·도착 이름표를 칸 왼쪽에 붙이고, 경로 종류 4개를 한 줄로 놓고,
+ * 결과 칸 높이 제한을 없앤다. 그래도 화면보다 길면(아주 긴 경로) 창 전체가 한 번에 스크롤된다. */
+@media (min-width: 769px) {
+  #route-panel { width: 400px; gap: 7px; padding: 12px 14px; max-height: calc(100vh - 72px); overflow-y: auto; }
+  #route-panel .ac-wrap { display: grid; grid-template-columns: 34px 1fr; align-items: center; column-gap: 6px; }
+  #route-panel .ac-label { margin: 0; font-size: 11.5px; text-transform: none; letter-spacing: 0; }
+  #route-panel .ac-list { grid-column: 2; }
+  #route-panel input { padding: 7px 10px; }
+  #route-panel .rp-row button { padding: 7px 11px; }
+  #route-panel .rp-opt { margin: 0; }
+  #route-result { max-height: none; overflow: visible; }
+  #route-panel .rc-tabs.four { display: flex; }
+  #route-panel .rc-tab { padding: 6px 2px; }
+  #route-panel .rc-nf { padding: 8px 12px; }
+  #route-panel .rc-nf-why { margin-top: 4px; }
+  #route-panel .unopened-notice { margin: 6px 0; }
+}
+/* 휴대폰: 바닥 시트 안에서 결과 칸이 따로 스크롤되지 않게 — 시트 하나만 스크롤, 시트는 조금 더 높게 */
+@media (max-width: 768px) {
+  #route-panel { max-height: 78vh; }
+  #route-result { max-height: none; overflow: visible; }
+  #route-panel .rc-tabs.four { display: flex; }
+  #route-panel .rc-tab { padding: 7px 1px; font-size: 11.5px; }
+}
+

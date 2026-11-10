@@ -41,6 +41,7 @@ const CHECKS = [
   ['map-keyboard', 'map-keyboard.e2e.js', {}, '지도 위 역 키보드 탐색: N/P 로 역 고르기·Enter 로 열기·Esc·한글 자판 (2026-11-11)'],
   ['diagram-layout', 'diagram-layout.e2e.js', {}, '개략 노선도 배치: 역 포개짐 0쌍·45° 맞춤 90% 이상·3초 안 (2026-11-11)'],
   ['commute', 'commute.e2e.js', {}, '통근권 찾기: 목적지까지 N분 안 역·길찾기와 같은 분·시세 정렬 (2026-11-11)'],
+  ['route-fit', 'route-fit.e2e.js', {}, '길찾기 결과가 한눈에: 결과 칸 안쪽 스크롤 없음·창이 화면 안·탭 한 줄 (2026-11-11)'],
   ['panel-state', 'panel-state.e2e.js', {}, '영향권 패널 가림·노선도 버튼 상태·메모 핀 복원 (IMPL9)'],
   ['sw-navigate', 'sw-navigate.e2e.js', {}, '서비스워커가 노선 상세 페이지로 index.html 캐시를 덮어쓰지 않음 (IMPL12)'],
   ['dev-theme', 'dev-theme.e2e.js', {}, '개발(공급) 패널 색 변수·글자 대비 — 모든 테마 (IMPL12)'],

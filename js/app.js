@@ -1253,7 +1253,15 @@ function highlightRoute(path, legs) {
   }
 
   const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
-  map.fitBounds(bounds, { padding: { top: 115, bottom: 85, left: 70, right: 330 }, maxZoom: 12.2 });
+  // 길찾기 창이 가리는 쪽을 비워 둔다 — 데스크톱은 오른쪽 400px 창, 휴대폰은 바닥 시트
+  const rp = document.getElementById('route-panel');
+  const mobile = window.innerWidth <= 768;
+  const sheet = mobile && rp && !rp.hidden ? Math.min(rp.getBoundingClientRect().height, window.innerHeight * 0.6) : 0;
+  const pad = mobile
+    ? { top: 70, bottom: Math.max(85, sheet + 70), left: 30, right: 30 }
+    : { top: 115, bottom: 85, left: 70, right: 440 };
+  try { map.fitBounds(bounds, { padding: pad, maxZoom: 12.2 }); }
+  catch (e) { map.fitBounds(bounds, { padding: 40, maxZoom: 12.2 }); }   // 화면이 너무 작아 여백이 안 들어가면
 }
 
 // 하이라이트 제거 (원래대로)

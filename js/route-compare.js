@@ -189,7 +189,7 @@ const RouteCompare = (() => {
     });
     legs.push({ lineId: curLine, from: stations[legStart], to: stations[stations.length - 1],
                 walk: curLine === null, distKm: km, transferAfter: 0 });
-    const transfers = Math.max(0, legs.filter(l => !l.walk && l.lineId !== null).length - 1);
+    const transfers = RF.countTransfers(legs);   // 이어 달리는 구간(GTX-A 미개통 구간)은 환승이 아니다
     return { legs, minutes: Math.round(minutes), transfers };
   }
 
@@ -217,7 +217,7 @@ const RouteCompare = (() => {
         if (openOnly && !e.open) continue;
         let nt, nl;
         if (e.walk) { nt = t + 1; nl = null; }
-        else if (cl === null || cl === e.lineId) { nt = t; nl = e.lineId; }
+        else if (cl === null || RF.sameService(cl, e.lineId)) { nt = t; nl = e.lineId; }
         else { nt = t + 1; nl = e.lineId; }
         const nm = m + edgeMinutes(e);
         const vk = skey(e.to, nl);
@@ -269,7 +269,7 @@ const RouteCompare = (() => {
       for (const e of (RF.adjacency().get(u) || [])) {
         if (openOnly && !e.open) continue;
         const nl = e.walk ? null : e.lineId;
-        const transfer = !e.walk && cl !== null && cl !== nl;
+        const transfer = !e.walk && cl !== null && !RF.sameService(cl, nl);
         // KTX 는 km당 요금이 수도권 전철의 6배쯤 된다. 같은 거리라도 훨씬 비싸므로
         // '최소요금' 탐색에서는 KTX 구간을 6배로 세야 무궁화·ITX 경로가 이긴다.
         const w = (!e.walk && RF.categoryOf(nl) === 'ktx') ? 6 : 1;

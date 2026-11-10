@@ -78,10 +78,18 @@ cd .. && python3 build_pages.py   # 정적 페이지 + sitemap
 
 ## 데이터 출처
 
-- 노선/역: © OpenStreetMap contributors, ODbL (Geofabrik 2026-10-09 추출)
+- 노선 선형: © OpenStreetMap contributors, ODbL — 78개 노선. 역 순서는 `data/own_align_config.py` 에 직접 정리
+- 계획 노선 6개(GTX-D~H, 동부선): 역을 이은 개략선, 자체 작성 (`data/build_own_alignments.py`)
 - 베이스맵: © OpenStreetMap · OpenFreeMap / 위성: © Esri
-- GTX-C는 OSM에 relation이 없어 역 좌표(실측) + 역간 직선(개략) 으로 수동 추가 — `properties.note` 참조
+- 원천 전체와 이용 조건: `data/sources.json` (사람이 읽는 표는 `data.html`)
+- 옛 참고선(옛 참고선) 자료는 2026-11-10 모두 걷어냈다 (`data/migrate_drop_oldref.py`)
 - 무색 노선의 색상은 디자인 지정 (CLEANING.md)
+
+## 저작권
+
+© 2026 플라자랩스. All rights reserved. 저장소가 공개돼 있어도 이용 허락이 아니다 —
+허락 없이 복제·재배포·크롤링·상업적 이용을 할 수 없다. 자세한 내용은 `LICENSE`.
+OSM·공공데이터 원자료는 각 원천의 조건을 따른다.
 
 ## 배포
 

@@ -60,8 +60,11 @@ const RouteFinder = (() => {
   const GTX_TIMES = {
     'great-train-express-line-a': [
       ['운정중앙',4],['킨텍스',5],['대곡',4],['창릉',3],['연신내',6],
-      // 삼성은 무정차 통과(2028년 정차 예정) — 서울역~삼성 6분 + 삼성~수서 3분을 한 구간 9분으로 (2026-11-10)
-      ['서울역',9],['수서',7],['성남',7],['구성',7],['동탄',null]],
+      // 서울역~수서는 아직 운행하지 않는다 (2027년 상반기 전망) — 그 구간은 아래 'gtx-a-seoul-suseo' 가 맡는다.
+      // 한 표에 [서울역, null] 을 두면 서울역→수서 간선이 생기지 않는다 (2026-11-10).
+      ['서울역',null],['수서',7],['성남',7],['구성',7],['동탄',null]],
+    // 미개통. 삼성은 무정차 통과(2028년 정차 예정) — 서울역~삼성 6분 + 삼성~수서 3분을 한 구간 9분으로.
+    'gtx-a-seoul-suseo': [['서울역',9],['수서',null]],
     'gtx-b': [
       ['인천대입구',6],['인천시청',4],['부평',5],['부천종합운동장',5],['신도림',4],
       ['여의도',3],['용산',3],['서울역',5],['청량리',4],['상봉',5],
@@ -74,6 +77,23 @@ const RouteFinder = (() => {
   // 표의 역명 → 우리 데이터 역명. 과천청사 = 정부과천청사, 서울역 = '서울' (데이터 역명에 '역'이 없다 —
   // 예전엔 '서울역'을 못 찾아 GTX-A·B 의 서울역 앞뒤 공식 소요시간 간선이 통째로 빠졌다, IMPL12)
   const GTX_NAME_ALIAS = { '과천청사': '정부과천청사', '서울역': '서울' };
+
+  // 같은 열차가 이어 달리는 노선 묶음. 지도에서는 개통 상태가 달라 노선을 나눠 그리지만
+  // (GTX-A 서울역~수서 = 공사 중, 평택 연장 = 계획), 개통하면 갈아타지 않고 그대로 간다.
+  // 묶음 안에서 노선이 바뀌는 것은 환승이 아니다 — 환승 시간·횟수에 넣지 않는다.
+  const THROUGH = {
+    'gtx-a-seoul-suseo': 'great-train-express-line-a',
+    'gtx-a-pyeongtaek': 'great-train-express-line-a',
+  };
+  function serviceOf(lineId) { return THROUGH[lineId] || lineId; }
+  function sameService(a, b) { return a === b || (a != null && b != null && serviceOf(a) === serviceOf(b)); }
+  // legs 가운데 실제로 갈아타는 횟수 (걷는 구간·이어 달리는 구간은 세지 않는다)
+  function countTransfers(legs) {
+    const ride = legs.filter(l => !l.walk && l.lineId !== null);
+    let n = 0;
+    for (let i = 1; i < ride.length; i++) if (!sameService(ride[i - 1].lineId, ride[i].lineId)) n++;
+    return n;
+  }
 
   let adj = new Map();      // stationId -> [{to, lineId, distKm, walk}]
   let lineCat = new Map();  // lineId -> category
@@ -95,6 +115,7 @@ const RouteFinder = (() => {
   }
 
   function transferMinutes(stationId, a, b) {
+    if (sameService(a, b) && a !== b) return 0;   // 이어 달리는 구간 — 갈아타지 않는다
     if (!transferDoc || !stationId || !a || !b || a === b) return TRANSFER_MIN;
     const s = transferDoc.stations[stationId];
     if (!s) return TRANSFER_MIN;
@@ -415,7 +436,7 @@ const RouteFinder = (() => {
         // 역(u)에서 일어난다. 역마다 실제 도보 시간이 다르므로 그 값을 쓴다.
         // transferPenalty 를 명시하면 예전처럼 '그 값을 그대로' 쓴다
         // (경로 비교 화면이 같은 잣대로 세 경로를 비교해야 하기 때문).
-        if (line !== START && line !== null && nl !== null && nl !== line) {
+        if (line !== START && line !== null && nl !== null && !sameService(nl, line)) {
           cost += explicitPenalty != null
             ? explicitPenalty
             : transferMinutes(u, line, nl) + TRANSFER_DECISION_EXTRA;
@@ -483,7 +504,7 @@ const RouteFinder = (() => {
       if (l.unopened) unopenedNames.push(l.lineId);
     });
 
-    const transfers = legs.filter(l => !l.walk && l.lineId !== null).length - 1;
+    const transfers = countTransfers(legs);
 
     return {
       path, legs,
@@ -521,7 +542,7 @@ const RouteFinder = (() => {
         if (openOnly && !e.open) continue;
         const nl = e.lineId || null;
         let cost = edgeMinutes(e);
-        if (line !== START && line !== null && nl !== null && nl !== line) {
+        if (line !== START && line !== null && nl !== null && !sameService(nl, line)) {
           cost += transferMinutes(u, line, nl) + TRANSFER_DECISION_EXTRA;
         }
         if (nl !== line) cost += accessMinutes(nl);
@@ -559,7 +580,7 @@ const RouteFinder = (() => {
 
   return {
     buildGraph, findRoute, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
-    loadTransfers, transferMinutes,
+    loadTransfers, transferMinutes, sameService, countTransfers,
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
     // 예전에는 route-compare 가 그래프를 따로 만들었는데, 그쪽은 선형 조각을 이어붙여
     // 평탄화하는 바람에 GTX-D 분기(팔당 ↔ 삼성)에 없는 엣지가 생겼다.

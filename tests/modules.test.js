@@ -75,7 +75,8 @@ const L1 = C.stats('seoul-metropolitan-subway-line-1');
 check('1호선 역이 2호선보다 많음', L1 && L2 && L1.stations > L2.stations,
   `${L1 && L1.stations} vs ${L2 && L2.stations}`);
 const G = C.stats('great-train-express-line-a');
-check('GTX-A 길이 80km 이상', G && G.km > 80, G && G.km.toFixed(1));
+// 운행 중 두 구간(운정중앙~서울역 약 37km + 수서~동탄 약 33km). 미개통 구간은 다른 노선으로 나뉘어 있다.
+check('GTX-A 운행 구간 60~75km', G && G.km > 60 && G.km < 75, G && G.km.toFixed(1));
 check('GTX-A 는 KTX·고속 분류가 아님', G && G.category !== 'KTX·고속', G && G.category);
 check('없는 노선은 null', C.stats('없는-노선-id') === null);
 

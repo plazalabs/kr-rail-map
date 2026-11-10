@@ -4,10 +4,10 @@
  "note": "노선·역 목록이 어디서 확인되는지의 증빙. 배포 데이터가 아니다. 확인 원천은 공공데이터포털 역위치 CSV(이용허락 제한 없음), OSM 노선 relation 정차점, OSM 역 노드의 선형 근접도(ODbL) 셋이다.",
  "near_km": 0.3,
  "summary": {
-  "lines": 78,
+  "lines": 80,
   "open_lines": 66,
-  "open_pairs": 1475,
-  "open_confirmed": 1466,
+  "open_pairs": 1474,
+  "open_confirmed": 1465,
   "open_confirmed_pct": 99.4,
   "open_lines_all_confirmed": 63
  },
@@ -246,17 +246,19 @@
    "name": "동북선",
    "status": "construction",
    "stations": 16,
-   "confirmed": 7,
+   "confirmed": 5,
    "sources": [
     "osm-geometry"
    ],
    "unconfirmed": [
     "115정거장(중계주공)",
     "동명초교(가칭)",
+    "미아사거리",
     "북서울꿈의숲(가칭)",
     "서울과학기술대(가칭)",
     "월계2교",
     "은행사거리(가칭)",
+    "제기동",
     "종암사거리(가칭)",
     "종암이육사(가칭)",
     "하월곡(가칭)"
@@ -311,14 +313,40 @@
   "great-train-express-line-a": {
    "name": "GTX-A",
    "status": "open",
-   "stations": 10,
-   "confirmed": 10,
+   "stations": 9,
+   "confirmed": 9,
    "sources": [
     "osm-geometry",
     "osm-relation"
    ],
    "unconfirmed": [],
    "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-a-pyeongtaek": {
+   "name": "GTX-A 평택 연장",
+   "status": "planned",
+   "stations": 2,
+   "confirmed": 2,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-a-seoul-suseo": {
+   "name": "GTX-A 서울역~수서",
+   "status": "construction",
+   "stations": 2,
+   "confirmed": 2,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": true,
    "partial": false,
    "gap_reason": ""
   },
@@ -441,7 +469,7 @@
    "gap_reason": ""
   },
   "gunsan-cargo-line": {
-   "name": "군산화물선",
+   "name": "군산항선",
    "status": "open",
    "stations": 1,
    "confirmed": 1,

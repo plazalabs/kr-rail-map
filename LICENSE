@@ -1,0 +1,28 @@
+Copyright (c) 2026 플라자랩스 (Plaza Labs). All rights reserved.
+
+한국어
+------
+이 저장소와 한국철도맵 사이트(https://plazalabs.github.io/kr-rail-map/)의 코드, 화면 디자인,
+개략 노선도 그림, 직접 그린 계획 노선 개략선, 역 순서·노선 구성 정리, 소요 시간·환승·도심
+접근성·요금 계산, 부동산(투자 모드) 분석과 그 정리 방식은 플라자랩스의 저작물입니다.
+
+이 저장소가 공개돼 있다고 해서 이용을 허락한 것이 아닙니다. 플라자랩스의 서면 허락 없이
+복제, 수정, 재배포, 자동 수집(크롤링·스크래핑), 다른 서비스나 앱에 넣기, 상업적 이용을 할 수
+없습니다. 허락하지 않습니다.
+
+예외 — 제3자 원자료
+  OpenStreetMap(ODbL 1.0), 공공데이터포털(이용허락범위 제한 없음) 등에서 온 원자료에는 각
+  원천의 이용 조건이 그대로 적용됩니다. 원천과 조건은 data/sources.json 과 data.html 에
+  있습니다. 이 고지는 누구나 그 원천에서 직접 받아 쓸 권리를 줄이지 않습니다.
+  vendor/ 아래 외부 라이브러리는 각 라이브러리의 라이선스를 따릅니다.
+
+English
+-------
+The code, design, diagrams, hand-drawn planned-line sketches, curated line/station ordering,
+travel-time, transfer, accessibility and fare calculations, and real-estate analysis in this
+repository and on the Korea Rail Map site are the work of Plaza Labs. Publishing this repository
+does not grant any licence. No copying, modification, redistribution, scraping, embedding in other
+services, or commercial use without written permission from Plaza Labs.
+
+Third-party source data (OpenStreetMap under ODbL 1.0, data.go.kr open data, etc.) remains under
+its own terms, listed in data/sources.json. Libraries under vendor/ keep their own licences.

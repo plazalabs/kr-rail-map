@@ -197,21 +197,26 @@ check('월계2교 환승이 실제로 성립(동북선 전용역↔동부선 전
       r2.transfers === 1;
   })());
 
-console.log('\n[GTX-D/E/F] 옛 참고선 좌표 기준 — 역이 실제 위치에 있고 직결로 이어져야 함');
-// 좌표는 전부 옛 참고선() 기준. 보간으로 만든 가짜 좌표는 쓰지 않는다.
+console.log('\n[GTX-D/E/F] 계획 역은 이름이 가리키는 곳에 있고 직결로 이어져야 함');
+// 2026-11-10 옛 참고선 좌표를 걷어내고, 이름이 가리키는 곳(OSM 지명)에 두었다 — data/own_align_config.py.
+// 보간으로 만든 가짜 좌표는 쓰지 않는다. 옛 참고선 좌표가 돌아오면 이 검사가 잡는다.
 const GTX_COORD_SRC = [
-  ['영종국제도시', 126.56558, 37.49474],
+  ['영종국제도시', 126.55152, 37.48828],
   ['청라국제업무단지', 126.62522, 37.5292],
-  ['광명시흥', 126.84717, 37.46868],
-  ['교산', 127.2035, 37.52612],
-  ['일패', 127.18059, 37.61457],
-  ['풍양', 127.17191, 37.6973],
+  ['광명시흥', 126.85408, 37.43074],
+  ['교산', 127.20301, 37.52453],
+  ['일패', 127.18346, 37.6212],
+  ['풍양', 127.1636, 37.70366],
 ];
 const realCoord = GTX_COORD_SRC.every(([n, lng, lat]) => {
   const c = S.filter(s => s.n === n);
   return c.some(s => Math.abs(s.c[0] - lng) < 1e-4 && Math.abs(s.c[1] - lat) < 1e-4);
 });
-check('GTX 신설역이 옛 참고선 실제 좌표를 가짐', realCoord, '좌표 불일치 역 있음');
+check('GTX 신설역이 지명 위치 좌표를 가짐', realCoord, '좌표 불일치 역 있음');
+check('역 자료에 옛 참고선 출처가 남아 있지 않음',
+  !stations.features.some(f => /oldref|옛 참고선/.test(JSON.stringify(f.properties))));
+check('노선 자료에 옛 참고선 출처가 남아 있지 않음',
+  !lines.features.some(f => /oldref|옛 참고선|옛 참고선/.test(JSON.stringify(f.properties))));
 
 r = route(['인천공항1터미널', 126.4528, 37.4472], ['강남', 127.0276, 37.4980]);
 check('인천공항1터미널→강남 GTX-D 직결', r && r.transfers === 0, r && `${r.transfers}회`);
@@ -263,14 +268,16 @@ check('상봉→종합운동장 이 30분 이내', shortHop && shortHop.minutes 
 console.log('\n[GTX-G/H] 2기 GTX 구상안도 지도와 길찾기에 있어야 함');
 r = route(['송우', 127.14953, 37.82846], ['숭의', 126.63823, 37.46079]);
 check('송우→숭의 GTX-G 직결', r && r.transfers === 0, r && `${r.transfers}회`);
-check('GTX-G 구간이 옛 참고선 과 같은 82.1km',
-  r && Math.abs(RF.pathDistance(r.path) - 82.1) < 1.5,
+// 경기도 발표 연장 84.7km. 우리 개략선(역을 이은 곡선)은 그보다 조금 짧다.
+check('GTX-G 구간이 발표 연장(84.7km)의 ±10%',
+  r && Math.abs(RF.pathDistance(r.path) - 84.7) < 8.5,
   r && `${RF.pathDistance(r.path).toFixed(1)}km`);
 
 r = route(['문산', 126.78790, 37.85445], ['위례역사공원', 127.14196, 37.47057]);
 check('문산→위례역사공원 GTX-H 직결', r && r.transfers === 0, r && `${r.transfers}회`);
-check('GTX-H 구간이 옛 참고선 과 같은 65.2km',
-  r && Math.abs(RF.pathDistance(r.path) - 65.2) < 1.5,
+// 경기도 발표 연장 60.4km.
+check('GTX-H 구간이 발표 연장(60.4km)의 ±10%',
+  r && Math.abs(RF.pathDistance(r.path) - 60.4) < 6.1,
   r && `${RF.pathDistance(r.path).toFixed(1)}km`);
 
 console.log('\n[데이터 무결성] 역은 자기 노선 선형 위에 있어야 함');
@@ -327,17 +334,38 @@ check('KTX 호남선 정차 순서가 용산→목포', honamKtx.properties.stop
   honamKtx.properties.stops[honamKtx.properties.stops.length - 1] === '목포',
   (honamKtx.properties.stops || []).join('→'));
 
-// 3) GTX-A 는 서울역~삼성~수서, 동탄~평택지제 구간이 선형에 있어야 한다
+// 3) GTX-A 는 운행 상태대로 나뉜다 (2026-11-10).
+//    운행 중: 운정중앙~서울역 · 수서~동탄 / 공사 중: 서울역~수서 (2027년 상반기 전망) / 계획: 동탄~평택지제
 const gtxa = lineById.get('great-train-express-line-a');
-const gtxaPieces = flatCoords(gtxa).length;
-check('GTX-A 선형이 4구간으로 이어짐', gtxaPieces === 4, `${gtxaPieces}조각`);
-// 삼성은 GTX-A 무정차(2028년 정차 예정)라 GTX-A 역이 아니다 — 선형이 삼성 아래를 지나는지만 본다
-for (const nm of ['삼성', '평택지제']) {
+const gtxaMid = lineById.get('gtx-a-seoul-suseo');
+const gtxaExt = lineById.get('gtx-a-pyeongtaek');
+check('GTX-A 운행 구간이 2조각', flatCoords(gtxa).length === 2, `${flatCoords(gtxa).length}조각`);
+check('GTX-A 는 운행 중', gtxa.properties.status === 'open');
+check('GTX-A 서울역~수서는 공사 중', gtxaMid && gtxaMid.properties.status === 'construction');
+check('GTX-A 평택 연장은 계획', gtxaExt && gtxaExt.properties.status === 'planned');
+check('평택지제가 GTX-A 운행 역이 아님',
+  !stations.features.some(f => f.properties.name_ko === '평택지제' && f.properties.lines.includes('great-train-express-line-a')));
+// 삼성은 GTX-A 무정차(2028년 정차 예정)라 GTX-A 역이 아니다 — 공사 구간 선형이 삼성 아래를 지나는지만 본다
+for (const [nm, ln] of [['삼성', gtxaMid], ['평택지제', gtxaExt]]) {
   const s = stations.features.find(f => f.properties.name_ko === nm &&
-    (nm === '삼성' || f.properties.lines.includes('great-train-express-line-a')));
-  const d = s ? Math.min(...flatCoords(gtxa).map(c => distToLine(
+    (nm === '삼성' || f.properties.lines.includes(ln.properties.id)));
+  const d = s ? Math.min(...flatCoords(ln).map(c => distToLine(
     [s.geometry.coordinates[1], s.geometry.coordinates[0]], c))) : Infinity;
-  check(`GTX-A ${nm}역이 선형 위에 있음`, d < 0.15, `${(d * 1000).toFixed(0)}m`);
+  check(`${ln.properties.name_ko} — ${nm}역이 선형 위에 있음`, d < 0.15, `${(d * 1000).toFixed(0)}m`);
+}
+{
+  // 지금 탈 수 있는 경로에는 서울역~수서가 없어야 한다. 개통 예정을 켜면 갈아타지 않고 이어 달린다.
+  const seoul = stations.features.find(f => f.properties.name_ko === '서울' && f.properties.lines.includes('great-train-express-line-a'));
+  const suseo = stations.features.find(f => f.properties.name_ko === '수서' && f.properties.lines.includes('great-train-express-line-a'));
+  const now = RF.findRoute(seoul.properties.id, suseo.properties.id, { openOnly: true });
+  check('지금: 서울역→수서에 GTX-A 미개통 구간을 안 탐',
+    now && !now.legs.some(l => l.lineId === 'gtx-a-seoul-suseo'), now && now.legs.map(l => l.lineId).join(' → '));
+  const yeon = stations.features.find(f => f.properties.name_ko === '연신내' && f.properties.lines.includes('great-train-express-line-a'));
+  const dt = stations.features.find(f => f.properties.name_ko === '동탄' && f.properties.lines.includes('great-train-express-line-a'));
+  const fut = RF.findRoute(yeon.properties.id, dt.properties.id);
+  check('개통 후: 연신내→동탄 GTX-A 직결(환승 0회)', fut && fut.transfers === 0,
+    fut && `${fut.transfers}회 ${fut.minutes}분 ${fut.legs.map(l => l.lineId).join(' → ')}`);
+  check('개통 후: 연신내→동탄 공식 소요시간 합(6+9+7+7+7=36분)', fut && fut.minutes === 36, fut && `${fut.minutes}분`);
 }
 
 // 4) 동북선 신설역에 기존 노선이 잘못 붙어 있으면 안 된다

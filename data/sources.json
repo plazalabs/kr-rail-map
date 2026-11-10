@@ -1,6 +1,6 @@
 {
  "schema": "kr-rail-map/sources/1",
- "updated": "2026-11-09",
+ "updated": "2026-11-10",
  "generated_by": "data/build_sources.py",
  "note": "이 사이트가 쓰는 모든 원천과 그 이용 조건. 사람이 읽는 표는 data.html 이고, 이 파일이 원본이다. 표는 이 파일에서 자동으로 만들어진다 — 둘이 어긋나면 테스트가 실패한다.",
  "licences": {
@@ -45,40 +45,18 @@
    "note": "위성 배경은 무료 공개 REST 엔드포인트다. 상업적 서비스에서 계속 쓰려면 Esri 라이선스를 확인해야 한다. 위성은 끄고 쓸 수 있는 부가 레이어라, 문제가 되면 빼면 된다."
   },
   "own": {
-   "name": "자체 계산 — 저작권 주장 없음",
+   "name": "자체 작성 — © 플라자랩스, 무단 복제·재배포 금지",
    "url": "",
    "attribution_required": false,
    "share_alike": "none",
    "commercial_use": "allowed",
-   "note": "원천 자료에서 계산한 값. 원천의 조건은 그대로 따라간다."
+   "note": "플라자랩스가 직접 만들거나 계산한 것. 허락 없이 복제·재배포·상업적 이용을 할 수 없다. 다만 OpenStreetMap(ODbL)·공공데이터에서 온 부분에는 그 원천의 조건이 그대로 적용되고, 이 표시가 그 권리를 줄이지 않는다."
   }
  },
  "sources": [
   {
-   "id": "oldref",
-   "title": "역 좌표·노선 선형 (26개 노선)",
-   "provider": "옛 참고선 (옛 참고선)",
-   "attribution": "옛 참고선(옛 참고선) 표시 좌표",
-   "url": "",
-   "licence": "site-terms-unverified",
-   "obtained": "표시 좌표를 참고하고, 어긋나는 구간은 공개 노선도를 보고 다시 그림",
-   "snapshot": "2026-10",
-   "used_for": "역 좌표 대조, OSM 선로가 이어지지 않는 32개 노선의 선형",
-   "feeds": [],
-   "affects": [
-    "data/stations.geojson",
-    "data/lines.geojson"
-   ],
-   "fields": [
-    "stations[].geometry",
-    "lines[].geometry"
-   ],
-   "commercial": "unverified",
-   "caveat": "선형 58개는 OSM 으로 옮겼다(2026-11-09~10 충북선·서해선·KTX 경강선·KTX 중부내륙선·장항선·KTX 호남선 추가 — 선로를 따라 모든 역을 지나는 것 확인). 남은 26개는 OSM 쪽 선로가 끊겼거나(동해선 포항~삼척, 태백선 고한~갈래호), 아직 지어지지 않았거나(GTX-D~H, 동북선, 대전·광주 2호선), 길이가 지금 선형과 15% 넘게어긋나 어느 쪽이 맞는지 확인 중인 노선이다."
-  },
-  {
    "id": "osm-rails",
-   "title": "노선 선형 (58개 노선)",
+   "title": "노선 선형 (78개 노선)",
    "provider": "OpenStreetMap contributors",
    "attribution": "© OpenStreetMap contributors",
    "url": "https://www.openstreetmap.org/copyright",
@@ -86,7 +64,7 @@
    "obtained": "Geofabrik south-korea-latest.osm.pbf → pyosmium 으로 railway=rail 선로 25,233개·노선 관계 318개 추출",
    "obtained_url": "https://download.geofabrik.de/asia/south-korea-latest.osm.pbf",
    "snapshot": "2026-10-27",
-   "used_for": "노선 선형. 역 좌표에서 가장 가까운 선로 점을 찾아 선로를 따라 잇거나, 노선 경로 관계의 선로를 순서대로 이어붙인다",
+   "used_for": "노선 선형. 우리가 정리한 역 순서대로 역 좌표에서 가장 가까운 선로 점을 찾아 선로를 따라 잇거나, 노선 경로 관계의 선로를 순서대로 이어붙이거나, 공사 중 노선은 같은 이름의 공사 선로를 모은다",
    "feeds": [
     "data/lines.geojson"
    ],
@@ -98,7 +76,28 @@
     "lines[].coord_relations"
    ],
    "commercial": "allowed",
-   "caveat": "반영한 노선은 coord_source=osm 과 만든 방법(coord_method: relation|graph), 근거 관계 id 를 남긴다. 역의 90% 이상이 300m 안에 있고, 역 이탈 400m 이내이며, 지금 선형과 길이가 15% 안에서 맞을 때만 반영했다."
+   "caveat": "반영한 노선은 coord_source=osm 과 만든 방법(coord_method: relation|graph|own-align)을 남긴다. 역 순서는 남의 지도를 참고하지 않고 data/own_align_config.py 에 직접 적었다. 길을 못 찾은 구간은 직선으로 메우지 않는다(실패로 보고). 측선·기지선은 통과 비용을 높이고, 관광 선로(옛 스위치백)는 쓰지 않는다."
+  },
+  {
+   "id": "own-sketch",
+   "title": "계획 노선 개략선 (6개 노선)",
+   "provider": "자체 작성 (플라자랩스)",
+   "attribution": "",
+   "url": "",
+   "licence": "own",
+   "obtained": "정부·지자체 발표의 경유지 순서대로 역 좌표를 부드러운 곡선(Catmull-Rom)으로 이음 — data/build_own_alignments.py",
+   "snapshot": "2026-11-10",
+   "used_for": "아직 선로가 없는 계획·구상 노선의 선형: GTX-D, GTX-E, GTX-F, 동부선, GTX-G, GTX-H",
+   "feeds": [
+    "data/lines.geojson"
+   ],
+   "affects": [],
+   "fields": [
+    "lines[].geometry",
+    "lines[].coord_source"
+   ],
+   "commercial": "allowed",
+   "caveat": "실제 선로 모양이 아니다. 노선 정보에 '개략선(자체 작성)'이라고 적는다. 노선·역은 확정 전이라 바뀔 수 있다."
   },
   {
    "id": "osm-stations",
@@ -109,7 +108,7 @@
    "licence": "ODbL-1.0",
    "obtained": "Overpass API — railway=station",
    "snapshot": "2026-10",
-   "used_for": "우리 역 좌표가 OSM 철도역과 같은 위치인지 대조 (1,202/1,247, 차이 중앙값 0m)",
+   "used_for": "우리 역 좌표가 OSM 철도역과 같은 위치인지 대조 (1,202/1,247, 차이 중앙값 0m) · 계획 노선 새 역 15곳은 OSM 지명 검색(Nominatim)으로 이름이 가리키는 곳에 둔다 (역 위치 미확정)",
    "feeds": [],
    "affects": [],
    "intermediate": [
@@ -613,6 +612,12 @@
    "name": "미래철도DB (FRDB)",
    "url": "https://frdb2.ivyro.net/",
    "reason": "초기 노선·역 목록을 만들 때 참고했으나 출처로 쓰지 않는다. 사이트가 스스로 \"비영리, 비상업, 개인 사이트\" 라고 밝히고 이용허락 표시가 없다. 게다가 \"부동산 투자 목적으로 쓰려면 관계당국에서 다시 확인하라\" 고 적어 두었다. 지금 목록은 OSM 과 공공데이터로 다시 확인했고, 그 증빙이 data/line-membership.json 이다."
+  },
+  {
+   "id": "oldref",
+   "name": "옛 참고선 (옛 참고선)",
+   "url": "",
+   "reason": "2026-10 까지 일부 노선 선형·계획 역 좌표를 이 사이트 화면을 참고해 그렸으나, 2026-11-10 전부 걷어냈다. 운영자 연락처·이용약관이 없어 상업적 재사용 허락을 확인할 수 없기 때문이다. 지금 선형은 OpenStreetMap 선로(ODbL) 또는 우리가 직접 그린 개략선이고, 역 순서는 정부·지자체 발표를 보고 직접 정리했다(data/own_align_config.py)."
   }
  ]
 }

@@ -40,7 +40,9 @@ check('노선·역 출처를 OSM·국가철도공단으로 적는다',
   /OpenStreetMap/.test(index) && /국가철도공단/.test(index));
 check('미래철도DB 를 데이터 출처로 적지 않는다',
   !/노선·역 데이터 — 미래철도DB/.test(index));
-check('옛 참고선을 적는다', /옛 참고선/.test(index));
+// 2026-11-10 옛 참고선 자료를 모두 걷어냈다. 화면 출처에 다시 나오면 안 된다.
+check('옛 참고선을 출처로 적지 않는다', !/옛 참고선|oldref/.test(index));
+check('저작권·무단 이용 금지를 적는다', /© 2026 플라자랩스/.test(index) && /무단 복제/.test(index) && /data\.html#copyright/.test(index));
 check('출구 좌표에 OSM 표기를 유지한다',
   /출구 좌표[^<]*OpenStreetMap contributors \(ODbL\)/.test(index));
 check('배경지도 표기를 유지한다', /OpenFreeMap/.test(index) && /Esri/.test(index));
@@ -99,13 +101,14 @@ check('출구 수', dataPage.includes('<b>' + fmt(exits.features.length) + '</b>
 section('한계를 숨기지 않는다');
 // 숫자는 2026-10-27 에 남은 32개 노선의 선형을 OSM 선로와 대조해 잰 값이다.
 // 선형을 옮길 때마다 줄어들므로, 줄면 이 테스트도 같이 고쳐야 한다.
-check('개략선이 실제 선로에서 벗어난 거리를 적는다', /실제 선로에서[\s\S]{0,20}최대 5km/.test(dataPage));
+check('계획 노선 개략선임을 적는다', /계획 노선 6개의 선형은 개략선입니다/.test(dataPage));
+check('저작권 안내 절이 있다', /id="copyright"/.test(dataPage) && /허락하지 않습니다/.test(dataPage));
 check('인천공항철도 연장 초과를 적는다', /69\.5km[\s\S]{0,60}63\.8km/.test(dataPage));
 check('미개통 노선 포함을 적는다', /미개통/.test(dataPage));
 // 원천별로 상업적 이용 가능 여부가 다르다. 한 문장으로 '아직 확인 안 됨' 이라고
 // 뭉뚱그리면, 실제로는 쓸 수 있는 OSM·공공데이터까지 못 쓴다고 읽힌다.
 check('상업적 이용을 원천별로 나눠 적는다', /상업적 이용은 원천별로 다릅니다/.test(dataPage));
-check('미확인 원천을 이름으로 짚는다', /옛 참고선/.test(dataPage));
+check('걷어낸 원천을 이름으로 남긴다', /출처로 쓰지 않는 자료[\s\S]*옛 참고선/.test(dataPage));
 // 출처를 바꿨다면 '왜 안 쓰는지' 도 남겨야 한다. 조용히 지우면 나중에
 // '이 데이터 어디서 났나' 를 답할 수 없다.
 check('쓰지 않기로 한 자료를 이유와 함께 남긴다',
@@ -173,7 +176,7 @@ section('선형 출처 — OSM 선로에서 다시 그림');
     noSource.length ? noSource.slice(0, 3).map(f => f.properties.id).join(', ') : '전부');
   const byMethod = {};
   osmLines.forEach(f => { byMethod[f.properties.coord_method] = (byMethod[f.properties.coord_method] || 0) + 1; });
-  check('만든 방법이 relation / graph 둘 중 하나', Object.keys(byMethod).every(m => m === 'relation' || m === 'graph'),
+  check('만든 방법이 relation / graph / own-align 가운데 하나', Object.keys(byMethod).every(m => ['relation', 'graph', 'own-align'].includes(m)),
     JSON.stringify(byMethod));
   // 반영 스크립트를 다시 돌릴 때마다 note 뒤에 출처 문장이 하나씩 붙어,
   // 노선 정보 패널에 같은 문장이 세 번 반복된 적이 있다. 사용자에게 보이는

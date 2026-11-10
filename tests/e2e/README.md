@@ -23,6 +23,7 @@ E2E_BASE=https://plazalabs.github.io/kr-rail-map/index.html node tests/e2e/run.j
 | `E2E_BASE` | 이미 떠 있는 주소. 주면 서버를 띄우지 않는다 | 없음 |
 | `E2E_OUT` | 스크린샷·`result.json`·`summary.json` 폴더 | OS 임시 폴더 `/kr-rail-map-e2e` |
 | `E2E_RETRY` | 실패한 항목을 다시 돌릴 횟수. 재시도 후 통과하면 `FLAKY`로 표시 | `0` |
+| `E2E_CPU_THROTTLE` | CPU 를 N배 느리게 (CI 러너처럼 느린 기계 흉내, 예: `4`) | 없음 |
 
 종료 코드: 모든 항목이 통과하면 0, 하나라도 실패하면 1, 크롬을 못 찾거나 항목 이름이 틀리면 2.
 

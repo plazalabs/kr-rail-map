@@ -70,6 +70,8 @@ async function launch({ port = 9555, w = 1440, h = 1000, mobile = false, invest 
   });
   function send(method, params = {}) { return new Promise((resolve, reject) => { const i = ++id; pending.set(i, { resolve, reject }); ws.send(JSON.stringify({ id: i, method, params })); }); }
   await send('Page.enable'); await send('Runtime.enable'); await send('Log.enable'); await send('Network.enable');
+  // CI 러너처럼 느린 기계를 흉내 낸다 (E2E_CPU_THROTTLE=4 → CPU 4배 느리게). 로컬에서 CI 전용 실패를 재현할 때 쓴다
+  if (+process.env.E2E_CPU_THROTTLE > 1) await send('Emulation.setCPUThrottlingRate', { rate: +process.env.E2E_CPU_THROTTLE });
   if (invest) await send('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('krrail-mode', 'invest'); } catch (e) {}` });
   if (mobile) await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true });
   await send('Browser.grantPermissions', { permissions: ['geolocation', 'clipboardReadWrite', 'clipboardSanitizedWrite'] }).catch(() => {});

@@ -50,9 +50,11 @@ function baseStyle() {
   return STYLES.normal;
 }
 
+// 처음부터 지금 테마·배경에 맞는 스타일로 만든다. 예전에는 bright 로 만든 직후 applyView() 가
+// setStyle 을 한 번 더 불러 스타일·스프라이트를 두 번 받았다(다크면 bright 를 받다가 버림) — 2026-11-11.
 const map = new maplibregl.Map({
   container: 'map',
-  style: STYLES.normal,
+  style: baseStyle(),
   center: [126.98, 37.52],
   zoom: 9.4,
   attributionControl: { compact: true },
@@ -78,7 +80,7 @@ function modeFromHash() {
   const h = location.hash.replace('#', '');
   return MODES.includes(h) ? h : 'normal';
 }
-let appliedStyleKey = null;
+let appliedStyleKey = styleKeyFor(modeFromHash(), theme);   // 지도를 baseStyle() 로 만들었으므로 그 키에서 시작
 function styleKeyFor(mode, theme) {
   if (mode === 'satellite') return 'satellite';
   return DARK_THEMES.has(theme) ? 'dark' : 'bright';

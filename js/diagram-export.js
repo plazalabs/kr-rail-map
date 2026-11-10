@@ -87,13 +87,18 @@
     img.onload = function () {
       URL.revokeObjectURL(svgUrl);
       try {
+        // 아이폰 Safari 는 캔버스가 약 1,670만 화소를 넘으면 빈 그림을 만든다.
+        // 노선도가 커졌으므로(2026-11-11) 넘으면 비율을 지켜 줄인다.
+        var MAX_PX = 16000000;
+        var k = Math.min(1, Math.sqrt(MAX_PX / (W * H)));
+        var cw = Math.floor(W * k), ch = Math.floor(H * k);
         var canvas = document.createElement('canvas');
-        canvas.width = W;
-        canvas.height = H;
+        canvas.width = cw;
+        canvas.height = ch;
         var ctx = canvas.getContext('2d');
         ctx.fillStyle = bgColor();
-        ctx.fillRect(0, 0, W, H);
-        ctx.drawImage(img, 0, 0, W, H);
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.drawImage(img, 0, 0, cw, ch);
         canvas.toBlob(function (blob) {
           if (!blob) { notify('PNG 생성에 실패했습니다.'); return; }
           download(blob, fileName());

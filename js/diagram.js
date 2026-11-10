@@ -180,14 +180,16 @@ const DiagramMode = (() => {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     arr.forEach(n => {
       // 메르카토르는 x·y 를 같은 단위(라디안)로 맞춰야 종횡비가 유지된다
-      n.mx = n.coord[0] * Math.PI / 180;
-      n.my = -mercY(n.coord[1]);
+      const c = magnify(n.coord);
+      n.mx = c[0] * Math.PI / 180;
+      n.my = -mercY(c[1]);
       minX = Math.min(minX, n.mx); maxX = Math.max(maxX, n.mx);
       minY = Math.min(minY, n.my); maxY = Math.max(maxY, n.my);
     });
     const spanX = Math.max(maxX - minX, 1e-6);
     const spanY = Math.max(maxY - minY, 1e-6);
-    const s = Math.min(1900 / spanX, 1500 / spanY);
+    // 예전 1900×1500 은 간선 길이(EDGE_LEN 58px)에 비해 좁아 수도권 역이 포개졌다 (2026-11-11: 6px 안 겹침 228쌍 → 0)
+    const s = Math.min(4400 / spanX, 3500 / spanY);
     arr.forEach(n => {
       n.x = (n.mx - minX) * s + PAD;
       n.y = (n.my - minY) * s + PAD;
@@ -201,6 +203,31 @@ const DiagramMode = (() => {
     });
 
     return { nodes: arr, nodeMap: nodes, edges, lines: lineSeqs };
+  }
+
+  /* ---------- 돋보기 (역이 몰린 도시를 넓혀 그린다) ----------
+   * 전국을 한 장에 맞추면 수도권(약 60km 안에 역 수백 개)이 몇백 px 에 몰려 역이 서로 겹친다.
+   * 도시마다 반경 R(km) 안을 Sarkar–Brown 돋보기 g(t) = (m+1)t / (mt+1) 로 넓힌다.
+   * g(1) = 1 이라 반경 밖은 그대로고 경계에서 끊기지 않는다. 노선도는 '개략' 이라 거리는 원래도 실제와 다르다. */
+  const FOCI = [
+    // [경도, 위도, 반경 km, 배율 m]
+    [126.98, 37.53, 75, 2.6],   // 수도권
+    [129.06, 35.17, 30, 1.6],   // 부산
+    [128.60, 35.87, 18, 1.2],   // 대구
+    [127.40, 36.35, 15, 1.0],   // 대전
+    [126.87, 35.15, 12, 0.9],   // 광주
+  ];
+  function magnify(coord) {
+    let [lng, lat] = coord;
+    for (const [flng, flat, R, m] of FOCI) {
+      const kx = 111.32 * Math.cos(flat * Math.PI / 180), ky = 110.57;
+      const dx = (lng - flng) * kx, dy = (lat - flat) * ky;
+      const d = Math.hypot(dx, dy);
+      if (d >= R || d === 0) continue;
+      const t = d / R, g = (m + 1) * t / (m * t + 1), k = g / t;
+      lng = flng + dx * k / kx; lat = flat + dy * k / ky;
+    }
+    return [lng, lat];
   }
 
   /* ---------- 완화 ---------- */
@@ -283,16 +310,17 @@ const DiagramMode = (() => {
       if (it % 3 === 0) repel();
     }
 
-    for (let pass = 0; pass < 8; pass++) {
+    function snapAll(w) {
       for (let ei = 0; ei < N.edges.length; ei++) {
         const e = N.edges[ei];
         const a = nodes[idx.get(e.a)], b = nodes[idx.get(e.b)];
+        if (!a || !b) continue;
         const dx = b.x - a.x, dy = b.y - a.y;
         const ang = Math.atan2(dy, dx);
         const snap = Math.round(ang / (Math.PI / 4)) * (Math.PI / 4);
         const diff = snap - ang;
         if (Math.abs(diff) < 1e-4) continue;
-        const rot = diff * 0.92;
+        const rot = diff * w;
         const cosr = Math.cos(rot), sinr = Math.sin(rot);
         const ndx = dx * cosr - dy * sinr;
         const ndy = dx * sinr + dy * cosr;
@@ -300,6 +328,14 @@ const DiagramMode = (() => {
         a.x -= ex; a.y -= ey; b.x += ex; b.y += ey;
       }
     }
+    for (let pass = 0; pass < 8; pass++) snapAll(0.92);
+
+    // 마무리: 각도 맞춤과 겹침 밀어내기를 번갈아 한다. 맞춤만 하면 역이 포개지고(예전 243쌍),
+    // 밀어내기만 하면 45° 선이 틀어진다. 번갈아 하면 둘 다 대체로 지켜진다.
+    for (let pass = 0; pass < 100; pass++) { repel(); snapAll(0.92); }
+    // 마지막은 밀어내기 1번 + 맞춤 4번: 겹침 0쌍·45° 맞춤 약 97% (밀어내기로 끝내면 겹침 0 이지만 맞춤 약 60%)
+    repel();
+    for (let pass = 0; pass < 4; pass++) snapAll(0.92);
   }
 
   /* ---------- SVG ---------- */

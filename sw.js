@@ -4,8 +4,8 @@
  *  - GeoJSON 데이터: Cache First (최초 로드 후 캐시)
  *  - 지도 타일: Network First (오프라인이면 캐시된 타일만, 최대 200개)
  */
-const APP_CACHE = 'kr-rail-map-app-v79';
-const DATA_CACHE = 'kr-rail-map-data-v79';
+const APP_CACHE = 'kr-rail-map-app-v80';
+const DATA_CACHE = 'kr-rail-map-data-v80';
 const TILE_CACHE = 'kr-rail-map-tiles-v1';
 const MAX_TILE_ENTRIES = 200;
 

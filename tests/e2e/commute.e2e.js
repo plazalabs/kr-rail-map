@@ -85,6 +85,15 @@ const count = b => b.evaluate(`(() => { const s = map.getSource('cm-stations'); 
   const s3 = await summary(b);
   R.check("목적지를 '시청 · 부산 연제구' 로 바꾸면 부산 기준으로 다시 계산", /시청/.test(s3) && (await b.evaluate(`(() => { const s = map.getSource('cm-dest')._data.features[0].geometry.coordinates; return s[0] > 128.9; })()`)), s3);
 
+  // 8. 역 상세 '이 역까지 통근권 보기' → 그 역이 목적지
+  await b.evaluate(`CommuteMap.hide(); showStation(STATIONS.find(s => s.properties.name_ko === '잠실' && s.properties.lines.includes('seoul-subway-line-2')), null); true`);
+  for (let i = 0; i < 30; i++) { if (await b.evaluate(`!!document.querySelector('#sd-panel .sd-commute')`)) break; await sleep(250); }
+  const hasLink = await b.evaluate(`(() => { const e = document.querySelector('#sd-panel .sd-commute'); if (!e) return false; e.click(); return true; })()`);
+  await sleep(1000);
+  const s4 = await summary(b);
+  const sdClosed = await b.evaluate(`!document.getElementById('sd-panel').classList.contains('sd-open')`);
+  R.check("역 상세 '이 역까지 통근권 보기' → 그 역(잠실) 기준 통근권", hasLink && /잠실/.test(s4) && sdClosed, { hasLink, s4, sdClosed });
+
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0', exc.length === 0, exc.slice(0, 3));
   b.close();

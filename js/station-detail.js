@@ -506,7 +506,11 @@
     // 자료(access.json)가 아직 없으면 이 절을 통째로 건너뛴다.
     if (typeof StationAccess !== 'undefined' && StationAccess.isReady()) {
       html += '<div class="sd-sec"><h3>도심 접근성</h3>' +
-        StationAccess.sectionHtml(sid) + '</div>';
+        StationAccess.sectionHtml(sid) +
+        // 통근권 찾기(js/commute.js)로 — '이 역이 직장이면 어디서 다닐 수 있나'
+        (typeof CommuteMap !== 'undefined'
+          ? '<button type="button" class="sd-commute" style="margin-top:8px;padding:0;border:0;background:none;color:var(--accent,#1a73e8);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline">이 역까지 통근권 보기 →</button>'
+          : '') + '</div>';
     }
 
     // 공급 — '앞으로 이 동네에 몇 세대가 들어오나'. 시세(지금)·접근성(시간)에
@@ -640,6 +644,12 @@
     var modeOn = body.querySelector('.sd-mode-on');
     if (modeOn) modeOn.addEventListener('click', function () {
       if (typeof KR_MODE !== 'undefined') KR_MODE.set('invest');
+    });
+
+    var cmBtn = body.querySelector('.sd-commute');
+    if (cmBtn) cmBtn.addEventListener('click', function () {
+      hide();
+      if (typeof CommuteMap !== 'undefined') CommuteMap.show(sid);
     });
 
     // 액션 버튼

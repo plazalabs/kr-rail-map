@@ -1718,3 +1718,63 @@ document.getElementById('coverage-btn').addEventListener('click', () => {
  * 도구·분석·저장 버튼이 아무 반응도 하지 않는 것처럼 보인다.
  * (사이드바 토글에서 똑같은 사고가 있었다 — 위 주석 참고)
  * aria-expanded 갱신과 바깥 클릭 닫기도 ui.js 쪽에만 있다. */
+
+
+/* ---------- 지도 위 역 키보드 탐색 (접근성) ----------
+ * 지도(캔버스)에 포커스가 있을 때:
+ *   N 또는 ]  : 다음 역 (화면 가운데에서 가까운 순)
+ *   P 또는 [  : 이전 역
+ *   Enter     : 고른 역의 상세 열기
+ *   Esc       : 고르기 끝내기
+ * 화살표·+/- 는 MapLibre 기본(지도 이동·확대)을 그대로 둔다.
+ * 한글 자판에서도 되도록 e.key 가 아니라 e.code(KeyN·KeyP·BracketLeft/Right)로 본다.
+ * 고른 역은 둥근 테두리로 보이고, 이름·노선은 상태 줄(aria-live)로 읽어 준다. */
+const KbNav = (() => {
+  let list = [], idx = -1, marker = null, chosen = null;
+  function candidates() {
+    const b = map.getBounds(), c = map.getCenter();
+    const cos = Math.cos(c.lat * Math.PI / 180);
+    return STATIONS
+      .filter(s => (s.properties.lines || []).some(l => visibleLines.has(l)) && b.contains(s.geometry.coordinates))
+      .map(s => { const [x, y] = s.geometry.coordinates; return { s, d: ((x - c.lng) * cos) ** 2 + (y - c.lat) ** 2 }; })
+      .sort((a, z) => a.d - z.d)
+      .slice(0, 200)
+      .map(o => o.s);
+  }
+  function show(s) {
+    chosen = s;
+    if (!marker) {
+      const el = document.createElement('div');
+      el.className = 'kb-station-ring';
+      el.setAttribute('aria-hidden', 'true');
+      marker = new maplibregl.Marker({ element: el });
+    }
+    marker.setLngLat(s.geometry.coordinates).addTo(map);
+    const lines = (s.properties.lines || []).map(l => lineNameOf.get(l) || l).slice(0, 4).join('·');
+    setStatus(`${s.properties.name_ko}역 (${lines}) — ${idx + 1}/${list.length}. Enter: 열기 · N/P: 다음/이전`);
+  }
+  function step(dir) {
+    // 지도가 움직였으면 목록을 다시 만든다 (지금 고른 역은 그대로 출발점으로)
+    const fresh = candidates();
+    if (!fresh.length) { setStatus('화면 안에 역이 없습니다. 지도를 옮기거나 축소해 보세요'); return; }
+    const same = fresh.length === list.length && fresh.every((s, i) => s === list[i]);
+    if (!same) { list = fresh; idx = chosen ? list.indexOf(chosen) : -1; }
+    idx = idx < 0 ? (dir > 0 ? 0 : list.length - 1) : (idx + dir + list.length) % list.length;
+    show(list[idx]);
+  }
+  function clear() { chosen = null; idx = -1; list = []; if (marker) marker.remove(); }
+  function onKey(e) {
+    if (!dataReady || e.altKey || e.ctrlKey || e.metaKey) return;
+    const k = e.code;
+    if (k === 'KeyN' || k === 'BracketRight') { e.preventDefault(); step(1); }
+    else if (k === 'KeyP' || k === 'BracketLeft') { e.preventDefault(); step(-1); }
+    else if (k === 'Enter' && chosen) { e.preventDefault(); const s = chosen; showStation(s, s.geometry.coordinates); }
+    else if (k === 'Escape' && chosen) { clear(); setStatus('역 고르기를 끝냈습니다'); }
+  }
+  const canvas = map.getCanvas();
+  canvas.setAttribute('aria-label', '지도. 화살표: 이동, +/−: 확대·축소, N/P: 화면 안의 역을 하나씩 고르기, Enter: 고른 역 열기');
+  canvas.addEventListener('keydown', onKey);
+  canvas.addEventListener('blur', () => { if (marker) marker.remove(); });
+  canvas.addEventListener('focus', () => { if (chosen && marker) marker.addTo(map); });
+  return { step, clear, current: () => chosen };
+})();

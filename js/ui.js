@@ -122,6 +122,36 @@ const UI = (() => {
     try { target.focus({ preventScroll: true }); } catch (e) { /* 무시 */ }
   }
 
+  /* 길찾기·그리기 패널 포커스 — 모달이 아니라 지도 옆에 붙는 패널이라 따로 다룬다.
+   * 키보드로 열면 패널 안으로(길찾기는 '출발' 칸), 닫히면 연 버튼으로 돌려준다.
+   * 연 버튼이 메뉴 안에 있어 메뉴와 함께 닫혔으면 메뉴 버튼으로. 마우스로 열면 포커스를 옮기지 않는다
+   * (휴대폰에서 '출발' 칸에 포커스가 가면 자판이 튀어나온다). */
+  function onSidePanelOpen(el) {
+    const a = document.activeElement;
+    el.__opener = (a && a !== document.body && !el.contains(a)) ? a
+      : (lastFocus && Date.now() - lastFocusAt < 5000 && !el.contains(lastFocus) ? lastFocus : null);
+    if (!keyboardLast) return;
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+    const first = el.id === 'route-panel' ? el.querySelector('#route-from') : null;
+    try { (visible(first) ? first : el).focus({ preventScroll: true }); } catch (e) { /* 무시 */ }
+  }
+  function onSidePanelClose(el) {
+    const opener = el.__opener; el.__opener = null;
+    const a = document.activeElement;
+    // 포커스가 패널 밖 다른 곳으로 이미 옮겨 갔으면 건드리지 않는다
+    if (a && a !== document.body && !el.contains(a)) return;
+    let target = opener;
+    if (!visible(target)) {
+      const dd = opener && opener.closest && opener.closest('.tb-dropdown');
+      target = dd ? dd.querySelector('.tb-dropbtn') : null;
+    }
+    if (!visible(target) || (!keyboardLast && isTextField(target))) {
+      if (a && el.contains(a)) a.blur();
+      return;
+    }
+    try { target.focus({ preventScroll: true }); } catch (e) { /* 무시 */ }
+  }
+
   // 모듈이 패널을 게을리 만들어도 요소가 나타나는 순간 감시를 붙인다
   function watchModals() {
     MODALS.forEach(m => {
@@ -147,14 +177,17 @@ const UI = (() => {
     ['route-panel', 'draw-panel'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
+      let wasOpen = !el.hidden;
       new MutationObserver(() => {
         if (el.hidden) {
           // 길찾기 패널이 닫히면 경로 하이라이트도 같이 지운다
           if (id === 'route-panel' && typeof clearRouteHighlight === 'function') {
             clearRouteHighlight();
           }
+          if (wasOpen) { wasOpen = false; onSidePanelClose(el); }
           return;
         }
+        if (!wasOpen) { wasOpen = true; onSidePanelOpen(el); }
         ['route-panel', 'draw-panel'].forEach(other => {
           if (other === id) return;
           const o = document.getElementById(other);

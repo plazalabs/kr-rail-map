@@ -365,6 +365,8 @@ const DrawTools = (() => {
     if (!mode) return;
     const tag = (document.activeElement || {}).tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    // 버튼·선택 상자에서 누른 Enter 는 그 버튼의 동작이다 (예: 그리기 패널 ✕). 그리기 완료로 가로채지 않는다
+    if ((tag === 'BUTTON' || tag === 'SELECT' || tag === 'A') && (e.key === 'Enter' || e.key === 'Backspace')) return;
     if (e.key === 'Enter') { e.preventDefault(); finish(); }
     else if (e.key === 'Backspace') { e.preventDefault(); undo(); }
     else if (e.key === 'Escape') { cancel(); }
@@ -376,6 +378,9 @@ const DrawTools = (() => {
     loadMemos();
     map.on('click', e => onClick(e.lngLat));
     document.addEventListener('keydown', onKey);
+    // 그리기 패널 ✕ 는 패널만 숨기는 게 아니라 그리기 자체를 끝낸다 (Esc 와 같게). 안 그러면 지도 클릭이 계속 점을 찍는다
+    const dpClose = document.querySelector('#draw-panel .rp-close');
+    if (dpClose) dpClose.addEventListener('click', () => { if (mode === 'draw') cancel(); });
     // 그리기 패널: 색상 팔레트 + 선 스타일
     const pal = document.getElementById('draw-palette');
     pal.innerHTML = '';

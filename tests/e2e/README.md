@@ -44,6 +44,7 @@ E2E_BASE=https://plazalabs.github.io/kr-rail-map/index.html node tests/e2e/run.j
 | `nearby-first` | `nearby-first.e2e.js` | 길찾기 자동완성: 지도 중심(서울·부산·대전)에 따라 그 도시의 '시청'이 맨 위, 다른 이름의 순서는 그대로, 고른 역 ID 저장 (IMPL9) |
 | `fav-stations` | `fav-stations.e2e.js` | 역 즐겨찾기를 역 ID로: 서울·부산 시청 ⭐가 따로 저장·표시, 사이드바 클릭 시 그 역, 한쪽 해제, 옛 저장분(이름만) 열림 (IMPL9) |
 | `focus-return` | `focus-return.e2e.js` | 키보드만으로 역 고르기(/ → 이름 → ↓ → Enter), 패널이 열리면 포커스가 패널 안으로, Esc·✕로 닫으면 원래 자리(검색창·메뉴 버튼)로, 마우스 동작은 그대로 (IMPL9) |
+| `map-keyboard` | `map-keyboard.e2e.js` | 지도 캔버스 포커스 → N/] 다음 역·P/[ 이전 역(화면 가운데 가까운 순), 테두리·상태 줄 안내, Enter 로 상세, Esc 로 끝, 한글 자판(e.code), 화살표는 지도 이동 그대로 |
 | `panel-state` | `panel-state.e2e.js` | 영향권을 켠 채 메뉴로 끄기(데스크톱·모바일), 노선도를 막대 닫기·Esc·카드로 닫으면 툴바 버튼도 꺼짐, 메모 핀이 테마·배경 전환 뒤에도 보임 (IMPL9) |
 | `ui-fixes` | `ui-fixes.e2e.js` | 노선 비교 목록(④), 노선도 카드 출발·도착과 동명역 ID(⑤), 노선도를 켠 상태의 툴바·`노선도 PNG`(⑥), 영향권 버튼 상태(⑧), `?style=local`(⑨), 전환 후 그린 노선·내 위치 점 유지 |
 | `ui-fixes-mobile` | 위와 같음 (`MOBILE=1`) | 같은 항목을 390×844 모바일 에뮬레이션으로 |

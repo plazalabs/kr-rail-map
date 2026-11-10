@@ -3,6 +3,7 @@
  *  - Esc 로 닫으면 포커스가 검색창으로 돌아감
  *  - 툴바 메뉴(분석 > 철도망 통계)로 연 패널을 Esc 로 닫으면 포커스가 '분석' 버튼으로
  *  - 역 상세 ✕ 를 Tab 으로 찾아 Enter 로 닫아도 같은 자리로
+ *  - 길찾기·그리기 패널: 키보드로 열면 패널 안으로, 닫으면 연 버튼(메뉴 안이면 메뉴 버튼)으로
  * 실행: node tests/e2e/run.js --only focus-return
  */
 'use strict';
@@ -70,6 +71,32 @@ async function waitOpen(b, id, want = true, ms = 5000) { const t0 = Date.now(); 
   const rsClosed = await waitOpen(b, 'rs-panel', false); await sleep(200);
   const a5 = await active(b);
   R.check("Esc 로 닫으면 포커스가 '분석' 버튼으로 (메뉴 항목은 닫혀 안 보이므로)", rsClosed && /tb-dropbtn/.test(a5), { rsClosed, a5 });
+
+  // 5. 길찾기 패널 (키보드): '길찾기' 버튼 Enter → 포커스가 '출발' 칸으로, Esc → '길찾기' 버튼으로
+  const rb = await b.evaluate(`(() => { const e = document.getElementById('route-btn'); e.focus(); return document.activeElement === e; })()`);
+  await enter(b); await sleep(300);
+  const rOpen = await b.evaluate(`!document.getElementById('route-panel').hidden`);
+  const a6 = await b.evaluate(`document.activeElement && document.activeElement.id`);
+  R.check("길찾기 (키보드) → 패널 열림·포커스가 '출발' 칸으로", rb && rOpen && a6 === 'route-from', { rb, rOpen, a6 });
+  await b.key('Escape', 'Escape', 27); await sleep(300);
+  const rClosed = await b.evaluate(`document.getElementById('route-panel').hidden`);
+  const a7 = await b.evaluate(`document.activeElement && document.activeElement.id`);
+  R.check("Esc 로 닫으면 포커스가 '길찾기' 버튼으로", rClosed && a7 === 'route-btn', { rClosed, a7 });
+  // 6. 그리기 패널 (키보드): '도구 > 나만의 노선 그리기' → 포커스가 패널로, ✕(Enter) → '도구' 버튼으로
+  const tb = await b.evaluate(`(() => { const e = [...document.querySelectorAll('#toolbar .tb-dropbtn')].find(x => x.textContent.trim().startsWith('도구')); e.focus(); return document.activeElement === e; })()`);
+  await enter(b); await sleep(250);
+  const db = await b.evaluate(`(() => { const e = document.getElementById('draw-btn'); e.focus(); return document.activeElement === e; })()`);
+  await enter(b); await sleep(300);
+  const dOpen = await b.evaluate(`!document.getElementById('draw-panel').hidden`);
+  const a8 = await b.evaluate(`(() => { const a = document.activeElement; return a && (a.id || a.className); })()`);
+  R.check('그리기 (키보드) → 패널 열림·포커스가 패널로', tb && db && dOpen && a8 === 'draw-panel', { tb, db, dOpen, a8 });
+  await b.evaluate(`document.querySelector('#draw-panel .rp-close').focus()`);
+  await enter(b); await sleep(300);
+  const dClosed = await b.evaluate(`document.getElementById('draw-panel').hidden`);
+  const a9 = await active(b);
+  R.check("✕ 로 닫으면 포커스가 '도구' 버튼으로 (메뉴 항목은 닫혀 안 보이므로)", dClosed && /tb-dropbtn/.test(a9), { dClosed, a9 });
+  const drawEnded = await b.evaluate(`map.getCanvas().style.cursor !== 'crosshair' && !document.getElementById('draw-btn').classList.contains('active')`);
+  R.check('✕ 로 닫으면 그리기도 끝남 (지도 클릭이 점을 더 찍지 않음)', drawEnded, drawEnded);
 
   // 4. 마우스 동작은 그대로: 지도에서 역 클릭 → 상세 열림, ✕ 클릭 → 닫힘
   const seoulId = await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.name_ko === '서울'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); return s.properties.id; })()`);

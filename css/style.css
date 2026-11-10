@@ -939,3 +939,10 @@ body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
 :root { --warn-text: #8a5300; }
 body[data-theme="dark"], body[data-theme="eclipse"], body[data-theme="neon"] { --warn-text: #f5c04a; }
 body[data-theme="win95"] { --warn-text: #5c3600; }
+
+/* 지도 위 역 키보드 탐색 — 고른 역 표시 (js/app.js KbNav) */
+.kb-station-ring {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 3px solid #1a73e8; box-shadow: 0 0 0 3px #fff, 0 0 8px rgba(0,0,0,.45);
+  pointer-events: none;
+}

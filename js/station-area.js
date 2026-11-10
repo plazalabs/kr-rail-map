@@ -31,6 +31,8 @@
                                          // 10m 격자로도 경계 오차 0.62m 이하 (전 역 실측)
   const SIMPLIFY_M = 0.3;                // 단순화 허용 오차 (m)
   const COLORS = { 250: '#e53935', 350: '#1e63d6' };
+  // 거리 글자는 선보다 진하게 — 흰 테두리 위 대비 4.5:1 이상 (#e53935 는 4.2:1, #c62828 은 5.6:1)
+  const TEXT_COLORS = { 250: '#c62828', 350: '#1e63d6' };
   const SRC = 'station-area';
   const LAYERS = ['station-area-fill', 'station-area-r2', 'station-area-r1',
     'station-area-label-r2', 'station-area-label-r1'];
@@ -370,7 +372,7 @@
     const label = (id, r) => add({ id, type: 'symbol', source: SRC, minzoom: MINZOOM, filter: filterFor(r),
       layout: { 'symbol-placement': 'line', 'symbol-spacing': 260, 'text-field': r + 'm',
         'text-font': ['Noto Sans Regular'], 'text-size': 10.5, 'text-keep-upright': true },
-      paint: { 'text-color': COLORS[r], 'text-halo-color': '#ffffff', 'text-halo-width': 1.4 } });
+      paint: { 'text-color': TEXT_COLORS[r], 'text-halo-color': '#ffffff', 'text-halo-width': 1.4 } });
     label('station-area-label-r2', 350);
     label('station-area-label-r1', 250);
     return true;

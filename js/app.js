@@ -215,9 +215,7 @@ function addDataLayers() {
         ['match', ['get', 'status'], 'construction', ' (공사중)', 'planned', ' (계획중)', 'proposed', ' (구상중)', '']],
       'text-size': 11, 'text-font': ['Noto Sans Regular']
     },
-    paint: modeFromHash() === 'satellite'
-      ? { 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 1.6 }
-      : { 'text-color': '#333333', 'text-halo-color': '#ffffff', 'text-halo-width': 1.4 }
+    paint: labelPaint('#333333', 1.4)
   });
   // 노선 하이라이트 레이어 (사이드바 호버용)
   map.addSource('line-highlight', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -255,10 +253,19 @@ function addDataLayers() {
     // 위성 사진 위에서는 검은 글자 + 얇은 흰 테두리가 어두운 지붕·숲에 묻힌다.
     // 위성일 때만 흰 글자 + 어두운 테두리로 바꾼다. 일반·다크·흑백은 그대로.
     // (배경을 바꾸면 스타일 전체 교체 → restoreCustomLayers → 여기를 다시 지나므로 분기가 따라간다)
-    paint: modeFromHash() === 'satellite'
-      ? { 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 1.6 }
-      : { 'text-halo-color': '#ffffff', 'text-halo-width': 1 }
+    paint: labelPaint('#1f2328', 1.2)
   });
+}
+
+// 지도 글자 색 (접근성: 글자 ↔ 테두리 대비 4.5:1 이상).
+// 위성 사진·어두운 배경(다크·이클립스·네온 테마)에서는 흰 글자 + 어두운 테두리,
+// 밝은 배경에서는 어두운 글자 + 흰 테두리. 예전에는 다크 테마에서도 검은 글자 + 1px 흰 테두리라
+// 어두운 지도 위에서 글자가 테두리에만 기대어 읽혔다 (2026-11-11 측정).
+function labelPaint(darkText, haloW) {
+  const darkBg = modeFromHash() === 'satellite' || DARK_THEMES.has(theme);
+  return darkBg
+    ? { 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 1.6 }
+    : { 'text-color': darkText, 'text-halo-color': '#ffffff', 'text-halo-width': haloW };
 }
 
 // 출구 레이어 — 확대했을 때만 보인다. 전국 단위에서 4,300개를 그리면

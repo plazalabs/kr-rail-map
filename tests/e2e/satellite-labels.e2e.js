@@ -71,6 +71,12 @@ async function measure(b, tagName) {
     const a = r['역이름z13']['station-labels'], e = r['출구z17.5']['station-exit-labels'];
     return [n, !!r['역이름z13']._glyphs && !!a && a.n > 0 && !!e && e.n > 0];
   });
+  // 글자 색 (2026-11-11 대비): 위성·다크는 흰 글자 + 어두운 테두리, 일반·흑백은 어두운 글자 + 흰 테두리
+  for (const [n, r] of Object.entries(out.cases)) {
+    const a = r['역이름z13']['station-labels'];
+    const darkBg = /위성|다크/.test(n);
+    judged.push(['역 이름 글자 색 (' + n + ')', !!a && (darkBg ? a.color === '"#ffffff"' && /rgba\(0,0,0/.test(a.halo) : a.color !== '"#ffffff"' && a.halo === '"#ffffff"')]);
+  }
   judged.push(['콘솔 오류 0', out.errors.length === 0]);
   const fail = judged.filter(j => !j[1]);
   judged.forEach(j => console.log(j[1] ? '[PASS]' : '[FAIL]', j[0]));

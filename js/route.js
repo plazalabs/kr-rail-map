@@ -528,33 +528,43 @@ const RouteFinder = (() => {
     const out = new Map();
     if (!stationsById.has(fromId)) return out;
     const openOnly = !!(opts && opts.openOnly);
+    // 두 값을 따로 들고 간다 (2026-11-11 고침).
+    //  - 탐색 비용 d: 경로 '고르기' 용. 환승마다 TRANSFER_DECISION_EXTRA 를 더 얹는다 (findRoute 와 같음)
+    //  - 표시 시간 m: 고른 경로의 실제 분. findRoute 의 minutes 와 같은 규칙
+    // 예전에는 d 를 그대로 돌려줘서, 환승 1번마다 4분씩 길게 나왔다 — 역 상세 '강남까지 N분'(도심 접근성)이
+    // 같은 두 역의 길찾기보다 4~8분 길었다 (용산→강남 30분 vs 길찾기 22분).
     const dist = new Map([[skey(fromId, START), 0]]);
+    const disp = new Map([[skey(fromId, START), 0]]);
     const pq = [];
     heapPush(pq, [0, fromId, START]);
-    const best = new Map();
+    const best = new Map();   // 역 → [탐색 비용, 표시 분]
     while (pq.length) {
       const [d, u, line] = heapPop(pq);
       const k = skey(u, line);
       if (d > (dist.get(k) ?? Infinity)) continue;   // 낡은 항목
+      const m = disp.get(k) || 0;
       const prev = best.get(u);
-      if (prev == null || d < prev) best.set(u, d);
+      if (prev == null || d < prev[0]) best.set(u, [d, m]);
       for (const e of (adj.get(u) || [])) {
         if (openOnly && !e.open) continue;
         const nl = e.lineId || null;
-        let cost = edgeMinutes(e);
+        let cost = edgeMinutes(e), shown = edgeMinutes(e);
         if (line !== START && line !== null && nl !== null && !sameService(nl, line)) {
           cost += transferMinutes(u, line, nl) + TRANSFER_DECISION_EXTRA;
         }
-        if (nl !== line) cost += accessMinutes(nl);
+        // 표시: findRoute 처럼 노선 id 가 바뀌면 그 역의 환승 도보 시간을 넣는다
+        if (line !== START && line !== null && nl !== null && nl !== line) shown += transferMinutes(u, line, nl);
+        if (nl !== line) { cost += accessMinutes(nl); shown += accessMinutes(nl); }
         const nk = skey(e.to, nl);
         const nd = d + cost;
         if (nd < (dist.get(nk) ?? Infinity)) {
           dist.set(nk, nd);
+          disp.set(nk, m + shown);
           heapPush(pq, [nd, e.to, nl]);
         }
       }
     }
-    best.forEach((v, kk) => out.set(kk, Math.round(v)));
+    best.forEach((v, kk) => out.set(kk, Math.round(v[1])));
     return out;
   }
 

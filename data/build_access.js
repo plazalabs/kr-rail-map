@@ -90,7 +90,9 @@ for (const id of ids) {
     const a = nowMap.get(d.station_id);
     const b = aftMap.get(d.station_id);
     out[id].now.push(a == null ? null : a);
-    out[id].after.push(b == null ? null : b);
+    // 개통은 길을 더할 뿐 빼지 않는다 — 개통 후에도 지금 길로 갈 수 있다. 탐색이 환승이 적은 길을
+    // 고르느라(환승 판단 여유분) 표시 분이 지금보다 길게 나오는 경우(2026-11-11, 19역)는 지금 값을 쓴다.
+    out[id].after.push(b == null ? (a == null ? null : a) : (a == null ? b : Math.min(a, b)));
   });
 }
 const secs = (Date.now() - t0) / 1000;

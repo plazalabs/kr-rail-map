@@ -27,6 +27,12 @@
     });
   }
   function of(sid) { return ready ? (data.stations[sid] || null) : null; }
+  // 단지 하나의 전세가율 — [비율, 짝(면적) 수]. 열쇠는 단지 목록과 같은 '시군구코드|법정동' + 지번
+  function complexOf(districtKey, jibun) {
+    if (!ready || !data.cx || !districtKey || !jibun) return null;
+    var d = data.cx[districtKey];
+    return (d && d[String(jibun).trim()]) || null;
+  }
 
   function sectionHtml(sid) {
     if (!ready) return '';
@@ -58,6 +64,7 @@
     isReady: function () { return ready; },
     of: of,
     meta: function () { return data; },
-    sectionHtml: sectionHtml
+    sectionHtml: sectionHtml,
+    complexOf: complexOf
   };
 })(typeof window !== 'undefined' ? window : this);

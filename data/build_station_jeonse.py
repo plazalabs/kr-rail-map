@@ -17,6 +17,8 @@
   6. 역 = 아파트 시세와 같은 연결 규칙(법정동 → 역). 역마다 짝이 가장 많은 법정동을 쓴다.
      짝이 MIN_PAIRS(3) 개 미만이면 비율을 내지 않고 짝 수만 적는다.
   7. 역 값 = 짝 비율들의 중위값. 함께: 짝 수, 80% 이상인 짝 수(깡통전세 위험 기준선), 짝에 쓰인 매매·전세 건수.
+  8. 단지 값(cx) = 같은 단지(지번)의 면적별 짝 비율 중위값 — 역 상세 '이 법정동 단지' 목록에 붙인다.
+     단지 목록(data/station-complex.json)에 나오는 법정동만 싣는다(파일 크기). 짝 1개여도 싣되 짝 수를 함께 둔다.
 
 사용
   python data/build_station_jeonse.py            # data/_rtms 를 읽어 station-jeonse.json 을 쓴다
@@ -145,12 +147,25 @@ def build():
         s["d"] = key[1]
         s["sgg"] = sgg_label.get(key[0], key[0])
         stations[sid] = s
+    # 단지 값 — 단지 목록이 있는 법정동만
+    cx_keys = set()
+    cxf = ROOT / "data" / "station-complex.json"
+    if cxf.exists():
+        cx_keys = set(json.loads(cxf.read_text("utf8")).get("districts", {}).keys())
+    by_home = collections.defaultdict(list)
+    for p in pairs:
+        code, dong, jibun, _area = p[0]
+        if f"{code}|{dong}" in cx_keys:
+            by_home[(f"{code}|{dong}", jibun)].append(p[1])
+    cx = collections.defaultdict(dict)
+    for (dk, jibun), rs in by_home.items():
+        cx[dk][jibun] = [round(statistics.median(rs), 3), len(rs)]
     shown = sum(1 for s in stations.values() if "r" in s)
     allr = [p[1] for p in pairs]
     report = {
         "counts": dict(cnt), "homes_sale": len(sales), "homes_jeonse": len(rents),
         "pairs": len(pairs), "outliers_over_150": outliers, "pairs_linked": linked, "pairs_unlinked": unlinked,
-        "stations": len(stations), "stations_with_ratio": shown,
+        "stations": len(stations), "stations_with_ratio": shown, "complexes": sum(len(v) for v in cx.values()),
         "pair_ratio_median": round(statistics.median(allr), 3) if allr else None,
     }
     payload = {
@@ -163,6 +178,7 @@ def build():
         "keyed_by": "station_id",
         "report": report,
         "stations": stations,
+        "cx": cx,
     }
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), "utf8")
     print(json.dumps(report, ensure_ascii=False, indent=1))

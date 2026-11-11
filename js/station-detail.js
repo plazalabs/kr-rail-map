@@ -436,6 +436,9 @@
       if (x.d) extra.push(x.d + '개동');
       var bands = bandText(x.bd);
 
+      // 단지별 전세가율 (같은 단지·같은 면적 매매·신규 전세 짝 — js/jeonse.js). 짝이 없으면 적지 않는다
+      var jr = (typeof StationJeonse !== 'undefined' && StationJeonse.complexOf) ? StationJeonse.complexOf(c.key, x.j) : null;
+      if (jr) meta.push('전세가율 ' + Math.round(jr[0] * 100) + '%' + (jr[1] > 1 ? ' (' + jr[1] + '개 면적)' : '') + (jr[0] >= 0.8 ? ' ⚠' : ''));
       return '<li class="sd-cx"><span class="sd-cx-n">' + esc(x.n) + '</span>' +
         '<span class="sd-cx-p">' + StationPrice.pp(x.pp) + '/평</span>' +
         '<span class="sd-cx-m">' + esc(meta.join(' · ')) + '</span>' +
@@ -637,6 +640,8 @@
           if (x.y) m.push(x.y + '년');
           if (x.a) m.push(Math.round(x.a) + '㎡');
           m.push(x.n_deals + '건');
+          var jr = (typeof StationJeonse !== 'undefined' && StationJeonse.complexOf) ? StationJeonse.complexOf(full.key, x.j) : null;
+          if (jr) m.push('전세가율 ' + Math.round(jr[0] * 100) + '%' + (jr[0] >= 0.8 ? ' ⚠' : ''));
           return '<li class="sd-cx"><span class="sd-cx-n">' + esc(x.n) + '</span>' +
             '<span class="sd-cx-p">' + StationPrice.pp(x.pp) + '/평</span>' +
             '<span class="sd-cx-m">' + esc(m.join(' · ')) + '</span></li>';

@@ -28,5 +28,12 @@ check('갱신 계약은 뺐다 (세어 둠)', J.report.counts['전세 갱신(뺌
 const by = (n, l) => { const f = ST.find(s => s.properties.name_ko === n && s.properties.lines.includes(l)); return f && J.stations[f.properties.id]; };
 const jamsil = by('잠실', 'seoul-subway-line-2'), ilsan = by('일산', 'gyeongui-jungang-line');
 check('비싼 동네 잠실 < 외곽 일산 (전세가율)', jamsil && ilsan && jamsil.r < ilsan.r, jamsil && ilsan && `${jamsil.r} vs ${ilsan.r}`);
+// 단지별 전세가율 (cx) — 단지 목록과 같은 '시군구코드|법정동' + 지번 열쇠
+const CX = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/station-complex.json'), 'utf8')).districts;
+const cxKeys = Object.keys(J.cx || {});
+check('단지별 값은 단지 목록이 있는 법정동만', cxKeys.length > 0 && cxKeys.every(k => CX[k]));
+check('단지 값 = [비율, 짝 수], 비율 10%~150%', cxKeys.every(k => Object.values(J.cx[k]).every(v => v.length === 2 && v[0] >= 0.1 && v[0] <= 1.5 && v[1] >= 1)));
+let hit = 0; cxKeys.forEach(k => (CX[k].complexes || []).forEach(c => { if (J.cx[k][c.j]) hit++; }));
+check('단지 목록의 지번과 이어지는 단지가 1,000곳 이상', hit >= 1000, hit);
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

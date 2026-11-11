@@ -70,6 +70,33 @@ const styleReadyP = new Promise(res => {
   map.once('load', res);   // 안전망 — 둘 중 먼저 오는 것
 });
 
+/* 배경 지도 서버가 죽었을 때 (2026-11-12) — 노선은 배경 지도 '설계도'(스타일 JSON)가 와야 그릴 수 있다.
+ * 무료 서버(OpenFreeMap)가 응답하지 않으면 노선까지 영영 안 뜬다. 8초 안에 설계도가 안 오거나 설계도 오류가 나면
+ * 바탕색만 있는 비상 스타일로 바꾼다 — 노선·역 점은 보이고, 글자는 글꼴 서버가 살아 있을 때만 보인다. */
+const FALLBACK_STYLE = {
+  version: 8,
+  glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+  sources: {},
+  layers: [{ id: 'fallback-bg', type: 'background', paint: { 'background-color': '#f2f1ec' } }],
+};
+let styleOk = false, usedFallback = false;
+map.once('style.load', () => { styleOk = true; });
+function useFallbackStyle(why) {
+  if (styleOk || usedFallback) return;
+  usedFallback = true;
+  console.warn('배경 지도 서버 응답 없음 → 비상 배경으로 (' + why + ')');
+  try { map.setStyle(FALLBACK_STYLE); } catch (e) { /* 무시 */ }
+  setTimeout(() => setStatus('배경 지도 서버가 응답하지 않아 바탕 없이 노선만 보여 줍니다. 잠시 뒤 새로고침해 보세요.'), 0);
+}
+const fallbackTimer = setTimeout(() => useFallbackStyle('8초'), 8000);
+map.once('style.load', () => clearTimeout(fallbackTimer));
+map.on('error', e => {
+  // 설계도(스타일 JSON) 자체를 못 받은 오류만 — 타일 하나 실패는 무시한다
+  const msg = String((e && e.error && (e.error.message || e.error.status)) || '');
+  if (!styleOk && !(e && e.sourceId) && /style|Failed to fetch|NetworkError|AJAXError|404|50\d/i.test(msg)) useFallbackStyle(msg.slice(0, 60));
+});
+window.KR_usedFallbackStyle = () => usedFallback;
+
 let LINES = [], STATIONS = [];
 // 내 위치 버튼으로 마지막에 찍힌 위치 [lng, lat] — 찍은 적이 없으면 null (스타일 교체 후 복원용)
 let lastLocation = null;

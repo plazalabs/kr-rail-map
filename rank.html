@@ -589,7 +589,18 @@ h1{font-size:22px}
   let rz = null;
   window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(render, 200); });
   fetch('data/rank.json').then(r => r.ok ? r.json() : Promise.reject(r.status)).then(d => {
-    doc = d; lineInfo = d.lines || {}; render();
+    doc = d; lineInfo = d.lines || {};
+    // ?open=역ID 로 들어오면(지도 역 상세의 '떡상 랭킹에서 보기') 그 역 카드를 펼친다 — 목록 밖이면 이름으로 찾고, 수도권 밖이면 전국
+    if (st.open) {
+      const r = d.rows.find(x => x.id === st.open);
+      if (r) {
+        if (st.r === 'capital' && !['서울', '경기', '인천'].includes(r.r)) st.r = 'all';
+        if (st.r === 'seoul' && r.r !== '서울') st.r = 'capital';
+        if (!st.q) st.q = r.n;
+      } else st.open = '';
+    }
+    render();
+    if (st.open) { const el = document.querySelector('.row[data-id="' + CSS.escape(st.open) + '"]'); if (el) el.scrollIntoView({ block: 'center' }); }
   }).catch(() => { $('list').innerHTML = '<li class="empty">순위 자료를 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.</li>'; });
 })();
 </script>

@@ -64,6 +64,13 @@ const layout = b => b.evaluate(`(() => ({
       const pl = await b.evaluate(`({ btn: document.getElementById('yr-play').textContent, url: location.search })`);
       R.check('▶ 누르면 연도가 차례로 넘어간다 (멈춤 버튼 ■)', pl.btn === '■' && /y=20(27|28)/.test(pl.url), pl);
       await b.evaluate(`document.getElementById('yr-play').click()`);
+      // ?open=역ID (지도 역 상세 '떡상 랭킹에서 보기') — 그 역 카드가 펼쳐져 있다. 수도권 밖(부산 서면)이면 전국으로
+      await b.goto(RANK + '?open=st-355172776', 800); await rows(b);
+      const o1 = await b.evaluate(`({ card: !!document.querySelector('#card-st-355172776'), q: document.getElementById('q').value })`);
+      R.check('?open=광운대 → 광운대 카드가 펼쳐져 있다', o1.card && o1.q === '광운대', o1);
+      await b.goto(RANK + '?open=st-5782717000', 800); await rows(b);
+      const o2 = await b.evaluate(`({ card: !!document.querySelector('#card-st-5782717000'), r: document.querySelector('.seg[data-k="r"] [aria-pressed="true"]').dataset.v })`);
+      R.check('?open=부산 서면 → 전국으로 바꿔 카드 펼침', o2.card && o2.r === 'all', o2);
     }
     // 줄을 누르면 역 카드가 펼쳐지고, '지도에서 보기' 를 누르면 지도에서 그 역 상세
     await b.goto(RANK, 800); await rows(b);

@@ -56,6 +56,7 @@ const CHECKS = [
   ['rank', 'rank.e2e.js', {}, 'GTX 떡상 랭킹: 가로 스크롤·TOP 10·등급 칩·GBD 중시·찾기·지금 시점·연도 슬라이더·역 카드·공유 이미지·지도 상세 (2026-11-12)'],
   ['rocket-map', 'rocket-map.e2e.js', {}, '🚀 떡상 지도 레이어: 기본 꺼짐·켜면 등급 색·광운대 떡상·배경 바꿔도 복원·끄기 (2026-11-12)'],
   ['basemap-down', 'basemap-down.e2e.js', {}, '배경 지도 서버가 죽어도 노선·역·길찾기는 된다 (비상 배경, 2026-11-12)'],
+  ['board', 'board.e2e.js', {}, '게시판: 설정 없으면 준비 중, 있으면 목록·글쓰기·도배 막기·신고·XSS 막힘 (Supabase 흉내, 2026-11-12)'],
   ['ui-fixes', 'ui-fixes.e2e.js', {}, '노선 비교·노선도 카드·노선도 툴바·영향권·style=local·그린 노선/위치 (IMPL7, 데스크톱)'],
   ['ui-fixes-mobile', 'ui-fixes.e2e.js', { MOBILE: '1' }, '같은 항목, 모바일 390×844'],
 ];

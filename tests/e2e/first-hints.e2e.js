@@ -61,8 +61,11 @@ const TIP = `(() => { const e = document.getElementById('invest-tip'); if (!e) r
     }
 
     // C. 투자 모드 첫 안내
-    await b.evaluate(`document.querySelector('#sd-panel') && document.querySelector('#sd-panel').classList.remove('sd-open'); 0`); await sleep(400);
-    const m1 = await press(b, '#mode-btn'); await sleep(800);
+    await b.evaluate(`document.querySelector('#sd-panel') && document.querySelector('#sd-panel').classList.remove('sd-open'); 0`);
+    // 역 상세가 미끄러져 닫히는 동안은 닫기 버튼이 툴바 위에 남는다 — 비켜날 때까지 기다린다(최대 4초)
+    let m1 = { ok: false };
+    for (let i = 0; i < 8 && !m1.ok; i++) { await sleep(500); m1 = await press(b, '#mode-btn'); }
+    await sleep(800);
     const t1 = await b.evaluate(TIP);
     R.check(`${tag} C. 투자 모드 처음 켜면 안내 — 화면 안·툴바 안 가림`, m1.ok && !!t1 && t1.inVp && !t1.overlapTb, { m1, t1 });
     await b.shot(path.join(OUT, `invest-tip-${w}.png`)).catch(() => null);
@@ -75,6 +78,23 @@ const TIP = `(() => { const e = document.getElementById('invest-tip'); if (!e) r
     const exc = b.logs.filter(l => /EXC/.test(l));
     R.check(`${tag} 예외 0`, exc.length === 0, exc.slice(0, 3));
     b.close(); await sleep(800);
+  }
+
+  // F. 통근권 결과 0역 안내 — 개통 전 역(동명초교, 동북선)은 '개통 예정 노선 포함' 버튼, 송학은 길찾기 안내
+  {
+    const f = await launch({ port: 9803, w: 1440, h: 900 });
+    await f.send('Network.setBypassServiceWorker', { bypass: true });
+    await f.goto(BASE + '#normal', 800); await ready(f);
+    await f.evaluate(`CommuteMap.show('st-dongbuk-1'); true`); await sleep(800);
+    const e1 = await f.evaluate(`({ empty: !!document.querySelector('#cm-list .cm-empty'), btn: !!document.querySelector('#cm-list [data-unopened]'), text: (document.querySelector('#cm-list .cm-empty') || {}).textContent || '' })`);
+    R.check("F. 개통 전 역: 0역 안내 + '개통 예정 노선 포함' 버튼", e1.empty && e1.btn && /개통 예정/.test(e1.text), e1);
+    const pb = await press(f, '#cm-list [data-unopened]'); await sleep(800);
+    const e2 = await f.evaluate(`({ n: document.querySelectorAll('#cm-list button[data-id]').length, total: +((document.getElementById('cm-summary').textContent.match(/안: ([0-9]+)역/) || [])[1]), checked: document.getElementById('cm-unopened').checked, empty: !!document.querySelector('#cm-list .cm-empty') })`);
+    R.check('F. 버튼 누르면 체크가 켜지고, 안내에 적힌 수만큼 역이 나온다', pb.ok && e2.checked && e2.n > 0 && !e2.empty && (+((e1.text.match(/(\d+)역이 나와요/) || [])[1]) === e2.total), { pb, e2 });
+    await f.evaluate(`CommuteMap.show('st-7983457102'); true`); await sleep(800);
+    const e3 = await f.evaluate(`({ empty: !!document.querySelector('#cm-list .cm-empty'), btns: document.querySelectorAll('#cm-list .cm-empty button').length, text: (document.querySelector('#cm-list .cm-empty') || {}).textContent || '' })`);
+    R.check('F. 어디로도 안 이어지는 역(송학): 길찾기 안내, 헛버튼 없음', e3.empty && e3.btns === 0 && /길찾기/.test(e3.text), e3);
+    f.close(); await sleep(800);
   }
 
   // E. 공유 링크

@@ -146,6 +146,20 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     panel.querySelector('#cm-unopened').addEventListener('change', e => { withUnopened = e.target.checked; render(false); });
     panel.querySelector('#cm-sort').addEventListener('change', e => { sortBy = e.target.value; renderList(); });
     panel.querySelector('#cm-list').addEventListener('click', e => {
+      // 결과 0역 안내의 버튼 — 시간 늘리기 / 개통 예정 포함 켜기
+      const more = e.target.closest('button[data-more]');
+      if (more) {
+        maxMin = +more.dataset.more; panel.querySelector('#cm-limit').value = String(maxMin); render(true);
+        const f = panel.querySelector('#cm-list button'); if (f) f.focus();
+        return;
+      }
+      const un = e.target.closest('button[data-unopened]');
+      if (un) {
+        withUnopened = true; panel.querySelector('#cm-unopened').checked = true;
+        if (un.dataset.limit) { maxMin = +un.dataset.limit; panel.querySelector('#cm-limit').value = String(maxMin); }
+        render(true);
+        return;
+      }
       const b = e.target.closest('button[data-id]');
       if (!b) return;
       const s = byId.get(b.dataset.id);
@@ -223,6 +237,10 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
       const dir = sortBy === 'jr-low' ? 1 : -1;
       rows.sort((a, b) => (a.jr == null) - (b.jr == null) || dir * ((a.jr || 0) - (b.jr || 0)) || a.min - b.min);
     }
+    if (!rows.length) {
+      ul.innerHTML = emptyHint();
+      return syncSort(pOn);
+    }
     const shown = rows.slice(0, 150);
     ul.innerHTML = shown.map(r => {
       const reg = regionLabel(r.id);
@@ -231,6 +249,25 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
       return `<li><button type="button" data-id="${esc(r.id)}"><span>${esc(r.name)}${reg ? ' <small>· ' + esc(reg) + '</small>' : ''}</span>` +
         `<span>${pp} <span class="cm-min">${r.min}분</span></span></button></li>`;
     }).join('') + (rows.length > shown.length ? `<li class="cm-note">외 ${rows.length - shown.length}역 — 시간을 줄이면 목록이 짧아집니다</li>` : '');
+    syncSort(pOn);
+  }
+
+  // 결과 0역일 때: 무엇 때문인지 + 바로 누를 버튼 (2026-11-11 사용성 점검 B)
+  function emptyHint() {
+    const btn = 'style="margin-top:6px;padding:5px 10px;border:1px solid var(--border,#ddd);border-radius:6px;background:var(--input,#fff);color:inherit;font-weight:600;cursor:pointer"';
+    const maxL = LIMITS[LIMITS.length - 1];
+    // 시간을 늘리면 나오는 가장 짧은 한도
+    const up = LIMITS.filter(m => m > maxMin).map(m => [m, compute(destId, m, { withUnopened }).length]).find(x => x[1] > 0);
+    // 개통 예정을 넣으면 나오는 가장 짧은 한도(지금 한도부터) — 버튼이 그 한도까지 같이 맞춘다
+    const unop = up || withUnopened ? null : [maxMin].concat(LIMITS.filter(m => m > maxMin)).map(m => [m, compute(destId, m, { withUnopened: true }).length]).find(x => x[1] > 0);
+    let h = `<li class="cm-empty" style="padding:8px 4px;line-height:1.5">${maxMin}분 안에 갈 수 있는 다른 역이 없어요.`;
+    if (up) h += `<br>${up[0]}분으로 늘리면 <b>${up[1]}</b>역이 나와요.<br><button type="button" data-more="${up[0]}" ${btn}>${up[0]}분으로 늘리기</button>`;
+    else if (unop) h += `<br>개통 예정 노선을 넣으면 ${unop[0]}분 안에 <b>${unop[1]}</b>역이 나와요.<br><button type="button" data-unopened="1" data-limit="${unop[0]}" ${btn}>개통 예정 노선 포함${unop[0] !== maxMin ? ' · ' + unop[0] + '분' : ''}</button>`;
+    else h += `<br>${Math.max(maxMin, maxL)}분 안에도 이어지는 역이 없어요. 길찾기로 직접 찾아 보세요.`;
+    return h + '</li>';
+  }
+
+  function syncSort(pOn) {
     const sortSel = panel.querySelector('#cm-sort');
     sortSel.querySelectorAll('option[value=price], option[value=jr-low], option[value=jr-high]').forEach(o => { o.disabled = !pOn; });
     if (!pOn && sortBy !== 'time') { sortBy = 'time'; sortSel.value = 'time'; }

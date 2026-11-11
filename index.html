@@ -29,6 +29,10 @@
 
 <!-- 배경 지도 서버에 미리 연결해 둔다 (DNS·TLS 를 지도 코드가 뜨는 동안 끝냄) -->
 <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+<!-- 노선·역 자료는 HTML 을 읽는 동안 바로 받기 시작한다 (예전엔 maplibre 800KB 를 받고 실행한 뒤에야 시작했다, 2026-11-12).
+     ui.js 의 fetch() 와 같은 요청(crossorigin = same-origin 자격)이라 한 번만 받는다. -->
+<link rel="preload" href="data/lines.geojson" as="fetch" crossorigin>
+<link rel="preload" href="data/stations.geojson" as="fetch" crossorigin>
 <link rel="manifest" href="site.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">

@@ -61,6 +61,14 @@ const map = new maplibregl.Map({
   preserveDrawingBuffer: true // 이미지 저장용
 });
 map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+// 배경 지도 '설계도(스타일 JSON)'가 적용되는 순간 — 철도 노선은 이때부터 그릴 수 있다.
+// map 'load' 는 배경 지도의 글꼴·그림·첫 타일까지 다 받아야 오는데, 무료 지도 서버가 느리면 6~9초 걸렸다
+// (2026-11-12 실측: 첫 글자 1.9초, 노선 8.7초). 노선을 배경 지도에 묶어 두지 않는다.
+const styleReadyP = new Promise(res => {
+  if (map.isStyleLoaded()) { res(); return; }
+  map.once('style.load', res);
+  map.once('load', res);   // 안전망 — 둘 중 먼저 오는 것
+});
 
 let LINES = [], STATIONS = [];
 // 내 위치 버튼으로 마지막에 찍힌 위치 [lng, lat] — 찍은 적이 없으면 null (스타일 교체 후 복원용)
@@ -1441,8 +1449,10 @@ function prefetchDetailData() {
   if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(go, { timeout: 5000 });
   else setTimeout(go, 2000);
 }
-map.on('load', async () => {
-  await dataPromise;
+let firstReadyDone = false;
+Promise.all([styleReadyP, dataPromise]).then(() => {
+  if (firstReadyDone) return;   // 한 번만
+  firstReadyDone = true;
   dataReady = true;
   map.once('idle', prefetchDetailData);   // 첫 화면 준비를 방해하지 않게 준비 완료 뒤에만
   // 처음 온 사람 안내 (js/guide.js) — 지도가 다 뜬 뒤 한 번
@@ -1494,7 +1504,7 @@ map.on('load', async () => {
   if (typeof StationJeonse !== 'undefined' && StationJeonse.initLayer) StationJeonse.initLayer(map, STATIONS);   // 전세가율 색칠 레이어
   if (typeof StationArea !== 'undefined') { StationArea.init(map, STATIONS); StationArea.setLines([...visibleLines]); }
   if (!focusLineFromUrl()) restoreFromUrl();
-});
+}).catch(e => { console.error('첫 화면 준비 실패', e); setStatus('지도 자료를 불러오지 못했습니다. 새로고침해 주세요.'); });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
 // styleReady=true 는 style.load 경로. 이 시점엔 스타일 JSON 이 적용돼 addLayer 가
 // 가능하지만, 타일·스프라이트가 덜 와서 isStyleLoaded() 는 아직 false 다 (실측).

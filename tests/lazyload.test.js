@@ -31,5 +31,15 @@ for (const f of ['data/station-price.json', 'data/station-complex.json', 'data/s
 }
 check('시세 생성 스크립트가 압축 저장 (재생성해도 유지)', /separators=\(",", ":"\)/.test(read('data/build_station_price.py')) && !/indent=1/.test(read('data/build_station_price.py')));
 
+// 2026-11-12 첫 화면 속도 — 노선은 배경 지도 '설계도'가 오면 바로 그린다 (map 'load' 를 기다리면 6~9초)
+{
+  const idx = read('index.html');
+  check('노선·역 자료를 HTML 에서 미리 받기 (preload, crossorigin)',
+    /<link rel="preload" href="data\/lines\.geojson" as="fetch" crossorigin>/.test(idx) &&
+    /<link rel="preload" href="data\/stations\.geojson" as="fetch" crossorigin>/.test(idx));
+  check("첫 준비는 style.load + 자료 (map 'load' 를 기다리지 않음)",
+    /Promise\.all\(\[styleReadyP, dataPromise\]\)/.test(app) && !/map\.on\('load', async/.test(app));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

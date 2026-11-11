@@ -31,6 +31,10 @@ const RouteCompare = (() => {
   function sname(id) {
     return stationNameOf.get(id) || id;
   }
+  // 길찾기 결과의 역 이름 = 누르면 그 역의 역 정보 (2026-11-11 사용성 점검 B). 역 ID 로 넘겨 동명역도 정확히
+  function stLink(id) {
+    return `<button type="button" class="rc-st" data-sid="${escapeHtml(String(id))}" title="역 정보 보기">${escapeHtml(sname(id))}</button>`;
+  }
 
   // 시간 모델도 RouteFinder 것을 그대로 쓴다 (GTX 110km/h 보정 포함).
   function edgeMinutes(e) {
@@ -374,6 +378,9 @@ const RouteCompare = (() => {
     st.id = 'rc-style';
     st.textContent = `
       .rc-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+      .rc-st { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer;
+        text-decoration: underline dotted; text-underline-offset: 3px; text-decoration-color: var(--muted, #888); }
+      .rc-st:hover, .rc-st:focus-visible { color: var(--accent, #1565c0); text-decoration-style: solid; }
       /* 탭이 4개(지금 탭 포함)면 한 줄에 넣을 때 글자가 잘린다.
          그때만 2x2 로 접어 이름이 온전히 보이게 한다. */
       .rc-tabs.four { display: grid; grid-template-columns: 1fr 1fr; }
@@ -504,19 +511,19 @@ const RouteCompare = (() => {
         `<span class="unopened-sub">개통 전이므로 실제로는 이용할 수 없습니다.</span></div>`;
     }
     r.legs.forEach((leg, idx) => {
-      const a = escapeHtml(sname(leg.from)), b = escapeHtml(sname(leg.to));
+      const a = stLink(leg.from), b = stLink(leg.to);
       const i1 = r.path.indexOf(leg.from), i2 = r.path.indexOf(leg.to);
       const n = Math.abs(i2 - i1);
       if (leg.walk || !leg.lineId) {
-        html += a === b
+        html += leg.from === leg.to || sname(leg.from) === sname(leg.to)
           ? `<div class="leg">🚶 ${a}역 내 환승 (도보 이동)</div>`
           : `<div class="leg">🚶 ${a} → ${b} (도보 이동)</div>`;
       } else {
         const ln = escapeHtml(lineNameOf.get(leg.lineId) || leg.lineId);
         const segStations = [];
         const step = i2 > i1 ? 1 : -1;
-        for (let i = i1; i !== i2; i += step) segStations.push(escapeHtml(sname(r.path[i])));
-        segStations.push(escapeHtml(sname(r.path[i2])));
+        for (let i = i1; i !== i2; i += step) segStations.push(stLink(r.path[i]));
+        segStations.push(stLink(r.path[i2]));
         const viaId = `rc-via-${tabId}-${leg.from}-${leg.to}`;
         const un = leg.unopened ? ` <span class="badge-unopened">미개통</span>` : '';
         html += `<div class="leg${leg.unopened ? ' leg-unopened' : ''}">${a} → <b>${ln}</b>${un} <button class="via-toggle" data-target="${viaId}">${n}개역</button> → ${b}\n` +
@@ -591,6 +598,15 @@ const RouteCompare = (() => {
       return `<div class="rc-panel" id="rc-panel-${t.id}"${i === 0 ? '' : ' hidden'}>${variantHtml(t.r, t.id, isBest)}</div>`;
     }).join('');
     box.innerHTML = html;
+    if (!box.dataset.rcStBound) {
+      box.dataset.rcStBound = '1';
+      box.addEventListener('click', e => {
+        const b = e.target.closest('.rc-st');
+        if (!b || typeof window.showStation !== 'function' || typeof STATIONS === 'undefined') return;
+        const s = STATIONS.find(x => x.properties.id === b.dataset.sid);
+        if (s) window.showStation(s, s.geometry.coordinates);
+      });
+    }
 
     box.querySelectorAll('.rc-tab').forEach(btn => {
       btn.addEventListener('click', () => {

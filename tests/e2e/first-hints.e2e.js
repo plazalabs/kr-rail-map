@@ -97,6 +97,28 @@ const TIP = `(() => { const e = document.getElementById('invest-tip'); if (!e) r
     f.close(); await sleep(800);
   }
 
+  // G. 길찾기 결과의 역 이름을 누르면 그 역의 역 정보 (데스크톱·휴대폰)
+  for (const [w, h, mobile] of [[1440, 900, false], [390, 844, true]]) {
+    const g = await launch({ port: 9804, w, h, mobile });
+    await g.send('Network.setBypassServiceWorker', { bypass: true });
+    await g.goto(BASE + '#normal', 800); await ready(g);
+    await g.evaluate(`(() => { const f = STATIONS.find(s => s.properties.name_ko === '홍대입구' && s.properties.lines.includes('seoul-subway-line-2'));
+      const t = STATIONS.find(s => s.properties.name_ko === '강남' && s.properties.lines.includes('seoul-subway-line-2'));
+      routeFromStation(f.properties.name_ko, 'from', f.properties.id); routeFromStation(t.properties.name_ko, 'to', t.properties.id); 0 })()`);
+    await sleep(500);
+    const go = await press(g, '#route-go'); await sleep(2500);
+    const links = await g.evaluate(`[...document.querySelectorAll('#route-result .rc-panel:not([hidden]) .leg > .rc-st')].map(b => b.textContent)`);
+    R.check(`${w}px G. 길찾기 결과의 역 이름이 누를 수 있는 버튼`, go.ok && links.includes('홍대입구') && links.includes('강남'), { go, links });
+    const tgt = await g.evaluate(`(() => { const bs = [...document.querySelectorAll('#route-result .rc-panel:not([hidden]) .leg > .rc-st')].filter(b => b.textContent === '강남'); const b = bs[bs.length - 1]; if (!b) return null; b.setAttribute('data-e2e', '1'); return b.dataset.sid; })()`);
+    const p = tgt ? await press(g, '#route-result [data-e2e]') : { ok: false, why: '강남 버튼 없음' }; await sleep(1200);
+    const st = await g.evaluate(`({ open: !!document.querySelector('#sd-panel.sd-open'), name: /강남/.test((document.querySelector('#sd-panel') || {}).innerText || ''),
+      routeKept: !!document.querySelector('#route-result .rc-panel') })`);
+    R.check(`${w}px G. 역 이름 누르면 그 역 정보가 열리고 길찾기 결과는 남는다`, p.ok && st.open && st.name && st.routeKept, { p, st, sid: tgt });
+    const exc = g.logs.filter(l => /EXC/.test(l));
+    R.check(`${w}px G. 예외 0`, exc.length === 0, exc.slice(0, 3));
+    g.close(); await sleep(800);
+  }
+
   // E. 공유 링크
   const e = await launch({ port: 9802, w: 1440, h: 900, tip: true });
   await e.send('Network.setBypassServiceWorker', { bypass: true });

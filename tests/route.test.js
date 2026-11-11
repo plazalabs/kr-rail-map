@@ -343,7 +343,7 @@ check('GTX-A 서울역~수서는 공사 중', gtxaMid && gtxaMid.properties.stat
 check('GTX-A 평택 연장은 계획', gtxaExt && gtxaExt.properties.status === 'planned');
 check('평택지제가 GTX-A 운행 역이 아님',
   !stations.features.some(f => f.properties.name_ko === '평택지제' && f.properties.lines.includes('great-train-express-line-a')));
-// 삼성은 GTX-A 무정차(2028년 정차 예정)라 GTX-A 역이 아니다 — 공사 구간 선형이 삼성 아래를 지나는지만 본다
+// 삼성은 지금 운행 GTX-A 역이 아니다(2028년 정차 예정) — '개통 후' 기준으로 공사 구간(gtx-a-seoul-suseo) 역이다 (2026-11-11)
 for (const [nm, ln] of [['삼성', gtxaMid], ['평택지제', gtxaExt]]) {
   const s = stations.features.find(f => f.properties.name_ko === nm &&
     (nm === '삼성' || f.properties.lines.includes(ln.properties.id)));
@@ -421,6 +421,41 @@ console.log('\n[새로 채운 역] 부천시청·구리·박촌·임학');
   check('박촌→계양 인천1호선 직결',
     r1 && r1.transfers === 0 && r1.legs[0].lineId === 'incheon-subway-line-1',
     r1 && JSON.stringify(r1.legs));
+}
+
+console.log('\n[ITX-청춘] 급행 계통 (2026-11-11) — 시간표 합계 청량리→춘천 약 60분 + 탈 때 10분');
+{
+  const ch = route(['춘천', 127.717, 37.885], ['청량리', 127.0447, 37.5803]);
+  check('춘천→청량리 ITX-청춘 직행, 60~80분', ch && ch.legs.some(l => l.lineId === 'itx-cheongchun') && ch.minutes >= 60 && ch.minutes <= 80,
+    ch && ch.minutes + '분 ' + ch.legs.map(l => l.lineId).join('>'));
+  // 운행 중 노선만 (개통 예정을 켜면 용산→청량리를 GTX-B 로 가는 편이 빠르다)
+  const yo = RF.findRoute(pick('용산', 126.9648, 37.5298).id, pick('남춘천', 127.7238, 37.8638).id, { openOnly: true });
+  check('용산→남춘천 ITX-청춘 갈아타지 않음', yo && yo.transfers === 0 && yo.legs[0].lineId === 'itx-cheongchun',
+    yo && yo.legs.map(l => l.lineId).join('>'));
+  const sh = route(['청량리', 127.0447, 37.5803], ['왕십리', 127.0371, 37.5612]);
+  check('청량리→왕십리 같은 짧은 구간은 전철 (ITX 를 고르지 않음)', sh && !sh.legs.some(l => l.lineId === 'itx-cheongchun'),
+    sh && sh.legs.map(l => l.lineId).join('>'));
+  const ex = RF.extraLines();
+  check('ITX-청춘 이름·색을 화면에 알려 준다', ex.some(x => x.id === 'itx-cheongchun' && x.name_ko === 'ITX-청춘' && /^#/.test(x.color)));
+  check('ITX-청춘은 일반철도 요금(추정)으로 셈', RF.categoryOf('itx-cheongchun') === 'conventional');
+}
+
+console.log('\n[GTX 평면환승] 청량리 B·C, 삼성 A·C — 같은 승강장 (2026-11-11)');
+{
+  const id = (n, l) => (stations.features.find(f => f.properties.name_ko === n && f.properties.lines.includes(l)) || {}).properties;
+  const cn = id('청량리', 'gtx-b'), ss = id('삼성', 'gtx-c'), so = id('서울', 'gtx-b');
+  check('청량리 GTX-B↔C 는 평면환승', RF.isPlatformTransfer(cn.id, 'gtx-b', 'gtx-c') && RF.isPlatformTransfer(cn.id, 'gtx-c', 'gtx-b'));
+  check('삼성 GTX-A↔C 는 평면환승 (공사 구간 id 도 같은 계통으로)', RF.isPlatformTransfer(ss.id, 'gtx-a-seoul-suseo', 'gtx-c'));
+  check('서울역 GTX-A↔B 는 평면환승 근거가 없어 일반 환승', !RF.isPlatformTransfer(so.id, 'great-train-express-line-a', 'gtx-b'));
+  check('청량리 GTX-B↔C 환승 시간 0.5분', RF.transferMinutes(cn.id, 'gtx-b', 'gtx-c') === 0.5);
+  const kw = id('광운대', 'gtx-c');
+  const r1 = RF.findRoute(kw.id, so.id);
+  check('광운대→서울역 (개통 후): GTX-C → 청량리 평면환승 → GTX-B, 10분 이하',
+    r1 && r1.legs.map(l => l.lineId).join('>') === 'gtx-c>gtx-b' && r1.minutes <= 10, r1 && r1.minutes + '분 ' + r1.legs.map(l => l.lineId).join('>'));
+  const sx = id('수서', 'great-train-express-line-a');
+  const r2 = RF.findRoute(kw.id, sx.id);
+  check('광운대→수서 (개통 후): GTX-C → 삼성 평면환승 → GTX-A, 13분 이하',
+    r2 && r2.legs[0].lineId === 'gtx-c' && r2.minutes <= 13, r2 && r2.minutes + '분 ' + r2.legs.map(l => l.lineId).join('>'));
 }
 
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);

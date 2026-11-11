@@ -340,8 +340,8 @@
   "gtx-a-seoul-suseo": {
    "name": "GTX-A 서울역~수서",
    "status": "construction",
-   "stations": 2,
-   "confirmed": 2,
+   "stations": 3,
+   "confirmed": 3,
    "sources": [
     "osm-geometry"
    ],

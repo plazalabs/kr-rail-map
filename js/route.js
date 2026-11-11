@@ -63,8 +63,8 @@ const RouteFinder = (() => {
       // 서울역~수서는 아직 운행하지 않는다 (2027년 상반기 전망) — 그 구간은 아래 'gtx-a-seoul-suseo' 가 맡는다.
       // 한 표에 [서울역, null] 을 두면 서울역→수서 간선이 생기지 않는다 (2026-11-10).
       ['서울역',null],['수서',7],['성남',7],['구성',7],['동탄',null]],
-    // 미개통. 삼성은 무정차 통과(2028년 정차 예정) — 서울역~삼성 6분 + 삼성~수서 3분을 한 구간 9분으로.
-    'gtx-a-seoul-suseo': [['서울역',9],['수서',null]],
+    // 미개통. 2027년 개통 때는 삼성 무정차, 삼성 정차는 2028년 예정 — '개통 후' 는 최종 계획(삼성 정차) 기준.
+    'gtx-a-seoul-suseo': [['서울역',6],['삼성',3],['수서',null]],
     'gtx-b': [
       ['인천대입구',6],['인천시청',4],['부평',5],['부천종합운동장',5],['신도림',4],
       ['여의도',3],['용산',3],['서울역',5],['청량리',4],['상봉',5],
@@ -77,6 +77,21 @@ const RouteFinder = (() => {
   // 표의 역명 → 우리 데이터 역명. 과천청사 = 정부과천청사, 서울역 = '서울' (데이터 역명에 '역'이 없다 —
   // 예전엔 '서울역'을 못 찾아 GTX-A·B 의 서울역 앞뒤 공식 소요시간 간선이 통째로 빠졌다, IMPL12)
   const GTX_NAME_ALIAS = { '과천청사': '정부과천청사', '서울역': '서울' };
+
+  // 급행 계통 (2026-11-11) — 지도에는 따로 그리지 않고(같은 선로) 길찾기 그래프에만 넣는다.
+  // ITX-청춘: 용산~춘천. 정차역은 위키백과 'ITX-Cheongchun' 의 주요 정차역, 소요시간은 2026년 시간표의
+  // 구간 합계(청량리→춘천 56~63분 → 60분, 용산→청량리 17~19분 → 18분)만 확인했다. 중간 역 사이 시간은
+  // 그 합계를 역간 직선거리 비례로 나눈 추정이다. 지정석·배차가 드물어 탈 때 접근 시간 10분을 붙인다
+  // (안 붙이면 청량리→왕십리 같은 짧은 구간에서 전철 대신 ITX 를 고른다).
+  const EXPRESS = {
+    'itx-cheongchun': {
+      name_ko: 'ITX-청춘', color: '#2f7d5b', category: 'conventional', accessMin: 10,
+      via: ['gyeongui-jungang-line', 'seoul-metropolitan-subway-gyeongchun-line'],
+      // [구간 첫 역, 구간 끝 역, 분] — 구간 안의 정차역은 stops 순서대로
+      stops: ['용산', '옥수', '왕십리', '청량리', '평내호평', '청평', '가평', '강촌', '남춘천', '춘천'],
+      spans: [['용산', '청량리', 18], ['청량리', '춘천', 60]],
+    },
+  };
 
   // 같은 열차가 이어 달리는 노선 묶음. 지도에서는 개통 상태가 달라 노선을 나눠 그리지만
   // (GTX-A 서울역~수서 = 공사 중, 평택 연장 = 계획), 개통하면 갈아타지 않고 그대로 간다.
@@ -114,8 +129,26 @@ const RouteFinder = (() => {
     return transferDoc ? Object.keys(transferDoc.stations).length : 0;
   }
 
+  // 같은 승강장 평면(수평)환승 — 계단·통로 없이 맞은편 열차로 건너간다 (약 20~30초 → 0.5분).
+  // 근거: 국토부·대광위 'GTX 환승 트라이앵글' — 청량리(GTX-B·C)·삼성(GTX-A·C) 평면환승 설계
+  //   (청량리역 광역환승센터 B·C '초단위' 환승, 머니투데이방송 2020-10-27 / 서울시 미디어허브 'GTX 이용을 더욱 편리하게').
+  // 역은 이름 + 그 역을 지나는 노선으로 찾는다 (동명역 오매칭 방지).
+  const PLATFORM_TRANSFER = [
+    { station: '청량리', lines: ['gtx-b', 'gtx-c'] },
+    { station: '삼성', lines: ['great-train-express-line-a', 'gtx-c'] },
+  ];
+  const PLATFORM_MIN = 0.5;
+  function isPlatformTransfer(stationId, a, b) {
+    if (!stationId || !a || !b) return false;
+    const s = stationsById.get(stationId);
+    if (!s) return false;
+    const sa = serviceOf(a), sb = serviceOf(b);
+    return PLATFORM_TRANSFER.some(p => p.station === s.properties.name_ko &&
+      ((p.lines[0] === sa && p.lines[1] === sb) || (p.lines[0] === sb && p.lines[1] === sa)));
+  }
   function transferMinutes(stationId, a, b) {
     if (sameService(a, b) && a !== b) return 0;   // 이어 달리는 구간 — 갈아타지 않는다
+    if (isPlatformTransfer(stationId, a, b)) return PLATFORM_MIN;
     if (!transferDoc || !stationId || !a || !b || a === b) return TRANSFER_MIN;
     const s = transferDoc.stations[stationId];
     if (!s) return TRANSFER_MIN;
@@ -281,12 +314,53 @@ const RouteFinder = (() => {
     });
 
     addGtxOfficialEdges(activeIds);
+    addExpressEdges();
 
     return { stations: stationsById.size, edges: edgeCount, loopEdges, walkEdges, walkRejected };
   }
 
   // GTX 공식 소요시간 엣지 추가: 공식 역 순서대로 인접역 연결.
   // 미개통 노선(GTX-B/C 등)도 포함한다 — 이 지도는 개통 예정 노선까지 그린다.
+  function addExpressEdges() {
+    Object.entries(EXPRESS).forEach(([lid, x]) => {
+      // 정차역 이름 → 역 ID: via 노선 위에서 그 이름이 하나뿐일 때만 (동명역 오매칭 방지)
+      const idOf = name => {
+        const ids = [];
+        stationsById.forEach((s, id) => {
+          if (s.properties.name_ko !== name) return;
+          const ls = Array.isArray(s.properties.lines) ? s.properties.lines : [];
+          if (ls.some(l => x.via.includes(l))) ids.push(id);
+        });
+        return ids.length === 1 ? ids[0] : null;
+      };
+      const ids = x.stops.map(idOf);
+      if (ids.some(v => !v)) return;   // 정차역을 하나라도 못 찾으면 이 계통을 통째로 넣지 않는다
+      lineCat.set(lid, x.category);
+      lineStatus.set(lid, 'open');
+      const km = (a, b) => {
+        const p = stationsById.get(a).geometry.coordinates, q = stationsById.get(b).geometry.coordinates;
+        return hav(p[0], p[1], q[0], q[1]);
+      };
+      x.spans.forEach(([from, to, total]) => {
+        const i0 = x.stops.indexOf(from), i1 = x.stops.indexOf(to);
+        const seg = [];
+        for (let i = i0; i < i1; i++) seg.push(km(ids[i], ids[i + 1]));
+        const sum = seg.reduce((s, v) => s + v, 0) || 1;
+        for (let i = i0; i < i1; i++) {
+          const a = ids[i], b = ids[i + 1], d = seg[i - i0], min = total * d / sum;
+          if (!adj.has(a)) adj.set(a, []);
+          if (!adj.has(b)) adj.set(b, []);
+          adj.get(a).push({ to: b, lineId: lid, distKm: d, officialMin: min, open: true });
+          adj.get(b).push({ to: a, lineId: lid, distKm: d, officialMin: min, open: true });
+        }
+      });
+    });
+  }
+  // 화면에서 이름·색을 찾을 수 있게 (지도 노선 목록에는 없는 계통)
+  function extraLines() {
+    return Object.entries(EXPRESS).map(([id, x]) => ({ id, name_ko: x.name_ko, color: x.color, via: x.via }));
+  }
+
   function addGtxOfficialEdges(activeIds) {
     // 이름 → 역 ID 는 '그 GTX 노선이 지나는 역' 가운데서만 찾는다 (IMPL12).
     // 예전엔 전체에서 이름이 처음 나온 역을 썼다 — 동명 역(교대·시청·용산 …)이면 다른 도시 역에 간선이 붙을 수 있었다.
@@ -363,6 +437,7 @@ const RouteFinder = (() => {
   // 이 노선에 '탈 때' 붙는 접근 시간. KTX 만 해당한다.
   // route-compare.js 가 같은 값을 쓰도록 노출한다 (두 탭의 소요시간이 갈라지면 안 된다).
   function accessMinutes(lineId) {
+    if (lineId && EXPRESS[lineId]) return EXPRESS[lineId].accessMin;
     return lineId && lineCat.get(lineId) === 'ktx' ? RAIL_ACCESS_MIN : 0;
   }
 
@@ -599,7 +674,7 @@ const RouteFinder = (() => {
     stationById: (id) => stationsById.get(id),
     hasStation: (id) => stationsById.has(id),
     edgeMinutes,
-    accessMinutes,
+    accessMinutes, extraLines, isPlatformTransfer,
     categoryOf: (lineId) => lineCat.get(lineId),
     TRANSFER_MIN,
     WALK_KMH,

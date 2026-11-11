@@ -702,6 +702,8 @@ const lineNameOf = new Map();
 function setupRouteFinder() {
   LINES.forEach(f => lineNameOf.set(f.properties.id, f.properties.name_ko));
   const info = RouteFinder.buildGraph(LINES, STATIONS);
+  // 지도에 따로 그리지 않는 급행 계통(ITX-청춘)도 경로 결과에 이름이 나오게
+  if (RouteFinder.extraLines) RouteFinder.extraLines().forEach(x => lineNameOf.set(x.id, x.name_ko));
   console.log('route graph:', info);
   attachAutocomplete(document.getElementById('route-from'));
   attachAutocomplete(document.getElementById('route-to'));
@@ -984,7 +986,7 @@ document.getElementById('route-go').addEventListener('click', () => {
     html += `<div class="unopened-notice">⚠ 미개통 구간 포함 — ${names}
       <span class="unopened-sub">개통 전이므로 실제로는 이용할 수 없습니다.</span></div>`;
   }
-  r.legs.forEach(leg => {
+  r.legs.forEach((leg, idx) => {
     const a = sname(leg.from), b = sname(leg.to);
     const i1 = r.path.indexOf(leg.from), i2 = r.path.indexOf(leg.to);
     const n = Math.abs(i2 - i1);
@@ -1016,7 +1018,9 @@ document.getElementById('route-go').addEventListener('click', () => {
     }
     // 이 구간을 내린 뒤 갈아타는 시간. 역마다 다르다 (data/transfer-times.json).
     if (leg.transferAfter > 0) {
-      html += `<div class="leg leg-transfer">🚶 <b>${b}</b>역 내 환승 · 도보 약 ${leg.transferAfter}분</div>`;
+      html += (r.legs[idx + 1] && RouteFinder.isPlatformTransfer && RouteFinder.isPlatformTransfer(leg.to, leg.lineId, r.legs[idx + 1].lineId))
+        ? `<div class="leg leg-transfer leg-platform">↔ <b>${b}</b>역 같은 승강장 평면환승 · 약 20~30초</div>`
+        : `<div class="leg leg-transfer">🚶 <b>${b}</b>역 내 환승 · 도보 약 ${leg.transferAfter}분</div>`;
     }
   });
   box.innerHTML = html;
@@ -1064,9 +1068,10 @@ function sliceLineCoords(feature, a, b) {
 
 function routeLineInfo(lineId) {
   const l = LINES.find(x => x.properties.id === lineId);
+  const x = !l && lineId && RouteFinder.extraLines ? RouteFinder.extraLines().find(e => e.id === lineId) : null;
   return {
-    color: (l && l.properties.color) || '#8a8f98',
-    name: (l && l.properties.name_ko) || '도보',
+    color: (l && l.properties.color) || (x && x.color) || '#8a8f98',
+    name: (l && l.properties.name_ko) || (x && x.name_ko) || '도보',
     walk: !lineId,
   };
 }

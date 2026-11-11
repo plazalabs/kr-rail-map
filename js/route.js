@@ -519,7 +519,7 @@ const RouteFinder = (() => {
       if (activeIds && !activeIds.has(by)) return;
       const a = resolveOn(lid, na), b = resolveOn(lid, nb);
       if (!a || !b) return;
-      [[a, b], [b, a]].forEach(([x, y]) => (adj.get(x) || []).forEach(e => { if (e.to === y && e.lineId === lid) e.nowOnly = true; }));
+      [[a, b], [b, a]].forEach(([x, y]) => (adj.get(x) || []).forEach(e => { if (e.to === y && e.lineId === lid) { e.nowOnly = true; e.nowOnlyBy = by; } }));
     });
   }
   const NOW_ONLY_SPANS = [
@@ -599,7 +599,9 @@ const RouteFinder = (() => {
     if (fromId === toId) return { path: [fromId], legs: [], minutes: 0, transfers: 0 };
     const explicitPenalty = (opts && opts.transferPenalty != null) ? opts.transferPenalty : null;
     // openOnly: 지금 운행 중인 노선만 쓴다. '지금 vs 개통 후' 비교의 '지금' 쪽.
+    // allow: openOnly 일 때 '지금 운행 중' 에 더해 탈 수 있는 노선 (Set) — 연도별 순위(그 해까지 개통한 노선)
     const openOnly = !!(opts && opts.openOnly);
+    const allow = (opts && opts.allow) || null;
 
     const dist = new Map([[skey(fromId, START), 0]]);
     const prev = new Map();      // key -> {fromKey, fromId, edge}
@@ -616,8 +618,9 @@ const RouteFinder = (() => {
 
       for (const e of (adj.get(u) || [])) {
         // 미개통 노선은 지금 탈 수 없다. 도보 환승은 언제나 열려 있다.
-        if (openOnly && !e.open) continue;
-        if (!openOnly && e.nowOnly) continue;   // 개통 후엔 새 역에 선다 (창릉)
+        if (openOnly && !e.open && !(allow && allow.has(e.lineId))) continue;
+        // 개통 후엔 새 역에 선다 (창릉) — '그 해까지 개통' 계산(allow)에서도 새 역이 열렸으면 무정차 길은 없다
+        if (e.nowOnly && (!openOnly || (allow && allow.has(e.nowOnlyBy)))) continue;
         const nl = e.lineId || null;
         let cost = edgeMinutes(e);
         // 환승 비용: 앞뒤 모두 노선이 있고 서로 다를 때만. 환승은 지금 있는
@@ -720,6 +723,7 @@ const RouteFinder = (() => {
     const out = new Map();
     if (!stationsById.has(fromId)) return out;
     const openOnly = !!(opts && opts.openOnly);
+    const allow = (opts && opts.allow) || null;   // 연도별: 그 해까지 개통한 노선 (findRoute 와 같은 뜻)
     // opts.noWait: 기다리는 시간을 하나도 넣지 않는다 — 타고 가는 시간 + 환승 걷기만. 역 순위(도심 접근성)용
     // (2026-11-12 회장님 결정: 순위는 '타고 가는 시간' 기준, 배차는 역마다 공평하게 빼고 비교).
     const noWait = !!(opts && opts.noWait);
@@ -743,8 +747,9 @@ const RouteFinder = (() => {
       const prev = best.get(u);
       if (prev == null || d < prev[0]) best.set(u, [d, m]);
       for (const e of (adj.get(u) || [])) {
-        if (openOnly && !e.open) continue;
-        if (!openOnly && e.nowOnly) continue;   // 개통 후엔 새 역에 선다 (창릉)
+        if (openOnly && !e.open && !(allow && allow.has(e.lineId))) continue;
+        // 개통 후엔 새 역에 선다 (창릉) — '그 해까지 개통' 계산(allow)에서도 새 역이 열렸으면 무정차 길은 없다
+        if (e.nowOnly && (!openOnly || (allow && allow.has(e.nowOnlyBy)))) continue;
         const nl = e.lineId || null;
         let cost = edgeMinutes(e), shown = edgeMinutes(e);
         if (line !== START && line !== null && nl !== null && !sameService(nl, line)) {

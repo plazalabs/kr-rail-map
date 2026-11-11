@@ -121,6 +121,12 @@ const rows = groups.map(g => {
     l: Array.from(ls),
     now: best('now'),
     aft: best('after'),
+    // 연도별 CBD·YBD·GBD (access.json y) — 묶음 안 가장 빠른 값
+    y: Object.fromEntries((access.years || []).map(yr => [yr, [0, 1, 2].map(k => {
+      let v = null;
+      for (const id of g.ids) { const t = ((access.stations[id].y || {})[yr] || [])[k]; if (t != null && (v == null || t < v)) v = t; }
+      return v;
+    })])),
   };
 }).filter(r => r.aft.filter(v => v != null).length >= 2);
 
@@ -130,6 +136,9 @@ const doc = {
     '타고 가는 시간 + 갈아타며 걷는 시간(분). 열차를 기다리는 시간은 넣지 않았다. ' +
     '같은 이름·같은 자리 역(노선별)은 한 줄로 묶고 가장 빠른 값을 쓴다. 시간 모델은 js/route.js.',
   dest: ['CBD', 'YBD', 'GBD'],
+  years: access.years || [],
+  year_lines: access.year_lines || {},
+  undated_lines: access.undated_lines || [],
   lines: Object.fromEntries(Array.from(usedLines).map(l => {
     const p = lineMeta.get(l);
     return [l, { n: p.name_ko, c: p.color, s: p.status, o: p.status === 'open' ? undefined : (p.opened || '') }];

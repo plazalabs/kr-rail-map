@@ -61,9 +61,13 @@ const RankTable = (() => {
   function compute(doc, opts) {
     const w = WEIGHTS[(opts && opts.weight) || 'avg'] || WEIGHTS.avg;
     const region = (opts && opts.region) || 'capital';
+    // at: 연도(2031 등) — 그 해까지 개통한 노선만 탄 '개통 후'. 없거나 'all' 이면 전체(시기 미정 노선까지)
+    const at = opts && opts.at && opts.at !== 'all' ? String(opts.at) : null;
+    const aftOf = r => (at && r.y && r.y[at]) ? r.y[at] : r.aft;
     const rows = doc.rows.filter(r => inRegion(r, region)).map(r => {
-      const mn = minutesOf(r.now, w), ma = minutesOf(r.aft, w);
-      return { src: r, sNow: scoreOf(mn), sAft: scoreOf(ma), mNow: mn, mAft: ma };
+      const ta = aftOf(r);
+      const mn = minutesOf(r.now, w), ma = minutesOf(ta, w);
+      return { src: r, ta, sNow: scoreOf(mn), sAft: scoreOf(ma), mNow: mn, mAft: ma };
     });
     const rn = rankMap(rows, 'sNow'), ra = rankMap(rows, 'sAft');
     const count = new Map();
@@ -73,7 +77,7 @@ const RankTable = (() => {
       return {
         src: x.src, name: x.src.n, id: x.src.id, region: x.src.r, sgg: x.src.g, lines: x.src.l,
         now: { min: x.mNow, score: x.sNow, rank: now, times: x.src.now },
-        aft: { min: x.mAft, score: x.sAft, rank: aft, times: x.src.aft },
+        aft: { min: x.mAft, score: x.sAft, rank: aft, times: x.ta },
         change: now == null ? null : now - aft,
         isNew: now == null,
         tie: count.get(x.sAft) > 1,

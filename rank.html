@@ -59,6 +59,15 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{ou
 select,input[type=search]{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--text)}
 input[type=search]{flex:1;min-width:140px}
 .hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+/* 개통 연도 슬라이더 */
+.yr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 12px;margin-top:8px}
+.yr .play{border:0;background:var(--t-rocket);color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:14px;flex:none}
+.yr .rng{flex:1;min-width:180px;display:flex;flex-direction:column;gap:2px}
+.yr input[type=range]{width:100%;accent-color:var(--t-rocket)}
+.yr .ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.yr .ticks span[aria-current]{color:var(--t-rocket);font-weight:800}
+.yr .now{font-size:15px;font-weight:800;min-width:118px;font-variant-numeric:tabular-nums}
+.yr .opens{flex-basis:100%;font-size:12px;color:var(--text2);display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
 /* 등급 칩 */
 .tiers{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
 .tchip{border:1px solid var(--border);background:var(--card);border-radius:99px;padding:5px 11px;font-size:12.5px;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
@@ -184,6 +193,12 @@ h1{font-size:22px}
       <button data-v="seoul">서울</button><button data-v="capital">수도권</button><button data-v="all">전국</button>
     </div>
   </div>
+  <div class="yr" id="yr-row" role="group" aria-label="개통 연도">
+    <button class="play" id="yr-play" aria-label="연도 차례로 보기">▶</button>
+    <div class="rng"><input type="range" id="yr" min="0" max="1" step="1" value="1" aria-label="이 해까지 개통한 노선으로 보기"><div class="ticks" id="yr-ticks"></div></div>
+    <span class="now" id="yr-now"></span>
+    <div class="opens" id="yr-opens"></div>
+  </div>
   <div class="ctl-row">
     <label class="sr" for="sort">정렬</label>
     <select id="sort">
@@ -247,6 +262,7 @@ h1{font-size:22px}
     tier: T[qs.get('tier')] ? qs.get('tier') : '',
     q: qs.get('q') || '',
     open: qs.get('open') || '',
+    y: qs.get('y') || 'all',   // 개통 연도 슬라이더 — 'all' = 전체(시기 미정 노선 포함)
     shown: PAGE,
   };
   let doc = null, lineInfo = {};
@@ -255,7 +271,7 @@ h1{font-size:22px}
     const u = new URL(location.href);
     const set = (k, v, d) => { if (v === d || !v) u.searchParams.delete(k); else u.searchParams.set(k, v); };
     set('w', st.w, 'avg'); set('t', st.t, 'aft'); set('r', st.r, 'capital'); set('sort', st.sort, 'rank');
-    set('tier', st.tier, ''); set('q', st.q, ''); set('open', st.open, '');
+    set('tier', st.tier, ''); set('q', st.q, ''); set('open', st.open, ''); set('y', st.y, 'all');
     history.replaceState(null, '', u);
   }
 
@@ -323,7 +339,7 @@ h1{font-size:22px}
     const Hfit = Math.max(H, Math.ceil(Math.max(...ly.values(), ...ry.values()) + 14));
     const ticks = [1, 10, 100, 1000].filter(t => t <= maxR);
     let g = '<svg viewBox="0 0 ' + W + ' ' + Hfit + '" role="img" aria-label="많이 오르는 역 10곳의 지금 순위와 개통 후 순위">';
-    g += '<text class="ax" x="' + L + '" y="14" text-anchor="middle">지금</text><text class="ax" x="' + R + '" y="14" text-anchor="middle">개통 후</text>';
+    g += '<text class="ax" x="' + L + '" y="14" text-anchor="middle">지금</text><text class="ax" x="' + R + '" y="14" text-anchor="middle">' + aftLabel() + '</text>';
     ticks.forEach(t => { const yy = y(t); g += '<line x1="' + L + '" x2="' + R + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--border)" stroke-dasharray="2 4"/>' +
       '<text class="ax" x="' + ((L + R) / 2) + '" y="' + (yy - 3) + '" text-anchor="middle">' + t + '위</text>'; });
     g += '<line x1="' + L + '" x2="' + L + '" y1="' + Y0 + '" y2="' + Y1 + '" stroke="var(--border)"/><line x1="' + R + '" x2="' + R + '" y1="' + Y0 + '" y2="' + Y1 + '" stroke="var(--border)"/>';
@@ -331,7 +347,7 @@ h1{font-size:22px}
       const t = RankTable.tierOf(r);
       const col = 'var(--t-' + t + ')';
       const a = y(r.now.rank), b = y(r.aft.rank);
-      g += '<a href="#" data-open="' + esc(r.id) + '" aria-label="' + esc(r.name + ' 지금 ' + r.now.rank + '위에서 개통 후 ' + r.aft.rank + '위') + '">' +
+      g += '<a href="#" data-open="' + esc(r.id) + '" aria-label="' + esc(r.name + ' 지금 ' + r.now.rank + '위에서 ' + aftLabel() + ' ' + r.aft.rank + '위') + '">' +
         '<line x1="' + L + '" y1="' + a + '" x2="' + R + '" y2="' + b + '" stroke="' + col + '" stroke-width="' + (t === 'rocket' ? 3 : 2) + '" stroke-linecap="round" opacity=".9"/>' +
         '<circle cx="' + L + '" cy="' + a + '" r="3.5" fill="' + col + '"/><circle cx="' + R + '" cy="' + b + '" r="4.5" fill="' + col + '"/>' +
         '<text class="rk" x="' + (L - 8) + '" y="' + (ly.get(r) + 4) + '" text-anchor="end">' + r.now.rank + '위</text>' +
@@ -362,18 +378,38 @@ h1{font-size:22px}
       : (r.change > 0 ? '<div class="newlines"><div class="t">이 역에는 새 노선이 없지만, 가까운 역의 새 노선(GTX 등)으로 갈아타는 길이 빨라집니다.</div></div>' : '');
     const head = r.isNew
       ? '<div class="big"><span class="a">지금은 철도로 갈 수 없음</span><span class="arrow">→</span><span class="b">' + r.aft.rank + '위</span><span class="badge">' + T.new.icon + ' 신규</span></div>'
-      : '<div class="big"><span class="a">지금 ' + r.now.rank + '위</span><span class="arrow">→</span><span class="b">개통 후 ' + r.aft.rank + '위</span>' + badge(r).replace('class="badge"', 'class="badge t-' + t + '"') + '</div>';
+      : '<div class="big"><span class="a">지금 ' + r.now.rank + '위</span><span class="arrow">→</span><span class="b">' + aftLabel() + ' ' + r.aft.rank + '위</span>' + badge(r).replace('class="badge"', 'class="badge t-' + t + '"') + '</div>';
     return '<div class="card t-' + t + '" id="card-' + esc(r.id) + '">' + head +
       '<div class="bars">' + bars + '</div>' +
-      '<div class="legend"><span><i style="background:var(--bar-now)"></i>지금</span><span><i style="background:var(--bar-aft)"></i>개통 후</span></div>' +
+      '<div class="legend"><span><i style="background:var(--bar-now)"></i>지금</span><span><i style="background:var(--bar-aft)"></i>' + aftLabel() + '</span></div>' +
       nl + '<a class="go" href="' + link(r) + '">지도에서 보기 →</a>' +
       '<button class="share" data-share="' + esc(r.id) + '">📸 공유 이미지 저장</button><span class="share-msg" role="status"></span></div>';
   }
 
+  // 개통 연도 단계 — rank.json years + '전체'
+  const stops = () => (doc.years || []).map(String).concat(['all']);
+  const yrLabel = y => y === 'all' ? '전체 개통' : y + '년까지';
+  const aftLabel = () => st.y === 'all' ? '개통 후' : st.y + '년';
+  function renderYear() {
+    const S = stops();
+    if (!S.includes(st.y)) st.y = 'all';
+    const i = S.indexOf(st.y);
+    $('yr-row').hidden = st.t === 'now' || S.length < 2;
+    $('yr').max = String(S.length - 1); $('yr').value = String(i);
+    $('yr').setAttribute('aria-valuetext', yrLabel(st.y));
+    $('yr-ticks').innerHTML = S.map(y => '<span' + (y === st.y ? ' aria-current="true"' : '') + '>' + (y === 'all' ? '전체' : "'" + y.slice(2)) + '</span>').join('');
+    $('yr-now').textContent = yrLabel(st.y);
+    const ids = st.y === 'all' ? (doc.undated_lines || []) : ((doc.year_lines || {})[st.y] || []);
+    const named = lineChips(ids);
+    $('yr-opens').innerHTML = named.length
+      ? (st.y === 'all' ? '시기 미정 노선까지:' : st.y + '년 개통:') + ' ' + named.map(chipHtml).join(' ')
+      : '';
+  }
+
   function render() {
     if (!doc) return;
-    syncControls(); saveUrl();
-    const res = RankTable.compute(doc, { weight: st.w, region: st.r });
+    syncControls(); renderYear(); saveUrl();
+    const res = RankTable.compute(doc, { weight: st.w, region: st.r, at: st.t === 'aft' ? st.y : 'all' });
     let rows = res.rows;
     const isNow = st.t === 'now';
 
@@ -400,8 +436,9 @@ h1{font-size:22px}
     }
     const total = isNow ? res.totalNow : res.total;
     const filtered = rows.filter(r => RankTable.matches(r, st.q));
+    $('slope-h').textContent = '🚀 ' + (st.y === 'all' ? '개통하면' : st.y + '년까지 개통하면') + ' 가장 많이 오르는 역 TOP 10';
     $('hint').textContent = REGION[st.r] + ' ' + total.toLocaleString() + '역 · ' + LABEL[st.w] + ' · ' +
-      (isNow ? '지금' : '개통 후') + ' 기준' + (st.tier ? ' · ' + T[st.tier].icon + ' ' + T[st.tier].label + ' ' + filtered.length + '곳' : '') +
+      (isNow ? '지금' : aftLabel() === '개통 후' ? '개통 후' : aftLabel() + '까지 개통') + ' 기준' + (st.tier ? ' · ' + T[st.tier].icon + ' ' + T[st.tier].label + ' ' + filtered.length + '곳' : '') +
       (st.q ? ' · "' + st.q + '" ' + filtered.length + '곳' : '');
     $('list-h').textContent = st.tier ? T[st.tier].icon + ' ' + T[st.tier].label + ' 역' : (st.sort === 'rise' && !isNow ? '많이 오르는 순' : st.sort === 'gain' && !isNow ? '점수 많이 오르는 순' : '순위');
 
@@ -460,6 +497,16 @@ h1{font-size:22px}
     const b = e.target.closest('.tchip'); if (!b) return;
     st.tier = b.dataset.tier; st.shown = PAGE; if (st.tier && st.sort === 'rank') st.sort = 'rise'; render();
   });
+  $('yr').addEventListener('input', e => { stopPlay(); st.y = stops()[+e.target.value] || 'all'; render(); });
+  let playT = null;
+  function stopPlay() { if (playT) { clearInterval(playT); playT = null; $('yr-play').textContent = '▶'; $('yr-play').setAttribute('aria-label', '연도 차례로 보기'); } }
+  $('yr-play').addEventListener('click', () => {
+    if (playT) { stopPlay(); return; }
+    const S = stops(); let i = 0;
+    st.y = S[0]; st.open = ''; render();
+    $('yr-play').textContent = '■'; $('yr-play').setAttribute('aria-label', '멈추기');
+    playT = setInterval(() => { i++; if (i >= S.length) { stopPlay(); return; } st.y = S[i]; render(); }, 1600);
+  });
   $('sort').addEventListener('change', e => { st.sort = e.target.value; st.shown = PAGE; render(); });
   let tmr = null;
   $('q').addEventListener('input', e => { clearTimeout(tmr); tmr = setTimeout(() => { st.q = e.target.value.trim(); st.shown = PAGE; render(); }, 150); });
@@ -487,7 +534,7 @@ h1{font-size:22px}
     g.fillText(nowTxt, 80, 440);
     g.fillStyle = '#ffffff'; g.font = '800 150px ' + F; g.fillText(r.aft.rank + '위', 80, 600);
     const w1 = g.measureText(r.aft.rank + '위').width;
-    g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('개통 후', 80 + w1 + 24, 600);
+    g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText(st.y === 'all' ? '개통 후' : st.y + '년 개통 후', 80 + w1 + 24, 600);
     // 배지
     const bt = t === 'new' ? '✨ 신규' : (r.change > 0 ? '▲' + r.change + '계단' : r.change < 0 ? '▼' + (-r.change) + '계단' : '그대로') + '  ' + RankTable.TIERS[t].label;
     g.font = '800 44px ' + F; const bw = g.measureText(bt).width + 56;

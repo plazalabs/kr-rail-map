@@ -93,6 +93,22 @@ const dests = DESTS.map(d => {
 // 묶음 안 가장 빠른 시간
 const bestOf = (m, d) => { let v = null; for (const id of d.member_ids) { const t = m.get(id); if (t != null && (v == null || t < v)) v = t; } return v; };
 
+// --- 연도별 개통 (2026-11-12) -------------------------------------------
+// 노선 'opened' 글에서 개통 연도를 읽는다. '미정…'·'…년대' 는 시기를 모름 → 연도별 단계에는 넣지 않고 '개통 후(전체)' 에만.
+// 그 해까지 개통한 노선만 타고 CBD·YBD·GBD 까지 몇 분인지 — 떡상 랭킹 연도 슬라이더(rank.html)가 쓴다.
+function openYear(p) {
+  const o = String(p.opened || '').trim();
+  if (!o || /^미정/.test(o) || /년대/.test(o) || o === '-') return null;
+  const m = /(20\d\d)/.exec(o);
+  return m ? +m[1] : null;
+}
+const unopened = lines.features.filter(f => f.properties.status && f.properties.status !== 'open');
+const lineYear = {};
+unopened.forEach(f => { lineYear[f.properties.id] = openYear(f.properties); });
+const YEARS = Array.from(new Set(Object.values(lineYear).filter(y => y != null))).sort((a, b) => a - b);
+const allowOf = y => new Set(Object.keys(lineYear).filter(id => lineYear[id] != null && lineYear[id] <= y));
+const CORE_IDX = ['cbd', 'ybd', 'gbd'].map(c => dests.findIndex(d => d.id === c));
+
 // --- 계산 ---------------------------------------------------------------
 const ids = stations.features.map(f => f.properties.id);
 const out = {};
@@ -111,6 +127,17 @@ for (const id of ids) {
     // 고르느라(환승 판단 여유분) 표시 분이 지금보다 길게 나오는 경우(2026-11-11, 19역)는 지금 값을 쓴다.
     out[id].after.push(b == null ? (a == null ? null : a) : (a == null ? b : Math.min(a, b)));
   });
+  // 연도별 — CBD·YBD·GBD 셋만. 개통은 길을 더할 뿐이므로 앞 해(또는 지금)보다 길면 앞 값을 쓴다
+  out[id].y = {};
+  let prev = CORE_IDX.map(i => out[id].now[i]);
+  for (const y of YEARS) {
+    const m = RF.allTimesFrom(id, { openOnly: true, allow: allowOf(y), noWait: true });
+    const v = dests.filter((d, i) => CORE_IDX.includes(i)).map((d, k) => {
+      const t = bestOf(m, d); const p = prev[k];
+      return t == null ? p : (p == null ? t : Math.min(p, t));
+    });
+    out[id].y[y] = v; prev = v;
+  }
 }
 const secs = (Date.now() - t0) / 1000;
 
@@ -129,6 +156,9 @@ const doc = {
     '두 값을 같은 시간 모델로 계산했다. 시간 모델은 js/route.js 이고, 역 안 환승 도보시간은 ' +
     'data/transfer-times.json(OSM 정차점 거리 기반 추정)을 쓴다. 실제 시각표가 아니므로 ' +
     '±5분 오차를 전제로 읽어야 한다. KTX 는 탑승 1회당 접근 12분을 더한다.',
+  years: YEARS,
+  year_lines: Object.fromEntries(YEARS.map(y => [y, Object.keys(lineYear).filter(id => lineYear[id] === y)])),
+  undated_lines: Object.keys(lineYear).filter(id => lineYear[id] == null),
   destinations: dests.map(d => ({
     id: d.id, name: d.name, label: d.label,
     station_id: d.station_id, member_ids: d.member_ids, lat: d.lat, lng: d.lng,

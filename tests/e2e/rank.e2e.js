@@ -47,6 +47,23 @@ const layout = b => b.evaluate(`(() => ({
       await b.evaluate(`document.querySelector('#tiers .tchip[data-tier="rocket"]').click()`); await sleep(300);
       const tr = await b.evaluate(`({ n: document.querySelectorAll('#list .row').length, allRocket: [...document.querySelectorAll('#list .row')].every(r => r.classList.contains('t-rocket')), url: location.search, sort: document.getElementById('sort').value })`);
       R.check("등급 칩 '떡상' → 떡상 역만·많이 오르는 순·주소에 tier=rocket", tr.n > 10 && tr.allRocket && /tier=rocket/.test(tr.url) && tr.sort === 'rise', tr);
+      // 개통 연도 슬라이더 — 2027년(GTX-C 전)엔 광운대가 200위 밖, 2031년(GTX-B·C 개통)엔 10위 안
+      const kwAt = async y => {
+        await b.goto(RANK + '?q=' + encodeURIComponent('광운대') + '&y=' + y, 800); await rows(b);
+        return b.evaluate(`({ rank: +document.querySelector('#list .row .rk b').firstChild.textContent, now: document.getElementById('yr-now').textContent,
+          opens: document.getElementById('yr-opens').textContent, url: location.search })`);
+      };
+      const y27 = await kwAt(2027), y31 = await kwAt(2031);
+      R.check('연도 2027: 광운대 200위 밖·동북선 개통 표시', y27.rank > 200 && /2027년까지/.test(y27.now) && /동북선/.test(y27.opens), y27);
+      R.check('연도 2031: 광운대 10위 안·GTX-B·C 개통 표시', y31.rank <= 10 && /GTX-B/.test(y31.opens) && /GTX-C/.test(y31.opens), y31);
+      await b.goto(RANK, 800); await rows(b);
+      await b.evaluate(`(() => { const r = document.getElementById('yr'); r.value = '3'; r.dispatchEvent(new Event('input')); })()`); await sleep(300);
+      const sl3 = await b.evaluate(`({ url: location.search, h: document.getElementById('slope-h').textContent })`);
+      R.check('슬라이더를 밀면 주소에 y= 와 TOP 10 제목이 그 해로', /y=2031/.test(sl3.url) && /2031년까지/.test(sl3.h), sl3);
+      await b.evaluate(`document.getElementById('yr-play').click()`); await sleep(1800);
+      const pl = await b.evaluate(`({ btn: document.getElementById('yr-play').textContent, url: location.search })`);
+      R.check('▶ 누르면 연도가 차례로 넘어간다 (멈춤 버튼 ■)', pl.btn === '■' && /y=20(27|28)/.test(pl.url), pl);
+      await b.evaluate(`document.getElementById('yr-play').click()`);
     }
     // 줄을 누르면 역 카드가 펼쳐지고, '지도에서 보기' 를 누르면 지도에서 그 역 상세
     await b.goto(RANK, 800); await rows(b);

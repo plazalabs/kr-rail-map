@@ -59,10 +59,11 @@ check('노선 색 정보', Object.values(doc.lines).every(l => l.n && /^#/.test(
 console.log('\n[결론] 광운대 — 회장님 숫자와 맞는지');
 {
   const k = nm('광운대')[0];
+  // 2026-11-12 GTX 자체 산출 (광운대~삼성 9분 노원구 발표값 포함) — 회장님 숫자와 같다
   check('광운대 개통 후 CBD 9 / YBD 15 / GBD 9', k && k.aft.join() === '9,15,9', k && k.aft.join());
   const c = RT.compute(doc, { weight: 'avg', region: 'capital' });
   const kr = c.rows.find(r => r.name === '광운대');
-  check('수도권 평균 15위 안', kr && kr.aft.rank <= 15, kr && kr.aft.rank);
+  check('수도권 평균 10위 안 (공동 9위)', kr && kr.aft.rank <= 10, kr && kr.aft.rank);
   check('개통 후 100계단 넘게 오름', kr && kr.change > 100, kr && kr.change);
   check('수도권 1위는 서울역', RT.sortRows(c.rows, 'after')[0].name === '서울');
 }

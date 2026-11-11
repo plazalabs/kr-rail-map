@@ -166,7 +166,8 @@ check('GTX-A에 시청·경복궁·광화문이 없음',
 console.log('\n[GTX] 공식 소요시간이 기하 추정값에 덮이지 않아야 함');
 // 광운대→청량리 4분 + 청량리→왕십리 3분 + 왕십리→삼성 2분 = 9분
 r = route(['광운대', 127.0615, 37.6236], ['삼성', 127.0631, 37.5088]);
-check('광운대→삼성 GTX-C 9분', r && r.minutes === 9, r && `${r.minutes}분`);
+// 2026-11-12 GTX 자체 산출 — 광운대~삼성 9분은 노원구 발표(착공식, 2024-04)를 기준 구간으로 넣어 정확히 맞춘다
+check('광운대→삼성 GTX-C 9분 (노원구 발표값)', r && r.minutes === 9, r && `${r.minutes}분`);
 check('광운대→삼성 경유역이 청량리·왕십리',
   r && r.path.length === 4, r && r.path.map(nameOf).join('→'));
 
@@ -363,7 +364,7 @@ for (const [nm, ln] of [['삼성', gtxaMid], ['평택지제', gtxaExt]]) {
   const fut = RF.findRoute(yeon.properties.id, dt.properties.id);
   check('개통 후: 연신내→동탄 GTX-A 직결(환승 0회)', fut && fut.transfers === 0,
     fut && `${fut.transfers}회 ${fut.minutes}분 ${fut.legs.map(l => l.lineId).join(' → ')}`);
-  check('개통 후: 연신내→동탄 공식 소요시간 합(6+9+7+7+7=36분)', fut && fut.minutes === 36, fut && `${fut.minutes}분`);
+  check('개통 후: 연신내→동탄 자체 산출 합(5.4+5.9+3.7+6.4+6.4+6.2=34분)', fut && fut.minutes === 34, fut && `${fut.minutes}분`);
 }
 
 // 4) 동북선 신설역에 기존 노선이 잘못 붙어 있으면 안 된다
@@ -461,8 +462,8 @@ console.log('\n[GTX 평면환승] 청량리 B·C, 삼성 A·C — 같은 승강�
     r1 && r1.legs.map(l => l.lineId).join('>') === 'gtx-c>gtx-b' && r1.minutes <= 10 && r1.legs[0].platform, r1 && r1.minutes + '분 ' + r1.legs.map(l => l.lineId).join('>'));
   const sx = id('수서', 'great-train-express-line-a');
   const r2 = RF.findRoute(kw.id, sx.id);
-  check('광운대→수서 (개통 후): GTX-C → 삼성 평면환승 → GTX-A, 13분 이하',
-    r2 && r2.legs[0].lineId === 'gtx-c' && r2.minutes <= 13, r2 && r2.minutes + '분 ' + r2.legs.map(l => l.lineId).join('>'));
+  check('광운대→수서 (개통 후): GTX-C → 삼성 평면환승 → GTX-A, 16분 이하',
+    r2 && r2.legs[0].lineId === 'gtx-c' && r2.minutes <= 16, r2 && r2.minutes + '분 ' + r2.legs.map(l => l.lineId).join('>'));
 }
 
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);

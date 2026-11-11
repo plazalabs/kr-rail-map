@@ -104,9 +104,9 @@ async function main() {
   const off = (lid) => (RF.adjacency().get(seoul) || []).filter(e => e.lineId === lid && e.officialMin != null).map(e => e.officialMin).sort();
   // 서울역~수서는 미개통이라 GTX-A(운행) 쪽에는 연신내 6분만, 공사 구간 노선 쪽에 삼성 6분이 붙는다
   // ('개통 후' 는 최종 계획 기준 — 삼성 정차 2028년 예정, 2026-11-11).
-  check("GTX-A '서울역' 공식 간선이 '서울' 역에 붙음 (연신내 6분)", JSON.stringify(off('great-train-express-line-a')) === '[6]', JSON.stringify(off('great-train-express-line-a')));
-  check("GTX-A 서울역~삼성 공식 간선 6분 (미개통 구간, 개통 후 삼성 정차)", JSON.stringify(off('gtx-a-seoul-suseo')) === '[6]', JSON.stringify(off('gtx-a-seoul-suseo')));
-  check("GTX-B '서울역' 공식 간선이 '서울' 역에 붙음 (용산 3분 · 청량리 5분)", JSON.stringify(off('gtx-b')) === '[3,5]', JSON.stringify(off('gtx-b')));
+  check("GTX-A '서울역' 공식 간선이 '서울' 역에 붙음 (연신내 5.4분)", JSON.stringify(off('great-train-express-line-a')) === '[5.4]', JSON.stringify(off('great-train-express-line-a')));
+  check("GTX-A 서울역~삼성 공식 간선 6.1분 (미개통 구간, 개통 후 삼성 정차)", JSON.stringify(off('gtx-a-seoul-suseo')) === '[6.1]', JSON.stringify(off('gtx-a-seoul-suseo')));
+  check("GTX-B '서울역' 공식 간선이 '서울' 역에 붙음 (용산 3분 · 청량리 5.4분)", JSON.stringify(off('gtx-b')) === '[3,5.4]', JSON.stringify(off('gtx-b')));
 
   console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
   process.exit(fail ? 1 : 0);

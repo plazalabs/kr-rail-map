@@ -119,6 +119,7 @@ color:var(--tierink);background:var(--tierbg)}
 .lines{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .ln{font-size:10.5px;font-weight:700;color:#fff;border-radius:4px;padding:1px 5px;white-space:nowrap;line-height:1.5}
 .ln.plan{background:transparent!important;border:1.5px dashed currentColor}
+@media(prefers-color-scheme:dark){.ln.plan{filter:brightness(1.8) saturate(1.2)}}
 .tms{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin-top:5px;font-variant-numeric:tabular-nums}
 .tms b{color:var(--text)}
 .tms s{color:var(--muted);margin-right:2px}
@@ -149,7 +150,7 @@ color:var(--tierink);background:var(--tierbg)}
 .newlines{margin-top:12px;font-size:13px}
 .newlines .t{font-size:12px;color:var(--muted);margin-bottom:5px}
 .nl{display:inline-flex;align-items:center;gap:6px;margin:0 8px 6px 0}
-.nl .yr{font-size:11.5px;color:var(--text2)}
+.nl .nl-yr{font-size:11.5px;color:var(--text2)}
 .go{display:inline-block;margin-top:12px;padding:8px 14px;border-radius:9px;background:var(--accent);color:#fff;text-decoration:none;font-size:13px;font-weight:700}
 .share{margin:12px 0 0 6px;padding:8px 14px;border-radius:9px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:13px;font-weight:700}
 .share-msg{font-size:12px;color:var(--muted);margin-left:8px}
@@ -381,7 +382,7 @@ h1{font-size:22px}
     const nl = plan.length
       ? '<div class="newlines"><div class="t">이 역에 새로 생기는 노선</div>' + plan.map(x => {
           const yr = RankTable.yearOf(x.m.o);
-          return '<span class="nl">' + chipHtml(x) + '<span class="yr">' + (yr ? yr + '년' : '시기 미정') + '</span></span>';
+          return '<span class="nl">' + chipHtml(x) + '<span class="nl-yr">' + (yr ? yr + '년' : '시기 미정') + '</span></span>';
         }).join('') + '</div>'
       : (r.change > 0 ? '<div class="newlines"><div class="t">이 역에는 새 노선이 없지만, 가까운 역의 새 노선(GTX 등)으로 갈아타는 길이 빨라집니다.</div></div>' : '');
     const head = r.isNew

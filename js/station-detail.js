@@ -77,6 +77,10 @@
     // 단지 목록 — 법정동 중위값 아래에 붙는다. 표(table) 대신 목록을 쓰는 건
     // 좁은 패널에서 열이 뭉개지지 않게 하기 위해서다.
     '.sd-cx-wrap{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border,#eee)}' +
+    '.sd-glance{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}' +
+    '.sd-chip{display:flex;flex-direction:column;gap:1px;padding:6px 10px;border:1px solid var(--border,#e3e6ea);border-radius:10px;background:var(--bg,#f7f8fa);min-width:0}' +
+    '.sd-chip small{font-size:10.5px;color:var(--muted,#6b7280)}' +
+    '.sd-chip b{font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}' +
     '.sd-cx-wrap h4{font-size:12px;font-weight:600;margin-bottom:4px}' +
     '.sd-cx-list{list-style:none;margin:0;padding:0}' +
     '.sd-cx{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:5px 0;' +
@@ -500,6 +504,28 @@
     // 투자 모드(js/mode.js)가 꺼져 있으면 시세·단지·공급을 그리지 않는다 — 자료를 이미 받았더라도.
     // KR_MODE 가 없으면(모듈 없음) 예전처럼 그린다.
     var invest = typeof KR_MODE === 'undefined' || KR_MODE.isInvest();
+
+    // 한눈에 (2026-11-11 사용성 점검): 투자 모드에서는 절이 많아 핵심 숫자를 찾으려면 한참 내려야 했다.
+    // 맨 위에 세 가지 — 평당 시세 · 전세가율 · 강남까지(지금) — 를 칩으로. 자료가 없는 칩은 빼고, 다 없으면 줄을 안 그린다.
+    var chips = [];
+    if (invest && typeof StationPrice !== 'undefined' && StationPrice.isReady()) {
+      var pr = StationPrice.of(sid);
+      if (pr && pr.medianPerPyeong != null) chips.push(['평당', StationPrice.pp(pr.medianPerPyeong)]);
+    }
+    if (invest && typeof StationJeonse !== 'undefined' && StationJeonse.isReady()) {
+      var jn = StationJeonse.of(sid);
+      if (jn && jn.r != null) chips.push(['전세가율', Math.round(jn.r * 100) + '%' + (jn.r >= 0.8 ? ' ⚠' : '')]);
+    }
+    if (typeof StationAccess !== 'undefined' && StationAccess.isReady()) {
+      var ac = StationAccess.of(sid);
+      var gb = ac && ac.rows.find(function (r) { return r.id === 'gbd'; });
+      if (gb && gb.now != null && gb.now > 0) chips.push(['강남까지', gb.now + '분' + (gb.save > 0 ? ' → ' + gb.after + '분' : '')]);
+    }
+    if (chips.length) {
+      html += '<div class="sd-glance" role="list" aria-label="한눈에">' + chips.map(function (c) {
+        return '<span class="sd-chip" role="listitem"><small>' + esc(c[0]) + '</small><b>' + esc(c[1]) + '</b></span>';
+      }).join('') + '</div>';
+    }
 
     // 시세를 먼저. 없으면 빈 문자열이라 자연스럽게 노선부터 시작한다.
     if (invest) html += priceSection(sid);

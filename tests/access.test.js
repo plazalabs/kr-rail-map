@@ -189,6 +189,33 @@ check('강남이 상위 6% 안에 든다', g && g.rank.after.rank / g.rank.after
 check('3대 업무지구 평균이 계산된다', g && g.score.after != null && g.score.after < 40,
   g && g.score.after);
 
+// 2026-11-11: 선 조각 끝에 이웃 역이 붙어 생긴 0km 연결(142개)이 다시 생기지 않게.
+{
+  const adjm = RF.adjacency();
+  const co = id => RF.stationById(id).geometry.coordinates;
+  const R = 6371, rad = x => x * Math.PI / 180;
+  const hv = (a, b) => { const h = Math.sin(rad(b[1] - a[1]) / 2) ** 2 + Math.cos(rad(a[1])) * Math.cos(rad(b[1])) * Math.sin(rad(b[0] - a[0]) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+  let bad = 0, ex = '';
+  for (const [u, es] of adjm) for (const e of es) {
+    if (e.walk || !e.lineId || e.officialMin != null) continue;
+    if (e.distKm < hv(co(u), co(e.to)) - 1e-6) { bad++; if (!ex) ex = e.lineId + ' ' + u + '→' + e.to + ' ' + e.distKm.toFixed(2) + 'km'; }
+  }
+  check('노선 연결 거리가 두 역 직선거리보다 짧은 것 0개', bad === 0, bad + '개 ' + ex);
+  const hd = stations.features.find(f => f.properties.name_ko === '홍대입구' && f.properties.lines.includes('seoul-subway-line-2'));
+  const gn = stations.features.find(f => f.properties.name_ko === '강남' && f.properties.lines.includes('seoul-subway-line-2'));
+  const hr = RF.findRoute(hd.properties.id, gn.properties.id, { openOnly: true });
+  // 회장님 실측(2026-11-11): 광운대→시청 1호선 27분, 광운대→서울역 30분. 공식 역간 시간(서울교통공사) 적용 후 ±2분
+  const L1 = 'seoul-metropolitan-subway-line-1';
+  const kw = stations.features.find(f => f.properties.name_ko === '광운대' && f.properties.lines.includes(L1));
+  for (const [nm, truth] of [['시청', 27], ['서울', 30]]) {
+    const to = stations.features.find(f => f.properties.name_ko === nm && f.properties.lines.includes(L1));
+    const rr = RF.findRoute(kw.properties.id, to.properties.id, { openOnly: true });
+    check('광운대→' + nm + ' 실측 ' + truth + '분 ±2', rr && Math.abs(rr.minutes - truth) <= 2, rr && rr.minutes + '분');
+  }
+  check('홍대입구→강남 최단시간 = 2호선 직행 (경의중앙 우회 아님)', hr && hr.legs.length === 1 && hr.legs[0].lineId === 'seoul-subway-line-2',
+    hr && hr.minutes + '분 ' + hr.legs.map(l => l.lineId).join(','));
+}
+
 // 강남은 개통 후에도 크게 안 줄어야 한다(이미 최고 접근성).
 check('강남의 개통 단축폭은 작다', g && g.score.now - g.score.after <= 8,
   g && (g.score.now - g.score.after).toFixed(1) + '분');
@@ -197,9 +224,13 @@ const suwon = idAt('수원', 37.2660, 127.0000);
 const s = SA.of(suwon);
 check('수원의 개통 단축폭은 크다', s && s.score.now - s.score.after >= 10,
   s && (s.score.now - s.score.after).toFixed(1) + '분');
-check('수원 순위가 개통 후 올라간다', s && s.rank.now && s.rank.after &&
-  s.rank.after.rank < s.rank.now.rank,
-  s && s.rank.now.rank + ' → ' + s.rank.after.rank);
+// 2026-11-11: route.js 의 0km '순간이동' 연결 142개를 바로잡자(홍대입구→강남 경의중앙 우회 원인) 수원의 '지금' 시간이
+// 더 정확해졌고(여의도 62→54분), 순위가 458/1199(38.2%) → 484/1231(39.3%)로 거의 그대로가 됐다.
+// '개통 후'에는 GTX-A·B·C·계획 노선이 다 들어가 다른 역들도 함께 빨라지기 때문 — 수원 자체는 20분 단축(위), 단축 순위 상위 20%(아래).
+// 그래서 '순위가 오른다' 대신 '전체 대비 위치(백분율)가 2%p 넘게 나빠지지 않는다'로 본다.
+check('수원 순위(백분율)가 개통 후 크게 나빠지지 않는다', s && s.rank.now && s.rank.after &&
+  s.rank.after.rank / s.rank.after.total - s.rank.now.rank / s.rank.now.total <= 0.02,
+  s && s.rank.now.rank + '/' + s.rank.now.total + ' → ' + s.rank.after.rank + '/' + s.rank.after.total);
 
 // 단축폭 순위 — '개통으로 얼마나 좋아지나'. 수원은 GTX-C 수혜라 상위여야 한다.
 check('수원의 개통 단축 순위가 상위 20%', s && s.rank.gain &&

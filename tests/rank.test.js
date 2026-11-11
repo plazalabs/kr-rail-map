@@ -126,6 +126,22 @@ check('지역 버튼 (서울·수도권·전국)', ['seoul', 'capital', 'all'].e
 check('기다리는 시간을 뺐다고 밝힘', /기다리는 시간은 넣지 않았습니다/.test(html));
 check('역을 누르면 지도로 (?st=)', /\.\/\?st=/.test(html));
 check('밖에서 불러오는 스크립트 없음', !/<script[^>]+src="https?:/.test(html));
+// 글자 대비 (WCAG AA 4.5) — 라이트 모드 등급 글자색(--i-*)이 흰 바탕·연한 등급 바탕 위에서 (2026-11-12)
+{
+  const v = name => { const m = new RegExp('--' + name + ':(#[0-9a-fA-F]{6})').exec(html); return m && m[1]; };
+  const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const bad = [];
+  for (const t of ['rocket', 'up', 'flat', 'down', 'new']) {
+    const ink = v('i-' + t), bg = v('t-' + t + '-bg');
+    if (!ink || !bg) { bad.push(t + ' 색 없음'); continue; }
+    const a = cr(ink, '#ffffff'), b = cr(ink, bg);
+    if (a < 4.5 || b < 4.5) bad.push(t + ' ' + a.toFixed(2) + '/' + b.toFixed(2));
+  }
+  const mu = v('muted');
+  if (!mu || cr(mu, '#ffffff') < 4.5 || cr(mu, '#f6f7f9') < 4.5) bad.push('muted ' + mu);
+  check('라이트 모드 글자 대비 4.5 이상 (등급 글자·흐린 글자)', bad.length === 0, bad.join(', '));
+}
 const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
 check('지도가 ?st= 를 받아 역 상세를 연다', /q\.get\('st'\)/.test(app));
 const idx = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');

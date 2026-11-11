@@ -15,6 +15,8 @@ const ROOT = path.join(__dirname, '..');
 const read = p => JSON.parse(fs.readFileSync(path.join(ROOT, p), 'utf8'));
 
 const access = read('data/access.json');
+// 연도별 CBD·YBD·GBD (build_access.js 가 따로 쓴다 — access.json 을 가볍게 두려고)
+const yearsDoc = read('data/_access_years.json');
 const stations = read('data/stations.geojson').features;
 const lines = read('data/lines.geojson').features;
 const dong = read('data/_station_dong.json');
@@ -122,9 +124,9 @@ const rows = groups.map(g => {
     now: best('now'),
     aft: best('after'),
     // 연도별 CBD·YBD·GBD (access.json y) — 묶음 안 가장 빠른 값
-    y: Object.fromEntries((access.years || []).map(yr => [yr, [0, 1, 2].map(k => {
+    y: Object.fromEntries((yearsDoc.years || []).map(yr => [yr, [0, 1, 2].map(k => {
       let v = null;
-      for (const id of g.ids) { const t = ((access.stations[id].y || {})[yr] || [])[k]; if (t != null && (v == null || t < v)) v = t; }
+      for (const id of g.ids) { const t = (((yearsDoc.stations[id] || {})[yr]) || [])[k]; if (t != null && (v == null || t < v)) v = t; }
       return v;
     })])),
   };
@@ -136,9 +138,9 @@ const doc = {
     '타고 가는 시간 + 갈아타며 걷는 시간(분). 열차를 기다리는 시간은 넣지 않았다. ' +
     '같은 이름·같은 자리 역(노선별)은 한 줄로 묶고 가장 빠른 값을 쓴다. 시간 모델은 js/route.js.',
   dest: ['CBD', 'YBD', 'GBD'],
-  years: access.years || [],
-  year_lines: access.year_lines || {},
-  undated_lines: access.undated_lines || [],
+  years: yearsDoc.years || [],
+  year_lines: yearsDoc.year_lines || {},
+  undated_lines: yearsDoc.undated_lines || [],
   lines: Object.fromEntries(Array.from(usedLines).map(l => {
     const p = lineMeta.get(l);
     return [l, { n: p.name_ko, c: p.color, s: p.status, o: p.status === 'open' ? undefined : (p.opened || '') }];

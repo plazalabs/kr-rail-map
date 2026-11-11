@@ -156,9 +156,6 @@ const doc = {
     '두 값을 같은 시간 모델로 계산했다. 시간 모델은 js/route.js 이고, 역 안 환승 도보시간은 ' +
     'data/transfer-times.json(OSM 정차점 거리 기반 추정)을 쓴다. 실제 시각표가 아니므로 ' +
     '±5분 오차를 전제로 읽어야 한다. KTX 는 탑승 1회당 접근 12분을 더한다.',
-  years: YEARS,
-  year_lines: Object.fromEntries(YEARS.map(y => [y, Object.keys(lineYear).filter(id => lineYear[id] === y)])),
-  undated_lines: Object.keys(lineYear).filter(id => lineYear[id] == null),
   destinations: dests.map(d => ({
     id: d.id, name: d.name, label: d.label,
     station_id: d.station_id, member_ids: d.member_ids, lat: d.lat, lng: d.lng,
@@ -166,6 +163,17 @@ const doc = {
   stations: out,
 };
 
+// 연도별 값(y)은 지도 화면이 쓰지 않는다 — 떡상 랭킹 자료(build_rank.js)만 쓰므로 따로 둔다.
+// access.json 에 넣으면 88KB → 238KB 로 불어 역 상세가 3배 무거워졌다 (2026-11-12).
+const yearsDoc = {
+  updated: doc.updated,
+  years: YEARS,
+  year_lines: Object.fromEntries(YEARS.map(y => [y, Object.keys(lineYear).filter(id => lineYear[id] === y)])),
+  undated_lines: Object.keys(lineYear).filter(id => lineYear[id] == null),
+  stations: Object.fromEntries(Object.keys(out).map(id => [id, out[id].y])),
+};
+Object.keys(out).forEach(id => { delete out[id].y; });
+fs.writeFileSync(path.join(ROOT, 'data/_access_years.json'), JSON.stringify(yearsDoc));
 const file = path.join(ROOT, 'data/access.json');
 fs.writeFileSync(file, JSON.stringify(doc));
 const kb = (fs.statSync(file).size / 1024).toFixed(0);

@@ -134,6 +134,8 @@ color:var(--tier);background:var(--tierbg)}
 .nl{display:inline-flex;align-items:center;gap:6px;margin:0 8px 6px 0}
 .nl .yr{font-size:11.5px;color:var(--text2)}
 .go{display:inline-block;margin-top:12px;padding:8px 14px;border-radius:9px;background:var(--accent);color:#fff;text-decoration:none;font-size:13px;font-weight:700}
+.share{margin:12px 0 0 6px;padding:8px 14px;border-radius:9px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:13px;font-weight:700}
+.share-msg{font-size:12px;color:var(--muted);margin-left:8px}
 .more{display:block;width:100%;margin:14px 0 0;padding:11px;border:1px solid var(--border);border-radius:10px;background:var(--card);cursor:pointer;font-size:14px}
 .empty{padding:40px 0;text-align:center;color:var(--muted);border:0}
 .note{margin:34px 0 60px;padding:16px 18px;background:var(--surface);border-radius:12px;font-size:13px;color:var(--text2)}
@@ -364,7 +366,8 @@ h1{font-size:22px}
     return '<div class="card t-' + t + '" id="card-' + esc(r.id) + '">' + head +
       '<div class="bars">' + bars + '</div>' +
       '<div class="legend"><span><i style="background:var(--bar-now)"></i>지금</span><span><i style="background:var(--bar-aft)"></i>개통 후</span></div>' +
-      nl + '<a class="go" href="' + link(r) + '">지도에서 보기 →</a></div>';
+      nl + '<a class="go" href="' + link(r) + '">지도에서 보기 →</a>' +
+      '<button class="share" data-share="' + esc(r.id) + '">📸 공유 이미지 저장</button><span class="share-msg" role="status"></span></div>';
   }
 
   function render() {
@@ -462,6 +465,75 @@ h1{font-size:22px}
   $('q').addEventListener('input', e => { clearTimeout(tmr); tmr = setTimeout(() => { st.q = e.target.value.trim(); st.shown = PAGE; render(); }, 150); });
   $('more').addEventListener('click', () => { st.shown += PAGE; render(); });
   $('list').addEventListener('click', e => { const b = e.target.closest('.row'); if (b) openStation(b.dataset.id, false); });
+  /* 공유 이미지 — 정사각형 1080×1080 PNG (인스타·카톡). 화면 글꼴로 캔버스에 그린다. 외부 자원 없음.
+   * 휴대폰에서 파일 공유를 지원하면 공유 창, 아니면 내려받기. */
+  function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function shareCanvas(r) {
+    const S = 1080, c = document.createElement('canvas'); c.width = S; c.height = S;
+    const g = c.getContext('2d');
+    const F = '"Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    const t = RankTable.tierOf(r);
+    const COL = { rocket: '#0a8f4a', up: '#3aa76d', flat: '#8a929a', down: '#d9701a', new: '#7a3fd0' }[t];
+    // 배경
+    const bg = g.createLinearGradient(0, 0, 0, S); bg.addColorStop(0, '#0b1d3a'); bg.addColorStop(1, '#10305e');
+    g.fillStyle = bg; g.fillRect(0, 0, S, S);
+    g.fillStyle = 'rgba(255,255,255,.06)'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(900 - i * 40, 160 + i * 30, 260 - i * 30, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText('GTX 개통 후, 우리 역은 몇 등?', 80, 120);
+    g.fillStyle = '#ffffff'; g.font = '800 104px ' + F; g.fillText(r.name + '역', 80, 250);
+    g.fillStyle = '#9fb3d1'; g.font = '500 32px ' + F; g.fillText([r.region, r.sgg].filter(Boolean).join(' ') + ' · ' + REGION[st.r] + ' ' + (st.w === 'avg' ? '' : LABEL[st.w] + ' ') + '순위', 84, 305);
+    // 큰 순위
+    g.font = '700 46px ' + F; g.fillStyle = '#c8d3e6';
+    const nowTxt = r.isNew ? '지금은 철도 없음' : '지금 ' + r.now.rank + '위';
+    g.fillText(nowTxt, 80, 440);
+    g.fillStyle = '#ffffff'; g.font = '800 150px ' + F; g.fillText(r.aft.rank + '위', 80, 600);
+    const w1 = g.measureText(r.aft.rank + '위').width;
+    g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('개통 후', 80 + w1 + 24, 600);
+    // 배지
+    const bt = t === 'new' ? '✨ 신규' : (r.change > 0 ? '▲' + r.change + '계단' : r.change < 0 ? '▼' + (-r.change) + '계단' : '그대로') + '  ' + RankTable.TIERS[t].label;
+    g.font = '800 44px ' + F; const bw = g.measureText(bt).width + 56;
+    roundRect(g, 80, 640, bw, 78, 39); g.fillStyle = COL; g.fill();
+    g.fillStyle = '#fff'; g.fillText(bt, 108, 694);
+    // 이 역에 새로 생기는 노선 (개통 연도)
+    const plan = lineChips(r.lines, true).slice(0, 3).map(x => { const y = RankTable.yearOf(x.m.o); return x.m.n + (y ? ' ' + y : ''); });
+    if (plan.length) { g.font = '600 30px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('새 노선 ' + plan.join(' · '), 80 + bw + 26, 692); }
+    // 업무지구 분
+    const D = ['CBD 도심', 'YBD 여의도', 'GBD 강남'];
+    D.forEach((d, i) => {
+      const y = 800 + i * 70, n = r.now.times[i], a = r.aft.times[i];
+      g.fillStyle = '#9fb3d1'; g.font = '600 32px ' + F; g.fillText(d, 80, y);
+      g.fillStyle = '#ffffff'; g.font = '800 40px ' + F;
+      const txt = (n != null && a != null && n > a) ? n + '분 → ' + a + '분' : (a == null ? '—' : a + '분');
+      g.fillText(txt, 330, y);
+      if (n != null && a != null && n > a) { g.fillStyle = '#5fe39a'; g.font = '800 34px ' + F; g.fillText('−' + (n - a) + '분', 720, y); }
+    });
+    g.fillStyle = '#7f93b3'; g.font = '500 24px ' + F;
+    g.fillText('추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1000);
+    g.fillStyle = '#c8d3e6'; g.font = '700 28px ' + F;
+    g.fillText('🚀 한국철도맵 GTX 떡상 랭킹 · plazalabs.github.io/kr-rail-map/rank.html', 80, 1044);
+    return c;
+  }
+  async function shareStation(id, msgEl) {
+    const r = RankTable.compute(doc, { weight: st.w, region: st.r }).rows.find(x => x.id === id);
+    if (!r) return;
+    const c = shareCanvas(r);
+    const blob = await new Promise(res => c.toBlob(res, 'image/png'));
+    if (!blob) { if (msgEl) msgEl.textContent = '이미지를 만들지 못했어요.'; return; }
+    const name = 'GTX떡상_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png';
+    const file = (typeof File === 'function') ? new File([blob], name, { type: 'image/png' }) : null;
+    try {
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: r.name + ' GTX 개통 후 ' + r.aft.rank + '위', text: location.origin + location.pathname });
+        if (msgEl) msgEl.textContent = '공유했어요.';
+        return;
+      }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    if (msgEl) msgEl.textContent = '이미지를 저장했어요 (' + name + ').';
+  }
+  window.RankShare = { canvas: id => { const r = RankTable.compute(doc, { weight: st.w, region: st.r }).rows.find(x => x.id === id); return r ? shareCanvas(r) : null; } };
+  $('list').addEventListener('click', e => { const b = e.target.closest('[data-share]'); if (!b) return; e.stopPropagation(); shareStation(b.getAttribute('data-share'), b.nextElementSibling); }, true);
   $('slope').addEventListener('click', e => { const a = e.target.closest('[data-open]'); if (!a) return; e.preventDefault(); openStation(a.getAttribute('data-open'), true); });
 
   let rz = null;

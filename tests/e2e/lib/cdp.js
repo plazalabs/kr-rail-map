@@ -13,6 +13,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const Profiles = require('./profiles');   // 임시 프로필 정리 (2026-11-12 — 사흘에 211개·13.3GB 쌓였던 문제)
 
 const BASE = process.env.E2E_BASE || 'http://127.0.0.1:8124/index.html';
 
@@ -40,7 +41,8 @@ function outDir(name) {
 
 // invest: true 면 페이지가 뜨기 전에 투자 모드(localStorage krrail-mode=invest)로 맞춘다 (js/mode.js, 기본은 철도 모드)
 async function launch({ port = 9555, w = 1440, h = 1000, mobile = false, invest = false, guide = false, tip = false } = {}) {
-  const prof = path.join(os.tmpdir(), `kr-rail-map-e2e-prof-${port}-${process.pid}-${Date.now()}`);
+  const prof = Profiles.profilePath(port);
+  Profiles.hookExit();
   const args = [
     '--headless=new', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
     '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
@@ -50,12 +52,13 @@ async function launch({ port = 9555, w = 1440, h = 1000, mobile = false, invest 
   if (process.platform === 'linux') args.push('--no-sandbox', '--disable-dev-shm-usage');
   args.push('about:blank');
   const chrome = spawn(findChrome(), args, { stdio: 'ignore' });
+  Profiles.track(prof, chrome);
   let target = null;
   for (let i = 0; i < 80 && !target; i++) {
     await sleep(250);
     try { target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(t => t.type === 'page'); } catch {}
   }
-  if (!target) { chrome.kill(); throw new Error('chrome connect fail (port ' + port + ')'); }
+  if (!target) { await Profiles.removeNow(prof); throw new Error('chrome connect fail (port ' + port + ')'); }
   const ws = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise(r => ws.addEventListener('open', r));
   let id = 0; const pending = new Map(); const logs = []; const handlers = [];
@@ -100,11 +103,12 @@ async function launch({ port = 9555, w = 1440, h = 1000, mobile = false, invest 
     await send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code: code || k, windowsVirtualKeyCode: keyCode || 0 });
   }
   async function type(text) { await send('Input.insertText', { text }); }
+  // 크롬을 끄고 이 실행이 만든 임시 프로필을 지운다. 크롬이 실제로 끝난 뒤 다시 시도하며 지운다(Promise).
+  // 기다리지 않아도 점검 프로세스가 끝날 때 한 번 더 지운다 (Profiles.hookExit).
   function close() {
     try { ws.close(); } catch {}
-    chrome.kill();
-    // 이 실행이 만든 임시 프로필만 정리 (크롬이 손을 놓을 때까지 조금 기다린다)
-    setTimeout(() => { try { fs.rmSync(prof, { recursive: true, force: true }); } catch (e) {} }, 1500);
+    if (process.env.E2E_KEEP_PROFILES === '1') { try { chrome.kill(); } catch {} return Promise.resolve(false); }
+    return Profiles.removeNow(prof);
   }
   return { send, evaluate, goto, shot, click, key, type, logs, close, sleep, handlers };
 }
@@ -152,4 +156,4 @@ async function clickStation(b, id, { timeout = 10000 } = {}) {
   return { ok: true, waitedMs: Date.now() - t0 };
 }
 
-module.exports = { launch, sleep, BASE, outDir, recorder, findChrome, clickStation };
+module.exports = { launch, sleep, BASE, outDir, recorder, findChrome, clickStation, Profiles };

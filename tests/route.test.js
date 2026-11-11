@@ -466,5 +466,19 @@ console.log('\n[GTX 평면환승] 청량리 B·C, 삼성 A·C — 같은 승강�
     r2 && r2.legs[0].lineId === 'gtx-c' && r2.minutes <= 16, r2 && r2.minutes + '분 ' + r2.legs.map(l => l.lineId).join('>'));
 }
 
+console.log('\n[GTX-A 창릉역] 2030 개통 예정 — 지금은 무정차, 개통 후만 정차 (2026-11-12)');
+{
+  const id = (n, l) => (stations.features.find(f => f.properties.name_ko === n && (!l || f.properties.lines.includes(l))) || { properties: {} }).properties.id;
+  const cn = id('창릉'), un = id('운정중앙'), so = id('서울', 'great-train-express-line-a');
+  check('창릉역이 있다 (GTX-A 창릉 정차 노선)', !!cn);
+  const now = RF.findRoute(un, so, { openOnly: true }), aft = RF.findRoute(un, so);
+  check('운정중앙→서울역 지금 20분 (창릉 무정차)', now && now.minutes === 20, now && now.minutes);
+  check('운정중앙→서울역 개통 후 22분 (창릉 정차 1.8분)', aft && aft.minutes === 22 && aft.path.includes(cn), aft && aft.minutes);
+  check('개통 후에도 갈아타기 0번 (같은 GTX-A 열차)', aft && aft.transfers === 0, aft && aft.transfers);
+  check('창릉은 지금 갈 수 없다', RF.findRoute(cn, so, { openOnly: true }) === null);
+  const c2 = RF.findRoute(cn, so);
+  check('창릉→서울역 개통 후 9분 (3.1 + 5.4)', c2 && c2.minutes === 9, c2 && c2.minutes);
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

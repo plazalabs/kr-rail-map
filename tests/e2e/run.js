@@ -24,6 +24,8 @@ const fs = require('fs');
 const os = require('os');
 const { start } = require('./lib/serve');
 const { findChrome } = require('./lib/cdp');
+const Profiles = require('./lib/profiles');
+const MB = b => (b / 1048576).toFixed(0) + 'MB';
 
 // [이름, 파일, 추가 환경 변수, 설명]
 const CHECKS = [
@@ -92,6 +94,9 @@ function runOne(file, env) {
     base = `http://127.0.0.1:${port}/index.html`;
   }
   const out = process.env.E2E_OUT || path.join(os.tmpdir(), 'kr-rail-map-e2e');
+  // 크롬 임시 프로필 — 주인이 끝난 옛 프로필을 먼저 치운다 (돌고 있는 다른 e2e 의 프로필은 건드리지 않는다)
+  const pf0 = Profiles.stats(), sw0 = Profiles.sweep(), pf1 = Profiles.stats();
+  console.log(`크롬 임시 프로필(시작): ${pf0.count}개 ${MB(pf0.bytes)} → 옛 것 ${sw0.removed}개 지움 → ${pf1.count}개 ${MB(pf1.bytes)}${sw0.inUse ? ` (다른 실행이 쓰는 중 ${sw0.inUse}개)` : ''}`);
   console.log(`e2e: ${todo.length}개 항목 · 주소 ${base} · 크롬 ${chrome} · 결과 ${out}\n`);
 
   const results = [];
@@ -111,6 +116,8 @@ function runOne(file, env) {
     console.log(`◀ ${name}: ${ok ? (flaky ? 'PASS(재시도 후 — flaky)' : 'PASS') : 'FAIL'} (${r.sec}s${r.summary ? `, 판정 ${r.summary.pass} 통과 / ${r.summary.fail} 실패 / 미검증 ${r.summary.unv}` : ', 요약 없음'})\n`);
   }
   if (server) server.close();
+  const sw1 = Profiles.sweep(), pf2 = Profiles.stats();
+  console.log(`크롬 임시 프로필(끝): 남은 것 ${sw1.removed}개 지움 → ${pf2.count}개 ${MB(pf2.bytes)}${sw1.kept ? ` (실패 추적용 ${sw1.kept}개 보관, 최대 3)` : ''}`);
 
   const total = Math.round((Date.now() - T0) / 1000);
   console.log('──────── e2e 요약 ────────');

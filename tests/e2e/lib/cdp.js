@@ -39,7 +39,7 @@ function outDir(name) {
 }
 
 // invest: true 면 페이지가 뜨기 전에 투자 모드(localStorage krrail-mode=invest)로 맞춘다 (js/mode.js, 기본은 철도 모드)
-async function launch({ port = 9555, w = 1440, h = 1000, mobile = false, invest = false, guide = false } = {}) {
+async function launch({ port = 9555, w = 1440, h = 1000, mobile = false, invest = false, guide = false, tip = false } = {}) {
   const prof = path.join(os.tmpdir(), `kr-rail-map-e2e-prof-${port}-${process.pid}-${Date.now()}`);
   const args = [
     '--headless=new', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
@@ -74,6 +74,8 @@ async function launch({ port = 9555, w = 1440, h = 1000, mobile = false, invest 
   if (+process.env.E2E_CPU_THROTTLE > 1) await send('Emulation.setCPUThrottlingRate', { rate: +process.env.E2E_CPU_THROTTLE });
   // 처음 온 사람 안내 카드(js/guide.js)는 다른 점검의 클릭을 가릴 수 있어 기본으로 '본 것' 으로 둔다. guide 점검만 끈다(guide: true)
   if (!guide) await send('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('krrail-guide-seen', '1'); } catch (e) {}` });
+  // 투자 모드 첫 안내(js/mode.js)도 같은 이유로 기본 '본 것'. first-hints 점검만 끈다(tip: true)
+  if (!tip) await send('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('krrail-invest-tip-seen', '1'); } catch (e) {}` });
   if (invest) await send('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('krrail-mode', 'invest'); } catch (e) {}` });
   if (mobile) await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true });
   await send('Browser.grantPermissions', { permissions: ['geolocation', 'clipboardReadWrite', 'clipboardSanitizedWrite'] }).catch(() => {});

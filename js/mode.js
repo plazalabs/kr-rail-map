@@ -40,6 +40,26 @@
     }
     applyDom();
     if (changed) listeners.slice().forEach(function (fn) { try { fn(mode); } catch (e) { /* 다른 구독자 보호 */ } });
+    // 사용자가 직접 켰을 때만(공유 링크 ?mode=invest 는 제외) — 무엇이 보이는지 한 번 안내
+    if (changed && next === 'invest' && persist !== false) showTip();
+  }
+
+  // 투자 모드 첫 안내 (2026-11-11 사용성 점검 B) — 평생 한 번. 닫기·20초 뒤 자동으로 사라짐
+  var TIP_KEY = 'krrail-invest-tip-seen';
+  function showTip() {
+    if (typeof document === 'undefined' || !document.body || document.getElementById('invest-tip')) return;
+    try { if (global.localStorage.getItem(TIP_KEY) === '1') return; global.localStorage.setItem(TIP_KEY, '1'); } catch (e) { /* 저장 못 해도 한 번은 보여 준다 */ }
+    var box = document.createElement('div');
+    box.id = 'invest-tip';
+    box.setAttribute('role', 'status');
+    box.innerHTML = '<p><b>🏠 투자 모드를 켰어요.</b> 역을 누르면 맨 위에 <b>평당 시세 · 전세가율 · 강남까지 시간</b>이 보여요. ' +
+      '지도 전체를 전세가율로 색칠하려면 왼쪽 목록(휴대폰은 ☰)의 <b>‘전세가율 색칠’</b>을 켜세요. ' +
+      '통근권 목록은 시세·전세가율 순으로 정렬돼요.</p><button type="button">알겠어요</button>';
+    var timer = null;
+    function close() { if (timer) clearTimeout(timer); if (box.parentNode) box.parentNode.removeChild(box); }
+    box.querySelector('button').addEventListener('click', close);
+    timer = setTimeout(close, 20000);
+    document.body.appendChild(box);
   }
 
   function toggle() { set(isInvest() ? 'rail' : 'invest'); }
@@ -72,6 +92,7 @@
     onChange: onChange,
     fromUrl: start.fromUrl,
     KEY: KEY,
+    TIP_KEY: TIP_KEY,
     _resolve: resolve
   };
 })(typeof window !== 'undefined' ? window : this);

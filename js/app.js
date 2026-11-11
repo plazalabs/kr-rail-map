@@ -1455,6 +1455,12 @@ map.on('load', async () => {
     // 노선도 카드의 출발·도착 — 역 상세 패널과 같은 경로(역 ID 로 지정 → 길찾기 패널 열기)
     DiagramMode.onAction = (action, stationName, stationId) => {
       if (action === 'from' || action === 'to') routeFromStation(stationName, action, stationId);
+      else if (action === 'info') {
+        const s = (stationId && STATIONS.find(x => x.properties.id === stationId)) || STATIONS.find(x => x.properties.name_ko === stationName);
+        if (!s) return;
+        map.easeTo({ center: s.geometry.coordinates, zoom: Math.max(map.getZoom(), 13) });
+        showStation(s);
+      }
     };
   }
   if (typeof StationDetail !== 'undefined') {

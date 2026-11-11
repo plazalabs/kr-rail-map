@@ -518,7 +518,7 @@ const DiagramMode = (() => {
     legend.className = 'dg-legend';
     legend.innerHTML = '<span><i style="background:#16191d"></i>환승역</span>' +
       '<span><i style="background:#5b626b"></i>일반역</span>' +
-      '<span>역을 클릭하면 노선 정보가 표시됩니다</span>';
+      '<span class="dg-tip">역을 누르면 지나는 노선을 보고, 출발·도착으로 정하거나 역 정보를 열 수 있어요</span>';
 
     overlay.append(bar, scroll, legend);
     host.appendChild(overlay);
@@ -681,6 +681,7 @@ const DiagramMode = (() => {
         '<div style="display:flex;gap:5px;margin-top:8px">' +
         '<button data-act="from" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:12px;font-weight:600;color:var(--text)">출발</button>' +
         '<button data-act="to" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:12px;font-weight:600;color:var(--text)">도착</button>' +
+        '<button data-act="info" style="flex:1.3;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:12px;font-weight:600;color:var(--text)">역 정보</button>' +
         '</div>';
       card.querySelectorAll('button').forEach(b => {
         b.onclick = ev => {
@@ -689,6 +690,7 @@ const DiagramMode = (() => {
           exit();
           // 이름이 아니라 역 ID 로 넘긴다 (동명역 구분 — 역 상세 패널의 onAction 과 같은 방식)
           if (typeof api.onAction === 'function') { api.onAction(act, name, sid); return; }
+          if (act === 'info') return;
           const el = document.getElementById(act === 'from' ? 'route-from' : 'route-to');
           if (el) { el.value = name; if (sid) el.dataset.sid = sid; }
           const rp = document.getElementById('route-panel');

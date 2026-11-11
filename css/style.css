@@ -842,7 +842,8 @@ body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
   .dg-bar .dg-hint { display: none; }
   .dg-bar .dg-title { font-size: 13px; }
   .dg-bar button { padding: 6px 9px; font-size: 12px; }
-  .dg-legend { display: none; }
+  .dg-legend { padding: 6px 10px; font-size: 11px; }
+  .dg-legend span:not(.dg-tip) { display: none; }
 }
 
 /* ---------- 경로 역 라벨 (HTML 마커) ---------- */
@@ -1052,3 +1053,22 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
   #tb-more[hidden] { display: none; }
 }
 
+/* ---------- 투자 모드 처음 켤 때 한 번 뜨는 안내 (js/mode.js) ---------- */
+#invest-tip {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  z-index: 400; width: min(520px, calc(100vw - 32px)); box-sizing: border-box;
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px 14px; border-radius: 12px;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  font-size: 13px; line-height: 1.5;
+}
+#invest-tip p { margin: 0; flex: 1; }
+#invest-tip button {
+  flex: 0 0 auto; padding: 6px 10px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--input); color: var(--text);
+  font-size: 12.5px; font-weight: 600;
+}
+@media (max-width: 640px) {
+  #invest-tip { bottom: auto; top: 12px; font-size: 12.5px; }
+}

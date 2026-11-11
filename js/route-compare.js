@@ -220,6 +220,7 @@ const RouteCompare = (() => {
       if (u === toId) { bestK = uk; break; }
       for (const e of (RF.adjacency().get(u) || [])) {
         if (openOnly && !e.open) continue;
+        if (!openOnly && e.nowOnly) continue;   // 개통 후엔 새 역에 선다 (route.js NOW_ONLY_SPANS)
         let nt, nl;
         if (e.walk) { nt = t + 1; nl = null; }
         else if (cl === null || RF.sameService(cl, e.lineId)) { nt = t; nl = e.lineId; }
@@ -273,6 +274,7 @@ const RouteCompare = (() => {
       if (u === toId) { bestK = uk; break; }
       for (const e of (RF.adjacency().get(u) || [])) {
         if (openOnly && !e.open) continue;
+        if (!openOnly && e.nowOnly) continue;   // 개통 후엔 새 역에 선다 (route.js NOW_ONLY_SPANS)
         const nl = e.walk ? null : e.lineId;
         const transfer = !e.walk && cl !== null && !RF.sameService(cl, nl);
         // KTX 는 km당 요금이 수도권 전철의 6배쯤 된다. 같은 거리라도 훨씬 비싸므로

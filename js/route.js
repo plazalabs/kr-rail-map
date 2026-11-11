@@ -106,6 +106,9 @@ const RouteFinder = (() => {
       // 한 표에 [서울역, null] 을 두면 서울역→수서 간선이 생기지 않는다 (2026-11-10).
       ['서울역',null],['수서',6.4],['성남',6.4],['구성',6.2],['동탄',null]],
     // 미개통. 2027년 개통 때는 삼성 무정차, 삼성 정차는 2028년 예정 — '개통 후' 는 최종 계획(삼성 정차) 기준.
+    // 창릉역(2030 개통 예정) — 지금 GTX-A 는 대곡→연신내 5.8분 무정차. 개통 후 창릉에 서면 정차 1.79분이 붙어 7.6분,
+    // 그것을 (거리 + 1.79/0.413) 비율로 나눈다: 대곡~창릉 6.6km, 창릉~연신내 3.3km (data/add_changneung.js)
+    'gtx-a-changneung': [['대곡',4.5],['창릉',3.1],['연신내',null]],
     'gtx-a-seoul-suseo': [['서울역',6.1],['삼성',3.6],['수서',null]],
     'gtx-b': [
       ['인천대입구',6.1],['인천시청',3.7],['부평',4.8],['부천종합운동장',5.5],['신도림',3.1],['여의도',3.7],['용산',3],['서울역',5.4],['청량리',3.6],['상봉',4.8],['별내',3.3],['왕숙',5.3],['평내호평',4.6],['마석',null]],
@@ -136,6 +139,7 @@ const RouteFinder = (() => {
   // 묶음 안에서 노선이 바뀌는 것은 환승이 아니다 — 환승 시간·횟수에 넣지 않는다.
   const THROUGH = {
     'gtx-a-seoul-suseo': 'great-train-express-line-a',
+    'gtx-a-changneung': 'great-train-express-line-a',   // 창릉 정차 (2030 예정) — 같은 GTX-A 열차
     'gtx-a-pyeongtaek': 'great-train-express-line-a',
   };
   function serviceOf(lineId) { return THROUGH[lineId] || lineId; }
@@ -509,7 +513,18 @@ const RouteFinder = (() => {
         adj.get(b).push(rev);
       }
     });
+    // 새 역이 생기면 그 구간을 '서지 않고' 지나는 길은 개통 후에는 없다 (모든 열차가 선다).
+    // 지금 길(무정차)은 '지금' 계산에만 쓰도록 nowOnly 로 표시한다 — 창릉(2030) 개통 후 운정중앙→서울역 20 → 22분.
+    NOW_ONLY_SPANS.forEach(({ lid, a: na, b: nb, by }) => {
+      if (activeIds && !activeIds.has(by)) return;
+      const a = resolveOn(lid, na), b = resolveOn(lid, nb);
+      if (!a || !b) return;
+      [[a, b], [b, a]].forEach(([x, y]) => (adj.get(x) || []).forEach(e => { if (e.to === y && e.lineId === lid) e.nowOnly = true; }));
+    });
   }
+  const NOW_ONLY_SPANS = [
+    { lid: 'great-train-express-line-a', a: '대곡', b: '연신내', by: 'gtx-a-changneung' },
+  ];
 
   // GTX·고속 계통은 category 가 urban 이라 표의 속도(48km/h)를 쓰면
   // 일반철도(62km/h)보다 느려져 엉뚱한 우회 경로가 잡힌다. 따로 처리한다.
@@ -602,6 +617,7 @@ const RouteFinder = (() => {
       for (const e of (adj.get(u) || [])) {
         // 미개통 노선은 지금 탈 수 없다. 도보 환승은 언제나 열려 있다.
         if (openOnly && !e.open) continue;
+        if (!openOnly && e.nowOnly) continue;   // 개통 후엔 새 역에 선다 (창릉)
         const nl = e.lineId || null;
         let cost = edgeMinutes(e);
         // 환승 비용: 앞뒤 모두 노선이 있고 서로 다를 때만. 환승은 지금 있는
@@ -728,6 +744,7 @@ const RouteFinder = (() => {
       if (prev == null || d < prev[0]) best.set(u, [d, m]);
       for (const e of (adj.get(u) || [])) {
         if (openOnly && !e.open) continue;
+        if (!openOnly && e.nowOnly) continue;   // 개통 후엔 새 역에 선다 (창릉)
         const nl = e.lineId || null;
         let cost = edgeMinutes(e), shown = edgeMinutes(e);
         if (line !== START && line !== null && nl !== null && !sameService(nl, line)) {

@@ -4,7 +4,7 @@
  "note": "노선·역 목록이 어디서 확인되는지의 증빙. 배포 데이터가 아니다. 확인 원천은 공공데이터포털 역위치 CSV(이용허락 제한 없음), OSM 노선 relation 정차점, OSM 역 노드의 선형 근접도(ODbL) 셋이다.",
  "near_km": 0.3,
  "summary": {
-  "lines": 80,
+  "lines": 81,
   "open_lines": 66,
   "open_pairs": 1474,
   "open_confirmed": 1465,
@@ -340,6 +340,19 @@
   "gtx-a-seoul-suseo": {
    "name": "GTX-A 서울역~수서",
    "status": "construction",
+   "stations": 3,
+   "confirmed": 3,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-a-changneung": {
+   "name": "GTX-A 창릉 정차",
+   "status": "planned",
    "stations": 3,
    "confirmed": 3,
    "sources": [

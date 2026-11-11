@@ -59,7 +59,57 @@
       '갱신 계약(인상 상한 5%)과 월세는 뺐습니다. 80% 이상이면 집값이 조금만 내려도 보증금을 돌려받기 어려울 수 있습니다.</div>';
   }
 
+  /* 지도 색칠 레이어 — 역마다 전세가율로 색을 칠한다 (짝 3쌍 이상인 역만). 사이드바 '전세가율 색칠' 체크칸.
+   * 배경 지도를 바꾸면 레이어가 지워지므로 restore() 로 다시 단다 (app.js restoreCustomLayers). */
+  var layerOn = false, mapRef = null, stationsRef = null;
+  var LAYER = 'jeonse-ratio';
+  function geojson() {
+    var feats = [];
+    (stationsRef || []).forEach(function (f) {
+      var s = data && data.stations[f.properties.id];
+      if (!s || s.r == null) return;
+      feats.push({ type: 'Feature', geometry: f.geometry,
+        properties: { r: s.r, label: Math.round(s.r * 100) + '%', name: f.properties.name_ko } });
+    });
+    return { type: 'FeatureCollection', features: feats };
+  }
+  function addLayer() {
+    if (!mapRef || !ready || !layerOn || mapRef.getSource(LAYER)) return;
+    try {
+      mapRef.addSource(LAYER, { type: 'geojson', data: geojson() });
+      mapRef.addLayer({ id: LAYER, type: 'circle', source: LAYER, paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 5, 13, 10],
+        'circle-color': ['step', ['get', 'r'], '#1e63d6', 0.5, '#2e9e4f', 0.7, '#f59e0b', 0.8, '#c62828'],
+        'circle-opacity': 0.85, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.5 } });
+      mapRef.addLayer({ id: LAYER + '-label', type: 'symbol', source: LAYER, minzoom: 11.5,
+        layout: { 'text-field': ['get', 'label'], 'text-size': 10.5, 'text-offset': [0, -1.4], 'text-font': ['Noto Sans Regular'] },
+        paint: { 'text-color': '#1f2328', 'text-halo-color': '#ffffff', 'text-halo-width': 1.4 } });
+    } catch (e) { /* 스타일 교체 중이면 restore() 에서 다시 */ }
+  }
+  function removeLayer() {
+    if (!mapRef) return;
+    [LAYER + '-label', LAYER].forEach(function (id) { try { if (mapRef.getLayer(id)) mapRef.removeLayer(id); } catch (e) { /* 무시 */ } });
+    try { if (mapRef.getSource(LAYER)) mapRef.removeSource(LAYER); } catch (e) { /* 무시 */ }
+  }
+  function setLayer(on) {
+    layerOn = !!on;
+    var lg = document.getElementById('jn-legend');
+    if (lg) lg.hidden = !layerOn;
+    if (!layerOn) { removeLayer(); return; }
+    load().then(function () { addLayer(); });
+  }
+  function initLayer(map, stations) {
+    mapRef = map; stationsRef = stations;
+    var cb = document.getElementById('layer-jeonse');
+    if (cb && !cb.__jn) {
+      cb.__jn = true;
+      cb.addEventListener('change', function () { setLayer(cb.checked); });
+    }
+  }
+  function restore() { if (layerOn) addLayer(); }
+
   global.StationJeonse = {
+    initLayer: initLayer, setLayer: setLayer, restore: restore, isLayerOn: function () { return layerOn; },
     load: load,
     isReady: function () { return ready; },
     of: of,

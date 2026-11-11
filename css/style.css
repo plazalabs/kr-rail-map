@@ -1016,3 +1016,8 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
 .qs-item.active { border-color: var(--accent); background: var(--accent-weak); }
 #guide-card .gd-foot { margin-top: 6px; font-size: 11.5px; color: var(--text-2, var(--muted)); }
 
+/* 전세가율 색칠 범례 (사이드바 지도 레이어) */
+.jn-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--text-2, var(--muted)); margin: 2px 0 4px 22px; }
+.jn-legend[hidden] { display: none; }
+.jn-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 3px; vertical-align: -1px; }
+

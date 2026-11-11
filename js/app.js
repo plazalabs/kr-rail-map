@@ -1452,6 +1452,7 @@ map.on('load', async () => {
   if (typeof InvestAnalyzer !== 'undefined') InvestAnalyzer.init(map, STATIONS, LINES);
   if (typeof CoverageMap !== 'undefined') CoverageMap.init(map, STATIONS, LINES);
   if (typeof CommuteMap !== 'undefined') CommuteMap.init(map, STATIONS);
+  if (typeof StationJeonse !== 'undefined' && StationJeonse.initLayer) StationJeonse.initLayer(map, STATIONS);   // 전세가율 색칠 레이어
   if (typeof StationArea !== 'undefined') { StationArea.init(map, STATIONS); StationArea.setLines([...visibleLines]); }
   if (!focusLineFromUrl()) restoreFromUrl();
 });
@@ -1464,6 +1465,7 @@ function restoreCustomLayers(styleReady) {
     addDataLayers(); updateFilters(); DrawTools.restyle();
     addExitLayers();
     if (typeof StationArea !== 'undefined') StationArea.restore();
+    if (typeof StationJeonse !== 'undefined' && StationJeonse.restore) StationJeonse.restore();
   }
 }
 map.on('style.load', () => restoreCustomLayers(true));

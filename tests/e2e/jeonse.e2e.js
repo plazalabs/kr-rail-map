@@ -29,6 +29,15 @@ async function open(b, name, line) {
   const js = await open(b, '잠실', 'seoul-subway-line-2');
   const jsPct = js && +((js.match(/(\d+)%/) || [])[1]);
   R.check('잠실 전세가율 < 일산', jsPct > 0 && jsPct < ilPct, { jsPct, ilPct });
+  // 지도 색칠 레이어: 켜면 점이 칠해지고 범례가 보인다, 배경을 바꿔도 남는다, 끄면 사라진다
+  await b.evaluate(`(() => { const c = document.getElementById('layer-jeonse'); c.checked = true; c.dispatchEvent(new Event('change')); })()`);
+  for (let i = 0; i < 30; i++) { await sleep(250); if (await b.evaluate(`!!map.getLayer('jeonse-ratio')`)) break; }
+  const lay = await b.evaluate(`({ layer: !!map.getLayer('jeonse-ratio'), n: (map.getSource('jeonse-ratio') && map.getSource('jeonse-ratio')._data.features.length) || 0, legend: !document.getElementById('jn-legend').hidden })`);
+  R.check('전세가율 색칠: 켜면 역 300곳 이상 칠해지고 범례가 보인다', lay.layer && lay.n >= 300 && lay.legend, lay);
+  await b.evaluate(`document.querySelector('#toolbar [data-style=satellite]').click(); true`); await sleep(3000);
+  R.check('배경을 위성으로 바꿔도 색칠이 남는다', await b.evaluate(`!!map.getLayer('jeonse-ratio')`));
+  await b.evaluate(`(() => { const c = document.getElementById('layer-jeonse'); c.checked = false; c.dispatchEvent(new Event('change')); })()`); await sleep(300);
+  R.check('끄면 색칠·범례가 사라진다', await b.evaluate(`!map.getLayer('jeonse-ratio') && document.getElementById('jn-legend').hidden`));
   b.close(); await sleep(800);
   const r = await launch({ port: 9802, w: 1440, h: 900 });
   await r.send('Network.setBypassServiceWorker', { bypass: true });

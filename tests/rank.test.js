@@ -126,6 +126,7 @@ check('지역 버튼 (서울·수도권·전국)', ['seoul', 'capital', 'all'].e
 check('기다리는 시간을 뺐다고 밝힘', /기다리는 시간은 넣지 않았습니다/.test(html));
 check('역을 누르면 지도로 (?st=)', /\.\/\?st=/.test(html));
 check('밖에서 불러오는 스크립트 없음', !/<script[^>]+src="https?:/.test(html));
+check('링크 미리보기 그림 og-rank.jpg (1200×630, 300KB 아래)', /og:image" content="[^"]+\/image\/og-rank\.jpg"/.test(html) && fs.existsSync(path.join(ROOT, 'image/og-rank.jpg')) && fs.statSync(path.join(ROOT, 'image/og-rank.jpg')).size < 300 * 1024);
 // 글자 대비 (WCAG AA 4.5) — 라이트 모드 등급 글자색(--i-*)이 흰 바탕·연한 등급 바탕 위에서 (2026-11-12)
 {
   const v = name => { const m = new RegExp('--' + name + ':(#[0-9a-fA-F]{6})').exec(html); return m && m[1]; };

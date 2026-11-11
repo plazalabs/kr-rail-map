@@ -661,6 +661,13 @@ function restoreFromUrl() {
     if (to) setRouteStation(document.getElementById('route-to'), ts || to);
     if (from && to) setTimeout(() => document.getElementById('route-go').click(), 800);
   }
+  // ?st=역ID — 교통 순위표(rank.html)에서 역을 누르면 그 역으로 가서 상세를 연다
+  const sid = q.get('st');
+  const sf = sid && stationById(sid);
+  if (sf) {
+    map.flyTo({ center: sf.geometry.coordinates, zoom: Math.max(map.getZoom(), 13), duration: 0 });
+    setTimeout(() => showStation(sf), 300);
+  }
   const c = q.get('c');
   if (c) {
     const [lng, lat, z] = c.split(',').map(Number);
@@ -1044,8 +1051,8 @@ document.getElementById('route-go').addEventListener('click', () => {
     }
     // 이 구간을 내린 뒤 갈아타는 시간. 역마다 다르다 (data/transfer-times.json).
     if (leg.transferAfter > 0) {
-      html += (r.legs[idx + 1] && RouteFinder.isPlatformTransfer && RouteFinder.isPlatformTransfer(leg.to, leg.lineId, r.legs[idx + 1].lineId))
-        ? `<div class="leg leg-transfer leg-platform">↔ <b>${b}</b>역 같은 승강장 평면환승 · 약 20~30초</div>`
+      html += leg.platform
+        ? `<div class="leg leg-transfer leg-platform">↔ <b>${b}</b>역 같은 승강장 평면환승 · 약 10초</div>`
         : `<div class="leg leg-transfer">🚶 <b>${b}</b>역 내 환승 · 도보 약 ${leg.transferAfter}분</div>`;
     }
   });

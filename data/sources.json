@@ -648,11 +648,12 @@
       "licence": "own",
       "obtained": "공개된 공식 소요 시간을 기준으로 구간별 추정, 선형을 따라 잰 길이",
       "snapshot": "2026-10",
-      "used_for": "역 사이 소요 시간, 환승 횟수, 역에서 도심까지 걸리는 시간, 노선 연장",
+      "used_for": "역 사이 소요 시간, 환승 횟수, 역에서 도심까지 걸리는 시간, 교통 순위표, 노선 연장",
       "feeds": [],
       "affects": [
         "data/lines.geojson",
-        "data/access.json"
+        "data/access.json",
+        "data/rank.json"
       ],
       "fields": [
         "lines[].length_km",

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>교통 순위표 | 한국철도맵</title>
+<meta name="description" content="GTX 시대, 3대 업무지구(CBD·YBD·GBD)에 가장 빨리 닿는 역은 어디일까. 수도권·전국 역을 지금과 개통 후로 나눠 순위를 매겼습니다.">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="canonical" href="https://plazalabs.github.io/kr-rail-map/rank.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="한국철도맵">
+<meta property="og:title" content="교통 순위표 — GTX 시대 3대 업무지구에 가장 가까운 역 | 한국철도맵">
+<meta property="og:description" content="CBD·YBD·GBD까지 몇 분? 지금과 개통 후 순위, 가장 많이 오르는 역.">
+<meta property="og:url" content="https://plazalabs.github.io/kr-rail-map/rank.html">
+<meta property="og:image" content="https://plazalabs.github.io/kr-rail-map/image/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b57d0">
+<style>
+:root{--bg:#fff;--surface:#f6f7f9;--card:#fff;--text:#16191d;--text2:#4a5158;--muted:#868e96;--border:#e3e6ea;
+--accent:#0b57d0;--accentbg:#e8f0fe;--up:#0f7b3f;--upbg:#e6f4ea;--down:#b42318;--downbg:#fdecea;--newc:#7a3fd0;--newbg:#f1eafd;
+--gold:#b07d00;--goldbg:#fff6da;--bar:#0b57d0;--bar2:#c9d7f5}
+@media(prefers-color-scheme:dark){:root{--bg:#14171a;--surface:#1c2024;--card:#191d21;--text:#e8eaed;--text2:#b3bac1;--muted:#8b939b;
+--border:#2c3238;--accent:#8ab0ff;--accentbg:#1b2840;--up:#6fd59a;--upbg:#13301f;--down:#f19a92;--downbg:#3a1a18;--newc:#c4a3ff;--newbg:#2a1f3d;
+--gold:#e8c35a;--goldbg:#33290f;--bar:#8ab0ff;--bar2:#2b3a57}}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);
+background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button{font:inherit;color:inherit}
+.wrap{max-width:880px;margin:0 auto;padding:0 16px}
+header.top{border-bottom:1px solid var(--border);background:var(--surface)}
+header.top .wrap{padding:13px 16px;display:flex;align-items:center;gap:10px}
+.logo{font-weight:700;font-size:16px;text-decoration:none;letter-spacing:-.02em}
+.logo i{display:inline-block;width:4px;height:15px;border-radius:2px;margin-right:7px;vertical-align:-2px;
+background:linear-gradient(180deg,#0052a4 0 33%,#00a84d 33% 66%,#ef7c1c 66% 100%)}
+header.top nav{margin-left:auto;display:flex;gap:14px;font-size:13px}
+header.top nav a{text-decoration:none;color:var(--text2)}
+header.top nav a[aria-current]{color:var(--accent);font-weight:700}
+h1{font-size:27px;line-height:1.3;letter-spacing:-.03em;margin:26px 0 6px}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{color:var(--text2);font-size:14.5px;margin:0 0 18px}
+.lede b{color:var(--text)}
+/* 조작부 */
+.ctl{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 10px;border-bottom:1px solid var(--border)}
+.ctl-row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-bottom:8px}
+.ctl-row:last-child{margin-bottom:0}
+.lbl{font-size:12px;color:var(--muted);min-width:34px}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:6px 11px;border-radius:7px;font-size:13px;cursor:pointer;color:var(--text2);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--text);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button:focus-visible,.row:focus-visible,select:focus-visible,input:focus-visible,.more:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+select,input[type=search]{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--text)}
+input[type=search]{flex:1;min-width:140px}
+.hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+/* 1~3위 */
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0 6px}
+.pod{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 14px 12px;text-decoration:none;display:block;position:relative;overflow:hidden}
+.pod:hover{border-color:var(--accent)}
+.pod .medal{font-size:12px;font-weight:700;color:var(--gold);background:var(--goldbg);border-radius:99px;padding:2px 8px;display:inline-block}
+.pod .nm{font-size:19px;font-weight:800;letter-spacing:-.03em;margin:8px 0 2px}
+.pod .rg{font-size:12px;color:var(--muted)}
+.pod .sc{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.03em;margin-top:6px}
+.pod .sc small{font-size:13px;font-weight:600;color:var(--muted);margin-left:2px}
+.pod .tm{font-size:12px;color:var(--text2);margin-top:2px}
+/* 목록 */
+.list{list-style:none;margin:10px 0 0;padding:0}
+.row{display:grid;grid-template-columns:52px 1fr 92px;gap:4px 12px;align-items:center;padding:12px 6px;border-bottom:1px solid var(--border);
+text-decoration:none;border-radius:8px}
+.row:hover{background:var(--surface)}
+.rk{text-align:center;font-variant-numeric:tabular-nums}
+.rk b{display:block;font-size:19px;font-weight:800;letter-spacing:-.02em}
+.rk .tie{display:block;font-size:10.5px;color:var(--muted)}
+.chg{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px;margin-top:3px;white-space:nowrap}
+.chg.up{color:var(--up);background:var(--upbg)}
+.chg.down{color:var(--down);background:var(--downbg)}
+.chg.same{color:var(--muted);background:var(--surface)}
+.chg.new{color:var(--newc);background:var(--newbg)}
+.who{min-width:0}
+.who .nm{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.who .rg{font-size:12px;color:var(--muted);margin-left:6px;font-weight:400}
+.lines{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.ln{font-size:10.5px;font-weight:700;color:#fff;border-radius:4px;padding:1px 5px;white-space:nowrap;line-height:1.5}
+.ln.plan{background:transparent!important;border:1.5px dashed currentColor}
+.tms{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin-top:5px;font-variant-numeric:tabular-nums}
+.tms span b{color:var(--text);font-weight:700}
+.tms s{color:var(--muted);margin-right:2px}
+.tms .hi{color:var(--accent)}
+.scr{text-align:right;font-variant-numeric:tabular-nums}
+.scr b{font-size:22px;font-weight:800;letter-spacing:-.03em}
+.scr small{font-size:11px;color:var(--muted)}
+.scr .gain{display:block;font-size:11.5px;color:var(--up);font-weight:600}
+.bar{grid-column:2 / 4;height:5px;background:var(--surface);border-radius:99px;overflow:hidden;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.bar i.n{background:var(--bar2)}
+.bar i.a{background:var(--bar)}
+.more{display:block;width:100%;margin:14px 0 0;padding:11px;border:1px solid var(--border);border-radius:10px;background:var(--card);cursor:pointer;font-size:14px}
+.empty{padding:40px 0;text-align:center;color:var(--muted)}
+.note{margin:34px 0 60px;padding:16px 18px;background:var(--surface);border-radius:12px;font-size:13px;color:var(--text2)}
+.note h2{font-size:14px;margin:0 0 8px;color:var(--text)}
+.note ul{margin:0;padding-left:18px}
+.note li{margin-bottom:5px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media(max-width:600px){
+h1{font-size:22px}
+.podium{grid-template-columns:1fr;gap:8px}
+.pod{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0 10px;padding:11px 13px}
+.pod .nm{margin:0;font-size:17px}.pod .sc{margin:0;font-size:24px;grid-row:1 / 3;grid-column:3}
+.pod .rg,.pod .tm{grid-column:2}.pod .medal{grid-row:1 / 3}
+.row{grid-template-columns:44px 1fr 74px;gap:3px 8px;padding:11px 2px}
+.scr b{font-size:19px}
+.seg button{padding:6px 8px;font-size:12.5px}
+.lbl{display:none}
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap"><a class="logo" href="./"><i></i>한국철도맵</a>
+<nav><a href="./">지도</a><a href="rank.html" aria-current="page">교통 순위표</a><a href="data.html">자료</a></nav></div></header>
+<main class="wrap">
+<h1>GTX 시대, <em>3대 업무지구</em>에 가장 가까운 역</h1>
+<p class="lede">역에서 <b>CBD</b>(시청·광화문·종각·서울역), <b>YBD</b>(여의도), <b>GBD</b>(강남·역삼·선릉·삼성)까지
+걸리는 시간으로 점수를 매겼습니다. <b>100점에서 평균 분을 뺀 값</b>이라 1분 빠르면 1점 높습니다.</p>
+
+<div class="ctl" role="region" aria-label="순위 기준">
+  <div class="ctl-row">
+    <span class="lbl" id="l-w">기준</span>
+    <div class="seg" role="group" aria-labelledby="l-w" data-k="w">
+      <button data-v="avg">평균</button><button data-v="cbd">CBD 중시</button><button data-v="ybd">YBD 중시</button><button data-v="gbd">GBD 중시</button>
+    </div>
+  </div>
+  <div class="ctl-row">
+    <span class="lbl" id="l-t">시점</span>
+    <div class="seg" role="group" aria-labelledby="l-t" data-k="t">
+      <button data-v="aft">개통 후</button><button data-v="now">지금</button>
+    </div>
+    <span class="lbl" id="l-r">지역</span>
+    <div class="seg" role="group" aria-labelledby="l-r" data-k="r">
+      <button data-v="seoul">서울</button><button data-v="capital">수도권</button><button data-v="all">전국</button>
+    </div>
+  </div>
+  <div class="ctl-row">
+    <label class="sr" for="sort">정렬</label>
+    <select id="sort">
+      <option value="rank">순위순</option>
+      <option value="rise">순위 많이 오르는 순</option>
+      <option value="gain">점수 많이 오르는 순</option>
+    </select>
+    <label class="sr" for="q">역 이름 찾기</label>
+    <input type="search" id="q" placeholder="역 이름·구 찾기 (예: 광운대, 노원구)" autocomplete="off">
+  </div>
+  <p class="hint" id="hint"></p>
+</div>
+
+<div class="podium" id="podium" aria-label="1~3위"></div>
+<ol class="list" id="list" aria-live="polite"></ol>
+<button class="more" id="more" hidden>더 보기</button>
+
+<section class="note">
+<h2>어떻게 계산했나요</h2>
+<ul>
+<li><b>시간</b> = 열차를 타고 가는 시간 + 갈아탈 때 걷는 시간. 열차를 <b>기다리는 시간은 넣지 않았습니다</b>(모든 역을 같은 기준으로 비교하려고).</li>
+<li>업무지구는 역 하나가 아니라 묶음입니다. 묶음 안에서 <b>가장 빨리 닿는 역</b>의 시간을 씁니다.</li>
+<li><b>점수</b> = 100 − 세 곳 평균 분. <b>○○ 중시</b>는 그곳을 두 번 세서 평균을 냅니다(예: GBD 중시 = (CBD + YBD + 2×GBD) ÷ 4).</li>
+<li><b>개통 후</b>는 공사 중·계획 노선(GTX A·B·C 등)이 모두 열렸다고 보고 계산한 값입니다. 계획은 바뀔 수 있습니다.</li>
+<li>점수가 같으면 <b>공동 순위</b>입니다. ▲는 지금보다 개통 후에 순위가 오르는 칸 수입니다.</li>
+<li>실제 시각표가 아니라 추정값입니다. 역 사이 시간의 출처는 <a href="data.html">자료 페이지</a>에 적어 두었습니다.</li>
+</ul>
+</section>
+</main>
+
+<script src="js/rank.js"></script>
+<script>
+(() => {
+  'use strict';
+  const PAGE = 50;
+  const LABEL = { avg: '평균', cbd: 'CBD 중시', ybd: 'YBD 중시', gbd: 'GBD 중시' };
+  const REGION = { seoul: '서울', capital: '수도권(서울·경기·인천)', all: '전국' };
+  const DEST = ['CBD', 'YBD', 'GBD'];
+  const HI = { cbd: 0, ybd: 1, gbd: 2 };
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // 상태 — 주소창에 남겨서 링크로 나눌 수 있게
+  const qs = new URLSearchParams(location.search);
+  const st = {
+    w: LABEL[qs.get('w')] ? qs.get('w') : 'avg',
+    t: qs.get('t') === 'now' ? 'now' : 'aft',
+    r: REGION[qs.get('r')] ? qs.get('r') : 'capital',
+    sort: ['rank', 'rise', 'gain'].includes(qs.get('sort')) ? qs.get('sort') : 'rank',
+    q: qs.get('q') || '',
+    shown: PAGE,
+  };
+  let doc = null, lineInfo = {};
+
+  function saveUrl() {
+    const u = new URL(location.href);
+    const set = (k, v, d) => { if (v === d || !v) u.searchParams.delete(k); else u.searchParams.set(k, v); };
+    set('w', st.w, 'avg'); set('t', st.t, 'aft'); set('r', st.r, 'capital'); set('sort', st.sort, 'rank'); set('q', st.q, '');
+    history.replaceState(null, '', u);
+  }
+
+  function syncControls() {
+    document.querySelectorAll('.seg').forEach(g => {
+      const k = g.dataset.k;
+      g.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === st[k])));
+    });
+    $('sort').value = st.sort;
+    $('q').value = st.q;
+    // '지금' 순위를 볼 때는 오름 정렬이 뜻이 없다
+    $('sort').disabled = st.t === 'now';
+  }
+
+  function lineChips(ids) {
+    const list = (ids || []).map(id => ({ id, m: lineInfo[id] })).filter(x => x.m);
+    // GTX 를 앞에, 나머지는 이름순. 너무 많으면 5개 + 나머지 수
+    list.sort((a, b) => (/GTX/.test(b.m.n) - /GTX/.test(a.m.n)) || (a.m.n < b.m.n ? -1 : 1));
+    const seen = new Set();
+    const uniq = list.filter(x => { if (seen.has(x.m.n)) return false; seen.add(x.m.n); return true; });
+    const head = uniq.slice(0, 5).map(x => {
+      const plan = x.m.s && x.m.s !== 'open';
+      return '<span class="ln' + (plan ? ' plan' : '') + '" style="' + (plan ? 'color:' : 'background:') + esc(x.m.c || '#666') + '"' +
+        (plan ? ' title="개통 전"' : '') + '>' + esc(x.m.n) + '</span>';
+    });
+    if (uniq.length > 5) head.push('<span class="ln" style="background:#888">+' + (uniq.length - 5) + '</span>');
+    return head.join('');
+  }
+
+  function times(r) {
+    const cur = st.t === 'aft' ? r.aft.times : r.now.times;
+    const hi = HI[st.w];
+    return DEST.map((d, i) => {
+      const v = cur[i];
+      const before = st.t === 'aft' ? r.now.times[i] : null;
+      const old = (before != null && v != null && before > v) ? '<s>' + before + '</s>' : '';
+      return '<span' + (i === hi ? ' class="hi"' : '') + '>' + d + ' ' + old + '<b>' + (v == null ? '—' : v + '분') + '</b></span>';
+    }).join('');
+  }
+
+  function changeBadge(r) {
+    if (st.t !== 'aft') return '';
+    if (r.isNew) return '<span class="chg new" title="지금은 철도로 갈 수 없는 역">신규</span>';
+    if (r.change > 0) return '<span class="chg up" title="지금 ' + r.now.rank + '위 → 개통 후 ' + r.aft.rank + '위">▲' + r.change + '</span>';
+    if (r.change < 0) return '<span class="chg down" title="지금 ' + r.now.rank + '위 → 개통 후 ' + r.aft.rank + '위">▼' + (-r.change) + '</span>';
+    return '<span class="chg same">–</span>';
+  }
+
+  function link(r) { return './?st=' + encodeURIComponent(r.id); }
+
+  function render() {
+    if (!doc) return;
+    syncControls(); saveUrl();
+    const res = RankTable.compute(doc, { weight: st.w, region: st.r });
+    // '지금' 시점은 지금 순위로만 본다
+    let rows = res.rows;
+    if (st.t === 'now') {
+      rows = rows.filter(r => r.now.rank != null).map(r => Object.assign({}, r, { aft: r.now, tie: false }));
+      rows = RankTable.sortRows(rows, 'rank');
+      // 지금 시점의 공동 순위 표시
+      const cnt = new Map(); rows.forEach(r => cnt.set(r.aft.score, (cnt.get(r.aft.score) || 0) + 1));
+      rows.forEach(r => { r.tie = cnt.get(r.aft.score) > 1; });
+    } else {
+      rows = RankTable.sortRows(rows, st.sort === 'rank' ? 'after' : st.sort);
+    }
+    const total = st.t === 'now' ? res.totalNow : res.total;
+    const filtered = rows.filter(r => RankTable.matches(r, st.q));
+
+    $('hint').textContent = REGION[st.r] + ' ' + total.toLocaleString() + '역 · ' + LABEL[st.w] + ' · ' +
+      (st.t === 'aft' ? '개통 후' : '지금') + ' 기준' + (st.q ? ' · "' + st.q + '" ' + filtered.length + '곳' : '');
+
+    // 1~3위 카드 — 순위순·찾기 없을 때만
+    const pod = $('podium');
+    if (!st.q && st.sort === 'rank' || (!st.q && st.t === 'now')) {
+      pod.hidden = false;
+      pod.innerHTML = rows.slice(0, 3).map((r, i) =>
+        '<a class="pod" href="' + link(r) + '">' +
+        '<span class="medal">' + (r.tie ? '공동 ' : '') + r.aft.rank + '위</span>' +
+        '<div class="nm">' + esc(r.name) + '</div>' +
+        '<div class="rg">' + esc([r.region, r.sgg].filter(Boolean).join(' ')) + '</div>' +
+        '<div class="sc">' + r.aft.score.toFixed(1) + '<small>점</small></div>' +
+        '<div class="tm">' + DEST.map((d, j) => d + ' ' + (r.aft.times[j] == null ? '—' : r.aft.times[j] + '분')).join(' · ') + '</div></a>'
+      ).join('');
+    } else { pod.hidden = true; pod.innerHTML = ''; }
+
+    const body = (st.q || st.sort !== 'rank' || st.t === 'now') ? filtered : filtered.slice(3);
+    const list = $('list');
+    if (!filtered.length) {
+      list.innerHTML = '<li class="empty">찾는 역이 없어요. 지역을 <b>전국</b>으로 바꿔 보세요.</li>';
+      $('more').hidden = true; return;
+    }
+    const page = body.slice(0, st.shown);
+    list.innerHTML = page.map(r => {
+      const gain = (st.t === 'aft' && r.now.score != null && r.aft.score > r.now.score) ? '+' + (r.aft.score - r.now.score).toFixed(1) : '';
+      const pn = (st.t === 'aft' && r.now.score != null) ? r.now.score : null;
+      return '<li><a class="row" href="' + link(r) + '" aria-label="' + esc(r.name) + ' ' + r.aft.rank + '위 ' + r.aft.score.toFixed(1) + '점">' +
+        '<div class="rk"><b>' + r.aft.rank + '</b>' + (r.tie ? '<span class="tie">공동</span>' : '') + changeBadge(r) + '</div>' +
+        '<div class="who"><span class="nm">' + esc(r.name) + '</span><span class="rg">' + esc([r.region, r.sgg].filter(Boolean).join(' ')) + '</span>' +
+        '<div class="lines">' + lineChips(r.lines) + '</div>' +
+        '<div class="tms">' + times(r) + '</div></div>' +
+        '<div class="scr"><b>' + r.aft.score.toFixed(1) + '</b><small>점</small>' + (gain ? '<span class="gain">' + gain + '</span>' : '') + '</div>' +
+        '<div class="bar" aria-hidden="true">' + (pn != null ? '<i class="a" style="width:' + r.aft.score + '%"></i><i class="n" style="width:' + pn + '%"></i>' : '<i class="a" style="width:' + r.aft.score + '%"></i>') + '</div>' +
+        '</a></li>';
+    }).join('');
+    const left = body.length - page.length;
+    $('more').hidden = left <= 0;
+    $('more').textContent = '더 보기 (' + left.toLocaleString() + '곳 남음)';
+  }
+
+  document.querySelectorAll('.seg').forEach(g => g.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    st[g.dataset.k] = b.dataset.v; st.shown = PAGE; render();
+  }));
+  $('sort').addEventListener('change', e => { st.sort = e.target.value; st.shown = PAGE; render(); });
+  let tmr = null;
+  $('q').addEventListener('input', e => { clearTimeout(tmr); tmr = setTimeout(() => { st.q = e.target.value.trim(); st.shown = PAGE; render(); }, 150); });
+  $('more').addEventListener('click', () => { st.shown += PAGE; render(); });
+
+  fetch('data/rank.json').then(r => r.ok ? r.json() : Promise.reject(r.status)).then(d => {
+    doc = d; lineInfo = d.lines || {}; render();
+  }).catch(() => { $('list').innerHTML = '<li class="empty">순위 자료를 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.</li>'; });
+})();
+</script>
+</body>
+</html>

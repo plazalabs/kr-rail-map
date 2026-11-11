@@ -464,6 +464,9 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
   color: var(--text) !important;
 }
 .tb-dropmenu button:hover { background: var(--hover) !important; }
+/* 메뉴 안 다른 페이지 링크 (교통 순위표) — 버튼과 같은 모양 */
+.tb-dropmenu a.tb-menulink { display: flex; width: 100%; padding: 8px 10px; border-radius: 7px; font-size: 12.5px; color: var(--text); text-decoration: none; }
+.tb-dropmenu a.tb-menulink:hover { background: var(--hover); }
 
 /* 상태 표시 */
 #status {

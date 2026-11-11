@@ -523,6 +523,11 @@
       }
     }
 
+    // 전세가율 (2026-11-11) — 같은 단지·같은 면적 매매·신규 전세 짝의 중위값. 투자 모드에서만.
+    if (invest && typeof StationJeonse !== 'undefined' && StationJeonse.isReady()) {
+      html += '<div class="sd-sec sd-jeonse-sec"><h3>전세가율 (전세 ÷ 매매)</h3>' + StationJeonse.sectionHtml(sid) + '</div>';
+    }
+
     // 실거래 7종 (1단계, 2026-11-09) — 투자 모드에서만. 자료 없는 종류는 '자료 없음', 5건 미만은 '거래 적음'.
     if (invest && typeof StationMarket !== 'undefined' && StationMarket.isReady()) {
       html += '<div class="sd-sec sd-market-sec"><h3>실거래 (7종)</h3>' + StationMarket.sectionHtml(sid) + '</div>';

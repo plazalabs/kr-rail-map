@@ -995,3 +995,11 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
   #guide-card { left: 8px; right: 8px; width: auto; bottom: calc(66px + env(safe-area-inset-bottom)); }
 }
 
+/* ---------- 전세가율 (js/jeonse.js) ---------- */
+.sd-jeonse-sec .jn-row { display: flex; align-items: center; gap: 10px; margin: 2px 0 4px; }
+.sd-jeonse-sec .jn-pct { font-size: 22px; line-height: 1.1; }
+.sd-jeonse-sec .jn-pct.jn-risk { color: #c62828; }
+.sd-jeonse-sec .jn-bar { position: relative; flex: 1; height: 8px; border-radius: 4px; background: var(--hover); overflow: visible; }
+.sd-jeonse-sec .jn-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--accent); }
+.sd-jeonse-sec .jn-bar em { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #c62828; }
+

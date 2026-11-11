@@ -1388,6 +1388,7 @@ function loadInvestData() {
   }
   if (typeof StationDev !== 'undefined') StationDev.load('data/station-dev.json').then(detailRedraw);
   if (typeof StationMarket !== 'undefined') StationMarket.load('data/station-market.json').then(detailRedraw);   // 실거래 7종 (2026-11-09)
+  if (typeof StationJeonse !== 'undefined') StationJeonse.load('data/station-jeonse.json').then(detailRedraw);   // 전세가율 — 같은 집끼리 짝 (2026-11-11)
 }
 function loadDetailData(opts) {
   // 쉬는 동안 미리 받기(prefetch)에서는 출구까지 받지 않는다 — 역을 열거나 분석을 켤 때만

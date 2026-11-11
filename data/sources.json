@@ -200,7 +200,8 @@
    "feeds": [],
    "affects": [
     "data/station-price.json",
-    "data/station-complex.json"
+    "data/station-complex.json",
+    "data/station-jeonse.json"
    ],
    "intermediate": [
     "data/_gov/addr/",
@@ -269,7 +270,8 @@
    "used_for": "법정동 중위 평당가 464역, 단지 5,301곳의 평당가·준공연도·전용면적 (서울 25 + 경기 47 + 인천 12 시군구)",
    "feeds": [
     "data/station-price.json",
-    "data/station-complex.json"
+    "data/station-complex.json",
+    "data/station-jeonse.json"
    ],
    "affects": [],
    "intermediate": [
@@ -296,7 +298,8 @@
    "snapshot": "2026-04 ~ 2026-09",
    "used_for": "역 472곳의 법정동 중위값 (그중 거래 5건 미만 9곳은 건수만). 수도권 84개 시군구 거래 297,260건 중 역 연결 151,899건, 연결 근거 없음 145,361건",
    "feeds": [
-    "data/station-market.json"
+    "data/station-market.json",
+    "data/station-jeonse.json"
    ],
    "affects": [],
    "intermediate": [

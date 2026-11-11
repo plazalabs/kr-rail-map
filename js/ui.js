@@ -362,6 +362,27 @@ const UI = (() => {
     }, 120);
   }
 
+  /* 휴대폰 아래 툴바는 옆으로 밀어야 '분석·저장' 이 보인다. 밀 수 있다는 표시가 없어서 처음 온 사람은
+   * 그 메뉴가 있는 줄 모른다(2026-11-11 사용성 점검). 오른쪽에 더 있으면 끝을 흐리게 하고 › 를 보여 준다.
+   * 표시만 한다(눌리지 않음, pointer-events: none) — 눌리게 했더니 오른쪽 끝 '분석' 버튼을 가렸다.
+   * 끝까지 밀었으면 숨는다. */
+  function initToolbarMore() {
+    const tb = document.getElementById('toolbar');
+    if (!tb || document.getElementById('tb-more')) return;
+    const more = document.createElement('div');
+    more.id = 'tb-more';
+    more.setAttribute('aria-hidden', 'true');
+    more.textContent = '›';
+    document.body.appendChild(more);
+    const sync = () => {
+      const can = isMobile() && tb.scrollWidth - tb.clientWidth - tb.scrollLeft > 8;
+      more.hidden = !can;
+    };
+    tb.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+    setTimeout(sync, 0); setTimeout(sync, 1500);
+  }
+
   function boot() {
     // 데이터를 미리 받아 캐시를 데운다.
     // 예전에는 fetch(u) 를 그냥 한 번 더 던지고 "app.js 가 재사용한다"고 적어뒀는데,
@@ -374,6 +395,7 @@ const UI = (() => {
     initKeys();
     initDropdowns();
     initDrawer();
+    initToolbarMore();
 
     whenReady(() => {
       const sum = document.getElementById('data-summary');

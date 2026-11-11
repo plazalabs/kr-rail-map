@@ -1039,3 +1039,16 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
   #route-result .total { margin-bottom: 4px; padding: 6px 9px; }
 }
 
+/* 휴대폰 툴바 '오른쪽에 더 있음' 표시 (js/ui.js initToolbarMore) */
+#tb-more { display: none; }
+@media (max-width: 768px) {
+  #tb-more {
+    display: block; position: fixed; right: 0; bottom: 0; z-index: 41;
+    width: 44px; height: calc(56px + env(safe-area-inset-bottom));
+    border: 0; padding: 0 0 env(safe-area-inset-bottom) 10px; font-size: 22px; font-weight: 700; color: var(--accent);
+    background: linear-gradient(to right, transparent, var(--panel) 70%);
+    pointer-events: none; text-align: right; padding-right: 8px; line-height: 56px; box-sizing: border-box;
+  }
+  #tb-more[hidden] { display: none; }
+}
+

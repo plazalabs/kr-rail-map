@@ -6,7 +6,7 @@
  * 실행: node tests/e2e/run.js --only rank
  */
 'use strict';
-const { launch, sleep, BASE, recorder } = require('./lib/cdp');
+const { launch, sleep, BASE, recorder, outDir } = require('./lib/cdp');
 const R = recorder('rank');
 const RANK = BASE.replace(/index\.html.*$/, '').replace(/#.*$/, '') + 'rank.html';
 
@@ -62,6 +62,8 @@ const layout = b => b.evaluate(`(() => ({
       !!card && /245위/.test(card.big) && /9위/.test(card.big) && card.bars === 3 && card.yr && /^\.\/\?st=st-/.test(card.href || '') && card.exp === 'true' && card.fits, card);
     // 📸 공유 이미지 — 1080×1080 그림이 만들어지고, (헤드리스는 파일 공유 불가) 내려받기로 저장했다는 안내가 뜬다
     const img = await b.evaluate(`(() => { const c = RankShare.canvas('st-355172776'); return c ? { w: c.width, h: c.height, len: c.toDataURL('image/png').length } : null; })()`);
+    // 내려받기는 사용자 '다운로드' 폴더가 아니라 e2e 결과 폴더로 (2026-11-12 — 처음엔 다운로드 폴더에 남았다)
+    await b.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: outDir('rank') }).catch(() => {});
     await b.evaluate(`document.querySelector('#list .card [data-share]').click()`); await sleep(800);
     const msg = await b.evaluate(`(document.querySelector('#list .card .share-msg') || {}).textContent || ''`);
     R.check(`${w}px 공유 이미지 1080×1080 만들기·저장 안내`, !!img && img.w === 1080 && img.h === 1080 && img.len > 50000 && /저장했어요|공유했어요/.test(msg), { img, msg });

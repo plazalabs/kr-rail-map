@@ -61,8 +61,13 @@ const count = b => b.evaluate(`(() => { const s = map.getSource('cm-stations'); 
   const pp = await b.evaluate(`[...document.querySelectorAll('#cm-list .cm-pp')].filter(e => /평당/.test(e.textContent)).length`);
   R.check('투자 모드: 목록에 평당 시세가 나온다', pp > 20, pp);
   await b.evaluate(`(() => { const s = document.getElementById('cm-sort'); s.value = 'price'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
-  const asc = await b.evaluate(`(() => { const v = [...document.querySelectorAll('#cm-list .cm-pp')].map(e => e.textContent).filter(t => /평당/.test(t)).map(t => +t.replace(/[^0-9]/g, '')); return v.slice(0, 30).every((x, i, a) => i === 0 || a[i - 1] <= x) && v.length > 10; })()`);
+  const asc = await b.evaluate(`(() => { const v = [...document.querySelectorAll('#cm-list .cm-pp')].map(e => e.textContent).filter(t => /평당/.test(t)).map(t => +((t.match(/평당 ([\\d,]+)/) || [])[1] || '').replace(/,/g, '')); return v.slice(0, 30).every((x, i, a) => i === 0 || a[i - 1] <= x) && v.length > 10; })()`);
   R.check("'시세 낮은 순' 정렬이 오름차순", asc, asc);
+  // 전세가율 (2026-11-11): 목록에 '전세가율 N%', '전세가율 낮은 순' 오름차순
+  for (let i = 0; i < 40; i++) { if (await b.evaluate(`typeof StationJeonse !== 'undefined' && StationJeonse.isReady()`)) break; await sleep(250); }
+  await b.evaluate(`(() => { const s = document.getElementById('cm-sort'); s.value = 'jr-low'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
+  const jr = await b.evaluate(`(() => { const v = [...document.querySelectorAll('#cm-list .cm-pp')].map(e => (e.textContent.match(/전세가율 (\\d+)%/) || [])[1]).filter(Boolean).map(Number); return { n: v.length, asc: v.slice(0, 30).every((x, i, a) => i === 0 || a[i - 1] <= x) }; })()`);
+  R.check("목록에 전세가율이 나오고 '전세가율 낮은 순' 이 오름차순", jr.n > 20 && jr.asc, jr);
 
   // 5. 목록 항목 → 역 상세
   const name = await b.evaluate(`(() => { const e = document.querySelector('#cm-list button[data-id]'); const n = e.querySelector('span').textContent.split(' ·')[0]; e.click(); return n; })()`);

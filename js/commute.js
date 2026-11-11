@@ -129,12 +129,12 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
   </div>
   <div class="cm-row cm-check"><input type="checkbox" id="cm-unopened"><label for="cm-unopened" style="margin:0;color:inherit">개통 예정 노선 포함 (개통 후 기준)</label></div>
   <div class="cm-row"><label for="cm-sort">정렬</label>
-    <select id="cm-sort"><option value="time">가까운 순 (분)</option><option value="price">시세 낮은 순 (투자 모드)</option></select></div>
+    <select id="cm-sort"><option value="time">가까운 순 (분)</option><option value="price">시세 낮은 순 (투자 모드)</option><option value="jr-low">전세가율 낮은 순 (투자 모드)</option><option value="jr-high">전세가율 높은 순 (투자 모드)</option></select></div>
   <div class="cm-legend" aria-hidden="true">${BANDS.map(b => `<span><i style="background:${b[1]}"></i>${b[2]}</span>`).join('')}</div>
   <div id="cm-summary" role="status" aria-live="polite"></div>
   <ul id="cm-list"></ul>
   <div class="cm-note">소요 시간은 운행 속도·환승 도보·승강장 접근 시간으로 낸 <b>추정값</b>입니다(시각표·배차 대기 미반영, ±20~30%).
-  길찾기와 같은 계산입니다. 시세는 투자 모드에서 역이 속한 법정동의 아파트 매매 중위 평당가(최근 6개월)이며, 역 바로 옆 값이 아닙니다.</div>
+  길찾기와 같은 계산입니다. 시세는 투자 모드에서 역이 속한 법정동의 아파트 매매 중위 평당가(최근 6개월)이며, 역 바로 옆 값이 아닙니다. 전세가율은 같은 단지·같은 면적의 매매·신규 전세 짝의 중위값(80% 이상 ⚠).</div>
 </div>`;
     document.body.appendChild(panel);
     const dest = panel.querySelector('#cm-dest');
@@ -211,21 +211,28 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     const pOn = priceOn();
     let rows = lastRows.map(r => {
       const p = pOn ? StationPrice.of(r.id) : null;
-      return Object.assign({}, r, { pp: p && p.medianPerPyeong != null ? p.medianPerPyeong : null });
+      // 전세가율 (같은 단지·같은 면적 짝의 중위 — js/jeonse.js). 짝이 3쌍 미만이면 없음
+      const j = pOn && typeof StationJeonse !== 'undefined' && StationJeonse.isReady() ? StationJeonse.of(r.id) : null;
+      return Object.assign({}, r, { pp: p && p.medianPerPyeong != null ? p.medianPerPyeong : null, jr: j && j.r != null ? j.r : null });
     });
     if (sortBy === 'price' && pOn) {
       rows.sort((a, b) => (a.pp == null) - (b.pp == null) || (a.pp || 0) - (b.pp || 0) || a.min - b.min);
+    } else if ((sortBy === 'jr-low' || sortBy === 'jr-high') && pOn) {
+      // 전세가율 낮은 순 = 갭이 큰(매매가 대비 전세가 낮은) 곳, 높은 순 = 적은 돈으로 살 수 있지만 깡통 위험
+      const dir = sortBy === 'jr-low' ? 1 : -1;
+      rows.sort((a, b) => (a.jr == null) - (b.jr == null) || dir * ((a.jr || 0) - (b.jr || 0)) || a.min - b.min);
     }
     const shown = rows.slice(0, 150);
     ul.innerHTML = shown.map(r => {
       const reg = regionLabel(r.id);
-      const pp = pOn ? `<span class="cm-pp">${r.pp != null ? '평당 ' + StationPrice.pp(r.pp) : '시세 —'}</span>` : '';
+      const pp = pOn ? `<span class="cm-pp">${r.pp != null ? '평당 ' + StationPrice.pp(r.pp) : '시세 —'}` +
+        (r.jr != null ? ` · 전세가율 ${Math.round(r.jr * 100)}%${r.jr >= 0.8 ? ' ⚠' : ''}` : '') + `</span>` : '';
       return `<li><button type="button" data-id="${esc(r.id)}"><span>${esc(r.name)}${reg ? ' <small>· ' + esc(reg) + '</small>' : ''}</span>` +
         `<span>${pp} <span class="cm-min">${r.min}분</span></span></button></li>`;
     }).join('') + (rows.length > shown.length ? `<li class="cm-note">외 ${rows.length - shown.length}역 — 시간을 줄이면 목록이 짧아집니다</li>` : '');
     const sortSel = panel.querySelector('#cm-sort');
-    sortSel.querySelector('option[value=price]').disabled = !pOn;
-    if (!pOn && sortBy === 'price') { sortBy = 'time'; sortSel.value = 'time'; }
+    sortSel.querySelectorAll('option[value=price], option[value=jr-low], option[value=jr-high]').forEach(o => { o.disabled = !pOn; });
+    if (!pOn && sortBy !== 'time') { sortBy = 'time'; sortSel.value = 'time'; }
   }
 
   function syncButton() {
@@ -247,6 +254,9 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     // 투자 모드면 시세를 받아 목록을 다시 그린다 (이미 받았으면 바로)
     if (typeof StationPrice !== 'undefined' && StationPrice.load && priceOnMode()) {
       StationPrice.load('data/station-price.json').then(() => { if (active) renderList(); }).catch(() => null);
+    }
+    if (typeof StationJeonse !== 'undefined' && StationJeonse.load && priceOnMode()) {
+      StationJeonse.load('data/station-jeonse.json').then(() => { if (active) renderList(); }).catch(() => null);
     }
   }
   function priceOnMode() { return typeof KR_MODE === 'undefined' || KR_MODE.isInvest(); }

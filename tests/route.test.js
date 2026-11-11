@@ -444,14 +444,21 @@ console.log('\n[GTX 평면환승] 청량리 B·C, 삼성 A·C — 같은 승강�
 {
   const id = (n, l) => (stations.features.find(f => f.properties.name_ko === n && f.properties.lines.includes(l)) || {}).properties;
   const cn = id('청량리', 'gtx-b'), ss = id('삼성', 'gtx-c'), so = id('서울', 'gtx-b');
-  check('청량리 GTX-B↔C 는 평면환승', RF.isPlatformTransfer(cn.id, 'gtx-b', 'gtx-c') && RF.isPlatformTransfer(cn.id, 'gtx-c', 'gtx-b'));
-  check('삼성 GTX-A↔C 는 평면환승 (공사 구간 id 도 같은 계통으로)', RF.isPlatformTransfer(ss.id, 'gtx-a-seoul-suseo', 'gtx-c'));
+  // 2026-11-12: 평면환승은 방향별 — [탄 노선, 갈아탈 노선, 직전 역, 다음 역]
+  const sb = id('상봉', 'gtx-b'), ws = id('왕십리', 'gtx-c'), kw0 = id('광운대', 'gtx-c'), ys = id('양재', 'gtx-c'), sx0 = id('수서', 'great-train-express-line-a');
+  check('청량리: 수원행 C(광운대에서 옴) → 인천대입구행 B(서울역으로) 평면', RF.isPlatformTransfer(cn.id, 'gtx-c', 'gtx-b', kw0.id, so.id));
+  check('청량리: 마석행 B(서울역에서 옴) → 덕정행 C(광운대로) 평면', RF.isPlatformTransfer(cn.id, 'gtx-b', 'gtx-c', so.id, kw0.id));
+  check('청량리: 인천대입구행 B(상봉에서 옴) → 덕정행 C(광운대로) 는 일반 환승', !RF.isPlatformTransfer(cn.id, 'gtx-b', 'gtx-c', sb.id, kw0.id));
+  check('청량리: 방향 다르면 8분', RF.transferMinutes(cn.id, 'gtx-b', 'gtx-c', sb.id, kw0.id) === 8, RF.transferMinutes(cn.id, 'gtx-b', 'gtx-c', sb.id, kw0.id));
+  check('삼성: 수원행 C(왕십리에서 옴) → 동탄행 A(수서로) 평면', RF.isPlatformTransfer(ss.id, 'gtx-c', 'gtx-a-seoul-suseo', ws.id, sx0.id));
+  check('삼성: 운정중앙행 A(수서에서 옴) → 덕정행 C(왕십리로) 평면', RF.isPlatformTransfer(ss.id, 'gtx-a-seoul-suseo', 'gtx-c', sx0.id, ws.id));
+  check('삼성: 운정중앙행 A(수서에서 옴) → 수원행 C(양재로) 는 일반 환승', !RF.isPlatformTransfer(ss.id, 'gtx-a-seoul-suseo', 'gtx-c', sx0.id, ys.id));
   check('서울역 GTX-A↔B 는 평면환승 근거가 없어 일반 환승', !RF.isPlatformTransfer(so.id, 'great-train-express-line-a', 'gtx-b'));
-  check('청량리 GTX-B↔C 환승 시간 0.5분', RF.transferMinutes(cn.id, 'gtx-b', 'gtx-c') === 0.5);
+  check('평면환승 걷기 10초', Math.abs(RF.transferMinutes(cn.id, 'gtx-c', 'gtx-b', kw0.id, so.id) - 10 / 60) < 1e-9);
   const kw = id('광운대', 'gtx-c');
   const r1 = RF.findRoute(kw.id, so.id);
   check('광운대→서울역 (개통 후): GTX-C → 청량리 평면환승 → GTX-B, 10분 이하',
-    r1 && r1.legs.map(l => l.lineId).join('>') === 'gtx-c>gtx-b' && r1.minutes <= 10, r1 && r1.minutes + '분 ' + r1.legs.map(l => l.lineId).join('>'));
+    r1 && r1.legs.map(l => l.lineId).join('>') === 'gtx-c>gtx-b' && r1.minutes <= 10 && r1.legs[0].platform, r1 && r1.minutes + '분 ' + r1.legs.map(l => l.lineId).join('>'));
   const sx = id('수서', 'great-train-express-line-a');
   const r2 = RF.findRoute(kw.id, sx.id);
   check('광운대→수서 (개통 후): GTX-C → 삼성 평면환승 → GTX-A, 13분 이하',

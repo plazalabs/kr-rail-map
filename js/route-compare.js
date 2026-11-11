@@ -182,9 +182,10 @@ const RouteCompare = (() => {
       if (e.lineId !== curLine) {
         // 환승은 지금 역(stations[i])에서. 역·노선쌍마다 실제 도보 시간이 다르다.
         const tm = (curLine !== null && e.lineId !== null)
-          ? RF.transferMinutes(stations[i], curLine, e.lineId) : 0;
+          ? RF.transferMinutes(stations[i], curLine, e.lineId, stations[i - 1], stations[i + 1]) : 0;
         legs.push({ lineId: curLine, from: stations[legStart], to: stations[i],
-                    walk: curLine === null, distKm: km, transferAfter: tm });
+                    walk: curLine === null, distKm: km, transferAfter: tm,
+                    platform: !!(curLine && e.lineId && RF.isPlatformTransfer(stations[i], curLine, e.lineId, stations[i - 1], stations[i + 1])) });
         if (tm) minutes += tm;
         minutes += RF.accessMinutes(e.lineId);
         legStart = i; curLine = e.lineId; km = 0;
@@ -531,8 +532,8 @@ const RouteCompare = (() => {
       }
       // 이 구간을 내린 뒤 갈아타는 시간 (역마다 다르다)
       if (leg.transferAfter > 0) {
-        html += (r.legs[idx + 1] && RF.isPlatformTransfer && RF.isPlatformTransfer(leg.to, leg.lineId, r.legs[idx + 1].lineId))
-        ? `<div class="leg leg-transfer leg-platform">↔ <b>${b}</b>역 같은 승강장 평면환승 · 약 20~30초</div>`
+        html += leg.platform
+        ? `<div class="leg leg-transfer leg-platform">↔ <b>${b}</b>역 같은 승강장 평면환승 · 약 10초</div>`
         : `<div class="leg leg-transfer">🚶 <b>${b}</b>역 내 환승 · 도보 약 ${leg.transferAfter}분</div>`;
       }
     });

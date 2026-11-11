@@ -45,26 +45,35 @@ const RouteFinder = (() => {
   // 실제 여행자는 2분 아끼자고 3번 갈아타지 않는다. 예전에는 8분 고정이었는데,
   // 그 8분은 '평균 환승 4분 + 4분' 이었으므로 평균적인 역에서는 예전과 같다.
   const TRANSFER_DECISION_EXTRA = 4;
-  // 배차 간격이 긴 노선을 '탈 때' 경로 고르기에만 더하는 대기 벌점(분). 표시 시간에는 넣지 않는다.
-  // 값 = (그 노선 평균 대기 = 배차/2) − (도심 지하철 평균 대기 약 2분). 배차는 공개 시각표의 낮 시간대 대략값.
-  // 왜: 시간 모델은 대기를 0 으로 본다(넣으면 공표 소요시간 오차가 커져서 뺐음). 그러면 10~15분 간격인
-  // 경의중앙선이 3~5분 간격 2호선과 같은 취급을 받아, 홍대입구→강남이 2호선 직행 대신
-  // 경의중앙→옥수→3호선→신사→신분당 3노선 우회로 나왔다 (2026-11-11 회장님 확인 요청).
-  const BOARD_WAIT_DECISION = {
-    'gyeongui-jungang-line': 4,                           // 약 10~15분 간격
-    'seoul-metropolitan-subway-gyeongchun-line': 6,       // 약 15~20분
-    'seoul-metropolitan-subway-seohae-line': 4,           // 약 10~15분
-    'seoul-metropolitan-subway-gyeonggang-line': 4,       // 약 10~15분
-    'donghae-line': 8,                                    // 약 15~30분
-    'daegyeong-line': 8,                                  // 약 15~30분
-    'suin-bundang-line': 2,                               // 약 8~10분
-    'arex': 2,                                            // 일반열차 약 6~12분
+  // 갈아탈 때 다음 열차를 기다리는 시간(분) = 배차 간격의 절반(평균 대기). 표시 시간에도 넣는다 (2026-11-11 고침).
+  // 예전엔 0분이라 환승 많은 경로가 너무 짧게 나왔다 — 공덕→강남 25분(지하철종결자 최소시간 32분, 환승 2),
+  // 광운대→강남 24분. 배차는 공개 시각표의 낮·출퇴근 평균 대략값. 첫 열차 대기는 넣지 않는다(앱들과 같은 기준).
+  const WAIT_DEFAULT = 2.5;                                // 서울 도심 지하철 약 4~6분 간격
+  const WAIT_MIN = {
+    'seoul-metropolitan-subway-line-1': 4,                // 코레일 구간 섞임, 약 6~10분
+    'gyeongui-jungang-line': 6,                           // 약 10~15분
+    'seoul-metropolitan-subway-gyeongchun-line': 8,       // 약 15~20분
+    'suin-bundang-line': 4,                               // 약 8~10분
+    'seoul-metropolitan-subway-seohae-line': 6,
+    'seoul-metropolitan-subway-gyeonggang-line': 6,
+    'donghae-line': 8, 'daegyeong-line': 8,
+    'arex': 5,                                            // 일반열차 약 10분 간격 (회장님 지적)
+    'seoul-metropolitan-subway-shinbundang-line': 2.5,
   };
-  // 새로 탈 때(출발역에서 처음 타는 것 포함)만. 같은 노선·직결 운행을 계속 타면 0.
-  function boardWait(nl, line) {
-    if (!nl || nl === line) return 0;
-    if (line && line !== START && sameService(nl, line)) return 0;
-    return BOARD_WAIT_DECISION[nl] || 0;
+  function waitMin(lid) {
+    if (!lid) return 0;
+    if (lineCat.get(lid) === 'ktx' || (typeof EXPRESS !== 'undefined' && EXPRESS[lid])) return 0;   // KTX·급행은 접근 시간으로 따로
+    if (/^gtx|great-train-express/.test(lid)) return 4;   // 계획 배차 약 6~10분
+    return WAIT_MIN[lid] != null ? WAIT_MIN[lid] : WAIT_DEFAULT;
+  }
+  // 다른 노선으로 '갈아탈 때'만 (출발역 첫 탑승·직결 운행은 0)
+  // 평면환승(같은 승강장 맞은편, 배차를 맞춰 운영 — 청량리 GTX-B·C, 삼성 GTX-A·C 등)은 도착하면 맞은편 열차가
+  // 바로 받으므로 기다리는 시간 0 (2026-11-11 회장님 지적). 걷기는 PLATFORM_MIN(10초)만.
+  function transferWait(nl, line, stationId, fromId, toId) {
+    if (!nl || !line || line === START || nl === line) return 0;
+    if (sameService(nl, line)) return 0;
+    if (stationId && isPlatformTransfer(stationId, line, nl, fromId, toId)) return 0;
+    return waitMin(nl);
   }
   const WALK_KMH = 4;
   // KTX 탑승 1회당 붙는 접근 시간 (분). 좌석 지정·개찰·승강장 이동.
@@ -154,31 +163,56 @@ const RouteFinder = (() => {
     return transferDoc ? Object.keys(transferDoc.stations).length : 0;
   }
 
-  // 같은 승강장 평면(수평)환승 — 계단·통로 없이 맞은편 열차로 건너간다 (약 20~30초 → 0.5분).
+  // 같은 승강장 평면(수평)환승 — 계단·통로 없이 맞은편 열차로 건너간다 (10초, 방향별 — 아래 표).
   // 근거: 국토부·대광위 'GTX 환승 트라이앵글' — 청량리(GTX-B·C)·삼성(GTX-A·C) 평면환승 설계
   //   (청량리역 광역환승센터 B·C '초단위' 환승, 머니투데이방송 2020-10-27 / 서울시 미디어허브 'GTX 이용을 더욱 편리하게').
   // 역은 이름 + 그 역을 지나는 노선으로 찾는다 (동명역 오매칭 방지).
+  // 평면환승은 '가는 방향'이 맞을 때만이다 — 같은 승강장을 나눠 쓰는 두 방향끼리만 맞은편이고,
+  // 나머지 방향 조합(되돌아가는 쪽 등)은 계단을 오르내리는 일반 환승이다 (2026-11-12 회장님 자료 확인).
+  // 열차 방향은 [노선, 직전 역, 다음 역] — 직전 역으로 '타고 온 방향', 다음 역으로 '갈 방향'을 가린다.
+  //   청량리: 마석행 B ↔ 덕정행 C, 인천대입구행 B ↔ 수원행 C
+  //   삼성:   동탄행 A ↔ 수원행 C, 운정중앙행 A ↔ 덕정행 C
+  const GA = 'great-train-express-line-a';
   const PLATFORM_TRANSFER = [
-    { station: '청량리', lines: ['gtx-b', 'gtx-c'] },
-    { station: '삼성', lines: ['great-train-express-line-a', 'gtx-c'] },
+    { station: '청량리', pair: [['gtx-b', '서울', '상봉'], ['gtx-c', '왕십리', '광운대']] },
+    { station: '청량리', pair: [['gtx-b', '상봉', '서울'], ['gtx-c', '광운대', '왕십리']] },
+    { station: '삼성', pair: [[GA, '서울', '수서'], ['gtx-c', '왕십리', '양재']] },
+    { station: '삼성', pair: [[GA, '수서', '서울'], ['gtx-c', '양재', '왕십리']] },
   ];
-  const PLATFORM_MIN = 0.5;
-  function isPlatformTransfer(stationId, a, b) {
+  const PLATFORM_STATIONS = new Set(PLATFORM_TRANSFER.map(p => p.station));
+  // 맞은편으로 몇 걸음 — 국토부 발표는 '동일 승강장 바로 환승'·'초 단위'라고만 하고 숫자는 없다.
+  // 10초는 우리 추정 (2026-11-12 회장님 결정). 기다리는 시간은 따로 0 (transferWait).
+  const PLATFORM_MIN = 10 / 60;
+  const nameOfId = id => { const s = id && stationsById.get(id); return s ? s.properties.name_ko : null; };
+  function isPlatformTransfer(stationId, a, b, fromId, toId) {
     if (!stationId || !a || !b) return false;
-    const s = stationsById.get(stationId);
-    if (!s) return false;
+    const name = nameOfId(stationId);
+    if (!PLATFORM_STATIONS.has(name)) return false;
     const sa = serviceOf(a), sb = serviceOf(b);
-    return PLATFORM_TRANSFER.some(p => p.station === s.properties.name_ko &&
-      ((p.lines[0] === sa && p.lines[1] === sb) || (p.lines[0] === sb && p.lines[1] === sa)));
+    const pn = nameOfId(fromId), nn = nameOfId(toId);
+    // 탄 열차 X(직전 역 = X[1]) → 갈아탈 열차 Y(다음 역 = Y[2])
+    const fits = (X, Y) => X[0] === sa && Y[0] === sb && X[1] === pn && Y[2] === nn;
+    return PLATFORM_TRANSFER.some(p => p.station === name &&
+      (fits(p.pair[0], p.pair[1]) || fits(p.pair[1], p.pair[0])));
   }
-  function transferMinutes(stationId, a, b) {
+  // 평면환승역에서는 '어느 쪽에서 왔는지'가 다음 환승 시간을 바꾸므로 상태에 직전 역을 넣는다.
+  const stateKey = (to, nl, from) => skey(to, nl) + (PLATFORM_STATIONS.has(nameOfId(to)) ? '\u0002' + from : '');
+  // 아직 안 지은 GTX 역은 아주 깊다(대심도). 평면환승이 아닌 환승은 실측 자료가 없어 보수적으로 8분 (2026-11-11 회장님 결정 —
+  // 서울역 공항철도↔GTX-A 를 4분으로 잡아 공덕→삼성이 18분으로 너무 짧게 나왔다).
+  const GTX_DEEP_TRANSFER_MIN = 8;
+  const isGtx = lid => /^gtx|great-train-express/.test(lid || '');
+  function transferMinutes(stationId, a, b, fromId, toId) {
     if (sameService(a, b) && a !== b) return 0;   // 이어 달리는 구간 — 갈아타지 않는다
-    if (isPlatformTransfer(stationId, a, b)) return PLATFORM_MIN;
-    if (!transferDoc || !stationId || !a || !b || a === b) return TRANSFER_MIN;
-    const s = transferDoc.stations[stationId];
-    if (!s) return TRANSFER_MIN;
-    const p = s.pairs[pairKey(a, b)];
-    return p ? p.min : TRANSFER_MIN;
+    if (isPlatformTransfer(stationId, a, b, fromId, toId)) return PLATFORM_MIN;
+    const base = (() => {
+      if (!transferDoc || !stationId || !a || !b || a === b) return TRANSFER_MIN;
+      const s = transferDoc.stations[stationId];
+      if (!s) return TRANSFER_MIN;
+      const p = s.pairs[pairKey(a, b)];
+      return p ? p.min : TRANSFER_MIN;
+    })();
+    if ((isGtx(a) && isUnopened(a)) || (isGtx(b) && isUnopened(b))) return Math.max(base, GTX_DEEP_TRANSFER_MIN);
+    return base;
   }
 
   // 공식 소요시간표의 두 역 사이에 '다른 정차역'이 끼어 있는지.
@@ -487,7 +521,9 @@ const RouteFinder = (() => {
   function edgeMinutes(e) {
     if (e.walk) return e.distKm / WALK_KMH * 60 + 2;
     if (e.officialMin != null) return e.officialMin;  // GTX 공식 소요시간 우선
-    return e.distKm / speedOf(e.lineId) * 60;
+    // 도시·광역 전철(metro)은 역마다 서 있는 시간도 더한다 — 공식 구간(DWELL_MIN)과 같은 기준 (2026-11-11)
+    const run = e.distKm / speedOf(e.lineId) * 60;
+    return lineCat.get(e.lineId) === 'metro' ? run + DWELL_MIN : run;
   }
 
   // 이 노선에 '탈 때' 붙는 접근 시간. KTX 만 해당한다.
@@ -553,10 +589,11 @@ const RouteFinder = (() => {
 
     let endKey = null;
     while (pq.length) {
-      const [d, u, line] = heapPop(pq);
-      const k = skey(u, line);
+      const [d, u, line, k0] = heapPop(pq);
+      const k = k0 || skey(u, line);
       if (d > (dist.get(k) ?? Infinity)) continue;   // 낡은 항목
       if (u === toId) { endKey = k; break; }
+      const pu = prev.has(k) ? prev.get(k).fromId : null;   // 직전 역 (평면환승 방향)
 
       for (const e of (adj.get(u) || [])) {
         // 미개통 노선은 지금 탈 수 없다. 도보 환승은 언제나 열려 있다.
@@ -570,18 +607,18 @@ const RouteFinder = (() => {
         if (line !== START && line !== null && nl !== null && !sameService(nl, line)) {
           cost += explicitPenalty != null
             ? explicitPenalty
-            : transferMinutes(u, line, nl) + TRANSFER_DECISION_EXTRA;
+            : transferMinutes(u, line, nl, pu, e.to) + TRANSFER_DECISION_EXTRA;
         }
         // KTX 로 새로 탈 때는 접근 시간이 든다. 탐색 비용에도 넣어야
         // '3.8km KTX' 같은 경로가 애초에 후보로 뽑히지 않는다.
         if (nl !== line) cost += accessMinutes(nl);
-        if (explicitPenalty == null) cost += boardWait(nl, line);
-        const nk = skey(e.to, nl);
+        cost += transferWait(nl, line, u, pu, e.to);
+        const nk = stateKey(e.to, nl, u);
         const nd = d + cost;
         if (nd < (dist.get(nk) ?? Infinity)) {
           dist.set(nk, nd);
           prev.set(nk, { fromKey: k, fromId: u, edge: e });
-          heapPush(pq, [nd, e.to, nl]);
+          heapPush(pq, [nd, e.to, nl, nk]);
         }
       }
     }
@@ -615,10 +652,13 @@ const RouteFinder = (() => {
         // 시간이 다르므로 그 값을 표시 시간에 넣는다. transferAfter 는
         // '이 구간을 내린 뒤 갈아타는 데 걸리는 시간' 이다.
         const tm = (curLine !== null && lid !== null)
-          ? transferMinutes(path[i], curLine, lid) : 0;
+          ? transferMinutes(path[i], curLine, lid, path[i - 1], path[i + 1]) : 0;
+        const wt = transferWait(lid, curLine, path[i], path[i - 1], path[i + 1]);
         legs.push({ lineId: curLine, from: path[legStart], to: path[i],
-                    walk: curLine === null, distKm: legKm, transferAfter: tm });
+                    walk: curLine === null, distKm: legKm, transferAfter: tm, waitAfter: wt,
+                    platform: !!(curLine && lid && isPlatformTransfer(path[i], curLine, lid, path[i - 1], path[i + 1])) });
         if (tm) minutes += tm;
+        minutes += wt;
         minutes += accessMinutes(lid);
         legStart = i; curLine = lid; legKm = 0;
       }
@@ -660,6 +700,10 @@ const RouteFinder = (() => {
     const out = new Map();
     if (!stationsById.has(fromId)) return out;
     const openOnly = !!(opts && opts.openOnly);
+    // opts.noWait: 기다리는 시간을 하나도 넣지 않는다 — 타고 가는 시간 + 환승 걷기만. 역 순위(도심 접근성)용
+    // (2026-11-12 회장님 결정: 순위는 '타고 가는 시간' 기준, 배차는 역마다 공평하게 빼고 비교).
+    const noWait = !!(opts && opts.noWait);
+    const pfrom = new Map();   // 상태 → 직전 역 (평면환승 방향)
     // 두 값을 따로 들고 간다 (2026-11-11 고침).
     //  - 탐색 비용 d: 경로 '고르기' 용. 환승마다 TRANSFER_DECISION_EXTRA 를 더 얹는다 (findRoute 와 같음)
     //  - 표시 시간 m: 고른 경로의 실제 분. findRoute 의 minutes 와 같은 규칙
@@ -671,10 +715,11 @@ const RouteFinder = (() => {
     heapPush(pq, [0, fromId, START]);
     const best = new Map();   // 역 → [탐색 비용, 표시 분]
     while (pq.length) {
-      const [d, u, line] = heapPop(pq);
-      const k = skey(u, line);
+      const [d, u, line, k0] = heapPop(pq);
+      const k = k0 || skey(u, line);
       if (d > (dist.get(k) ?? Infinity)) continue;   // 낡은 항목
       const m = disp.get(k) || 0;
+      const pu = pfrom.get(k) || null;
       const prev = best.get(u);
       if (prev == null || d < prev[0]) best.set(u, [d, m]);
       for (const e of (adj.get(u) || [])) {
@@ -682,18 +727,19 @@ const RouteFinder = (() => {
         const nl = e.lineId || null;
         let cost = edgeMinutes(e), shown = edgeMinutes(e);
         if (line !== START && line !== null && nl !== null && !sameService(nl, line)) {
-          cost += transferMinutes(u, line, nl) + TRANSFER_DECISION_EXTRA;
+          cost += transferMinutes(u, line, nl, pu, e.to) + TRANSFER_DECISION_EXTRA;
         }
         // 표시: findRoute 처럼 노선 id 가 바뀌면 그 역의 환승 도보 시간을 넣는다
-        if (line !== START && line !== null && nl !== null && nl !== line) shown += transferMinutes(u, line, nl);
+        if (line !== START && line !== null && nl !== null && nl !== line) shown += transferMinutes(u, line, nl, pu, e.to);
         if (nl !== line) { cost += accessMinutes(nl); shown += accessMinutes(nl); }
-        cost += boardWait(nl, line);   // 고르기만 — 표시 분에는 안 넣는다 (findRoute 와 같음)
-        const nk = skey(e.to, nl);
+        if (!noWait) { const w = transferWait(nl, line, u, pu, e.to); cost += w; shown += w; }   // 기다리는 시간 (findRoute 와 같음)
+        const nk = stateKey(e.to, nl, u);
         const nd = d + cost;
         if (nd < (dist.get(nk) ?? Infinity)) {
           dist.set(nk, nd);
           disp.set(nk, m + shown);
-          heapPush(pq, [nd, e.to, nl]);
+          pfrom.set(nk, u);
+          heapPush(pq, [nd, e.to, nl, nk]);
         }
       }
     }

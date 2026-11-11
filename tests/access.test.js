@@ -117,11 +117,14 @@ let stale = 0, checked = 0;
 for (const [name, lat, lng] of SAMPLE) {
   const id = idAt(name, lat, lng);
   if (!id || !access.stations[id]) continue;
-  const nowMap = RF.allTimesFrom(id, { openOnly: true });
-  const aftMap = RF.allTimesFrom(id, { openOnly: false });
+  const nowMap = RF.allTimesFrom(id, { openOnly: true, noWait: true });
+  const aftMap = RF.allTimesFrom(id, { openOnly: false, noWait: true });
   access.destinations.forEach((d, i) => {
-    const wantNow = nowMap.has(d.station_id) ? nowMap.get(d.station_id) : null;
-    const wantAft = aftMap.has(d.station_id) ? aftMap.get(d.station_id) : null;
+    // 업무지구 묶음(member_ids) 안 가장 빠른 값, 개통 후는 지금보다 길지 않게 — build_access.js 와 같은 규칙
+    const best = m => { let v = null; for (const x of (d.member_ids || [d.station_id])) { const t = m.get(x); if (t != null && (v == null || t < v)) v = t; } return v; };
+    const wantNow = best(nowMap);
+    const wantAft0 = best(aftMap);
+    const wantAft = wantAft0 == null ? wantNow : (wantNow == null ? wantAft0 : Math.min(wantNow, wantAft0));
     const got = access.stations[id];
     if (got.now[i] !== wantNow || got.after[i] !== wantAft) {
       stale++;
@@ -242,9 +245,15 @@ check('단축 순위는 개선이 있는 역만 센다',
   s && s.rank.gain && s.rank.after && s.rank.gain.total < s.rank.after.total,
   s && s.rank.gain && (s.rank.gain.total + ' < ' + s.rank.after.total));
 // 강남은 이미 최고 접근성이라 개통으로 줄어들 여지가 거의 없다.
-check('강남은 개통 단축 순위가 하위권', g && g.rank.gain &&
-  g.rank.gain.rank / g.rank.gain.total > 0.8,
-  g && g.rank.gain && g.rank.gain.rank + '/' + g.rank.gain.total);
+// 2026-11-11: 업무지구를 묶음으로 바꾸자 강남의 3도심 단축이 0분 — 0분인 역이 많아 동점 순서에 따라 순위가 흔들린다.
+// '강남보다 더 많이 줄어드는 역'의 비율로 본다(동점은 같은 자리).
+{
+  const gains = Object.values(access.stations).filter(v => v.now && v.after && v.now.slice(0, 3).every(x => x != null) && v.after.slice(0, 3).every(x => x != null))
+    .map(v => (v.now[0] + v.now[1] + v.now[2] - v.after[0] - v.after[1] - v.after[2]) / 3);
+  const gg = g ? g.score.now - g.score.after : null;
+  const more = gains.filter(x => x > gg + 1e-9).length / gains.length;
+  check('강남은 개통 단축 순위가 하위권 (더 많이 줄어드는 역이 50% 이상)', g && more >= 0.5, (gg != null ? gg.toFixed(1) : '') + '분, 더 많이 줄어드는 역 ' + Math.round(more * 100) + '%');
+}
 
 // 자료 없는 역은 null — 0분으로 보이면 안 된다.
 check('수록되지 않은 역은 null', SA.of('st-does-not-exist') === null);

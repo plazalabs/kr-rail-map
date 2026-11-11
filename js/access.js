@@ -22,10 +22,13 @@ const StationAccess = (() => {
   let rankNow = null;    // Map<id, {rank, total}>
   let rankAfter = null;
   let rankGain = null;   // 개통 단축폭 순위
+  let rankGbd = null;    // GBD(강남) 중시 순위 — 개통 후 기준 (2026-11-12 회장님 요청)
   let styleDone = false;
 
   // 3대 업무지구 — 순위를 매길 때 쓰는 축. 서울역·판교는 표시만 한다.
   const CORE = ['cbd', 'ybd', 'gbd'];
+  // GBD 중시: 강남을 두 번 센다 → (CBD + YBD + 2×GBD) / 4. 일자리·소득이 가장 큰 축이라 따로 본다.
+  const GBD_WEIGHT = { cbd: 1, ybd: 1, gbd: 2 };
 
   function fmt(min) {
     if (min == null) return '—';
@@ -43,27 +46,32 @@ const StationAccess = (() => {
   }
 
   // 3대 업무지구 평균. 두 곳 이상 값이 있어야 순위를 매긴다.
-  function scoreOf(rec, key) {
+  function scoreOf(rec, key, weight) {
     if (!rec) return null;
-    let sum = 0, n = 0;
+    let sum = 0, n = 0, wsum = 0;
     for (const c of CORE) {
       const i = idxOf(c);
       if (i < 0) continue;
       const v = rec[key][i];
       if (v == null) continue;
-      sum += v; n++;
+      const w = weight ? weight[c] : 1;
+      sum += v * w; wsum += w; n++;
     }
-    return n >= 2 ? sum / n : null;
+    // GBD 중시는 GBD 값이 꼭 있어야 한다 (없으면 강남을 두 번 센다는 뜻이 사라진다)
+    if (weight && rec[key][idxOf('gbd')] == null) return null;
+    return n >= 2 ? sum / wsum : null;
   }
 
   function buildRanks() {
-    rankNow = new Map(); rankAfter = new Map(); rankGain = new Map();
-    const a = [], b = [], c = [];
+    rankNow = new Map(); rankAfter = new Map(); rankGain = new Map(); rankGbd = new Map();
+    const a = [], b = [], c = [], g = [];
     for (const id of Object.keys(byId)) {
       const sn = scoreOf(byId[id], 'now');
       const sa = scoreOf(byId[id], 'after');
       if (sn != null) a.push([id, sn]);
       if (sa != null) b.push([id, sa]);
+      const sg = scoreOf(byId[id], 'after', GBD_WEIGHT);
+      if (sg != null) g.push([id, sg]);
       // 단축폭 순위 — '개통으로 얼마나 좋아지나'. 지금 갈 수 없던 역은
       // 단축폭을 잴 수 없으므로 뺀다 (0분으로 넣으면 순위가 뒤로 밀린다).
       if (sn != null && sa != null && sn - sa > 0) c.push([id, sa - sn]);
@@ -74,7 +82,7 @@ const StationAccess = (() => {
       list.sort((x, y) => x[1] - y[1] || (x[0] < y[0] ? -1 : 1));
       list.forEach((row, i) => map.set(row[0], { rank: i + 1, total: list.length }));
     };
-    put(a, rankNow); put(b, rankAfter); put(c, rankGain);
+    put(a, rankNow); put(b, rankAfter); put(c, rankGain); put(g, rankGbd);
   }
 
   function setDoc(d) {
@@ -112,11 +120,12 @@ const StationAccess = (() => {
     });
     return {
       rows,
-      score: { now: scoreOf(rec, 'now'), after: scoreOf(rec, 'after') },
+      score: { now: scoreOf(rec, 'now'), after: scoreOf(rec, 'after'), gbd: scoreOf(rec, 'after', GBD_WEIGHT) },
       rank: {
         now: rankNow.get(stationId) || null,
         after: rankAfter.get(stationId) || null,
         gain: rankGain.get(stationId) || null,
+        gbd: rankGbd.get(stationId) || null,
       },
     };
   }
@@ -199,7 +208,7 @@ const StationAccess = (() => {
     const lines = [];
     let gainMin = 0;
     if (a.score.after != null) {
-      let s = '3대 업무지구 평균 <b>' + fmt(Math.round(a.score.after)) + '</b>';
+      let s = '3대 업무지구(CBD·YBD·GBD) 평균 <b>' + fmt(Math.round(a.score.after)) + '</b>';
       if (a.score.now != null) {
         gainMin = Math.round(a.score.now) - Math.round(a.score.after);
         s += ' <span class="sa-rank">(지금 ' + fmt(Math.round(a.score.now)) +
@@ -211,6 +220,9 @@ const StationAccess = (() => {
     if (a.rank.after) {
       r2.push('전국 <b>' + a.rank.after.rank + '위</b>');
     }
+    if (a.rank.gbd) {
+      r2.push('GBD 중시 <b>' + a.rank.gbd.rank + '위</b>');
+    }
     // 단축 순위는 '줄어드는 게 있을 때'만 보여준다. 2분 줄어드는 역에
     // '단축 954위' 를 붙이면 정보가 아니라 소음이다.
     if (a.rank.gain && gainMin >= 3) {
@@ -220,9 +232,10 @@ const StationAccess = (() => {
     lines.forEach(t => { h += '<div class="sa-sum">' + t + '</div>'; });
 
     const tot = (a.rank.after ? a.rank.after.total : 0).toLocaleString();
-    h += '<div class="sa-note">※ 실제 시각표가 아니라 노선별 표정속도로 계산한 추정값입니다' +
-      '(±20~30%). 두 번째 숫자가 <b>개통 후</b>이고 −N분은 그 차이입니다. ' +
-      '순위는 도심·여의도·강남 세 곳 평균으로 매긴 것으로, ' +
+    h += '<div class="sa-note">※ 실제 시각표가 아니라 추정값입니다. 열차를 <b>기다리는 시간은 빼고</b> ' +
+      '타고 가는 시간과 갈아타며 걷는 시간만 더했습니다. 두 번째 숫자가 <b>개통 후</b>이고 −N분은 그 차이입니다. ' +
+      '순위는 CBD(도심·서울역)·YBD(여의도)·GBD(강남) 세 곳 평균, ' +
+      'GBD 중시는 강남을 두 번 센 평균으로 매긴 것으로, ' +
       '전국 ' + tot + '역 가운데 몇 번째인지입니다.</div>';
     return h;
   }

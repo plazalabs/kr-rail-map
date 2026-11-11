@@ -43,9 +43,14 @@ if (transfers) RF.loadTransfers(transfers);
  * label 은 화면에 쓰는 이름, name 은 stations.geojson 의 역명.
  * lat/lng 는 '어느 도시의 동명 역인지' 를 가르는 기준점이다. */
 const DESTS = [
-  { id: 'cbd',   name: '시청', label: '도심·광화문', lat: 37.5657, lng: 126.9770 },
-  { id: 'ybd',   name: '여의도', label: '여의도',   lat: 37.5219, lng: 126.9245 },
-  { id: 'gbd',   name: '강남',  label: '강남',      lat: 37.4979, lng: 127.0276 },
+  // 업무지구는 역 하나가 아니라 묶음이다 (2026-11-11 회장님 결정). 묶음 안에서 '가장 빨리 가는 역'의 시간을 쓴다.
+  //   도심 = 시청·광화문·종각·서울역(2026-11-12 회장님 결정), 여의도 = 여의도·여의나루, 강남(테헤란로) = 강남·역삼·선릉·삼성
+  { id: 'cbd',   name: '시청', label: 'CBD 도심(시청·광화문·종각·서울역)', lat: 37.5657, lng: 126.9770,
+    members: [['광화문', 37.5710, 126.9768], ['종각', 37.5702, 126.9831], ['서울', 37.5547, 126.9707]] },
+  { id: 'ybd',   name: '여의도', label: 'YBD 여의도(여의도·여의나루)', lat: 37.5219, lng: 126.9245,
+    members: [['여의나루', 37.5271, 126.9329]] },
+  { id: 'gbd',   name: '강남',  label: 'GBD 강남(강남·역삼·선릉·삼성)', lat: 37.4979, lng: 127.0276,
+    members: [['역삼', 37.5006, 127.0364], ['선릉', 37.5045, 127.0490], ['삼성', 37.5089, 127.0631]] },
   { id: 'seoul', name: '서울',  label: '서울역',    lat: 37.5547, lng: 126.9707 },
   { id: 'pangyo', name: '판교', label: '판교',      lat: 37.3948, lng: 127.1112 },
 ];
@@ -73,8 +78,20 @@ function resolveStation(name, lat, lng) {
 
 const dests = DESTS.map(d => {
   const s = resolveStation(d.name, d.lat, d.lng);
-  return Object.assign({}, d, { station_id: s.id });
+  // 묶음의 모든 역 ID (같은 자리 다른 노선 역도 넣는다 — 예: 2호선 강남과 신분당선 강남)
+  const pts = [[d.name, d.lat, d.lng]].concat(d.members || []);
+  const member_ids = [];
+  for (const [n, la, ln] of pts) {
+    for (const f of stations.features) {
+      if (f.properties.name_ko !== n) continue;
+      const [x, y] = f.geometry.coordinates;
+      if (hav(ln, la, x, y) <= 1) member_ids.push(f.properties.id);
+    }
+  }
+  return Object.assign({}, d, { station_id: s.id, member_ids });
 });
+// 묶음 안 가장 빠른 시간
+const bestOf = (m, d) => { let v = null; for (const id of d.member_ids) { const t = m.get(id); if (t != null && (v == null || t < v)) v = t; } return v; };
 
 // --- 계산 ---------------------------------------------------------------
 const ids = stations.features.map(f => f.properties.id);
@@ -84,11 +101,11 @@ ids.forEach(id => { out[id] = { now: [], after: [] }; });
 const t0 = Date.now();
 for (const id of ids) {
   // 두 번의 다익스트라로 5개 거점을 한꺼번에 얻는다.
-  const nowMap = RF.allTimesFrom(id, { openOnly: true });
-  const aftMap = RF.allTimesFrom(id, { openOnly: false });
+  const nowMap = RF.allTimesFrom(id, { openOnly: true, noWait: true });
+  const aftMap = RF.allTimesFrom(id, { openOnly: false, noWait: true });
   dests.forEach(d => {
-    const a = nowMap.get(d.station_id);
-    const b = aftMap.get(d.station_id);
+    const a = bestOf(nowMap, d);
+    const b = bestOf(aftMap, d);
     out[id].now.push(a == null ? null : a);
     // 개통은 길을 더할 뿐 빼지 않는다 — 개통 후에도 지금 길로 갈 수 있다. 탐색이 환승이 적은 길을
     // 고르느라(환승 판단 여유분) 표시 분이 지금보다 길게 나오는 경우(2026-11-11, 19역)는 지금 값을 쓴다.
@@ -114,7 +131,7 @@ const doc = {
     '±5분 오차를 전제로 읽어야 한다. KTX 는 탑승 1회당 접근 12분을 더한다.',
   destinations: dests.map(d => ({
     id: d.id, name: d.name, label: d.label,
-    station_id: d.station_id, lat: d.lat, lng: d.lng,
+    station_id: d.station_id, member_ids: d.member_ids, lat: d.lat, lng: d.lng,
   })),
   stations: out,
 };

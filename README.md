@@ -2,7 +2,7 @@
 
 수도권 전철을 중심으로 한 **철도 노선도 웹앱**. 서버 없이 도는 정적 단일 페이지 앱입니다.
 
-- 지도 위에 85개 노선 / 1,244개 역
+- 지도 위에 86개 노선 / 1,244개 역
 - 역 검색 · 최단 경로·환승·요금 계산
 - **도심 접근성** — 역에서 도심·여의도·강남·서울역·판교까지, 지금과 개통 후
 - **통근권 찾기** — `분석 > 통근권 찾기`. 직장(목적지) 역까지 30·45·60·90분 안에 닿는 역을 지도에 색으로, 목록은 가까운 순·(투자 모드) 시세 낮은 순. 길찾기와 같은 시간 계산
@@ -10,7 +10,9 @@
 - **키보드만으로 쓰기** — 지도에서 N/P 로 역 고르기·Enter 로 열기, 패널을 닫으면 포커스가 연 버튼으로
 - **빠른 시작** — 사이드바 맨 위 4칸(길찾기·통근권·투자 모드·노선도), 첫 방문에는 안내 카드
 - **전세가율** (투자 모드) — 같은 단지·같은 전용면적의 매매·신규 전세를 짝지어 역·단지마다 중위값, 80% 이상 짝 수, 지도 색칠 레이어 (`data/build_station_jeonse.py`, 방법: `data.html#jeonse`)
-- **GTX 평면환승** — 청량리(B↔C)·삼성(A↔C) 같은 승강장 환승 0.5분, ITX-청춘 급행 (`js/route.js`)
+- **🚀 GTX 떡상 랭킹** (`rank.html`) — CBD·YBD·GBD 까지 시간으로 지금 vs 개통 후 순위, 떡상 TOP 10 그림, 등급(떡상·상승·보합·상대 하락·신규), 평균/CBD/YBD/GBD 중시, 개통 연도 슬라이더(2027~2035), 역 카드·공유 이미지(1080×1080). 지도에는 `지도 레이어 > 🚀 떡상 지도` (`data/build_rank.js`, `js/rank.js`, `js/rocket-map.js`, 방법: `data.html#rocket`)
+- **GTX 평면환승** — 청량리(B↔C)·삼성(A↔C) 같은 승강장, 방향이 맞는 조합만 10초 (나머지 8분), ITX-청춘 급행 (`js/route.js`)
+- **GTX 역간 시간 자체 산출** — 공식 발표 구간 7개 + 선형 거리 (`data/build_gtx_times.js`, 방법: `data.html#gtx-time`)
 - **역세권 범위 (근사)** — 사이드바 `지도 레이어 > 역세권 범위`. 1차 250m·2차 350m(서울시 『안심주택의 역세권 범위』 거리 기준), 줌 14 이상.
   공식 기준점은 승강장 경계지만 그 자료(행안부 지하철역사)가 신청형이라 아직 없어, **출구가 있는 역(938)은 출구별 원의 합집합, 없는 역(308)은 역 좌표 기준 원**으로 근사한다. 범례·역 패널에 근사임을 표시한다.
 - 노선별 정적 랜딩 페이지 72개 + sitemap(74 URL)
@@ -58,7 +60,7 @@ node tests/e2e/run.js --list     # 항목 목록
 | `vendor/` | MapLibre GL JS 4.7.1 (로컬 벤더링, BSD) |
 | `tests/*.test.js` | 단위 테스트 (의존성 없는 단일 스크립트) |
 | `tests/e2e/` | 화면 점검 — 헤드리스 Chrome + CDP, 실행기 `run.js` |
-| `data/lines.geojson` `data/stations.geojson` | 앱이 읽는 최종 데이터 (85노선·1,244역) |
+| `data/lines.geojson` `data/stations.geojson` | 앱이 읽는 최종 데이터 (86노선·1,244역) |
 | `data/build_access.js` | `data/access.json` 생성 (route.js 재사용, 1,234역 × 2회 다익스트라) |
 | `data/fix_interchange_lines.py` | 고립된 역·노선을 300m 근거로 이어 붙인다 → `stations.geojson` |
 | `data/fetch_dev.py` `data/build_station_dev.py` | 주택인허가 → `data/station-dev.json` (법정동 단위, 1,191곳) |
@@ -83,7 +85,7 @@ cd .. && python3 build_pages.py   # 정적 페이지 + sitemap
 
 ## 데이터 출처
 
-- 노선 선형: © OpenStreetMap contributors, ODbL — 79개 노선. 역 순서는 `data/own_align_config.py` 에 직접 정리
+- 노선 선형: © OpenStreetMap contributors, ODbL — 80개 노선. 역 순서는 `data/own_align_config.py` 에 직접 정리
 - 계획 노선 6개(GTX-D~H, 동부선): 역을 이은 개략선, 자체 작성 (`data/build_own_alignments.py`)
 - 베이스맵: © OpenStreetMap · OpenFreeMap / 위성: © Esri
 - 원천 전체와 이용 조건: `data/sources.json` (사람이 읽는 표는 `data.html`)

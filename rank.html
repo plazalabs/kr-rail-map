@@ -3,124 +3,181 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>교통 순위표 | 한국철도맵</title>
-<meta name="description" content="GTX 시대, 3대 업무지구(CBD·YBD·GBD)에 가장 빨리 닿는 역은 어디일까. 수도권·전국 역을 지금과 개통 후로 나눠 순위를 매겼습니다.">
+<title>GTX 떡상 랭킹 | 한국철도맵</title>
+<meta name="description" content="GTX 개통 후 우리 역은 몇 등? 3대 업무지구(CBD·YBD·GBD)까지 걸리는 시간으로 지금 순위와 개통 후 순위를 비교하고, 가장 많이 오르는 역을 한눈에 보여 줍니다.">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="canonical" href="https://plazalabs.github.io/kr-rail-map/rank.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="한국철도맵">
-<meta property="og:title" content="교통 순위표 — GTX 시대 3대 업무지구에 가장 가까운 역 | 한국철도맵">
-<meta property="og:description" content="CBD·YBD·GBD까지 몇 분? 지금과 개통 후 순위, 가장 많이 오르는 역.">
+<meta property="og:title" content="GTX 떡상 랭킹 — 개통 후 우리 역은 몇 등? | 한국철도맵">
+<meta property="og:description" content="지금 245위 → 개통 후 9위. 3대 업무지구까지 시간으로 매긴 역 순위와 가장 많이 오르는 역.">
 <meta property="og:url" content="https://plazalabs.github.io/kr-rail-map/rank.html">
 <meta property="og:image" content="https://plazalabs.github.io/kr-rail-map/image/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0b57d0">
 <style>
-:root{--bg:#fff;--surface:#f6f7f9;--card:#fff;--text:#16191d;--text2:#4a5158;--muted:#868e96;--border:#e3e6ea;
---accent:#0b57d0;--accentbg:#e8f0fe;--up:#0f7b3f;--upbg:#e6f4ea;--down:#b42318;--downbg:#fdecea;--newc:#7a3fd0;--newbg:#f1eafd;
---gold:#b07d00;--goldbg:#fff6da;--bar:#0b57d0;--bar2:#c9d7f5}
+:root{--bg:#fff;--surface:#f6f7f9;--card:#fff;--text:#16191d;--text2:#4a5158;--muted:#666e76;--border:#e3e6ea;
+--accent:#0b57d0;--accentbg:#e8f0fe;
+/* 등급 색 — 떡상(진한 초록)·상승(초록)·유지(회색)·밀림(주황)·신규(보라) */
+--t-rocket:#0a8f4a;--t-rocket-bg:#dcf5e6;--t-up:#3aa76d;--t-up-bg:#ecf8f1;--t-flat:#8a929a;--t-flat-bg:#f1f3f5;
+--t-down:#d9701a;--t-down-bg:#fff1e5;--t-new:#7a3fd0;--t-new-bg:#f1eafd;
+--gold:#8a6200;--goldbg:#fff6da;--bar-now:#c9ced4;--bar-aft:#0b57d0;
+/* 글자용 등급 색 — 흰·연한 바탕에서 대비 4.5 이상 (선·띠는 위 색 그대로, 2026-11-12) */
+--i-rocket:#08743c;--i-up:#1f7a4a;--i-flat:#5f676f;--i-down:#a85200;--i-new:#6a2fc0}
 @media(prefers-color-scheme:dark){:root{--bg:#14171a;--surface:#1c2024;--card:#191d21;--text:#e8eaed;--text2:#b3bac1;--muted:#8b939b;
---border:#2c3238;--accent:#8ab0ff;--accentbg:#1b2840;--up:#6fd59a;--upbg:#13301f;--down:#f19a92;--downbg:#3a1a18;--newc:#c4a3ff;--newbg:#2a1f3d;
---gold:#e8c35a;--goldbg:#33290f;--bar:#8ab0ff;--bar2:#2b3a57}}
+--border:#2c3238;--accent:#8ab0ff;--accentbg:#1b2840;
+--t-rocket:#4fd88a;--t-rocket-bg:#12301f;--t-up:#7fd3a3;--t-up-bg:#16281e;--t-flat:#8b939b;--t-flat-bg:#22272c;
+--t-down:#f0a060;--t-down-bg:#33230f;--t-new:#c4a3ff;--t-new-bg:#2a1f3d;--gold:#e8c35a;--goldbg:#33290f;--bar-now:#3a4148;--bar-aft:#8ab0ff;
+--i-rocket:#4fd88a;--i-up:#7fd3a3;--i-flat:#9aa2aa;--i-down:#f0a060;--i-new:#c4a3ff}}
 *{box-sizing:border-box}
 body{margin:0;font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);
 background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 button{font:inherit;color:inherit}
-.wrap{max-width:880px;margin:0 auto;padding:0 16px}
+[hidden]{display:none!important}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px}
 header.top{border-bottom:1px solid var(--border);background:var(--surface)}
 header.top .wrap{padding:13px 16px;display:flex;align-items:center;gap:10px}
-.logo{font-weight:700;font-size:16px;text-decoration:none;letter-spacing:-.02em}
+.logo{font-weight:700;font-size:16px;text-decoration:none;letter-spacing:-.02em;white-space:nowrap}
 .logo i{display:inline-block;width:4px;height:15px;border-radius:2px;margin-right:7px;vertical-align:-2px;
 background:linear-gradient(180deg,#0052a4 0 33%,#00a84d 33% 66%,#ef7c1c 66% 100%)}
 header.top nav{margin-left:auto;display:flex;gap:14px;font-size:13px}
-header.top nav a{text-decoration:none;color:var(--text2)}
+header.top nav a{text-decoration:none;color:var(--text2);white-space:nowrap}
 header.top nav a[aria-current]{color:var(--accent);font-weight:700}
-h1{font-size:27px;line-height:1.3;letter-spacing:-.03em;margin:26px 0 6px}
-h1 em{font-style:normal;color:var(--accent)}
-.lede{color:var(--text2);font-size:14.5px;margin:0 0 18px}
+h1{font-size:28px;line-height:1.3;letter-spacing:-.035em;margin:26px 0 6px}
+h1 em{font-style:normal;color:var(--i-rocket)}
+.lede{color:var(--text2);font-size:14.5px;margin:0 0 16px}
 .lede b{color:var(--text)}
+h2.sec{font-size:17px;letter-spacing:-.02em;margin:26px 0 4px}
+.sec-sub{font-size:12.5px;color:var(--muted);margin:0 0 10px}
 /* 조작부 */
-.ctl{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 10px;border-bottom:1px solid var(--border)}
+.ctl{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--border)}
 .ctl-row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-bottom:8px}
 .ctl-row:last-child{margin-bottom:0}
-.lbl{font-size:12px;color:var(--muted);min-width:34px}
+.lbl{font-size:12px;color:var(--muted);min-width:30px}
 .seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px}
 .seg button{border:0;background:transparent;padding:6px 11px;border-radius:7px;font-size:13px;cursor:pointer;color:var(--text2);white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--card);color:var(--text);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.seg button:focus-visible,.row:focus-visible,select:focus-visible,input:focus-visible,.more:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 select,input[type=search]{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--text)}
 input[type=search]{flex:1;min-width:140px}
 .hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+/* 개통 연도 슬라이더 */
+.yr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 12px;margin-top:8px}
+.yr .play{border:0;background:var(--t-rocket);color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:14px;flex:none}
+.yr .rng{flex:1;min-width:180px;display:flex;flex-direction:column;gap:2px}
+.yr input[type=range]{width:100%;accent-color:var(--t-rocket)}
+.yr .ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.yr .ticks span[aria-current]{color:var(--i-rocket);font-weight:800}
+.yr .now{font-size:15px;font-weight:800;min-width:118px;font-variant-numeric:tabular-nums}
+.yr .opens{flex-basis:100%;font-size:12px;color:var(--text2);display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
+/* 등급 칩 */
+.tiers{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
+.tchip{border:1px solid var(--border);background:var(--card);border-radius:99px;padding:5px 11px;font-size:12.5px;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
+.tchip b{font-variant-numeric:tabular-nums}
+.tchip[aria-pressed="true"]{border-color:currentColor;font-weight:700}
+.tc-rocket{color:var(--i-rocket)}.tc-up{color:var(--i-up)}.tc-flat{color:var(--i-flat)}.tc-down{color:var(--i-down)}.tc-new{color:var(--i-new)}.tc-all{color:var(--text)}
+/* 떡상 TOP 10 슬로프 */
+.slope{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 12px 8px;margin-top:10px}
+.slope svg{display:block;width:100%;height:auto}
+.slope .ax{font-size:11px;fill:var(--muted)}
+.slope .nm{font-size:13px;font-weight:700;fill:var(--text)}
+.slope .rk{font-size:12px;fill:var(--text2);font-variant-numeric:tabular-nums}
+.slope .gn{font-size:12px;font-weight:800}
+.slope a:hover .nm{text-decoration:underline}
 /* 1~3위 */
-.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0 6px}
-.pod{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 14px 12px;text-decoration:none;display:block;position:relative;overflow:hidden}
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 6px}
+.pod{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 14px 12px;text-decoration:none;display:block}
 .pod:hover{border-color:var(--accent)}
 .pod .medal{font-size:12px;font-weight:700;color:var(--gold);background:var(--goldbg);border-radius:99px;padding:2px 8px;display:inline-block}
-.pod .nm{font-size:19px;font-weight:800;letter-spacing:-.03em;margin:8px 0 2px}
+.pod .nm{font-size:19px;font-weight:800;letter-spacing:-.03em;margin:8px 0 1px}
 .pod .rg{font-size:12px;color:var(--muted)}
-.pod .sc{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.03em;margin-top:6px}
+.pod .sc{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.03em;margin-top:4px}
 .pod .sc small{font-size:13px;font-weight:600;color:var(--muted);margin-left:2px}
-.pod .tm{font-size:12px;color:var(--text2);margin-top:2px}
+.pod .tm{font-size:12px;color:var(--text2)}
 /* 목록 */
-.list{list-style:none;margin:10px 0 0;padding:0}
-.row{display:grid;grid-template-columns:52px 1fr 92px;gap:4px 12px;align-items:center;padding:12px 6px;border-bottom:1px solid var(--border);
-text-decoration:none;border-radius:8px}
+.list{list-style:none;margin:8px 0 0;padding:0}
+.list > li{border-bottom:1px solid var(--border)}
+.row{display:grid;grid-template-columns:78px 1fr 84px;gap:2px 12px;align-items:center;padding:12px 8px 12px 10px;width:100%;
+text-align:left;background:none;border:0;border-left:4px solid var(--tier,var(--border));cursor:pointer;border-radius:0}
 .row:hover{background:var(--surface)}
-.rk{text-align:center;font-variant-numeric:tabular-nums}
-.rk b{display:block;font-size:19px;font-weight:800;letter-spacing:-.02em}
-.rk .tie{display:block;font-size:10.5px;color:var(--muted)}
-.chg{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px;margin-top:3px;white-space:nowrap}
-.chg.up{color:var(--up);background:var(--upbg)}
-.chg.down{color:var(--down);background:var(--downbg)}
-.chg.same{color:var(--muted);background:var(--surface)}
-.chg.new{color:var(--newc);background:var(--newbg)}
+.rk{text-align:center;font-variant-numeric:tabular-nums;line-height:1.2}
+.rk .from{display:block;font-size:11px;color:var(--muted)}
+.rk .from s{text-decoration:none}
+.rk b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em}
+.rk .tie{font-size:10.5px;color:var(--muted);font-weight:400}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;border-radius:99px;padding:1px 7px;margin-top:3px;white-space:nowrap;
+color:var(--tierink);background:var(--tierbg)}
 .who{min-width:0}
 .who .nm{font-size:16px;font-weight:700;letter-spacing:-.02em}
-.who .rg{font-size:12px;color:var(--muted);margin-left:6px;font-weight:400}
+.who .rg{font-size:12px;color:var(--muted);margin-left:6px}
 .lines{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .ln{font-size:10.5px;font-weight:700;color:#fff;border-radius:4px;padding:1px 5px;white-space:nowrap;line-height:1.5}
 .ln.plan{background:transparent!important;border:1.5px dashed currentColor}
 .tms{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin-top:5px;font-variant-numeric:tabular-nums}
-.tms span b{color:var(--text);font-weight:700}
+.tms b{color:var(--text)}
 .tms s{color:var(--muted);margin-right:2px}
 .tms .hi{color:var(--accent)}
 .scr{text-align:right;font-variant-numeric:tabular-nums}
-.scr b{font-size:22px;font-weight:800;letter-spacing:-.03em}
+.scr b{font-size:21px;font-weight:800;letter-spacing:-.03em}
 .scr small{font-size:11px;color:var(--muted)}
-.scr .gain{display:block;font-size:11.5px;color:var(--up);font-weight:600}
-.bar{grid-column:2 / 4;height:5px;background:var(--surface);border-radius:99px;overflow:hidden;position:relative}
-.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
-.bar i.n{background:var(--bar2)}
-.bar i.a{background:var(--bar)}
+.scr .gain{display:block;font-size:11.5px;color:var(--i-up);font-weight:700}
+.chev{font-size:11px;color:var(--muted);display:block;margin-top:2px}
+/* 펼친 역 카드 */
+.card{margin:0 0 12px 4px;padding:14px 16px 16px;background:var(--surface);border-radius:0 0 14px 14px}
+.big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.big .a{font-size:15px;color:var(--muted)}
+.big .arrow{font-size:18px;color:var(--muted)}
+.big .b{font-size:30px;font-weight:800;letter-spacing:-.03em}
+.big .badge{font-size:13px;padding:3px 10px}
+.bars{margin:12px 0 4px;display:grid;gap:9px}
+.bar-row{display:grid;grid-template-columns:44px 1fr 92px;gap:10px;align-items:center;font-size:12.5px}
+.bar-row .d{font-weight:700}
+.bar-row .tr{position:relative;height:16px}
+.bar-row .tr i{position:absolute;left:0;top:0;height:7px;border-radius:99px;background:var(--bar-now)}
+.bar-row .tr i.af{top:9px;background:var(--bar-aft)}
+.bar-row .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--text2)}
+.bar-row .v b{color:var(--text)}
+.bar-row .v .cut{color:var(--i-up);font-weight:700}
+.legend{font-size:11px;color:var(--muted);display:flex;gap:12px;margin-top:2px}
+.legend i{display:inline-block;width:14px;height:6px;border-radius:99px;vertical-align:1px;margin-right:4px}
+.newlines{margin-top:12px;font-size:13px}
+.newlines .t{font-size:12px;color:var(--muted);margin-bottom:5px}
+.nl{display:inline-flex;align-items:center;gap:6px;margin:0 8px 6px 0}
+.nl .yr{font-size:11.5px;color:var(--text2)}
+.go{display:inline-block;margin-top:12px;padding:8px 14px;border-radius:9px;background:var(--accent);color:#fff;text-decoration:none;font-size:13px;font-weight:700}
+.share{margin:12px 0 0 6px;padding:8px 14px;border-radius:9px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:13px;font-weight:700}
+.share-msg{font-size:12px;color:var(--muted);margin-left:8px}
 .more{display:block;width:100%;margin:14px 0 0;padding:11px;border:1px solid var(--border);border-radius:10px;background:var(--card);cursor:pointer;font-size:14px}
-.empty{padding:40px 0;text-align:center;color:var(--muted)}
+.empty{padding:40px 0;text-align:center;color:var(--muted);border:0}
 .note{margin:34px 0 60px;padding:16px 18px;background:var(--surface);border-radius:12px;font-size:13px;color:var(--text2)}
 .note h2{font-size:14px;margin:0 0 8px;color:var(--text)}
 .note ul{margin:0;padding-left:18px}
 .note li{margin-bottom:5px}
-[hidden]{display:none!important}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.t-rocket{--tier:var(--t-rocket);--tierbg:var(--t-rocket-bg);--tierink:var(--i-rocket)}.t-up{--tier:var(--t-up);--tierbg:var(--t-up-bg);--tierink:var(--i-up)}
+.t-flat{--tier:var(--t-flat);--tierbg:var(--t-flat-bg);--tierink:var(--i-flat)}.t-down{--tier:var(--t-down);--tierbg:var(--t-down-bg);--tierink:var(--i-down)}.t-new{--tier:var(--t-new);--tierbg:var(--t-new-bg);--tierink:var(--i-new)}
 @media(max-width:600px){
 h1{font-size:22px}
 .podium{grid-template-columns:1fr;gap:8px}
-.pod{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0 10px;padding:11px 13px}
-.pod .nm{margin:0;font-size:17px}.pod .sc{margin:0;font-size:24px;grid-row:1 / 3;grid-column:3}
+.pod{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0 10px;padding:10px 13px}
+.pod .nm{margin:0;font-size:17px}.pod .sc{margin:0;font-size:22px;grid-row:1 / 3;grid-column:3}
 .pod .rg,.pod .tm{grid-column:2}.pod .medal{grid-row:1 / 3}
-.row{grid-template-columns:44px 1fr 74px;gap:3px 8px;padding:11px 2px}
-.scr b{font-size:19px}
+.row{grid-template-columns:62px 1fr 64px;gap:2px 8px;padding:11px 4px 11px 6px}
+.scr b{font-size:18px}
 .seg button{padding:6px 8px;font-size:12.5px}
 .lbl{display:none}
+.bar-row{grid-template-columns:38px 1fr 84px}
 }
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap"><a class="logo" href="./"><i></i>한국철도맵</a>
-<nav><a href="./">지도</a><a href="rank.html" aria-current="page">교통 순위표</a><a href="data.html">자료</a></nav></div></header>
+<nav><a href="./">지도</a><a href="rank.html" aria-current="page">떡상 랭킹</a><a href="data.html">자료</a></nav></div></header>
 <main class="wrap">
-<h1>GTX 시대, <em>3대 업무지구</em>에 가장 가까운 역</h1>
-<p class="lede">역에서 <b>CBD</b>(시청·광화문·종각·서울역), <b>YBD</b>(여의도), <b>GBD</b>(강남·역삼·선릉·삼성)까지
-걸리는 시간으로 점수를 매겼습니다. <b>100점에서 평균 분을 뺀 값</b>이라 1분 빠르면 1점 높습니다.</p>
+<h1>GTX 개통 후, 우리 역은 <em>몇 등</em>?</h1>
+<p class="lede">역에서 <b>CBD</b>(시청·광화문·종각·서울역)·<b>YBD</b>(여의도)·<b>GBD</b>(강남·역삼·선릉·삼성)까지 걸리는 시간으로
+<b>지금 순위</b>와 <b>개통 후 순위</b>를 매겼습니다. 점수는 100점에서 평균 분을 뺀 값 — 1분 빠르면 1점 높습니다.</p>
 
 <div class="ctl" role="region" aria-label="순위 기준">
   <div class="ctl-row">
@@ -139,21 +196,36 @@ h1{font-size:22px}
       <button data-v="seoul">서울</button><button data-v="capital">수도권</button><button data-v="all">전국</button>
     </div>
   </div>
+  <div class="yr" id="yr-row" role="group" aria-label="개통 연도">
+    <button class="play" id="yr-play" aria-label="연도 차례로 보기">▶</button>
+    <div class="rng"><input type="range" id="yr" min="0" max="1" step="1" value="1" aria-label="이 해까지 개통한 노선으로 보기"><div class="ticks" id="yr-ticks"></div></div>
+    <span class="now" id="yr-now"></span>
+    <div class="opens" id="yr-opens"></div>
+  </div>
   <div class="ctl-row">
     <label class="sr" for="sort">정렬</label>
     <select id="sort">
       <option value="rank">순위순</option>
-      <option value="rise">순위 많이 오르는 순</option>
+      <option value="rise">많이 오르는 순</option>
       <option value="gain">점수 많이 오르는 순</option>
     </select>
     <label class="sr" for="q">역 이름 찾기</label>
-    <input type="search" id="q" placeholder="역 이름·구 찾기 (예: 광운대, 노원구)" autocomplete="off">
+    <input type="search" id="q" placeholder="우리 역 찾기 (예: 광운대, 노원구)" autocomplete="off">
   </div>
   <p class="hint" id="hint"></p>
 </div>
 
+<div class="tiers" id="tiers" role="group" aria-label="등급으로 거르기"></div>
+
+<section id="slope-sec" aria-labelledby="slope-h">
+  <h2 class="sec" id="slope-h">🚀 개통하면 가장 많이 오르는 역 TOP 10</h2>
+  <p class="sec-sub">왼쪽은 지금 순위, 오른쪽은 개통 후 순위입니다. 선이 가파를수록 많이 오릅니다.</p>
+  <div class="slope" id="slope"></div>
+</section>
+
+<h2 class="sec" id="list-h">순위</h2>
 <div class="podium" id="podium" aria-label="1~3위"></div>
-<ol class="list" id="list" aria-live="polite"></ol>
+<ol class="list" id="list" aria-labelledby="list-h"></ol>
 <button class="more" id="more" hidden>더 보기</button>
 
 <section class="note">
@@ -163,8 +235,8 @@ h1{font-size:22px}
 <li>업무지구는 역 하나가 아니라 묶음입니다. 묶음 안에서 <b>가장 빨리 닿는 역</b>의 시간을 씁니다.</li>
 <li><b>점수</b> = 100 − 세 곳 평균 분. <b>○○ 중시</b>는 그곳을 두 번 세서 평균을 냅니다(예: GBD 중시 = (CBD + YBD + 2×GBD) ÷ 4).</li>
 <li><b>개통 후</b>는 공사 중·계획 노선(GTX A·B·C 등)이 모두 열렸다고 보고 계산한 값입니다. 계획은 바뀔 수 있습니다.</li>
-<li>점수가 같으면 <b>공동 순위</b>입니다. ▲는 지금보다 개통 후에 순위가 오르는 칸 수입니다.</li>
-<li>실제 시각표가 아니라 추정값입니다. 역 사이 시간의 출처는 <a href="data.html">자료 페이지</a>에 적어 두었습니다.</li>
+<li><b>등급</b>: 🚀 떡상 = 100계단 이상 오름 · 📈 상승 = 10~99계단 · ➖ 보합 = 9계단 오름~49계단 밀림 · 📉 상대 하락 = 50계단 이상 밀림 · ✨ 신규 = 새 노선이 생겨야 갈 수 있는 역. 같은 기준·같은 지역 안에서 셉니다. <b>순위가 밀려도 시간은 대부분 줄어듭니다</b> — 다른 역(GTX)이 더 많이 좋아질 뿐이라, 오른쪽 점수의 +N점(=줄어든 분)을 함께 보세요.</li>
+<li>점수가 같으면 <b>공동 순위</b>입니다. 실제 시각표가 아니라 추정값이며, 역 사이 시간의 출처는 <a href="data.html#gtx-time">자료 페이지</a>에 적어 두었습니다.</li>
 </ul>
 </section>
 </main>
@@ -178,6 +250,8 @@ h1{font-size:22px}
   const REGION = { seoul: '서울', capital: '수도권(서울·경기·인천)', all: '전국' };
   const DEST = ['CBD', 'YBD', 'GBD'];
   const HI = { cbd: 0, ybd: 1, gbd: 2 };
+  const TIER_ORDER = ['rocket', 'up', 'flat', 'down', 'new'];
+  const T = RankTable.TIERS;
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -188,7 +262,10 @@ h1{font-size:22px}
     t: qs.get('t') === 'now' ? 'now' : 'aft',
     r: REGION[qs.get('r')] ? qs.get('r') : 'capital',
     sort: ['rank', 'rise', 'gain'].includes(qs.get('sort')) ? qs.get('sort') : 'rank',
+    tier: T[qs.get('tier')] ? qs.get('tier') : '',
     q: qs.get('q') || '',
+    open: qs.get('open') || '',
+    y: qs.get('y') || 'all',   // 개통 연도 슬라이더 — 'all' = 전체(시기 미정 노선 포함)
     shown: PAGE,
   };
   let doc = null, lineInfo = {};
@@ -196,7 +273,8 @@ h1{font-size:22px}
   function saveUrl() {
     const u = new URL(location.href);
     const set = (k, v, d) => { if (v === d || !v) u.searchParams.delete(k); else u.searchParams.set(k, v); };
-    set('w', st.w, 'avg'); set('t', st.t, 'aft'); set('r', st.r, 'capital'); set('sort', st.sort, 'rank'); set('q', st.q, '');
+    set('w', st.w, 'avg'); set('t', st.t, 'aft'); set('r', st.r, 'capital'); set('sort', st.sort, 'rank');
+    set('tier', st.tier, ''); set('q', st.q, ''); set('open', st.open, ''); set('y', st.y, 'all');
     history.replaceState(null, '', u);
   }
 
@@ -207,23 +285,25 @@ h1{font-size:22px}
     });
     $('sort').value = st.sort;
     $('q').value = st.q;
-    // '지금' 순위를 볼 때는 오름 정렬이 뜻이 없다
-    $('sort').disabled = st.t === 'now';
+    $('sort').disabled = st.t === 'now';   // '지금' 순위에는 오름 정렬이 뜻이 없다
   }
 
-  function lineChips(ids) {
-    const list = (ids || []).map(id => ({ id, m: lineInfo[id] })).filter(x => x.m);
-    // GTX 를 앞에, 나머지는 이름순. 너무 많으면 5개 + 나머지 수
+  function lineChips(ids, onlyPlan) {
+    const list = (ids || []).map(id => ({ id, m: lineInfo[id] })).filter(x => x.m && (!onlyPlan || (x.m.s && x.m.s !== 'open')));
     list.sort((a, b) => (/GTX/.test(b.m.n) - /GTX/.test(a.m.n)) || (a.m.n < b.m.n ? -1 : 1));
     const seen = new Set();
-    const uniq = list.filter(x => { if (seen.has(x.m.n)) return false; seen.add(x.m.n); return true; });
-    const head = uniq.slice(0, 5).map(x => {
-      const plan = x.m.s && x.m.s !== 'open';
-      return '<span class="ln' + (plan ? ' plan' : '') + '" style="' + (plan ? 'color:' : 'background:') + esc(x.m.c || '#666') + '"' +
-        (plan ? ' title="개통 전"' : '') + '>' + esc(x.m.n) + '</span>';
-    });
-    if (uniq.length > 5) head.push('<span class="ln" style="background:#888">+' + (uniq.length - 5) + '</span>');
-    return head.join('');
+    return list.filter(x => { if (seen.has(x.m.n)) return false; seen.add(x.m.n); return true; });
+  }
+  function chipHtml(x) {
+    const plan = x.m.s && x.m.s !== 'open';
+    return '<span class="ln' + (plan ? ' plan' : '') + '" style="' + (plan ? 'color:' : 'background:') + esc(x.m.c || '#666') + '"' +
+      (plan ? ' title="개통 전"' : '') + '>' + esc(x.m.n) + '</span>';
+  }
+  function chips(ids) {
+    const u = lineChips(ids);
+    const h = u.slice(0, 5).map(chipHtml);
+    if (u.length > 5) h.push('<span class="ln" style="background:#888">+' + (u.length - 5) + '</span>');
+    return h.join('');
   }
 
   function times(r) {
@@ -237,86 +317,290 @@ h1{font-size:22px}
     }).join('');
   }
 
-  function changeBadge(r) {
-    if (st.t !== 'aft') return '';
-    if (r.isNew) return '<span class="chg new" title="지금은 철도로 갈 수 없는 역">신규</span>';
-    if (r.change > 0) return '<span class="chg up" title="지금 ' + r.now.rank + '위 → 개통 후 ' + r.aft.rank + '위">▲' + r.change + '</span>';
-    if (r.change < 0) return '<span class="chg down" title="지금 ' + r.now.rank + '위 → 개통 후 ' + r.aft.rank + '위">▼' + (-r.change) + '</span>';
-    return '<span class="chg same">–</span>';
+  function badge(r) {
+    const t = RankTable.tierOf(r);
+    if (t === 'new') return '<span class="badge">' + T.new.icon + ' 신규</span>';
+    const c = r.change;
+    const txt = c > 0 ? '▲' + c : c < 0 ? '▼' + (-c) : '–';
+    return '<span class="badge" title="' + esc(T[t].label + ' · ' + T[t].hint) + '">' + T[t].icon + ' ' + txt + '</span>';
+  }
+  const link = r => './?st=' + encodeURIComponent(r.id);
+
+  // 떡상 TOP 10 — 지금 순위(왼쪽) → 개통 후 순위(오른쪽). 순위는 로그 눈금 (245위와 9위를 한 그림에)
+  function slopeSvg(rows, total) {
+    const top = rows.filter(r => !r.isNew && r.change > 0).sort((a, b) => b.change - a.change || a.aft.rank - b.aft.rank).slice(0, 10);
+    if (!top.length) return '<p class="sec-sub">이 조건에서는 오르는 역이 없습니다.</p>';
+    // 좁은 화면(휴대폰)은 그림 폭을 줄여 글자가 작아지지 않게 한다 (viewBox 가 화면 폭에 맞춰 줄어든다)
+    const narrow = ($('slope').clientWidth || 640) < 560;
+    const W = narrow ? 400 : 640, H = 330, L = narrow ? 46 : 118, R = W - (narrow ? 178 : 210), Y0 = 28, Y1 = H - 18;
+    const lg = v => Math.log10(Math.max(1, v));
+    const maxR = Math.max(total, ...top.map(r => r.now.rank));
+    const y = rank => Y0 + (lg(rank) / lg(maxR)) * (Y1 - Y0);
+    // 라벨이 겹치지 않게 아래로 밀어 준다
+    const place = (arr, key) => { const out = new Map(); let last = -1e9; arr.slice().sort((a, b) => y(a[key].rank) - y(b[key].rank)).forEach(r => { const v = Math.max(y(r[key].rank), last + 15.5); out.set(r, v); last = v; }); return out; };
+    const ly = place(top, 'now'), ry = place(top, 'aft');
+    const Hfit = Math.max(H, Math.ceil(Math.max(...ly.values(), ...ry.values()) + 14));
+    const ticks = [1, 10, 100, 1000].filter(t => t <= maxR);
+    let g = '<svg viewBox="0 0 ' + W + ' ' + Hfit + '" role="img" aria-label="많이 오르는 역 10곳의 지금 순위와 개통 후 순위">';
+    g += '<text class="ax" x="' + L + '" y="14" text-anchor="middle">지금</text><text class="ax" x="' + R + '" y="14" text-anchor="middle">' + aftLabel() + '</text>';
+    ticks.forEach(t => { const yy = y(t); g += '<line x1="' + L + '" x2="' + R + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--border)" stroke-dasharray="2 4"/>' +
+      '<text class="ax" x="' + ((L + R) / 2) + '" y="' + (yy - 3) + '" text-anchor="middle">' + t + '위</text>'; });
+    g += '<line x1="' + L + '" x2="' + L + '" y1="' + Y0 + '" y2="' + Y1 + '" stroke="var(--border)"/><line x1="' + R + '" x2="' + R + '" y1="' + Y0 + '" y2="' + Y1 + '" stroke="var(--border)"/>';
+    top.forEach(r => {
+      const t = RankTable.tierOf(r);
+      const col = 'var(--t-' + t + ')';
+      const a = y(r.now.rank), b = y(r.aft.rank);
+      g += '<a href="#" data-open="' + esc(r.id) + '" aria-label="' + esc(r.name + ' 지금 ' + r.now.rank + '위에서 ' + aftLabel() + ' ' + r.aft.rank + '위') + '">' +
+        '<line x1="' + L + '" y1="' + a + '" x2="' + R + '" y2="' + b + '" stroke="' + col + '" stroke-width="' + (t === 'rocket' ? 3 : 2) + '" stroke-linecap="round" opacity=".9"/>' +
+        '<circle cx="' + L + '" cy="' + a + '" r="3.5" fill="' + col + '"/><circle cx="' + R + '" cy="' + b + '" r="4.5" fill="' + col + '"/>' +
+        '<text class="rk" x="' + (L - 8) + '" y="' + (ly.get(r) + 4) + '" text-anchor="end">' + r.now.rank + '위</text>' +
+        '<text x="' + (R + 9) + '" y="' + (ry.get(r) + 4) + '"><tspan class="rk">' + r.aft.rank + '위 </tspan><tspan class="nm">' + esc(r.name) + '</tspan>' +
+        '<tspan class="gn" fill="var(--i-' + t + ')"> ▲' + r.change + '</tspan></text></a>';
+    });
+    return g + '</svg>';
   }
 
-  function link(r) { return './?st=' + encodeURIComponent(r.id); }
+  // 펼친 역 카드 — 큰 순위 변화, 업무지구별 분 막대, 이 역에 새로 생기는 노선
+  function cardHtml(r) {
+    const t = RankTable.tierOf(r);
+    const mx = Math.max(60, ...r.now.times.concat(r.aft.times).filter(v => v != null));
+    const bars = DEST.map((d, i) => {
+      const n = r.now.times[i], a = r.aft.times[i];
+      const cut = (n != null && a != null && n > a) ? '<span class="cut">−' + (n - a) + '분</span> ' : '';
+      return '<div class="bar-row"><span class="d">' + d + '</span><span class="tr">' +
+        (n != null ? '<i style="width:' + (n / mx * 100).toFixed(1) + '%"></i>' : '') +
+        (a != null ? '<i class="af" style="width:' + (a / mx * 100).toFixed(1) + '%"></i>' : '') +
+        '</span><span class="v">' + cut + (n == null ? '—' : n) + '→<b>' + (a == null ? '—' : a + '분') + '</b></span></div>';
+    }).join('');
+    const plan = lineChips(r.lines, true);
+    const nl = plan.length
+      ? '<div class="newlines"><div class="t">이 역에 새로 생기는 노선</div>' + plan.map(x => {
+          const yr = RankTable.yearOf(x.m.o);
+          return '<span class="nl">' + chipHtml(x) + '<span class="yr">' + (yr ? yr + '년' : '시기 미정') + '</span></span>';
+        }).join('') + '</div>'
+      : (r.change > 0 ? '<div class="newlines"><div class="t">이 역에는 새 노선이 없지만, 가까운 역의 새 노선(GTX 등)으로 갈아타는 길이 빨라집니다.</div></div>' : '');
+    const head = r.isNew
+      ? '<div class="big"><span class="a">지금은 철도로 갈 수 없음</span><span class="arrow">→</span><span class="b">' + r.aft.rank + '위</span><span class="badge">' + T.new.icon + ' 신규</span></div>'
+      : '<div class="big"><span class="a">지금 ' + r.now.rank + '위</span><span class="arrow">→</span><span class="b">' + aftLabel() + ' ' + r.aft.rank + '위</span>' + badge(r).replace('class="badge"', 'class="badge t-' + t + '"') + '</div>';
+    return '<div class="card t-' + t + '" id="card-' + esc(r.id) + '">' + head +
+      '<div class="bars">' + bars + '</div>' +
+      '<div class="legend"><span><i style="background:var(--bar-now)"></i>지금</span><span><i style="background:var(--bar-aft)"></i>' + aftLabel() + '</span></div>' +
+      nl + '<a class="go" href="' + link(r) + '">지도에서 보기 →</a>' +
+      '<button class="share" data-share="' + esc(r.id) + '">📸 공유 이미지 저장</button><span class="share-msg" role="status"></span></div>';
+  }
+
+  // 개통 연도 단계 — rank.json years + '전체'
+  const stops = () => (doc.years || []).map(String).concat(['all']);
+  const yrLabel = y => y === 'all' ? '전체 개통' : y + '년까지';
+  const aftLabel = () => st.y === 'all' ? '개통 후' : st.y + '년';
+  function renderYear() {
+    const S = stops();
+    if (!S.includes(st.y)) st.y = 'all';
+    const i = S.indexOf(st.y);
+    $('yr-row').hidden = st.t === 'now' || S.length < 2;
+    $('yr').max = String(S.length - 1); $('yr').value = String(i);
+    $('yr').setAttribute('aria-valuetext', yrLabel(st.y));
+    $('yr-ticks').innerHTML = S.map(y => '<span' + (y === st.y ? ' aria-current="true"' : '') + '>' + (y === 'all' ? '전체' : "'" + y.slice(2)) + '</span>').join('');
+    $('yr-now').textContent = yrLabel(st.y);
+    const ids = st.y === 'all' ? (doc.undated_lines || []) : ((doc.year_lines || {})[st.y] || []);
+    const named = lineChips(ids);
+    $('yr-opens').innerHTML = named.length
+      ? (st.y === 'all' ? '시기 미정 노선까지:' : st.y + '년 개통:') + ' ' + named.map(chipHtml).join(' ')
+      : '';
+  }
 
   function render() {
     if (!doc) return;
-    syncControls(); saveUrl();
-    const res = RankTable.compute(doc, { weight: st.w, region: st.r });
-    // '지금' 시점은 지금 순위로만 본다
+    syncControls(); renderYear(); saveUrl();
+    const res = RankTable.compute(doc, { weight: st.w, region: st.r, at: st.t === 'aft' ? st.y : 'all' });
     let rows = res.rows;
-    if (st.t === 'now') {
-      rows = rows.filter(r => r.now.rank != null).map(r => Object.assign({}, r, { aft: r.now, tie: false }));
+    const isNow = st.t === 'now';
+
+    // 등급 칩 (개통 후 시점에서만 — 지금 시점에는 '오른다'가 없다)
+    const tc = RankTable.tierCounts(rows);
+    $('tiers').hidden = isNow;
+    $('tiers').innerHTML = '<button class="tchip tc-all" data-tier="" aria-pressed="' + (!st.tier) + '">전체 <b>' + rows.length.toLocaleString() + '</b></button>' +
+      TIER_ORDER.map(k => '<button class="tchip tc-' + k + '" data-tier="' + k + '" aria-pressed="' + (st.tier === k) + '" title="' + esc(T[k].hint) + '">' +
+        T[k].icon + ' ' + T[k].label + ' <b>' + tc[k].toLocaleString() + '</b></button>').join('');
+
+    // 떡상 TOP 10 — 개통 후, 찾기·등급 거르기 없을 때
+    const showSlope = !isNow && !st.q && !st.tier;
+    $('slope-sec').hidden = !showSlope;
+    if (showSlope) $('slope').innerHTML = slopeSvg(rows, res.total);
+
+    if (isNow) {
+      rows = rows.filter(r => r.now.rank != null).map(r => Object.assign({}, r, { aft: r.now, orig: r }));
       rows = RankTable.sortRows(rows, 'rank');
-      // 지금 시점의 공동 순위 표시
       const cnt = new Map(); rows.forEach(r => cnt.set(r.aft.score, (cnt.get(r.aft.score) || 0) + 1));
       rows.forEach(r => { r.tie = cnt.get(r.aft.score) > 1; });
     } else {
       rows = RankTable.sortRows(rows, st.sort === 'rank' ? 'after' : st.sort);
+      if (st.tier) rows = rows.filter(r => RankTable.tierOf(r) === st.tier);
     }
-    const total = st.t === 'now' ? res.totalNow : res.total;
+    const total = isNow ? res.totalNow : res.total;
     const filtered = rows.filter(r => RankTable.matches(r, st.q));
-
+    $('slope-h').textContent = '🚀 ' + (st.y === 'all' ? '개통하면' : st.y + '년까지 개통하면') + ' 가장 많이 오르는 역 TOP 10';
     $('hint').textContent = REGION[st.r] + ' ' + total.toLocaleString() + '역 · ' + LABEL[st.w] + ' · ' +
-      (st.t === 'aft' ? '개통 후' : '지금') + ' 기준' + (st.q ? ' · "' + st.q + '" ' + filtered.length + '곳' : '');
+      (isNow ? '지금' : aftLabel() === '개통 후' ? '개통 후' : aftLabel() + '까지 개통') + ' 기준' + (st.tier ? ' · ' + T[st.tier].icon + ' ' + T[st.tier].label + ' ' + filtered.length + '곳' : '') +
+      (st.q ? ' · "' + st.q + '" ' + filtered.length + '곳' : '');
+    $('list-h').textContent = st.tier ? T[st.tier].icon + ' ' + T[st.tier].label + ' 역' : (st.sort === 'rise' && !isNow ? '많이 오르는 순' : st.sort === 'gain' && !isNow ? '점수 많이 오르는 순' : '순위');
 
-    // 1~3위 카드 — 순위순·찾기 없을 때만
+    // 1~3위 카드 — 순위순·거르기 없을 때만
+    const podOn = !st.q && !st.tier && (isNow || st.sort === 'rank');
     const pod = $('podium');
-    if (!st.q && st.sort === 'rank' || (!st.q && st.t === 'now')) {
-      pod.hidden = false;
-      pod.innerHTML = rows.slice(0, 3).map((r, i) =>
-        '<a class="pod" href="' + link(r) + '">' +
-        '<span class="medal">' + (r.tie ? '공동 ' : '') + r.aft.rank + '위</span>' +
-        '<div class="nm">' + esc(r.name) + '</div>' +
-        '<div class="rg">' + esc([r.region, r.sgg].filter(Boolean).join(' ')) + '</div>' +
-        '<div class="sc">' + r.aft.score.toFixed(1) + '<small>점</small></div>' +
-        '<div class="tm">' + DEST.map((d, j) => d + ' ' + (r.aft.times[j] == null ? '—' : r.aft.times[j] + '분')).join(' · ') + '</div></a>'
-      ).join('');
-    } else { pod.hidden = true; pod.innerHTML = ''; }
+    pod.hidden = !podOn;
+    pod.innerHTML = podOn ? rows.slice(0, 3).map(r =>
+      '<a class="pod" href="' + link(r) + '"><span class="medal">' + (r.tie ? '공동 ' : '') + r.aft.rank + '위</span>' +
+      '<div class="nm">' + esc(r.name) + '</div><div class="rg">' + esc([r.region, r.sgg].filter(Boolean).join(' ')) + '</div>' +
+      '<div class="sc">' + r.aft.score.toFixed(1) + '<small>점</small></div>' +
+      '<div class="tm">' + DEST.map((d, j) => d + ' ' + (r.aft.times[j] == null ? '—' : r.aft.times[j] + '분')).join(' · ') + '</div></a>').join('') : '';
 
-    const body = (st.q || st.sort !== 'rank' || st.t === 'now') ? filtered : filtered.slice(3);
+    const body = podOn ? filtered.slice(3) : filtered;
     const list = $('list');
     if (!filtered.length) {
-      list.innerHTML = '<li class="empty">찾는 역이 없어요. 지역을 <b>전국</b>으로 바꿔 보세요.</li>';
+      list.innerHTML = '<li class="empty">찾는 역이 없어요. 지역을 <b>전국</b>으로 바꾸거나 등급 거르기를 풀어 보세요.</li>';
       $('more').hidden = true; return;
     }
     const page = body.slice(0, st.shown);
     list.innerHTML = page.map(r => {
-      const gain = (st.t === 'aft' && r.now.score != null && r.aft.score > r.now.score) ? '+' + (r.aft.score - r.now.score).toFixed(1) : '';
-      const pn = (st.t === 'aft' && r.now.score != null) ? r.now.score : null;
-      return '<li><a class="row" href="' + link(r) + '" aria-label="' + esc(r.name) + ' ' + r.aft.rank + '위 ' + r.aft.score.toFixed(1) + '점">' +
-        '<div class="rk"><b>' + r.aft.rank + '</b>' + (r.tie ? '<span class="tie">공동</span>' : '') + changeBadge(r) + '</div>' +
-        '<div class="who"><span class="nm">' + esc(r.name) + '</span><span class="rg">' + esc([r.region, r.sgg].filter(Boolean).join(' ')) + '</span>' +
-        '<div class="lines">' + lineChips(r.lines) + '</div>' +
-        '<div class="tms">' + times(r) + '</div></div>' +
-        '<div class="scr"><b>' + r.aft.score.toFixed(1) + '</b><small>점</small>' + (gain ? '<span class="gain">' + gain + '</span>' : '') + '</div>' +
-        '<div class="bar" aria-hidden="true">' + (pn != null ? '<i class="a" style="width:' + r.aft.score + '%"></i><i class="n" style="width:' + pn + '%"></i>' : '<i class="a" style="width:' + r.aft.score + '%"></i>') + '</div>' +
-        '</a></li>';
+      const t = isNow ? 'flat' : RankTable.tierOf(r);
+      const open = st.open === r.id;
+      const gain = (!isNow && r.now.score != null && r.aft.score > r.now.score) ? '+' + (r.aft.score - r.now.score).toFixed(1) + '점' : '';
+      const from = (!isNow && r.now.rank != null) ? '<span class="from">' + r.now.rank + '위 →</span>' : '';
+      return '<li><button class="row t-' + t + '" data-id="' + esc(r.id) + '" aria-expanded="' + open + '" aria-controls="card-' + esc(r.id) + '">' +
+        '<span class="rk">' + from + '<b>' + r.aft.rank + '<span class="tie">' + (r.tie ? ' 공동' : '') + '</span></b>' + (isNow ? '' : badge(r)) + '</span>' +
+        '<span class="who"><span class="nm">' + esc(r.name) + '</span><span class="rg">' + esc([r.region, r.sgg].filter(Boolean).join(' ')) + '</span>' +
+        '<span class="lines">' + chips(r.lines) + '</span><span class="tms">' + times(r) + '</span></span>' +
+        '<span class="scr"><b>' + r.aft.score.toFixed(1) + '</b><small>점</small>' + (gain ? '<span class="gain">' + gain + '</span>' : '') +
+        '<span class="chev" aria-hidden="true">' + (open ? '접기 ▲' : '자세히 ▼') + '</span></span></button>' +
+        (open ? cardHtml(r.orig || r) : '') + '</li>';
     }).join('');
     const left = body.length - page.length;
     $('more').hidden = left <= 0;
     $('more').textContent = '더 보기 (' + left.toLocaleString() + '곳 남음)';
   }
 
+  // 역 하나 펼치기 — 목록에 없으면(더 보기 밖) 찾기로 보여 준다
+  function openStation(id, scroll) {
+    st.open = st.open === id ? '' : id;
+    render();
+    if (st.open) {
+      let el = document.querySelector('.row[data-id="' + CSS.escape(id) + '"]');
+      if (!el) { const r = doc.rows.find(x => x.id === id); if (r) { st.q = r.n; render(); el = document.querySelector('.row[data-id="' + CSS.escape(id) + '"]'); } }
+      if (el && scroll) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (el) el.focus({ preventScroll: true });
+    }
+  }
+
   document.querySelectorAll('.seg').forEach(g => g.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     st[g.dataset.k] = b.dataset.v; st.shown = PAGE; render();
   }));
+  $('tiers').addEventListener('click', e => {
+    const b = e.target.closest('.tchip'); if (!b) return;
+    st.tier = b.dataset.tier; st.shown = PAGE; if (st.tier && st.sort === 'rank') st.sort = 'rise'; render();
+  });
+  $('yr').addEventListener('input', e => { stopPlay(); st.y = stops()[+e.target.value] || 'all'; render(); });
+  let playT = null;
+  function stopPlay() { if (playT) { clearInterval(playT); playT = null; $('yr-play').textContent = '▶'; $('yr-play').setAttribute('aria-label', '연도 차례로 보기'); } }
+  $('yr-play').addEventListener('click', () => {
+    if (playT) { stopPlay(); return; }
+    const S = stops(); let i = 0;
+    st.y = S[0]; st.open = ''; render();
+    $('yr-play').textContent = '■'; $('yr-play').setAttribute('aria-label', '멈추기');
+    playT = setInterval(() => { i++; if (i >= S.length) { stopPlay(); return; } st.y = S[i]; render(); }, 1600);
+  });
   $('sort').addEventListener('change', e => { st.sort = e.target.value; st.shown = PAGE; render(); });
   let tmr = null;
   $('q').addEventListener('input', e => { clearTimeout(tmr); tmr = setTimeout(() => { st.q = e.target.value.trim(); st.shown = PAGE; render(); }, 150); });
   $('more').addEventListener('click', () => { st.shown += PAGE; render(); });
+  $('list').addEventListener('click', e => { const b = e.target.closest('.row'); if (b) openStation(b.dataset.id, false); });
+  /* 공유 이미지 — 정사각형 1080×1080 PNG (인스타·카톡). 화면 글꼴로 캔버스에 그린다. 외부 자원 없음.
+   * 휴대폰에서 파일 공유를 지원하면 공유 창, 아니면 내려받기. */
+  function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function shareCanvas(r) {
+    const S = 1080, c = document.createElement('canvas'); c.width = S; c.height = S;
+    const g = c.getContext('2d');
+    const F = '"Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    const t = RankTable.tierOf(r);
+    const COL = { rocket: '#0a8f4a', up: '#3aa76d', flat: '#8a929a', down: '#d9701a', new: '#7a3fd0' }[t];
+    // 배경
+    const bg = g.createLinearGradient(0, 0, 0, S); bg.addColorStop(0, '#0b1d3a'); bg.addColorStop(1, '#10305e');
+    g.fillStyle = bg; g.fillRect(0, 0, S, S);
+    g.fillStyle = 'rgba(255,255,255,.06)'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(900 - i * 40, 160 + i * 30, 260 - i * 30, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText('GTX 개통 후, 우리 역은 몇 등?', 80, 120);
+    g.fillStyle = '#ffffff'; g.font = '800 104px ' + F; g.fillText(r.name + '역', 80, 250);
+    g.fillStyle = '#9fb3d1'; g.font = '500 32px ' + F; g.fillText([r.region, r.sgg].filter(Boolean).join(' ') + ' · ' + REGION[st.r] + ' ' + (st.w === 'avg' ? '' : LABEL[st.w] + ' ') + '순위', 84, 305);
+    // 큰 순위
+    g.font = '700 46px ' + F; g.fillStyle = '#c8d3e6';
+    const nowTxt = r.isNew ? '지금은 철도 없음' : '지금 ' + r.now.rank + '위';
+    g.fillText(nowTxt, 80, 440);
+    g.fillStyle = '#ffffff'; g.font = '800 150px ' + F; g.fillText(r.aft.rank + '위', 80, 600);
+    const w1 = g.measureText(r.aft.rank + '위').width;
+    g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText(st.y === 'all' ? '개통 후' : st.y + '년 개통 후', 80 + w1 + 24, 600);
+    // 배지
+    const bt = t === 'new' ? '✨ 신규' : (r.change > 0 ? '▲' + r.change + '계단' : r.change < 0 ? '▼' + (-r.change) + '계단' : '그대로') + '  ' + RankTable.TIERS[t].label;
+    g.font = '800 44px ' + F; const bw = g.measureText(bt).width + 56;
+    roundRect(g, 80, 640, bw, 78, 39); g.fillStyle = COL; g.fill();
+    g.fillStyle = '#fff'; g.fillText(bt, 108, 694);
+    // 이 역에 새로 생기는 노선 (개통 연도)
+    const plan = lineChips(r.lines, true).slice(0, 3).map(x => { const y = RankTable.yearOf(x.m.o); return x.m.n + (y ? ' ' + y : ''); });
+    if (plan.length) { g.font = '600 30px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('새 노선 ' + plan.join(' · '), 80 + bw + 26, 692); }
+    // 업무지구 분
+    const D = ['CBD 도심', 'YBD 여의도', 'GBD 강남'];
+    D.forEach((d, i) => {
+      const y = 800 + i * 70, n = r.now.times[i], a = r.aft.times[i];
+      g.fillStyle = '#9fb3d1'; g.font = '600 32px ' + F; g.fillText(d, 80, y);
+      g.fillStyle = '#ffffff'; g.font = '800 40px ' + F;
+      const txt = (n != null && a != null && n > a) ? n + '분 → ' + a + '분' : (a == null ? '—' : a + '분');
+      g.fillText(txt, 330, y);
+      if (n != null && a != null && n > a) { g.fillStyle = '#5fe39a'; g.font = '800 34px ' + F; g.fillText('−' + (n - a) + '분', 720, y); }
+    });
+    g.fillStyle = '#7f93b3'; g.font = '500 24px ' + F;
+    g.fillText('추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1000);
+    g.fillStyle = '#c8d3e6'; g.font = '700 28px ' + F;
+    g.fillText('🚀 한국철도맵 GTX 떡상 랭킹 · plazalabs.github.io/kr-rail-map/rank.html', 80, 1044);
+    return c;
+  }
+  async function shareStation(id, msgEl) {
+    const r = RankTable.compute(doc, { weight: st.w, region: st.r }).rows.find(x => x.id === id);
+    if (!r) return;
+    const c = shareCanvas(r);
+    const blob = await new Promise(res => c.toBlob(res, 'image/png'));
+    if (!blob) { if (msgEl) msgEl.textContent = '이미지를 만들지 못했어요.'; return; }
+    const name = 'GTX떡상_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png';
+    const file = (typeof File === 'function') ? new File([blob], name, { type: 'image/png' }) : null;
+    try {
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: r.name + ' GTX 개통 후 ' + r.aft.rank + '위', text: location.origin + location.pathname });
+        if (msgEl) msgEl.textContent = '공유했어요.';
+        return;
+      }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    if (msgEl) msgEl.textContent = '이미지를 저장했어요 (' + name + ').';
+  }
+  window.RankShare = { canvas: id => { const r = RankTable.compute(doc, { weight: st.w, region: st.r }).rows.find(x => x.id === id); return r ? shareCanvas(r) : null; } };
+  $('list').addEventListener('click', e => { const b = e.target.closest('[data-share]'); if (!b) return; e.stopPropagation(); shareStation(b.getAttribute('data-share'), b.nextElementSibling); }, true);
+  $('slope').addEventListener('click', e => { const a = e.target.closest('[data-open]'); if (!a) return; e.preventDefault(); openStation(a.getAttribute('data-open'), true); });
 
+  let rz = null;
+  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(render, 200); });
   fetch('data/rank.json').then(r => r.ok ? r.json() : Promise.reject(r.status)).then(d => {
-    doc = d; lineInfo = d.lines || {}; render();
+    doc = d; lineInfo = d.lines || {};
+    // ?open=역ID 로 들어오면(지도 역 상세의 '떡상 랭킹에서 보기') 그 역 카드를 펼친다 — 목록 밖이면 이름으로 찾고, 수도권 밖이면 전국
+    if (st.open) {
+      const r = d.rows.find(x => x.id === st.open);
+      if (r) {
+        if (st.r === 'capital' && !['서울', '경기', '인천'].includes(r.r)) st.r = 'all';
+        if (st.r === 'seoul' && r.r !== '서울') st.r = 'capital';
+        if (!st.q) st.q = r.n;
+      } else st.open = '';
+    }
+    render();
+    if (st.open) { const el = document.querySelector('.row[data-id="' + CSS.escape(st.open) + '"]'); if (el) el.scrollIntoView({ block: 'center' }); }
   }).catch(() => { $('list').innerHTML = '<li class="empty">순위 자료를 불러오지 못했어요. 잠시 뒤 새로고침해 주세요.</li>'; });
 })();
 </script>

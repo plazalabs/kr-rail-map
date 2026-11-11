@@ -61,9 +61,13 @@ const RankTable = (() => {
   function compute(doc, opts) {
     const w = WEIGHTS[(opts && opts.weight) || 'avg'] || WEIGHTS.avg;
     const region = (opts && opts.region) || 'capital';
+    // at: 연도(2031 등) — 그 해까지 개통한 노선만 탄 '개통 후'. 없거나 'all' 이면 전체(시기 미정 노선까지)
+    const at = opts && opts.at && opts.at !== 'all' ? String(opts.at) : null;
+    const aftOf = r => (at && r.y && r.y[at]) ? r.y[at] : r.aft;
     const rows = doc.rows.filter(r => inRegion(r, region)).map(r => {
-      const mn = minutesOf(r.now, w), ma = minutesOf(r.aft, w);
-      return { src: r, sNow: scoreOf(mn), sAft: scoreOf(ma), mNow: mn, mAft: ma };
+      const ta = aftOf(r);
+      const mn = minutesOf(r.now, w), ma = minutesOf(ta, w);
+      return { src: r, ta, sNow: scoreOf(mn), sAft: scoreOf(ma), mNow: mn, mAft: ma };
     });
     const rn = rankMap(rows, 'sNow'), ra = rankMap(rows, 'sAft');
     const count = new Map();
@@ -73,7 +77,7 @@ const RankTable = (() => {
       return {
         src: x.src, name: x.src.n, id: x.src.id, region: x.src.r, sgg: x.src.g, lines: x.src.l,
         now: { min: x.mNow, score: x.sNow, rank: now, times: x.src.now },
-        aft: { min: x.mAft, score: x.sAft, rank: aft, times: x.src.aft },
+        aft: { min: x.mAft, score: x.sAft, rank: aft, times: x.ta },
         change: now == null ? null : now - aft,
         isNew: now == null,
         tie: count.get(x.sAft) > 1,
@@ -100,6 +104,36 @@ const RankTable = (() => {
     return r;
   }
 
+  /* 떡상 등급 — 지금 순위에서 개통 후 순위로 몇 계단 오르나 (같은 기준·같은 지역 안에서)
+   *   rocket 🚀 떡상 : 100계단 이상
+   *   up     📈 상승 : 10~99계단
+   *   flat   ➖ 보합 : 9계단 오름 ~ 49계단 밀림
+   *   down   📉 상대 하락 : 50계단 이상 밀림 — 내 역 시간도 줄지만 다른 역(GTX)이 더 많이 좋아져서.
+   *          (수도권은 절반 넘는 역이 개통 후 9분 넘게 빨라진다 — 순위만 보고 '밀림'이라 부르면 오해를 산다, 2026-11-12)
+   *   new    ✨ 신규 : 지금은 철도로 못 가는 역 (새 노선이 생겨야 생기는 역) */
+  const TIERS = {
+    rocket: { label: '떡상', icon: '🚀', hint: '100계단 이상 오름' },
+    up: { label: '상승', icon: '📈', hint: '10~99계단 오름' },
+    flat: { label: '보합', icon: '➖', hint: '9계단 오름 ~ 49계단 밀림' },
+    down: { label: '상대 하락', icon: '📉', hint: '시간은 줄어도 다른 역이 더 좋아져 50계단 이상 밀림' },
+    new: { label: '신규', icon: '✨', hint: '새 노선이 생겨야 갈 수 있는 역' },
+  };
+  function tierOf(r) {
+    if (!r || r.isNew) return 'new';
+    const c = r.change;
+    if (c >= 100) return 'rocket';
+    if (c >= 10) return 'up';
+    if (c <= -50) return 'down';
+    return 'flat';
+  }
+  function tierCounts(rows) {
+    const n = { rocket: 0, up: 0, flat: 0, down: 0, new: 0 };
+    rows.forEach(r => { n[tierOf(r)]++; });
+    return n;
+  }
+  // 개통 연도 — '2031년', '1단계: 2033년 목표' 같은 글에서 첫 4자리 연도
+  function yearOf(text) { const m = /(20\d\d)/.exec(text || ''); return m ? +m[1] : null; }
+
   // 이름 찾기 — 공백 무시, 일부만 맞아도
   function matches(row, q) {
     if (!q) return true;
@@ -107,7 +141,7 @@ const RankTable = (() => {
     return row.name.replace(/\s+/g, '').includes(s) || (row.sgg || '').includes(s) || (row.region || '').includes(s);
   }
 
-  return { WEIGHTS, minutesOf, scoreOf, compute, sortRows, matches, inRegion };
+  return { WEIGHTS, TIERS, minutesOf, scoreOf, compute, sortRows, matches, inRegion, tierOf, tierCounts, yearOf };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = RankTable;

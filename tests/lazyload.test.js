@@ -39,6 +39,9 @@ check('시세 생성 스크립트가 압축 저장 (재생성해도 유지)', /s
     /<link rel="preload" href="data\/stations\.geojson" as="fetch" crossorigin>/.test(idx));
   check("첫 준비는 style.load + 자료 (map 'load' 를 기다리지 않음)",
     /Promise\.all\(\[styleReadyP, dataPromise\]\)/.test(app) && !/map\.on\('load', async/.test(app));
+  // 배경 지도 서버가 죽으면 8초 뒤 비상 배경 (노선이 영영 안 뜨지 않게) — e2e basemap-down 이 실제로 막아 본다
+  check('배경 지도 설계도가 8초 안에 안 오면 비상 배경 (FALLBACK_STYLE)',
+    /const FALLBACK_STYLE = \{/.test(app) && /setTimeout\(\(\) => useFallbackStyle\('8초'\), 8000\)/.test(app) && /map\.setStyle\(FALLBACK_STYLE\)/.test(app));
 }
 
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);

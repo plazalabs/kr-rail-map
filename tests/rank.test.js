@@ -45,6 +45,34 @@ console.log('\n[공동 순위]');
   check('지역 거르기: 수도권', RT.compute(toy, { region: 'capital' }).total === 3);
 }
 
+console.log('\n[등급] 떡상·상승·보합·상대 하락·신규');
+check('▲100 이상 떡상', RT.tierOf({ change: 236 }) === 'rocket' && RT.tierOf({ change: 100 }) === 'rocket');
+check('▲10~99 상승', RT.tierOf({ change: 10 }) === 'up' && RT.tierOf({ change: 99 }) === 'up');
+check('▲9 ~ ▼49 보합', RT.tierOf({ change: 9 }) === 'flat' && RT.tierOf({ change: -49 }) === 'flat');
+check('▼50 이상 상대 하락', RT.tierOf({ change: -50 }) === 'down');
+check('지금 갈 수 없던 역은 신규', RT.tierOf({ isNew: true, change: null }) === 'new');
+check('개통 연도 읽기', RT.yearOf('2031년 목표 (2026년 9월 착공)') === 2031 && RT.yearOf('1단계: 2033년 목표') === 2033 && RT.yearOf('미정') === null);
+{
+  const c = RT.compute(doc, { weight: 'avg', region: 'capital' });
+  const n = RT.tierCounts(c.rows);
+  check('등급 수 합 = 역 수', Object.values(n).reduce((a, b) => a + b, 0) === c.rows.length, JSON.stringify(n));
+  const k = c.rows.find(r => r.name === '광운대');
+  check('광운대는 떡상', RT.tierOf(k) === 'rocket', k && k.change);
+  // 개통 연도별 (2026-11-12) — 그 해까지 개통한 노선만
+  check('연도 단계 2027·2028·2030·2031·2033·2035', JSON.stringify(doc.years) === '[2027,2028,2030,2031,2033,2035]', JSON.stringify(doc.years));
+  check('2031년 개통 노선 = GTX-B·C·C 상록수 갈래', (doc.year_lines['2031'] || []).sort().join() === 'gtx-b,gtx-c,gtx-c-sangnoksu', JSON.stringify(doc.year_lines['2031']));
+  check('시기 미정 노선은 연도 단계에 없음 (평택 연장·동부선·GTX-G·H)', ['gtx-a-pyeongtaek', 'dongbu-line', 'gtx-g', 'gtx-h'].every(x => doc.undated_lines.includes(x)));
+  const at = y => RT.compute(doc, { weight: 'avg', region: 'capital', at: y }).rows.find(r => r.name === '광운대');
+  const k27 = at(2027), k31 = at(2031);
+  check('광운대 2027년: 아직 GTX-C 전 — 시간 그대로(26/44/24)', k27 && k27.aft.times.join() === '26,44,24', k27 && k27.aft.times.join());
+  check('광운대 2031년: GTX-C 개통 — 9/15/9분, 10위 안', k31 && k31.aft.times.join() === '9,15,9' && k31.aft.rank <= 10, k31 && k31.aft.rank);
+  const kRow = doc.rows.find(r => r.n === '광운대');
+  check('연도별 시간은 해가 갈수록 늘지 않는다 (개통은 길을 더할 뿐)', doc.rows.every(r => { let p = r.now; return doc.years.every(y => { const v = r.y[y]; const ok = v.every((t, i) => t == null || p[i] == null || t <= p[i]); p = v; return ok; }); }), kRow && JSON.stringify(kRow.y));
+  const cn = doc.rows.find(r => r.n === '창릉');
+  check('창릉은 2030년부터 생긴다', cn && cn.y['2028'].every(v => v == null) && cn.y['2030'].every(v => v != null), cn && JSON.stringify(cn.y));
+  check('GTX-C 개통 연도가 2031년 (2026-09 착공·60개월)', RT.yearOf((doc.lines['gtx-c'] || {}).o) === 2031, (doc.lines['gtx-c'] || {}).o);
+}
+
 console.log('\n[자료] data/rank.json');
 check('역 1,000곳 이상', doc.rows.length >= 1000, doc.rows.length);
 check('access.json 과 날짜가 같다 (같이 다시 만들었는지)', doc.updated === access.updated, doc.updated + ' / ' + access.updated);
@@ -98,6 +126,22 @@ check('지역 버튼 (서울·수도권·전국)', ['seoul', 'capital', 'all'].e
 check('기다리는 시간을 뺐다고 밝힘', /기다리는 시간은 넣지 않았습니다/.test(html));
 check('역을 누르면 지도로 (?st=)', /\.\/\?st=/.test(html));
 check('밖에서 불러오는 스크립트 없음', !/<script[^>]+src="https?:/.test(html));
+// 글자 대비 (WCAG AA 4.5) — 라이트 모드 등급 글자색(--i-*)이 흰 바탕·연한 등급 바탕 위에서 (2026-11-12)
+{
+  const v = name => { const m = new RegExp('--' + name + ':(#[0-9a-fA-F]{6})').exec(html); return m && m[1]; };
+  const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const bad = [];
+  for (const t of ['rocket', 'up', 'flat', 'down', 'new']) {
+    const ink = v('i-' + t), bg = v('t-' + t + '-bg');
+    if (!ink || !bg) { bad.push(t + ' 색 없음'); continue; }
+    const a = cr(ink, '#ffffff'), b = cr(ink, bg);
+    if (a < 4.5 || b < 4.5) bad.push(t + ' ' + a.toFixed(2) + '/' + b.toFixed(2));
+  }
+  const mu = v('muted');
+  if (!mu || cr(mu, '#ffffff') < 4.5 || cr(mu, '#f6f7f9') < 4.5) bad.push('muted ' + mu);
+  check('라이트 모드 글자 대비 4.5 이상 (등급 글자·흐린 글자)', bad.length === 0, bad.join(', '));
+}
 const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
 check('지도가 ?st= 를 받아 역 상세를 연다', /q\.get\('st'\)/.test(app));
 const idx = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');

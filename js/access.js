@@ -166,7 +166,8 @@ const StationAccess = (() => {
       '.sa-sum b{font-variant-numeric:tabular-nums;white-space:nowrap}' +
       '.sa-sum span{white-space:nowrap}' +
       '.sa-rank{color:var(--muted,#6b7280)}' +
-      '.sa-note{font-size:12px;color:var(--muted,#6b7280);margin-top:6px;line-height:1.5}';
+      '.sa-note{font-size:12px;color:var(--muted,#6b7280);margin-top:6px;line-height:1.5}' +
+      '.sa-rocket{color:var(--accent,#0b57d0);font-weight:700;text-decoration:none}.sa-rocket:hover{text-decoration:underline}';
     document.head.appendChild(st);
   }
 
@@ -230,6 +231,8 @@ const StationAccess = (() => {
     }
     if (r2.length) lines.push(r2.join(' · '));
     lines.forEach(t => { h += '<div class="sa-sum">' + t + '</div>'; });
+    // 🚀 떡상 랭킹(rank.html)에서 이 역 카드 바로 열기 — 지금 N위 → 개통 후 M위·연도 슬라이더 (2026-11-12)
+    h += '<div class="sa-sum"><a class="sa-rocket" href="rank.html?open=' + encodeURIComponent(stationId) + '">🚀 떡상 랭킹에서 보기 →</a></div>';
 
     const tot = (a.rank.after ? a.rank.after.total : 0).toLocaleString();
     h += '<div class="sa-note">※ 실제 시각표가 아니라 추정값입니다. 열차를 <b>기다리는 시간은 빼고</b> ' +

@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>한국철도맵 — 전국 철도 노선도 · 역 검색 · 길찾기</title>
-<meta name="description" content="수도권 1~9호선과 GTX-A·B·C, 경의중앙선·수인분당선부터 부산·대구·대전·광주 도시철도와 전국 KTX까지 85개 노선 1,244개 역을 한 장의 지도에서. 역 검색, 최단 경로·환승·요금 계산, 45도 개략 노선도까지.">
+<meta name="description" content="수도권 1~9호선과 GTX-A·B·C, 경의중앙선·수인분당선부터 부산·대구·대전·광주 도시철도와 전국 KTX까지 86개 노선 1,244개 역을 한 장의 지도에서. 역 검색, 최단 경로·환승·요금 계산, 45도 개략 노선도까지.">
 <meta name="keywords" content="수도권 전철, 지하철 노선도, 서울 지하철, 전철 노선도, 역 검색, 지하철 길찾기, GTX 노선도, 환승, 요금">
 <meta name="author" content="한국철도맵">
 <meta name="robots" content="index, follow, max-image-preview:large">
@@ -17,14 +17,14 @@
 <meta property="og:locale" content="ko_KR">
 <meta property="og:url" content="https://plazalabs.github.io/kr-rail-map/">
 <meta property="og:title" content="한국철도맵 — 전국 철도 노선도 · 역 검색 · 길찾기">
-<meta property="og:description" content="85개 노선, 1,244개 역을 한 장의 지도에서. 역 검색부터 최단 경로·요금 계산, 45도 개략 노선도까지.">
+<meta property="og:description" content="86개 노선, 1,244개 역을 한 장의 지도에서. 역 검색부터 최단 경로·요금 계산, 45도 개략 노선도까지.">
 <meta property="og:image" content="https://plazalabs.github.io/kr-rail-map/image/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="한국철도맵 — 전국 철도 노선도">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="한국철도맵 — 전국 철도 노선도">
-<meta name="twitter:description" content="85개 노선, 1,244개 역. 역 검색 · 길찾기 · 개략 노선도.">
+<meta name="twitter:description" content="86개 노선, 1,244개 역. 역 검색 · 길찾기 · 개략 노선도.">
 <meta name="twitter:image" content="https://plazalabs.github.io/kr-rail-map/image/og.png">
 
 <!-- 배경 지도 서버에 미리 연결해 둔다 (DNS·TLS 를 지도 코드가 뜨는 동안 끝냄) -->
@@ -80,6 +80,8 @@
     <div class="panel-head">지도 레이어</div>
     <div class="layer-row">
       <label class="layer-opt"><input type="checkbox" id="layer-station-area"> 역세권 범위 <span class="sa-approx">근사</span></label>
+      <label class="layer-opt"><input type="checkbox" id="layer-rocket"> 🚀 떡상 지도 <span class="sa-approx">GTX 개통 후</span></label>
+      <div id="rk-legend" class="jn-legend" hidden><span><i style="background:#0a8f4a"></i>떡상 ▲100+</span><span><i style="background:#3aa76d"></i>상승 ▲10+</span><span><i style="background:#9aa1a8"></i>보합</span><span><i style="background:#d9701a"></i>상대 하락</span><span><i style="background:#7a3fd0"></i>신규</span><span class="rk-more">수도권 역만 · 점이 클수록 업무지구에 가깝다 · <a href="rank.html">순위표 →</a></span></div>
       <label class="layer-opt"><input type="checkbox" id="layer-jeonse"> 전세가율 색칠 <span class="sa-approx">투자</span></label>
       <div id="jn-legend" class="jn-legend" hidden><span><i style="background:#1e63d6"></i>50% 미만</span><span><i style="background:#2e9e4f"></i>50~70%</span><span><i style="background:#f59e0b"></i>70~80%</span><span><i style="background:#c62828"></i>80% 이상</span></div>
     </div>
@@ -141,7 +143,7 @@
           <button id="invest-btn" role="menuitem">역세권 투자분석</button>
           <button id="coverage-btn" role="menuitem">노선 영향권</button>
           <button id="commute-btn" role="menuitem">통근권 찾기</button>
-          <a href="rank.html" role="menuitem" class="tb-menulink">교통 순위표</a>
+          <a href="rank.html" role="menuitem" class="tb-menulink">🚀 GTX 떡상 랭킹</a>
         </div>
       </div>
       <div class="tb-dropdown">
@@ -213,6 +215,8 @@
 <script defer src="js/coverage.js"></script>
 <script defer src="js/station-area.js"></script>
 <script defer src="js/commute.js"></script>
+<script defer src="js/rank.js"></script>
+<script defer src="js/rocket-map.js"></script>
 <script defer src="js/guide.js"></script>
 <script defer src="js/app.js"></script>
 <script>

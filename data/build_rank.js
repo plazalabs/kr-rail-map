@@ -132,7 +132,7 @@ const doc = {
   dest: ['CBD', 'YBD', 'GBD'],
   lines: Object.fromEntries(Array.from(usedLines).map(l => {
     const p = lineMeta.get(l);
-    return [l, { n: p.name_ko, c: p.color, s: p.status }];
+    return [l, { n: p.name_ko, c: p.color, s: p.status, o: p.status === 'open' ? undefined : (p.opened || '') }];
   })),
   rows,
 };

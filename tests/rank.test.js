@@ -45,6 +45,22 @@ console.log('\n[공동 순위]');
   check('지역 거르기: 수도권', RT.compute(toy, { region: 'capital' }).total === 3);
 }
 
+console.log('\n[등급] 떡상·상승·보합·상대 하락·신규');
+check('▲100 이상 떡상', RT.tierOf({ change: 236 }) === 'rocket' && RT.tierOf({ change: 100 }) === 'rocket');
+check('▲10~99 상승', RT.tierOf({ change: 10 }) === 'up' && RT.tierOf({ change: 99 }) === 'up');
+check('▲9 ~ ▼49 보합', RT.tierOf({ change: 9 }) === 'flat' && RT.tierOf({ change: -49 }) === 'flat');
+check('▼50 이상 상대 하락', RT.tierOf({ change: -50 }) === 'down');
+check('지금 갈 수 없던 역은 신규', RT.tierOf({ isNew: true, change: null }) === 'new');
+check('개통 연도 읽기', RT.yearOf('2031년 목표 (2026년 9월 착공)') === 2031 && RT.yearOf('1단계: 2033년 목표') === 2033 && RT.yearOf('미정') === null);
+{
+  const c = RT.compute(doc, { weight: 'avg', region: 'capital' });
+  const n = RT.tierCounts(c.rows);
+  check('등급 수 합 = 역 수', Object.values(n).reduce((a, b) => a + b, 0) === c.rows.length, JSON.stringify(n));
+  const k = c.rows.find(r => r.name === '광운대');
+  check('광운대는 떡상', RT.tierOf(k) === 'rocket', k && k.change);
+  check('GTX-C 개통 연도가 2031년 (2026-09 착공·60개월)', RT.yearOf((doc.lines['gtx-c'] || {}).o) === 2031, (doc.lines['gtx-c'] || {}).o);
+}
+
 console.log('\n[자료] data/rank.json');
 check('역 1,000곳 이상', doc.rows.length >= 1000, doc.rows.length);
 check('access.json 과 날짜가 같다 (같이 다시 만들었는지)', doc.updated === access.updated, doc.updated + ' / ' + access.updated);

@@ -64,7 +64,7 @@
   "sources": [
     {
       "id": "osm-rails",
-      "title": "노선 선형 (78개 노선)",
+      "title": "노선 선형 (79개 노선)",
       "provider": "OpenStreetMap contributors",
       "attribution": "© OpenStreetMap contributors",
       "url": "https://www.openstreetmap.org/copyright",

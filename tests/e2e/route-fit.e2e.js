@@ -37,7 +37,7 @@ async function run(b, [from, to, un]) {
 }
 
 (async () => {
-  for (const [w, h] of [[1440, 900], [1366, 768]]) {
+  for (const [w, h] of [[1440, 900], [1366, 768], [1366, 720]]) {   // 1366×720 ≈ 안 높이 625px (GitHub 러너와 같음)
     const b = await launch({ port: 9781, w, h });
     await b.send('Network.setBypassServiceWorker', { bypass: true });
     await b.goto(BASE + '#normal', 800); await ready(b);

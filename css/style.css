@@ -1021,3 +1021,21 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
 .jn-legend[hidden] { display: none; }
 .jn-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 3px; vertical-align: -1px; }
 
+/* 길찾기 — 키 작은 화면(브라우저 안 높이 ≤ 720px: 1366×768 노트북 + 도구막대)에서는 더 촘촘하게.
+ * GitHub 시험 러너(안 높이 625px)에서 창이 45px 넘친 것을 맞춘다 (2026-11-11). */
+@media (min-width: 769px) and (max-height: 720px) {
+  #route-panel { top: 52px; gap: 4px; padding: 8px 12px; max-height: calc(100vh - 60px); }
+  #route-panel .rp-head { font-size: 13px; margin: 0; }
+  #route-panel input { padding: 5px 9px; }
+  #route-panel .rp-row button { padding: 5px 10px; }
+  #route-panel .rp-note { display: none; }
+  #route-panel .rp-opt-sub { display: none; }
+  #route-panel .rc-nf { padding: 6px 10px; margin-bottom: 4px; }
+  #route-panel .rc-nf-time { font-size: 18px; }
+  #route-panel .rc-tabs { margin-bottom: 4px; }
+  #route-panel .rc-insight { margin: 4px 0; }
+  #route-panel .unopened-notice { margin: 4px 0; padding: 5px 8px; }
+  #route-result .leg { padding: 3px 0; }
+  #route-result .total { margin-bottom: 4px; padding: 6px 9px; }
+}
+

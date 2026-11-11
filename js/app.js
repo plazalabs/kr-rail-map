@@ -780,8 +780,30 @@ function attachAutocomplete(input) {
     if (q) render(q);
   });
   input.addEventListener('blur', () => setTimeout(hide, 180));
+  // Enter 다음 동작 (2026-11-11 사용성 점검: 이름만 치고 Enter 를 누르면 아무 일도 없었다)
+  //   출발 칸 → 도착 칸으로, 도착 칸 → 출발이 정해져 있으면 바로 경로 찾기
+  function afterEnter() {
+    if (input.id === 'route-from') { const t = document.getElementById('route-to'); if (t) t.focus(); }
+    else if (input.id === 'route-to') {
+      const f = document.getElementById('route-from');
+      if (f && f.value.trim()) { const go = document.getElementById('route-go'); if (go) go.click(); }
+    }
+  }
   input.addEventListener('keydown', e => {
-    if (list.hidden) return;
+    if (list.hidden) {
+      // 목록이 닫힌 채 Enter: 이미 고른 역이 있으면 다음 동작만
+      if (e.key === 'Enter' && input.dataset.sid && (input.id === 'route-from' || input.id === 'route-to')) { e.preventDefault(); afterEnter(); }
+      return;
+    }
+    if (e.key === 'Enter' && activeIdx < 0 && items.length) {
+      // 화살표로 고르지 않고 Enter → 맨 위 후보(정확히 같은 이름 → 시작이 같은 이름 → 지도 중심에 가까운 역 순)
+      e.preventDefault();
+      setRouteStation(input, stationById(items[0].id) || items[0].name);
+      hide();
+      input.dispatchEvent(new CustomEvent('ac:pick'));
+      afterEnter();
+      return;
+    }
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       activeIdx = e.key === 'ArrowDown'
@@ -793,6 +815,7 @@ function attachAutocomplete(input) {
       setRouteStation(input, stationById(items[activeIdx].id) || items[activeIdx].name);
       hide();
       input.dispatchEvent(new CustomEvent('ac:pick'));   // 길찾기 밖(통근권)에서도 고른 역을 알 수 있게
+      afterEnter();
     } else if (e.key === 'Escape') { hide(); }
   });
   list.addEventListener('mousedown', e => {

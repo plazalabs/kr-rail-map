@@ -70,6 +70,20 @@ const R = recorder('route-extras');
   const old = await ev(`__rc[0] || null`);
   R.check('옛 즐겨찾기(이름만) → 서울 시청 → 강남', !!old && old[0] === I.seoulSi && old[1] === I.gangnam, old);
 
+  // 8. 이름만 치고 Enter (2026-11-11 사용성 점검): 출발 '강남' Enter → 맨 위 후보 확정·도착 칸으로,
+  //    도착 '잠실' Enter → 바로 경로 찾기
+  const ent = async () => { await b.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: String.fromCharCode(13) });
+    await b.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }); };
+  await ev(`(() => { document.getElementById('route-panel').hidden = false; const f = document.getElementById('route-from'), t = document.getElementById('route-to');
+    f.value = ''; delete f.dataset.sid; t.value = ''; delete t.dataset.sid; document.getElementById('route-result').innerHTML = ''; f.focus(); })()`);
+  await b.type('강남'); await sleep(300); await ent(); await sleep(300);
+  const e1 = await ev(`({ sid: document.getElementById('route-from').dataset.sid || null, focus: document.activeElement && document.activeElement.id })`);
+  R.check("출발 '강남' 치고 Enter → 역 확정·도착 칸으로", !!e1.sid && e1.focus === 'route-to', e1);
+  await ev(`__rc = []; 0`);   // 위에서 RouteCompare.show 를 기록용으로 바꿔 두었다 — 경로 찾기가 불렸는지로 본다
+  await b.type('잠실'); await sleep(300); await ent(); await sleep(800);
+  const e2 = await ev(`({ calls: __rc.length, to: document.getElementById('route-to').dataset.sid || null })`);
+  R.check("도착 '잠실' 치고 Enter → 바로 경로 찾기", e2.calls >= 1 && !!e2.to, e2);
+
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0', exc.length === 0, exc.slice(0, 3));
   b.close();

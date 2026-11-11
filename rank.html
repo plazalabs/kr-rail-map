@@ -386,7 +386,8 @@ h1{font-size:22px}
       '<div class="bars">' + bars + '</div>' +
       '<div class="legend"><span><i style="background:var(--bar-now)"></i>지금</span><span><i style="background:var(--bar-aft)"></i>' + aftLabel() + '</span></div>' +
       nl + '<a class="go" href="' + link(r) + '">지도에서 보기 →</a>' +
-      '<button class="share" data-share="' + esc(r.id) + '">📸 공유 이미지 저장</button><span class="share-msg" role="status"></span></div>';
+      '<button class="share" data-share="' + esc(r.id) + '">📸 공유 이미지 저장</button>' +
+      '<button class="share" data-link="' + esc(r.id) + '">🔗 링크 복사</button><span class="share-msg" role="status"></span></div>';
   }
 
   // 개통 연도 단계 — rank.json years + '전체'
@@ -583,7 +584,27 @@ h1{font-size:22px}
     if (msgEl) msgEl.textContent = '이미지를 저장했어요 (' + name + ').';
   }
   window.RankShare = { canvas: id => { const r = RankTable.compute(doc, { weight: st.w, region: st.r }).rows.find(x => x.id === id); return r ? shareCanvas(r) : null; } };
-  $('list').addEventListener('click', e => { const b = e.target.closest('[data-share]'); if (!b) return; e.stopPropagation(); shareStation(b.getAttribute('data-share'), b.nextElementSibling); }, true);
+  $('list').addEventListener('click', e => { const b = e.target.closest('[data-share]'); if (!b) return; e.stopPropagation(); shareStation(b.getAttribute('data-share'), b.parentNode.querySelector('.share-msg')); }, true);
+  // 🔗 링크 복사 — 이 역 카드가 펼쳐진 순위표 주소 (지금 기준·지역·연도 그대로). 카톡에 붙여 넣으면 바로 그 역
+  function cardUrl(id) {
+    const u = new URL(location.href);
+    u.searchParams.set('open', id); u.searchParams.delete('q'); u.searchParams.delete('tier');
+    return u.toString();
+  }
+  $('list').addEventListener('click', async e => {
+    const b = e.target.closest('[data-link]'); if (!b) return; e.stopPropagation();
+    const url = cardUrl(b.getAttribute('data-link'));
+    const msg = b.parentNode.querySelector('.share-msg');
+    let ok = false;
+    try { await navigator.clipboard.writeText(url); ok = true; } catch (er) { /* 권한 없음 */ }
+    if (!ok) {
+      const ta = document.createElement('textarea'); ta.value = url; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch (er) { ok = false; }
+      ta.remove();
+    }
+    if (msg) msg.textContent = ok ? '링크를 복사했어요.' : '복사하지 못했어요: ' + url;
+  }, true);
   $('slope').addEventListener('click', e => { const a = e.target.closest('[data-open]'); if (!a) return; e.preventDefault(); openStation(a.getAttribute('data-open'), true); });
 
   let rz = null;

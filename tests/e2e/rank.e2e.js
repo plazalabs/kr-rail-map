@@ -91,6 +91,14 @@ const layout = b => b.evaluate(`(() => ({
     await b.evaluate(`document.querySelector('#list .card [data-share]').click()`); await sleep(800);
     const msg = await b.evaluate(`(document.querySelector('#list .card .share-msg') || {}).textContent || ''`);
     R.check(`${w}px 공유 이미지 1080×1080 만들기·저장 안내`, !!img && img.w === 1080 && img.h === 1080 && img.len > 50000 && /저장했어요|공유했어요/.test(msg), { img, msg });
+    // 🔗 링크 복사 — 이 역 카드가 펼쳐진 순위표 주소
+    // 헤드리스는 창에 초점이 없어 클립보드를 막는다 → 초점 흉내 + 실제 마우스 클릭(사용자 동작)
+    await b.send('Emulation.setFocusEmulationEnabled', { enabled: true }).catch(() => {});
+    const lb = await b.evaluate(`(() => { const e = document.querySelector('#list .card [data-link]'); e.scrollIntoView({ block: 'center' }); const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+    await b.click(lb.x, lb.y); await sleep(500);
+    const lk = await b.evaluate(`(async () => { let clip = ''; try { clip = await navigator.clipboard.readText(); } catch (e) { clip = 'ERR ' + e.message; }
+      return { msg: document.querySelector('#list .card .share-msg').textContent, clip }; })()`);
+    R.check(`${w}px 링크 복사 → open=광운대 주소`, /복사했어요/.test(lk.msg) && /rank\.html\?.*open=st-355172776/.test(lk.clip) && !/[?&]q=/.test(lk.clip), lk);
     await b.evaluate(`document.querySelector('#list .card a.go').click()`);
     let opened = null;
     for (let i = 0; i < 80; i++) {

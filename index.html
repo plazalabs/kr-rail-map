@@ -80,6 +80,8 @@
     <div class="panel-head">지도 레이어</div>
     <div class="layer-row">
       <label class="layer-opt"><input type="checkbox" id="layer-station-area"> 역세권 범위 <span class="sa-approx">근사</span></label>
+      <label class="layer-opt"><input type="checkbox" id="layer-rocket"> 🚀 떡상 지도 <span class="sa-approx">GTX 개통 후</span></label>
+      <div id="rk-legend" class="jn-legend" hidden><span><i style="background:#0a8f4a"></i>떡상 ▲100+</span><span><i style="background:#3aa76d"></i>상승 ▲10+</span><span><i style="background:#9aa1a8"></i>보합</span><span><i style="background:#d9701a"></i>상대 하락</span><span><i style="background:#7a3fd0"></i>신규</span><span class="rk-more">수도권 역만 · 점이 클수록 업무지구에 가깝다 · <a href="rank.html">순위표 →</a></span></div>
       <label class="layer-opt"><input type="checkbox" id="layer-jeonse"> 전세가율 색칠 <span class="sa-approx">투자</span></label>
       <div id="jn-legend" class="jn-legend" hidden><span><i style="background:#1e63d6"></i>50% 미만</span><span><i style="background:#2e9e4f"></i>50~70%</span><span><i style="background:#f59e0b"></i>70~80%</span><span><i style="background:#c62828"></i>80% 이상</span></div>
     </div>
@@ -213,6 +215,8 @@
 <script defer src="js/coverage.js"></script>
 <script defer src="js/station-area.js"></script>
 <script defer src="js/commute.js"></script>
+<script defer src="js/rank.js"></script>
+<script defer src="js/rocket-map.js"></script>
 <script defer src="js/guide.js"></script>
 <script defer src="js/app.js"></script>
 <script>

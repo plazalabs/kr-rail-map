@@ -42,6 +42,7 @@ const APP_SHELL = [
   './js/coverage.js',
   './js/station-area.js',
   './js/commute.js',
+  './js/rocket-map.js',
   './js/guide.js',
   './icons/icon-192.png',
   './icons/icon-512.png',

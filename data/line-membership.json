@@ -4,7 +4,7 @@
  "note": "노선·역 목록이 어디서 확인되는지의 증빙. 배포 데이터가 아니다. 확인 원천은 공공데이터포털 역위치 CSV(이용허락 제한 없음), OSM 노선 relation 정차점, OSM 역 노드의 선형 근접도(ODbL) 셋이다.",
  "near_km": 0.3,
  "summary": {
-  "lines": 81,
+  "lines": 82,
   "open_lines": 66,
   "open_pairs": 1474,
   "open_confirmed": 1465,
@@ -384,6 +384,19 @@
    "status": "construction",
    "stations": 14,
    "confirmed": 14,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "gtx-c-sangnoksu": {
+   "name": "GTX-C 상록수 갈래",
+   "status": "construction",
+   "stations": 2,
+   "confirmed": 2,
    "sources": [
     "osm-geometry"
    ],

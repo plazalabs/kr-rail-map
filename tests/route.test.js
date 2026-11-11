@@ -466,5 +466,17 @@ console.log('\n[GTX 평면환승] 청량리 B·C, 삼성 A·C — 같은 승강�
     r2 && r2.legs[0].lineId === 'gtx-c' && r2.minutes <= 16, r2 && r2.minutes + '분 ' + r2.legs.map(l => l.lineId).join('>'));
 }
 
+console.log('\n[GTX-C 상록수 갈래] 2031 목표 — 4호선 선로, 상록수~삼성 30분 (2026-11-12)');
+{
+  const id = (n, l) => (stations.features.find(f => f.properties.name_ko === n && (!l || f.properties.lines.includes(l))) || { properties: {} }).properties.id;
+  const sn = id('상록수', 'gtx-c-sangnoksu'), ss = id('삼성', 'gtx-c'), sw = id('수원', 'gtx-c');
+  const r = RF.findRoute(sn, ss);
+  check('상록수→삼성 개통 후 30분, 갈아타기 0 (안산시 발표 30분대)', r && r.minutes === 30 && r.transfers === 0, r && r.minutes + '분 ' + r.transfers);
+  const now = RF.findRoute(sn, ss, { openOnly: true });
+  check('상록수→삼성 지금은 GTX-C 안 탐', now && !now.legs.some(l => /gtx-c/.test(l.lineId || '')), now && now.legs.map(l => l.lineId).join('>'));
+  const sw2 = RF.findRoute(sw, ss);
+  check('수원→삼성은 그대로 26분 (국토부 발표)', sw2 && sw2.minutes === 26, sw2 && sw2.minutes);
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

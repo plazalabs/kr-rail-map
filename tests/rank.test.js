@@ -60,7 +60,7 @@ check('개통 연도 읽기', RT.yearOf('2031년 목표 (2026년 9월 착공)') 
   check('광운대는 떡상', RT.tierOf(k) === 'rocket', k && k.change);
   // 개통 연도별 (2026-11-12) — 그 해까지 개통한 노선만
   check('연도 단계 2027·2028·2030·2031·2033·2035', JSON.stringify(doc.years) === '[2027,2028,2030,2031,2033,2035]', JSON.stringify(doc.years));
-  check('2031년 개통 노선 = GTX-B·C', (doc.year_lines['2031'] || []).sort().join() === 'gtx-b,gtx-c', JSON.stringify(doc.year_lines['2031']));
+  check('2031년 개통 노선 = GTX-B·C·C 상록수 갈래', (doc.year_lines['2031'] || []).sort().join() === 'gtx-b,gtx-c,gtx-c-sangnoksu', JSON.stringify(doc.year_lines['2031']));
   check('시기 미정 노선은 연도 단계에 없음 (평택 연장·동부선·GTX-G·H)', ['gtx-a-pyeongtaek', 'dongbu-line', 'gtx-g', 'gtx-h'].every(x => doc.undated_lines.includes(x)));
   const at = y => RT.compute(doc, { weight: 'avg', region: 'capital', at: y }).rows.find(r => r.name === '광운대');
   const k27 = at(2027), k31 = at(2031);

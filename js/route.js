@@ -109,6 +109,9 @@ const RouteFinder = (() => {
     // 창릉역(2030 개통 예정) — 지금 GTX-A 는 대곡→연신내 5.8분 무정차. 개통 후 창릉에 서면 정차 1.79분이 붙어 7.6분,
     // 그것을 (거리 + 1.79/0.413) 비율로 나눈다: 대곡~창릉 6.6km, 창릉~연신내 3.3km (data/add_changneung.js)
     'gtx-a-changneung': [['대곡',4.5],['창릉',3.1],['연신내',null]],
+    // GTX-C 상록수 갈래 (2031 목표) — 금정에서 4호선(안산선) 선로를 같이 쓴다. 우리 모델(시속 145km)로는 6.7분이지만
+    // 기존 선로라 느리다. '상록수~삼성 30분대'(안산시 발표 인용 보도)에 맞춰 30 − 삼성→금정 16.4 = 13.6분 (시속 약 52km, data/add_sangnoksu.js)
+    'gtx-c-sangnoksu': [['금정',13.6],['상록수',null]],
     'gtx-a-seoul-suseo': [['서울역',6.1],['삼성',3.6],['수서',null]],
     'gtx-b': [
       ['인천대입구',6.1],['인천시청',3.7],['부평',4.8],['부천종합운동장',5.5],['신도림',3.1],['여의도',3.7],['용산',3],['서울역',5.4],['청량리',3.6],['상봉',4.8],['별내',3.3],['왕숙',5.3],['평내호평',4.6],['마석',null]],
@@ -140,6 +143,7 @@ const RouteFinder = (() => {
   const THROUGH = {
     'gtx-a-seoul-suseo': 'great-train-express-line-a',
     'gtx-a-changneung': 'great-train-express-line-a',   // 창릉 정차 (2030 예정) — 같은 GTX-A 열차
+    'gtx-c-sangnoksu': 'gtx-c',   // 상록수 갈래 — GTX-C 열차가 금정에서 갈라져 간다 (수원행↔상록수행 갈아타기 1분은 무시)
     'gtx-a-pyeongtaek': 'great-train-express-line-a',
   };
   function serviceOf(lineId) { return THROUGH[lineId] || lineId; }

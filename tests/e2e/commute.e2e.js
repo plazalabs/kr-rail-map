@@ -90,6 +90,15 @@ const count = b => b.evaluate(`(() => { const s = map.getSource('cm-stations'); 
   const s3 = await summary(b);
   R.check("목적지를 '시청 · 부산 연제구' 로 바꾸면 부산 기준으로 다시 계산", /시청/.test(s3) && (await b.evaluate(`(() => { const s = map.getSource('cm-dest')._data.features[0].geometry.coordinates; return s[0] > 128.9; })()`)), s3);
 
+  // 7-2. 길찾기와 같은 자동완성으로 고르기: '잠실' 입력 → ↓ → Enter → 잠실 기준
+  await b.evaluate(`(() => { const i = document.getElementById('cm-dest'); i.focus(); i.value = '잠실'; i.dispatchEvent(new Event('input')); })()`); await sleep(400);
+  const acOpen = await b.evaluate(`!document.querySelector('#cm-panel .ac-list').hidden && document.querySelectorAll('#cm-panel .ac-item').length > 0`);
+  await b.key('ArrowDown', 'ArrowDown', 40); await sleep(100);
+  await b.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: String.fromCharCode(13) });
+  await b.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }); await sleep(900);
+  const s5 = await summary(b);
+  R.check("직장 역 입력도 길찾기와 같은 자동완성 — '잠실' ↓ Enter → 잠실 기준", acOpen && /잠실/.test(s5), { acOpen, s5 });
+
   // 8. 역 상세 '이 역까지 통근권 보기' → 그 역이 목적지
   await b.evaluate(`CommuteMap.hide(); showStation(STATIONS.find(s => s.properties.name_ko === '잠실' && s.properties.lines.includes('seoul-subway-line-2')), null); true`);
   for (let i = 0; i < 30; i++) { if (await b.evaluate(`!!document.querySelector('#sd-panel .sd-commute')`)) break; await sleep(250); }

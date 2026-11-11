@@ -113,15 +113,12 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     panel.style.display = 'none';
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', '통근권 찾기');
-    const opts = ST.map(optionLabel).sort((a, b) => a.localeCompare(b, 'ko'))
-      .map(l => `<option value="${esc(l)}"></option>`).join('');
     panel.innerHTML = `
 <div id="cm-head">통근권 찾기 <button id="cm-close" aria-label="닫기">✕</button></div>
 <div id="cm-body">
   <div class="cm-row">
     <label for="cm-dest">직장(목적지) 역</label>
-    <input id="cm-dest" list="cm-dest-list" placeholder="예: 강남" autocomplete="off">
-    <datalist id="cm-dest-list">${opts}</datalist>
+    <div class="ac-wrap"><input id="cm-dest" placeholder="예: 강남" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"><div class="ac-list" hidden></div></div>
   </div>
   <div class="cm-row">
     <label for="cm-limit">최대 소요 시간</label>
@@ -139,8 +136,12 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     document.body.appendChild(panel);
     const dest = panel.querySelector('#cm-dest');
     panel.querySelector('#cm-close').addEventListener('click', hide);
-    dest.addEventListener('change', () => { const s = findByLabel(dest.value); if (s) { destId = s.properties.id; render(true); } });
-    dest.addEventListener('keydown', e => { if (e.key === 'Enter') { const s = findByLabel(dest.value); if (s) { destId = s.properties.id; render(true); } } });
+    // 길찾기와 같은 자동완성(동명역은 지역·노선으로 구분, ↓↑Enter). 고르면 'ac:pick' 이 오고 역 ID 는 dataset.sid
+    if (typeof window.KR_attachAutocomplete === 'function') window.KR_attachAutocomplete(dest);
+    dest.addEventListener('ac:pick', () => { if (dest.dataset.sid && byId.has(dest.dataset.sid)) { destId = dest.dataset.sid; render(true); } });
+    // 목록을 고르지 않고 이름만 쳐서 Enter/변경: 예전처럼 이름(또는 '시청 · 부산 연제구')으로 찾는다
+    dest.addEventListener('change', () => { if (dest.dataset.sid) return; const s = findByLabel(dest.value); if (s) { destId = s.properties.id; render(true); } });
+    dest.addEventListener('keydown', e => { if (e.key === 'Enter' && !dest.dataset.sid) { const s = findByLabel(dest.value); if (s) { destId = s.properties.id; render(true); } } });
     panel.querySelector('#cm-limit').addEventListener('change', e => { maxMin = +e.target.value; render(true); });
     panel.querySelector('#cm-unopened').addEventListener('change', e => { withUnopened = e.target.checked; render(false); });
     panel.querySelector('#cm-sort').addEventListener('change', e => { sortBy = e.target.value; renderList(); });

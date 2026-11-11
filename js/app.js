@@ -716,7 +716,7 @@ function attachAutocomplete(input) {
   const listId = (input.id || 'ac') + '-list';
   list.id = listId;
   list.setAttribute('role', 'listbox');
-  list.setAttribute('aria-label', input.id === 'route-to' ? '도착역 후보' : '출발역 후보');
+  list.setAttribute('aria-label', input.id === 'route-to' ? '도착역 후보' : input.id === 'cm-dest' ? '직장 역 후보' : '출발역 후보');
   input.setAttribute('aria-controls', listId);
   let items = [], activeIdx = -1;
   function setExpanded(v) { input.setAttribute('aria-expanded', v ? 'true' : 'false'); }
@@ -792,6 +792,7 @@ function attachAutocomplete(input) {
       e.preventDefault();
       setRouteStation(input, stationById(items[activeIdx].id) || items[activeIdx].name);
       hide();
+      input.dispatchEvent(new CustomEvent('ac:pick'));   // 길찾기 밖(통근권)에서도 고른 역을 알 수 있게
     } else if (e.key === 'Escape') { hide(); }
   });
   list.addEventListener('mousedown', e => {
@@ -802,8 +803,10 @@ function attachAutocomplete(input) {
     setRouteStation(input, stationById(it.id) || it.name);
     hide();
     input.focus();
+    input.dispatchEvent(new CustomEvent('ac:pick'));
   });
 }
+window.KR_attachAutocomplete = attachAutocomplete;   // commute.js 직장 역 입력도 같은 자동완성(동명역 지역 표시)
 /* 사이드바 토글은 ui.js 가 맡는다.
  * 여기서도 리스너를 달면 같은 버튼에 두 개가 붙어서, 클릭 한 번에
  * sidebar-hidden 이 두 번 토글되고 결과적으로 아무 일도 안 일어난다. */

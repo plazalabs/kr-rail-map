@@ -1370,6 +1370,8 @@ i[data-ic] { display: inline-flex; align-items: center; font-style: normal; line
 #map-skeleton .sk-b { left: 28%; top: 54%; width: 46%; transform: rotate(12deg); }
 #map-skeleton .sk-c { left: 40%; top: 22%; width: 10px; height: 46%; }
 body.map-ready #map-skeleton { opacity: 0; visibility: hidden; }
+/* 걷힌 뒤엔 반짝임도 멈춘다 — 숨긴 채 계속 돌면 배터리·화면 그리기만 잡아먹는다 */
+body.map-ready #map-skeleton .sk { animation: none; }
 @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
 
 /* 떡상 패널 큰 순위 카운트업 (작업 6) */

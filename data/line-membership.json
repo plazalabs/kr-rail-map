@@ -6,8 +6,8 @@
  "summary": {
   "lines": 82,
   "open_lines": 66,
-  "open_pairs": 1472,
-  "open_confirmed": 1463,
+  "open_pairs": 1471,
+  "open_confirmed": 1462,
   "open_confirmed_pct": 99.4,
   "open_lines_all_confirmed": 63
  },
@@ -86,8 +86,8 @@
   "busan-metro-line-4-blue-line": {
    "name": "부산 도시철도 4호선",
    "status": "open",
-   "stations": 15,
-   "confirmed": 15,
+   "stations": 14,
+   "confirmed": 14,
    "sources": [
     "osm-geometry",
     "osm-relation"
@@ -95,7 +95,10 @@
    "unconfirmed": [],
    "provisional": false,
    "partial": false,
-   "gap_reason": ""
+   "gap_reason": "",
+   "nonstop_removed": [
+    "안평기지간이"
+   ]
   },
   "chungbuk-line": {
    "name": "충북선",

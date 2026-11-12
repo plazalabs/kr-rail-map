@@ -24,9 +24,25 @@ const NON_STOP = [
   },
 ];
 
+// 손님이 타고 내리는 역이 아닌 곳 (차량기지 안 간이 승강장 등) — 역 목록에서 아예 뺀다
+const NOT_STATION = [
+  {
+    id: 'st-5589034149', name: '안평기지간이', line: 'busan-metro-line-4-blue-line',
+    reason: '부산 4호선 안평 차량기지(경전철운영사업소) 안 간이 승강장 — 영업 역 아님. 4호선은 미남~안평 14역',
+    source: 'itwiki.kr/w/부산_도시철도_4호선 (역 14개, 2026-11-13 확인)',
+  },
+];
+
 const raw = fs.readFileSync(FILE, 'utf8');
 const doc = JSON.parse(raw);
 let changed = 0;
+for (const ns of NOT_STATION) {
+  const i = doc.features.findIndex(f => f.properties.id === ns.id && f.properties.name_ko === ns.name);
+  if (i < 0) continue;
+  doc.features.splice(i, 1);
+  changed++;
+  console.log(`  ${ns.name} (${ns.id}) — 영업 역 아님, 역 목록에서 뺌`);
+}
 for (const rule of NON_STOP) {
   for (const f of doc.features) {
     const p = f.properties;
@@ -53,13 +69,13 @@ const mraw = fs.readFileSync(MFILE, 'utf8');
 const mem = JSON.parse(mraw);
 const cur = JSON.parse(fs.readFileSync(FILE, 'utf8'));
 let mfix = 0;
-for (const rule of NON_STOP) {
+for (const rule of NON_STOP.concat(NOT_STATION.map(n => ({ line: n.line, stations: [n.name] })))) {
   const L = mem.lines[rule.line];
   if (!L) continue;
   const n = cur.features.filter(f => (f.properties.lines || []).includes(rule.line)).length;
   L.unconfirmed = (L.unconfirmed || []).filter(u => !rule.stations.includes(typeof u === 'string' ? u : u.name));
   if (L.stations !== n) { L.stations = n; L.confirmed = n - L.unconfirmed.length; mfix++; }
-  L.nonstop_removed = rule.stations.slice();   // 지나가기만 하는 역이라 뺐다 (fix_nonstop.js)
+  L.nonstop_removed = Array.from(new Set((L.nonstop_removed || []).concat(rule.stations)));   // 지나가기만 하거나 영업 역이 아니라 뺐다 (fix_nonstop.js)
 }
 if (mfix && mem.summary) {
   const open = Object.values(mem.lines).filter(L => L.status === 'open');
@@ -73,4 +89,4 @@ if (mraw.endsWith('\n')) mout += '\n';
 if (mraw.includes('\r\n')) mout = mout.replace(/\n/g, '\r\n');
 fs.writeFileSync(MFILE, mout);
 console.log(`line-membership.json 고친 노선: ${mfix}`);
-module.exports = { NON_STOP };
+module.exports = { NON_STOP, NOT_STATION };

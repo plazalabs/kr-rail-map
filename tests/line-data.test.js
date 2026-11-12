@@ -37,6 +37,7 @@ const REF = [
   ['ui-sinseol-line', 11.4, 13, '위키백과 인포박스(감사 부록 B)'],
   ['busan-metro-line-1', 40.4, 40, '위키백과 인포박스(감사 부록 B)'],
   ['busan-metro-line-3-brown-line', 18.1, 17, '위키백과 인포박스(감사 부록 B)'],
+  ['busan-metro-line-4-blue-line', 12.0, 14, '위키백과 인포박스(감사 부록 B) — 안평기지간이(영업 역 아님) 뺀 뒤, fix_nonstop.js'],
   ['busan-gimhae-light-rail-transit', 23.455, 21, '위키백과 인포박스(감사 부록 B)'],
   ['daegu-metro-line-2', 31.4, 29, '위키백과 인포박스(감사 부록 B)'],
   ['daegu-metro-line-3', 23.1, 30, '위키백과 인포박스(감사 부록 B)'],

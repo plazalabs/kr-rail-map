@@ -116,7 +116,8 @@
   /* ---------- 화면 ---------- */
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var mapRef = null, stationsRef = null, el = null, doc = null;
-  var st = { w: 'avg', y: null, wait: false, sel: null };
+  // full: 패널 안 전체 순위(예전엔 rank.html 로 넘어갔다 — 회장님: 화면 바뀌지 말고 한 화면에, 2026-11-12)
+  var st = { w: 'avg', y: null, wait: false, sel: null, full: false, q: '', sort: 'rise', n: 50 };
   var isOpen = false, turnedLayerOn = false, selfToggle = false, playT = null, tip = null, cache = {};
   var mobile = function () { return global.matchMedia && global.matchMedia('(max-width: 980px)').matches; };
 
@@ -151,13 +152,18 @@
       '</div>' +
       '<div id="rkp-hero"></div>' +
       '<h3 class="rkp-sub" id="rkp-list-h"></h3>' +
+      '<div class="rkp-tools" hidden>' +
+        '<input type="search" class="rkp-q" placeholder="우리 역 찾기 (예: 노원구, 광운대)" aria-label="순위에서 역 찾기" autocomplete="off">' +
+        '<div class="rkp-sort" role="group" aria-label="정렬"><button type="button" data-sort="rise">많이 오른 순</button><button type="button" data-sort="after">개통 후 순위</button><button type="button" data-sort="now">지금 순위</button></div>' +
+      '</div>' +
       '<ol class="rkp-list" id="rkp-list" aria-labelledby="rkp-list-h"></ol>' +
+      '<button type="button" class="rkp-more" hidden>더 보기</button>' +
+      '<button type="button" class="rkp-allbtn" aria-expanded="false"></button>' +
       '<div class="rkp-legend" aria-label="지도 점 색">' +
         '<span><i style="background:#0a8f4a"></i>떡상</span><span><i style="background:#3aa76d"></i>상승</span><span><i style="background:#9aa1a8"></i>보합</span><span><i style="background:#d9701a"></i>상대 하락</span><span><i style="background:#7a3fd0"></i>신규</span>' +
       '</div>' +
       '<div class="rkp-foot">' +
         '<button type="button" class="rkp-wait" aria-pressed="false" title="처음 탈 때·갈아탈 때 출퇴근 시간에 열차를 기다리는 시간을 더합니다">⏱ 배차 포함</button>' +
-        '<a class="rkp-all" href="rank.html">전체 순위표 →</a>' +
       '</div>' +
       '<p class="rkp-note">업무지구(도심·여의도·강남)까지 걸리는 시간으로 매긴 수도권 순위 · 공개 자료 바탕 추정값 · <a href="data.html">출처</a></p>';
     document.getElementById('map-wrap').appendChild(el);
@@ -177,6 +183,19 @@
     });
     el.querySelector('.rkp-play').addEventListener('click', function () { playT ? stopPlay() : play(); });
     el.querySelector('.rkp-wait').addEventListener('click', function () { st.wait = !st.wait; render(true); });
+    el.querySelector('.rkp-allbtn').addEventListener('click', function () {
+      st.full = !st.full; st.n = 50;
+      renderList();
+      var h = el.querySelector('#rkp-list-h');
+      if (h && h.scrollIntoView) h.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (st.full) { var qi = el.querySelector('.rkp-q'); if (qi && !mobile()) qi.focus({ preventScroll: true }); }
+    });
+    el.querySelector('.rkp-q').addEventListener('input', function () { st.q = this.value; st.n = 50; renderList(); });
+    el.querySelector('.rkp-sort').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-sort]'); if (!b) return;
+      st.sort = b.getAttribute('data-sort'); st.n = 50; renderList();
+    });
+    el.querySelector('.rkp-more').addEventListener('click', function () { st.n += 50; renderList(); });
     el.querySelector('#rkp-list').addEventListener('click', function (e) {
       var b = e.target.closest('[data-id]'); if (!b) return;
       select(b.getAttribute('data-id'), { fly: true });
@@ -238,14 +257,15 @@
       '</div>';
   }
 
-  function listHtml(rows) {
-    if (!rows.length) return '<li class="rkp-empty">이 해까지는 크게 오르는 역이 없어요.</li>';
+  function listHtml(rows, numOf) {
+    if (!rows.length) return '<li class="rkp-empty">' + (st.full ? '찾는 역이 없어요.' : '이 해까지는 크게 오르는 역이 없어요.') + '</li>';
     return rows.map(function (r, i) {
       var nl = newLinesOf(doc, r)[0];
       var sub = nl ? '<i style="background:' + esc(nl.c) + '"></i>' + esc(nl.n) + (nl.y ? ' · ' + nl.y : '') : esc(r.region);
-      var chg = r.isNew ? '<b class="rkp-chg is-new">신규</b>' : '<b class="rkp-chg up">▲' + r.change + '</b>';
+      var chg = r.isNew ? '<b class="rkp-chg is-new">신규</b>'
+        : (r.change > 0 ? '<b class="rkp-chg up">▲' + r.change + '</b>' : (r.change < 0 ? '<b class="rkp-chg down">▼' + (-r.change) + '</b>' : '<b class="rkp-chg">–</b>'));
       return '<li><button type="button" class="rkp-row' + (r.id === st.sel ? ' is-sel' : '') + '" data-id="' + esc(r.id) + '">' +
-        '<span class="rkp-no">' + (i + 1) + '</span>' +
+        '<span class="rkp-no">' + (numOf ? numOf(r, i) : i + 1) + '</span>' +
         '<span class="rkp-nm"><b>' + esc(r.name) + '</b><small>' + sub + '</small></span>' +
         '<span class="rkp-rt">' + chg + '<small>' + (r.now.rank == null ? '새 길' : r.now.rank) + ' → ' + r.aft.rank + '위</small></span>' +
         '</button></li>';
@@ -273,15 +293,41 @@
       var path = el.querySelector('.rkp-curve-line');
       if (path) { path.classList.remove('draw'); void path.getBoundingClientRect(); path.classList.add('draw'); }
     }
-    var top = RankTable.sortRows(R.rows.filter(function (x) { return x.isNew || (x.change != null && x.change > 0); }), 'rise')
-      .filter(function (x) { return !x.isNew; }).slice(0, 10);
-    el.querySelector('#rkp-list-h').textContent = (st.y === 'all' ? '모두 개통하면' : st.y + '년까지') + ' 가장 많이 오르는 역';
-    el.querySelector('#rkp-list').innerHTML = listHtml(top);
+    renderList();
     if (typeof StationRocket !== 'undefined') {
       StationRocket.setView({ weight: st.w, at: st.y, wait: st.wait });
       StationRocket.select(st.sel);
     }
     updateTip(r);
+  }
+
+  // 목록만 다시 그린다 (찾기 글자를 칠 때마다 지도까지 다시 칠하지 않게)
+  function renderList() {
+    if (!doc || !el) return;
+    var R = res();
+    var when = st.y === 'all' ? '모두 개통하면' : st.y + '년까지';
+    var tools = el.querySelector('.rkp-tools'), more = el.querySelector('.rkp-more'), allb = el.querySelector('.rkp-allbtn');
+    tools.hidden = !st.full;
+    allb.setAttribute('aria-expanded', String(st.full));
+    allb.textContent = st.full ? '← TOP 10 으로' : '전체 순위 보기 (' + R.total + '역) ↓';
+    if (!st.full) {
+      var top = RankTable.sortRows(R.rows.filter(function (x) { return !x.isNew && x.change != null && x.change > 0; }), 'rise').slice(0, 10);
+      el.querySelector('#rkp-list-h').textContent = when + ' 가장 많이 오르는 역';
+      el.querySelector('#rkp-list').innerHTML = listHtml(top);
+      more.hidden = true;
+      return;
+    }
+    el.querySelectorAll('.rkp-sort [data-sort]').forEach(function (b) {
+      var on = b.getAttribute('data-sort') === st.sort; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+    });
+    var rows = RankTable.sortRows(R.rows.filter(function (x) { return RankTable.matches(x, st.q.trim()); }), st.sort);
+    var label = { rise: '많이 오른 순', after: '개통 후 순위', now: '지금 순위' }[st.sort];
+    el.querySelector('#rkp-list-h').textContent = '전체 ' + rows.length + '역 · ' + when + ' · ' + label;
+    // 번호: 순위 정렬이면 그 순위(공동 포함), 오른 순이면 몇 번째
+    var numOf = st.sort === 'after' ? function (r) { return r.aft.rank; } : st.sort === 'now' ? function (r) { return r.now.rank == null ? '–' : r.now.rank; } : null;
+    el.querySelector('#rkp-list').innerHTML = listHtml(rows.slice(0, st.n), numOf);
+    more.hidden = rows.length <= st.n;
+    more.textContent = '더 보기 (' + Math.min(50, rows.length - st.n) + '역 더)';
   }
 
   function updateTip(r) {
@@ -374,6 +420,8 @@
     stopPlay();
     isOpen = false;
     st.sel = null;   // 다시 열면 순위부터
+    st.full = false; st.q = ''; st.n = 50;
+    if (el) { var qi = el.querySelector('.rkp-q'); if (qi) qi.value = ''; }
     if (el) el.hidden = true;
     document.body.classList.remove('rk-open');
     setBtn(false);

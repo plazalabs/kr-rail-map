@@ -117,6 +117,30 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
   R.check("카드의 '역 상세' → 역 상세가 열림", sd === true, sd);
   await b.evaluate(`StationDetail.hide()`); await sleep(300);
 
+  // 전체 순위 — 패널 안에서 (rank.html 로 넘어가지 않음, 2026-11-12)
+  const url0 = await b.evaluate('location.href');
+  await b.evaluate(`document.querySelector('.rkp-allbtn').click(); true`); await sleep(500);
+  const f1 = await b.evaluate(`({ url: location.href, tools: !document.querySelector('.rkp-tools').hidden, n: document.querySelectorAll('.rkp-row').length,
+    more: !document.querySelector('.rkp-more').hidden, h: document.getElementById('rkp-list-h').textContent, exp: document.querySelector('.rkp-allbtn').getAttribute('aria-expanded'),
+    link: !!document.querySelector('#rocket-panel a[href="rank.html"]') })`);
+  R.check("'전체 순위 보기' → 같은 화면(주소 그대로)에서 50역 + 더 보기 + 찾기·정렬, rank.html 링크 없음", f1.url === url0 && f1.tools && f1.n === 50 && f1.more && /^전체 \d+역/.test(f1.h) && f1.exp === 'true' && !f1.link, f1);
+  await b.evaluate(`document.querySelector('.rkp-more').click(); true`); await sleep(300);
+  const f2 = await b.evaluate(`document.querySelectorAll('.rkp-row').length`);
+  R.check('더 보기 → 100역', f2 === 100, f2);
+  await b.evaluate(`(() => { const q = document.querySelector('.rkp-q'); q.value = '광운대'; q.dispatchEvent(new Event('input')); return true; })()`); await sleep(300);
+  const f3 = await b.evaluate(`[...document.querySelectorAll('.rkp-row .rkp-nm b')].map(x => x.textContent)`);
+  R.check("찾기 '광운대' → 광운대만", f3.length >= 1 && f3.every(t => /광운대/.test(t)), f3);
+  await b.evaluate(`(() => { const q = document.querySelector('.rkp-q'); q.value = ''; q.dispatchEvent(new Event('input')); document.querySelector('.rkp-sort [data-sort="after"]').click(); return true; })()`); await sleep(300);
+  const want = RankTable.sortRows(rows({ at: DY }), 'after').slice(0, 3).map(x => [x.aft.rank, x.name]);
+  const f4 = await b.evaluate(`[...document.querySelectorAll('.rkp-row')].slice(0, 3).map(x => [Number(x.querySelector('.rkp-no').textContent), x.querySelector('b').textContent])`);
+  R.check('정렬 \'개통 후 순위\' → 순위표 계산과 같은 1~3위 (번호 = 순위)', JSON.stringify(f4) === JSON.stringify(want), [f4, want]);
+  await b.evaluate(`document.querySelector('.rkp-row').click(); true`); await sleep(1200);
+  const f5 = await b.evaluate(`({ name: (document.querySelector('.rkp-name')||{}).textContent, url: location.href })`);
+  R.check('전체 목록에서 역을 누르면 카드가 그 역 (화면 그대로)', f5.name === want[0][1] && f5.url === url0, f5);
+  await b.evaluate(`document.querySelector('.rkp-allbtn').click(); true`); await sleep(300);
+  const f6 = await b.evaluate(`({ n: document.querySelectorAll('.rkp-row').length, tools: document.querySelector('.rkp-tools').hidden })`);
+  R.check("'← TOP 10 으로' → 다시 10개", f6.n === 10 && f6.tools, f6);
+
   // 닫기
   await b.evaluate(`document.querySelector('.rkp-close').click()`); await sleep(500);
   const s6 = await b.evaluate(`({ hidden: document.getElementById('rocket-panel').hidden, layer: !!map.getLayer('rocket-tier'), cb: document.getElementById('layer-rocket').checked, tip: !!document.querySelector('.rkp-tip'), cls: document.body.classList.contains('rk-open'), sel: RocketPanel.state().sel })`);

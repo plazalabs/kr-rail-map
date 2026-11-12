@@ -1232,3 +1232,15 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
 .sd-talk-msg { font-size: 12px; color: var(--muted); flex: 1; }
 .sd-talk-go { border: 0; background: var(--accent); color: var(--accent-text); border-radius: 999px; padding: 7px 16px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .sd-talk-go:disabled { opacity: .5; cursor: default; }
+
+/* 떡상 패널 안 전체 순위 (rank.html 로 안 넘어감) */
+.rkp-tools { display: grid; gap: 8px; }
+.rkp-tools[hidden] { display: none; }
+.rkp-q { width: 100%; box-sizing: border-box; height: 42px; border: 0; border-radius: 12px; background: var(--surface); color: var(--text); padding: 0 14px; font: inherit; font-size: 14.5px; }
+.rkp-sort { display: flex; gap: 4px; }
+.rkp-sort button { flex: 1; border: 0; background: var(--surface); color: var(--text-2); padding: 7px 0; border-radius: 9px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.rkp-sort button.on { background: var(--text); color: var(--bg); }
+.rkp-more, .rkp-allbtn { width: 100%; border: 0; background: var(--surface); color: var(--text); padding: 11px 0; border-radius: 12px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.rkp-allbtn { background: var(--accent-weak); color: var(--rk-blue); }
+.rkp-more[hidden] { display: none; }
+.rkp-list .rkp-chg.down { color: #d9701a; }

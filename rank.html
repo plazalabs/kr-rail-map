@@ -91,6 +91,14 @@ input[type=search]{flex:1;min-width:140px}
 /* 떡상 TOP 10 슬로프 */
 .slope{background:var(--card);box-shadow:var(--shadow);border-radius:var(--r-card);padding:14px 12px 8px;margin-top:10px}
 .slope svg{display:block;width:100%;height:auto}
+/* 자료가 오기 전 빈 칸 자리를 미리 잡아 둔다 — 그림·칩·안내 줄이 나타나며 아래를 밀던 레이아웃 이동(CLS) 줄이기 (감사 N7, 2026-11-13) */
+#slope:empty{aspect-ratio:640/330}
+@media(max-width:600px){#slope:empty{aspect-ratio:400/330}}
+#tiers:empty{min-height:32px}
+#hint:empty{min-height:19px}
+.yr .ticks:empty{min-height:19px}
+.yr .now:empty{min-height:23px}
+.yr .opens:empty{min-height:22px}
 .slope .ax{font-size:12px;fill:var(--muted)}
 .slope .nm{font-size:13px;font-weight:700;fill:var(--text)}
 .slope .rk{font-size:12px;fill:var(--text2);font-variant-numeric:tabular-nums}

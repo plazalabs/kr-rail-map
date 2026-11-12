@@ -252,7 +252,8 @@ def main():
 {rel_html}
 </ul>
 <a class="cta" href="../?line={esc(lid)}">지도에서 {esc(p["name_ko"])} 보기 →</a>
-<p class="note">노선·역 데이터는 OSM(ODbL)·국가철도공단 역위치 자료로 확인했습니다. 개통 전 노선의 역명은 계획 발표 기준(확정 아님). 출구 좌표 © OpenStreetMap contributors (ODbL) · 지도 © OpenStreetMap · OpenFreeMap<br>
+<p class="note">노선·역 데이터는 OSM(ODbL)·국가철도공단 역위치 자료로 확인했습니다. 개통 전 노선의 역명은 계획 발표 기준(확정 아님). 출구 좌표 © OpenStreetMap contributors (ODbL) · 지도 © OpenStreetMap · OpenFreeMap · <a href="../data.html">데이터 출처</a><br>
+© 2026 플라자랩스 — 무단 복제·재배포 금지 · <a href="../data.html#copyright">저작권 안내</a><br>
 표시된 연장은 선형 데이터 기준이며 실제 영업거리와 다를 수 있습니다.</p>
 </main>
 </body>
@@ -264,11 +265,13 @@ def main():
         made.append((lid, p["name_ko"], len(seq), km))
 
     # sitemap
-    urls = [f"{SITE}/"] + [f"{SITE}/line/{lid}.html" for lid, *_ in made]
+    # 메인·순위표·게시판·자료 페이지도 사이트맵에 (2026-11-13 — 예전엔 손으로 넣어 다시 만들면 빠졌다)
+    urls = [f"{SITE}/", f"{SITE}/rank.html", f"{SITE}/board.html", f"{SITE}/data.html"] + [f"{SITE}/line/{lid}.html" for lid, *_ in made]
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for u in urls:
-        pri = "1.0" if u.endswith("/") else "0.8"
+        # 지금 사이트맵과 같은 우선순위 (메인 1.0 · 순위표 0.9 · 게시판 0.6 · 자료 0.5 · 노선 0.8)
+        pri = {f"{SITE}/": "1.0", f"{SITE}/rank.html": "0.9", f"{SITE}/board.html": "0.6", f"{SITE}/data.html": "0.5"}.get(u, "0.8")
         sm.append(f"  <url><loc>{u}</loc><lastmod>{TODAY}</lastmod><priority>{pri}</priority></url>")
     sm.append("</urlset>")
     open(os.path.join(HERE, "sitemap.xml"), "w", encoding="utf-8").write("\n".join(sm))

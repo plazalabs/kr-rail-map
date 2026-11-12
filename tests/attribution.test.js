@@ -46,7 +46,9 @@ check('배경지도 표기를 유지한다', /OpenFreeMap/.test(index) && /Esri/
 check('데이터 출처 페이지로 링크한다', /href="data\.html"/.test(index));
 
 section('노선 페이지 72개');
-check('노선 페이지가 있다', lineFiles.length === 72, lineFiles.length + '개');
+// 노선이 늘면 페이지도 는다(2026-11-13 GTX-A 창릉·서울역~수서 추가로 74) — 숫자를 박지 않고 사이트맵과 맞춘다
+const smLines = (read('sitemap.xml').match(/\/line\/[^<]+\.html/g) || []).length;
+check('노선 페이지가 있다 (사이트맵의 노선 주소 수와 같음)', lineFiles.length >= 72 && lineFiles.length === smLines, lineFiles.length + '개 / 사이트맵 ' + smLines);
 {
   const wrong = lineFiles.filter(f => /노선·역 데이터 © OpenStreetMap/.test(read('line/' + f)));
   check('노선 데이터를 OSM 이라 적은 페이지가 없다', wrong.length === 0,

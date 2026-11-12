@@ -23,8 +23,14 @@ const R = recorder('basemap-down');
   }
   const ms = Date.now() - t0;
   R.check('스타일 서버를 막아도 15초 안에 노선이 그려진다 (비상 배경)', !!st && st.lines && st.fb && ms < 15000, Object.assign({ ms }, st || {}));
-  await sleep(1500);
-  const vis = await b.evaluate(`({ drawn: map.queryRenderedFeatures({ layers: ['rail-lines'] }).length, status: document.getElementById('status').textContent })`).catch(e => ({ err: String(e) }));
+  // 그려지기까지 기다린다 — 예전엔 1.5초 한 번만 봐서 헤드리스 크롬이 프레임을 늦게 돌리면 drawn 0 으로 들쭉날쭉했다
+  // (2026-11-13: 7번 중 2번). 8초 안에 그려지면 통과, 끝내 안 그려지면 여전히 실패한다.
+  let vis = null;
+  for (let i = 0; i < 32; i++) {
+    await sleep(250);
+    vis = await b.evaluate(`({ drawn: map.queryRenderedFeatures({ layers: ['rail-lines'] }).length, status: document.getElementById('status').textContent })`).catch(e => ({ err: String(e) }));
+    if (vis && vis.drawn > 20 && /배경 지도 서버/.test(vis.status)) break;
+  }
   R.check('화면에 노선이 실제로 그려지고 상태 줄에 안내', vis.drawn > 20 && /배경 지도 서버/.test(vis.status), vis);
   const route = await b.evaluate(`(() => { const a = STATIONS.find(s => s.properties.id === 'st-355172776'), z = STATIONS.find(s => s.properties.name_ko === '시청' && s.properties.lines.includes('seoul-subway-line-2'));
     const r = RouteFinder.findRoute(a.properties.id, z.properties.id, { openOnly: true }); return r ? r.minutes : null; })()`).catch(() => null);

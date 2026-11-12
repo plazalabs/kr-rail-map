@@ -39,8 +39,11 @@ const layout = b => b.evaluate(`(() => ({
     R.check(`${w}px 가로 스크롤 없음·줄이 화면 안`, !l.hscroll && l.rowFits, l);
     R.check(`${w}px 1~3위 카드 3장, 목록 50줄(4~53위)`, l.pod === 3 && l.rows === 50, l);
     R.check(`${w}px 수도권 기본, 1위는 서울역`, /수도권/.test(l.hint) && l.first === '서울', l);
-    const pos = await b.evaluate(`getComputedStyle(document.querySelector('.ctl')).position`);
-    R.check(`${w}px 조작부 고정: 데스크톱은 sticky, 휴대폰은 같이 스크롤(static)`, mobile ? pos === 'static' : pos === 'sticky', pos);
+    // 기대값은 '창 안 크기'로 정한다 — rank.html 은 폭 600 이하 또는 높이 760 이하면 일부러 static (조작부가 화면을 덮지 않게).
+    // 같은 1440×900 창이라도 브라우저마다 안 높이가 달라 760 경계를 넘나든다 → 감사에서 static 이 나와 실패로 잡혔다(N14, 2026-11-13).
+    const pos = await b.evaluate(`({ p: getComputedStyle(document.querySelector('.ctl')).position, w: innerWidth, h: innerHeight })`);
+    const want = (pos.w > 600 && pos.h > 760) ? 'sticky' : 'static';
+    R.check(`${w}px 조작부: 넓고 높은 창은 sticky, 휴대폰·낮은 창은 같이 스크롤(static)`, pos.p === want, pos);
     if (!mobile) {
       const before = await b.evaluate(`[...document.querySelectorAll('#podium .pod .nm')].map(e => e.textContent).join(',')`);
       await b.evaluate(`document.querySelector('.seg[data-k="w"] button[data-v="gbd"]').click()`); await sleep(300);

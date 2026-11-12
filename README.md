@@ -2,7 +2,7 @@
 
 수도권 전철을 중심으로 한 **철도 노선도 웹앱**. 서버 없이 도는 정적 단일 페이지 앱입니다.
 
-- 지도 위에 86개 노선 / 1,243개 역
+- 지도 위에 86개 노선 / 1,242개 역
 - 역 검색 · 최단 경로·환승·요금 계산
 - **도심 접근성** — 역에서 도심·여의도·강남·서울역·판교까지, 지금과 개통 후
 - **통근권 찾기** — `분석 > 통근권 찾기`. 직장(목적지) 역까지 30·45·60·90분 안에 닿는 역을 지도에 색으로, 목록은 가까운 순·(투자 모드) 시세 낮은 순. 길찾기와 같은 시간 계산
@@ -60,7 +60,7 @@ node tests/e2e/run.js --list     # 항목 목록
 | `vendor/` | MapLibre GL JS 4.7.1 (로컬 벤더링, BSD) |
 | `tests/*.test.js` | 단위 테스트 (의존성 없는 단일 스크립트) |
 | `tests/e2e/` | 화면 점검 — 헤드리스 Chrome + CDP, 실행기 `run.js` |
-| `data/lines.geojson` `data/stations.geojson` | 앱이 읽는 최종 데이터 (86노선·1,243역) |
+| `data/lines.geojson` `data/stations.geojson` | 앱이 읽는 최종 데이터 (86노선·1,242역) |
 | `data/build_access.js` | `data/access.json` 생성 (route.js 재사용, 1,234역 × 2회 다익스트라) |
 | `data/fix_interchange_lines.py` | 고립된 역·노선을 300m 근거로 이어 붙인다 → `stations.geojson` |
 | `data/fetch_dev.py` `data/build_station_dev.py` | 주택인허가 → `data/station-dev.json` (법정동 단위, 1,191곳) |

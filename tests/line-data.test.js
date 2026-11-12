@@ -29,6 +29,9 @@ const members = id => stations.filter(s => (s.properties.lines || []).includes(i
 
 // [노선 id, 기준 km, 기준 역 수, 출처]
 const REF = [
+  // 4·7호선: 이수/총신대입구(이수) 한 역으로 합친 뒤 (data/fix_duplicates.js, 2026-11-13)
+  ['seoul-metropolitan-subway-line-4', 85.7, 51, '위키백과 인포박스(감사 부록 B)'],
+  ['seoul-subway-line-7', 61.3, 53, '위키백과 인포박스(감사 부록 B)'],
   ['seoul-subway-line-6', 36.4, 39, '위키백과 인포박스(감사 부록 B)'],
   ['seoul-subway-line-9', 40.9, 38, '위키백과 인포박스(감사 부록 B)'],
   ['seoul-metropolitan-subway-shinbundang-line', 33.4, 16, '위키백과 인포박스(감사 부록 B)'],

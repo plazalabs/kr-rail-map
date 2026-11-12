@@ -6,8 +6,8 @@
  "summary": {
   "lines": 82,
   "open_lines": 66,
-  "open_pairs": 1470,
-  "open_confirmed": 1461,
+  "open_pairs": 1468,
+  "open_confirmed": 1459,
   "open_confirmed_pct": 99.4,
   "open_lines_all_confirmed": 63
  },
@@ -972,8 +972,8 @@
   "seoul-metropolitan-subway-line-4": {
    "name": "수도권 전철 4호선",
    "status": "open",
-   "stations": 52,
-   "confirmed": 52,
+   "stations": 51,
+   "confirmed": 51,
    "sources": [
     "official",
     "osm-geometry",
@@ -982,7 +982,10 @@
    "unconfirmed": [],
    "provisional": false,
    "partial": false,
-   "gap_reason": ""
+   "gap_reason": "",
+   "merged": [
+    "이수→총신대입구(이수)"
+   ]
   },
   "seoul-metropolitan-subway-seohae-line": {
    "name": "서해선",
@@ -1061,8 +1064,8 @@
   "seoul-subway-line-7": {
    "name": "서울 지하철 7호선",
    "status": "open",
-   "stations": 54,
-   "confirmed": 54,
+   "stations": 53,
+   "confirmed": 53,
    "sources": [
     "official",
     "osm-geometry",
@@ -1071,7 +1074,10 @@
    "unconfirmed": [],
    "provisional": false,
    "partial": false,
-   "gap_reason": ""
+   "gap_reason": "",
+   "merged": [
+    "이수→총신대입구(이수)"
+   ]
   },
   "seoul-subway-line-8": {
    "name": "서울 지하철 8호선",

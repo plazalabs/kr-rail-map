@@ -47,8 +47,9 @@ section('역 연결이 실제 역 ID 와 맞는다 (IMPL12: 키가 역 ID)');
   check('없는 역 ID에 단지를 붙이지 않았다', ghost.length === 0, ghost.slice(0, 5).join(', '));
   // 공식 이름에 부기가 붙은 역('상봉(시외버스터미널)')도 지도 역 ID 로 이어져야 한다
   check('부기 붙은 공식 이름의 역(상봉)도 열린다', byName('상봉').some(id => stMap[id]), byName('상봉').join(','));
-  check('개명역(이수)이 두 이름 모두 열린다',
-    byName('이수').some(id => stMap[id]) && byName('총신대입구(이수)').some(id => stMap[id]),
+  // 2026-11-13: 이수를 총신대입구(이수) 하나로 합침 — 합친 역에 단지가 열리고, 옛 '이수' 역은 없어야 한다
+  check('합친 역 총신대입구(이수)가 열리고 옛 이수 역은 없음',
+    byName('총신대입구(이수)').some(id => stMap[id]) && byName('이수').length === 0,
     byName('이수').concat(byName('총신대입구(이수)')).map(id => id + ':' + (stMap[id] ? 'O' : 'X')).join(' '));
 }
 {

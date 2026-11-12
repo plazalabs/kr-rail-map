@@ -1602,6 +1602,20 @@ function restoreCustomLayers(styleReady) {
   }
 }
 map.on('style.load', () => restoreCustomLayers(true));
+// 배경 지도(OpenFreeMap) 지명은 '영문 + 현지어'(Seoul 서울특별시)라 영어가 먼저 보였다 — 한국어 이름만, 없으면 현지어·영문 순으로.
+// 우리 레이어(역 이름 name_ko 등)는 건드리지 않는다: 배경 지도의 name:latin / name:nonlatin 을 쓰는 글자 레이어만 바꾼다. (2026-11-13)
+function koreanBasemapLabels() {
+  const st = map.getStyle && map.getStyle();
+  if (!st || !st.layers) return;
+  const KO = ['coalesce', ['get', 'name:ko'], ['get', 'name:nonlatin'], ['get', 'name'], ['get', 'name:latin']];
+  st.layers.forEach(l => {
+    if (l.type !== 'symbol' || !l.layout || !l.layout['text-field']) return;
+    const tf = JSON.stringify(l.layout['text-field']);
+    if (!/name:(latin|nonlatin)|\{name/.test(tf) || /name_ko/.test(tf)) return;
+    try { map.setLayoutProperty(l.id, 'text-field', KO); } catch (e) { /* 그 레이어만 건너뜀 */ }
+  });
+}
+map.on('style.load', koreanBasemapLabels);
 map.on('styledata', restoreCustomLayers); // 동일 스타일 재적용 등 style.load 미발화 대비 안전망
 
 /* ---------- 노선 하이라이트 ---------- */

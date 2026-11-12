@@ -26,9 +26,12 @@
   function when(y) { return y === 'all' ? '모두 개통하면' : y + '년,'; }
   function rankText(rk, tie) { return rk == null ? '—' : (tie ? '공동 ' : '') + rk + '위'; }
   // 큰 순위 숫자: 보이는 숫자만 올라가고(css .rkp-now[data-n]) 진짜 글자는 최종값 (작업 6)
+  // countFrom: 숫자가 어디서부터 올라갈지. null 이면 움직이지 않고 바로 최종값 (재생이 아닌 다시 그리기)
+  var countFrom = null, lastHero = { sel: undefined, rank: null };
   function rankBig(rk, tie) {
     if (rk == null || !(rk > 0) || rk > 9999) return '<b class="rkp-now">' + rankText(rk, tie) + '</b>';
-    return '<b class="rkp-now" data-n="' + rk + '" data-pre="' + (tie ? '공동 ' : '') + '" style="--rkp-n:' + rk + '"><span class="rkp-now-t">' + rankText(rk, tie) + '</span></b>';
+    if (countFrom == null) return '<b class="rkp-now">' + rankText(rk, tie) + '</b>';
+    return '<b class="rkp-now" data-n="' + rk + '" data-pre="' + (tie ? '공동 ' : '') + '" style="--rkp-n:' + rk + ';--rkp-from:' + countFrom + '"><span class="rkp-now-t">' + rankText(rk, tie) + '</span></b>';
   }
 
   // 가장 많이 빨라지는 업무지구 (지금 갈 수 없던 곳이 생기면 그곳)
@@ -301,7 +304,12 @@
     }).join('');
     var wb = el.querySelector('.rkp-wait');
     wb.classList.toggle('on', st.wait); wb.setAttribute('aria-pressed', String(st.wait));
+    // 움직임 (작업 6): 처음 열 때·역 고를 때는 0 부터, 연도 재생 때는 지난 연도 순위부터 — 곡선과 같이 0.9초
+    var nowRank = r && r.aft ? r.aft.rank : null;
+    countFrom = !animate ? null : (lastHero.sel === st.sel && lastHero.rank > 0 && playT ? lastHero.rank : 0);
     el.querySelector('#rkp-hero').innerHTML = heroHtml(r);
+    countFrom = null;
+    lastHero = { sel: st.sel, rank: nowRank };
     if (animate) {
       var path = el.querySelector('.rkp-curve-line');
       if (path) { path.classList.remove('draw'); void path.getBoundingClientRect(); path.classList.add('draw'); }

@@ -1376,8 +1376,9 @@ body.map-ready #map-skeleton .sk { animation: none; }
 
 /* 떡상 패널 큰 순위 카운트업 (작업 6) */
 @property --rkp-n { syntax: '<integer>'; inherits: false; initial-value: 0; }
-@keyframes kr-count { from { --rkp-n: 0; } }
-.rkp-now[data-n] { counter-reset: rkn var(--rkp-n); animation: kr-count .7s cubic-bezier(.2,.7,.2,1); }
+@keyframes kr-count { from { --rkp-n: var(--rkp-from, 0); } }
+/* 곡선(rkp-draw .9s)과 같은 길이·곡선으로 같이 끝난다 */
+.rkp-now[data-n] { counter-reset: rkn var(--rkp-n); animation: kr-count .9s cubic-bezier(.3,.7,.2,1); }
 .rkp-now[data-n]::before { content: attr(data-pre) counter(rkn) "위" / ""; }
 .rkp-now[data-n] .rkp-now-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 

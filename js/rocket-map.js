@@ -15,7 +15,12 @@
   'use strict';
   var LAYER = 'rocket-tier';
   var SEL = 'rocket-sel';
-  var COLORS = { rocket: '#0a8f4a', up: '#3aa76d', flat: '#9aa1a8', down: '#d9701a', new: '#7a3fd0' };
+  // 지도 점 색은 css/style.css 의 --map-* 토큰에서 읽는다 (없으면 기본값). MapLibre 는 CSS 변수를 못 읽어서 값으로 꺼내 넣는다.
+  function tok(name, fb) {
+    try { var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v || fb; } catch (e) { return fb; }
+  }
+  var COLORS = { rocket: tok('--map-rocket', '#0a8f4a'), up: tok('--map-up', '#3aa76d'), flat: tok('--map-flat', '#9aa1a8'),
+    down: tok('--map-down', '#d9701a'), new: tok('--map-new', '#7a3fd0') };
   var CAPITAL = { '서울': 1, '경기': 1, '인천': 1 };
   var mapRef = null, stationsRef = null, layerOn = false, feats = null, loading = null, doc = null;
   var view = { weight: 'avg', at: 'all', wait: false };

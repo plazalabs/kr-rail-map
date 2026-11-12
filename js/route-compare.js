@@ -412,38 +412,38 @@ const RouteCompare = (() => {
       .rc-tabs.four { display: grid; grid-template-columns: 1fr 1fr; }
       .rc-tab { flex: 1 1 0; min-width: 0; padding: 8px 4px; border: 1px solid var(--border, #ddd);
         background: var(--panel-bg, #fff); color: var(--text, #222); border-radius: 8px;
-        cursor: pointer; font-size: 12px; line-height: 1.25; letter-spacing: -.01em;
+        cursor: pointer; font-size: var(--fs-xs); line-height: 1.25; letter-spacing: -.01em;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .rc-tab.active { background: var(--accent, #3388ff); color: #fff; border-color: var(--accent, #3388ff); font-weight: bold; }
-      .rc-badge { display: inline-block; font-size: 11px; background: var(--accent, #3388ff); color: #fff;
+      .rc-badge { display: inline-block; font-size: var(--fs-xs); background: var(--accent, #3388ff); color: #fff;
         border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
-      .rc-insight { font-size: 12px; color: var(--muted, #666); margin: 8px 0; line-height: 1.6; }
+      .rc-insight { font-size: var(--fs-xs); color: var(--muted, #666); margin: 8px 0; line-height: 1.6; }
       /* 기본(운행 중인 노선만) 결과 위의 '개통 예정 노선 포함' 안내 한 줄 */
-      .rc-oo-hint { font-size: 12px; line-height: 1.6; margin: 0 0 8px; padding: 6px 10px; border-radius: 8px;
+      .rc-oo-hint { font-size: var(--fs-xs); line-height: 1.6; margin: 0 0 8px; padding: 6px 10px; border-radius: 8px;
         border: 1px dashed var(--border, #c9ced6); color: var(--text, #222); background: var(--surface, #f6f7f9); }
       .rc-oo-how { display: block; color: var(--muted, #666); }
       /* 요금 내역 — 줄마다 출처(공식 운임표·계산·추정) */
-      .rc-fare { list-style: none; margin: -2px 0 8px; padding: 6px 10px; font-size: 12px; line-height: 1.6;
+      .rc-fare { list-style: none; margin: -2px 0 8px; padding: 6px 10px; font-size: var(--fs-xs); line-height: 1.6;
         border-left: 3px solid var(--border, #d6dae0); color: var(--text, #222); }
-      .rc-src { color: var(--muted, #666); font-size: 11px; }
-      .rc-est { color: var(--warn-text, #8a5300); font-size: 11px; }
+      .rc-src { color: var(--muted, #666); font-size: var(--fs-xs); }
+      .rc-est { color: var(--warn-text, #8a5300); font-size: var(--fs-xs); }
       /* '지금 vs 개통 후' 비교 */
       .rc-nf { border: 1px solid var(--border, #e3e6ea); border-radius: 10px; padding: 10px 12px;
         margin-bottom: 10px; background: var(--surface, #f6f7f9); }
       .rc-nf.hot { border-color: var(--accent, #1b64da); background: var(--accent-weak, #e8f0fe); }
       .rc-nf-row { display: flex; align-items: flex-end; gap: 8px; }
       .rc-nf-col { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-      .rc-nf-label { font-size: 11px; color: var(--muted, #5b6470); letter-spacing: .02em; }
-      .rc-nf-time { font-size: 21px; font-weight: 700; line-height: 1.1; color: var(--text, #16191d);
+      .rc-nf-label { font-size: var(--fs-xs); color: var(--muted, #5b6470); letter-spacing: .02em; }
+      .rc-nf-time { font-size: var(--fs-xl); font-weight: 700; line-height: 1.1; color: var(--text, #16191d);
         font-variant-numeric: tabular-nums; }
-      .rc-nf-time small { font-size: 12px; font-weight: 600; margin-left: 1px; }
-      .rc-nf-sub { font-size: 11px; color: var(--muted, #5b6470); }
-      .rc-nf-arrow { font-size: 15px; color: var(--muted, #5b6470); padding-bottom: 14px; }
-      .rc-nf-delta { margin-left: auto; text-align: right; font-size: 13px; font-weight: 700;
+      .rc-nf-time small { font-size: var(--fs-xs); font-weight: 600; margin-left: 1px; }
+      .rc-nf-sub { font-size: var(--fs-xs); color: var(--muted, #5b6470); }
+      .rc-nf-arrow { font-size: var(--fs-md); color: var(--muted, #5b6470); padding-bottom: 14px; }
+      .rc-nf-delta { margin-left: auto; text-align: right; font-size: var(--fs-sm); font-weight: 700;
         color: var(--accent, #1b64da); padding-bottom: 2px; white-space: nowrap; }
-      .rc-nf-why { font-size: 11.5px; color: var(--muted, #5b6470); margin-top: 7px; line-height: 1.5; }
+      .rc-nf-why { font-size: var(--fs-xs); color: var(--muted, #5b6470); margin-top: 7px; line-height: 1.5; }
       .rc-nf-why b { color: var(--text, #16191d); font-weight: 600; }
-      .rc-nf.flat .rc-nf-time { font-size: 15px; font-weight: 600; }
+      .rc-nf.flat .rc-nf-time { font-size: var(--fs-md); font-weight: 600; }
     `;
     document.head.appendChild(st);
   }

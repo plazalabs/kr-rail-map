@@ -172,7 +172,9 @@ check('링크 미리보기 그림 og-rank.jpg (1200×630, 300KB 아래)', /og:im
 const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
 check('지도가 ?st= 를 받아 역 상세를 연다', /q\.get\('st'\)/.test(app));
 const idx = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-check('분석 메뉴에 교통 순위표 링크', /href="rank\.html"/.test(idx));
+// 작업 5(2026-11-12): 지도 범례의 '순위표 →' 는 지웠다 — 순위는 지도 안 떡상 패널(./?rocket=1)에서. rank.html 은 검색 유입용으로 남김
+check('지도 범례에 rank.html 링크 없음', !/href="rank\.html"/.test(idx));
+check('게시판·자료 머리 메뉴에 떡상 랭킹(지도 패널)', ['board.html', 'data.html'].every(f => fs.readFileSync(path.join(ROOT, f), 'utf8').includes('href="./?rocket=1"')));
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 check('서비스워커 앱 셸에 rank.html·rank.js', /'\.\/rank\.html'/.test(sw) && /'\.\/js\/rank\.js'/.test(sw));
 

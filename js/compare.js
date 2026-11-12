@@ -92,22 +92,22 @@
       background: var(--bg, #fff); color: var(--text, #222);
       border: 1px solid var(--border, #ddd); border-radius: 12px;
       box-shadow: 0 8px 40px var(--shadow, rgba(0,0,0,.35));
-      font-family: inherit; font-size: 14px;
+      font-family: inherit; font-size: var(--fs-md);
     }
     #lc-head { display: flex; align-items: center; justify-content: space-between;
       padding: 12px 16px; border-bottom: 1px solid var(--border, #e5e5e5);
-      font-weight: 700; font-size: 16px; }
-    #lc-close { border: none; background: none; font-size: 20px; cursor: pointer; color: inherit; }
+      font-weight: 700; font-size: var(--fs-lg); }
+    #lc-close { border: none; background: none; font-size: var(--fs-xl); cursor: pointer; color: inherit; }
     #lc-picks { display: flex; gap: 10px; padding: 12px 16px; }
     #lc-picks select { flex: 1; padding: 8px; border-radius: 6px;
-      border: 1px solid var(--border, #ccc); font-size: 13px;
+      border: 1px solid var(--border, #ccc); font-size: var(--fs-sm);
       background: var(--input, #fff); color: var(--text, #222); }
-    #lc-table { width: calc(100% - 32px); margin: 0 16px 16px; border-collapse: collapse; font-size: 13px; }
+    #lc-table { width: calc(100% - 32px); margin: 0 16px 16px; border-collapse: collapse; font-size: var(--fs-sm); }
     #lc-table th, #lc-table td { padding: 7px 8px; border-bottom: 1px solid var(--border, #eee); text-align: center; }
     #lc-table th:first-child, #lc-table td:first-child { text-align: left; color: var(--muted, #888); width: 32%; }
     .lc-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
     .lc-winner { font-weight: 700; color: var(--accent, #0a7d2c); }
-    .lc-arrow { font-size: 11px; margin-left: 3px; }
+    .lc-arrow { font-size: var(--fs-xs); margin-left: 3px; }
     #lc-empty { padding: 20px 16px; text-align: center; color: var(--muted, #999); }
   `;
 

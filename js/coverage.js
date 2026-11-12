@@ -115,22 +115,22 @@
     st.textContent = `
 #cv-panel{position:absolute;top:70px;right:12px;width:300px;max-height:calc(100% - 140px);overflow-y:auto;
 background:var(--panel-bg,#fff);color:var(--text,#222);border:1px solid var(--border,#ddd);border-radius:10px;
-box-shadow:0 4px 18px rgba(0,0,0,.25);z-index:39;font-size:13px}
+box-shadow:0 4px 18px rgba(0,0,0,.25);z-index:39;font-size:var(--fs-sm)}
 #cv-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;font-weight:700;
 border-bottom:1px solid var(--border,#ddd)}
-#cv-close{background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted,#888)}
+#cv-close{background:none;border:none;font-size:var(--fs-lg);cursor:pointer;color:var(--muted,#888)}
 #cv-body{padding:10px 12px}
 #cv-lines{width:100%;padding:6px;border-radius:6px;border:1px solid var(--border,#ddd);
-background:var(--bg,#fff);color:var(--text,#222);font-size:13px;margin-bottom:10px}
+background:var(--bg,#fff);color:var(--text,#222);font-size:var(--fs-sm);margin-bottom:10px}
 .cv-row{margin-bottom:10px}
-.cv-row label{display:block;font-size:12px;color:var(--muted,#888);margin-bottom:4px}
+.cv-row label{display:block;font-size:var(--fs-xs);color:var(--muted,#888);margin-bottom:4px}
 #cv-radius{width:100%}
-.cv-ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted,#888)}
+.cv-ticks{display:flex;justify-content:space-between;font-size:var(--fs-xs);color:var(--muted,#888)}
 #cv-radius-label{font-weight:700}
 .cv-card{background:var(--bg,#f5f5f5);border-radius:8px;padding:8px 10px;margin-bottom:8px}
 .cv-stat{display:flex;justify-content:space-between;padding:3px 0}
-.cv-stat b{font-size:15px}
-.cv-note{font-size:11px;color:var(--muted,#888);margin-top:6px;line-height:1.5}
+.cv-stat b{font-size:var(--fs-md)}
+.cv-note{font-size:var(--fs-xs);color:var(--muted,#888);margin-top:6px;line-height:1.5}
 @media(max-width:768px){#cv-panel{top:auto;bottom:calc(70px + env(safe-area-inset-bottom));right:12px;left:12px;width:auto;max-height:55%}}
 `;
     document.head.appendChild(st);

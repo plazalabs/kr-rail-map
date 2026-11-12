@@ -187,21 +187,21 @@
     st.textContent = `
 #iv-panel{position:absolute;top:70px;right:12px;width:320px;max-height:calc(100% - 140px);overflow-y:auto;
 background:var(--panel-bg,#fff);color:var(--text,#222);border:1px solid var(--border,#ddd);border-radius:10px;
-box-shadow:0 4px 18px rgba(0,0,0,.25);z-index:40;font-size:13px}
+box-shadow:0 4px 18px rgba(0,0,0,.25);z-index:40;font-size:var(--fs-sm)}
 #iv-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;font-weight:700;
 border-bottom:1px solid var(--border,#ddd)}
-#iv-close{background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted,#888)}
+#iv-close{background:none;border:none;font-size:var(--fs-lg);cursor:pointer;color:var(--muted,#888)}
 #iv-body{padding:10px 12px}
 .iv-card{background:var(--bg,#f5f5f5);border-radius:8px;padding:8px 10px;margin-bottom:8px}
-.iv-card h4{margin:0 0 6px;font-size:12px;color:var(--muted,#888)}
+.iv-card h4{margin:0 0 6px;font-size:var(--fs-xs);color:var(--muted,#888)}
 .iv-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
 .iv-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
 .iv-gtx{border:2px solid #c026d3}
-.iv-score{font-size:34px;font-weight:800}
+.iv-score{font-size:var(--fs-3xl);font-weight:800}
 .iv-grade{display:inline-block;background:var(--accent,#3388ff);color:#fff;border-radius:6px;
 padding:2px 10px;font-weight:700;margin-left:8px}
-.iv-note{font-size:11px;color:var(--muted,#888);margin-top:6px;line-height:1.5}
-.iv-reason{font-size:11px;color:var(--muted,#888);margin:2px 0}
+.iv-note{font-size:var(--fs-xs);color:var(--muted,#888);margin-top:6px;line-height:1.5}
+.iv-reason{font-size:var(--fs-xs);color:var(--muted,#888);margin:2px 0}
 @media(max-width:768px){#iv-panel{top:auto;bottom:12px;right:12px;left:12px;width:auto;max-height:55%}}
 `;
     document.head.appendChild(st);
@@ -327,11 +327,11 @@ padding:2px 10px;font-weight:700;margin-left:8px}
       const nm = t.feature.properties.name_ko;
       const lines = (t.feature.properties.lines || []);
       h += `<div class="iv-row"><span><b>${i + 1}. ${esc(nm)}</b><br>
-        <span style="font-size:11px">${lines.map(l =>
+        <span style="font-size:var(--fs-xs)">${lines.map(l =>
           `<span class="iv-dot" style="background:${esc(lineColor(l))}"></span>${esc(lineName(l))}`
         ).join(' ')}</span></span>
         <span style="white-space:nowrap">도보 ${fmtWalk(t.dist)}<br>
-        <span style="font-size:11px">${t.kind === 'exit'
+        <span style="font-size:var(--fs-xs)">${t.kind === 'exit'
           ? esc(t.exitNo) + '번 출구 ' + fmtDist(t.dist)
           : fmtDist(t.dist) + ' (중심점)'}</span></span></div>`;
     });

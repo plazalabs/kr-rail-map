@@ -33,42 +33,42 @@
     '#sd-panel.sd-open{transform:translateX(0)}' +
     '#sd-head{display:flex;align-items:center;justify-content:space-between;' +
     'padding:14px 16px;border-bottom:1px solid var(--border,#eee);position:sticky;top:0;background:var(--panel-bg,#fff);z-index:2}' +
-    '#sd-head h2{margin:0;font-size:18px}' +
-    '#sd-close{border:none;background:none;font-size:20px;cursor:pointer;color:var(--muted,#5b6470);padding:4px 8px;border-radius:6px}' +
+    '#sd-head h2{margin:0;font-size:var(--fs-lg)}' +
+    '#sd-close{border:none;background:none;font-size:var(--fs-xl);cursor:pointer;color:var(--muted,#5b6470);padding:4px 8px;border-radius:6px}' +
     '#sd-close:hover{color:var(--text,#222);background:var(--hover,#f2f2f2)}' +
     '#sd-body{padding:14px 16px}' +
-    '.sd-en{color:var(--muted,#5b6470);font-size:13px;margin-top:2px}' +
+    '.sd-en{color:var(--muted,#5b6470);font-size:var(--fs-sm);margin-top:2px}' +
     '.sd-sec{margin-top:16px}' +
-    '.mk-table{width:100%;border-collapse:collapse;font-size:12.5px}' +
+    '.mk-table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}' +
     '.mk-table th{text-align:left;font-weight:500;color:var(--text-2,#4b5563);padding:6px 8px 6px 0;vertical-align:top;white-space:nowrap;width:1%}' +
     '.mk-table td{padding:6px 0;border-bottom:1px solid var(--border,#e5e7eb);line-height:1.45}' +
     '.mk-table th{border-bottom:1px solid var(--border,#e5e7eb)}' +
     '.mk-table b{font-variant-numeric:tabular-nums}' +
-    '.mk-where{font-size:11.5px;color:var(--muted,#5b6470)}' +
+    '.mk-where{font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
     '.mk-none,.mk-few{color:var(--muted,#5b6470)}' +
     '.sd-mode-hint{margin-top:18px;padding-top:12px;border-top:1px solid var(--border,#e5e7eb)}' +
     '.sd-mode-on{width:100%;text-align:left;padding:9px 12px;border-radius:8px;cursor:pointer;' +
-      'border:1px dashed var(--border,#d1d5db);background:var(--surface-2,transparent);color:var(--text,inherit);font-size:13px}' +
+      'border:1px dashed var(--border,#d1d5db);background:var(--surface-2,transparent);color:var(--text,inherit);font-size:var(--fs-sm)}' +
     '.sd-mode-on:hover{background:var(--hover,#f3f4f6)}' +
-    '.sd-sec h3{font-size:13px;color:var(--muted,#5b6470);margin:0 0 8px;font-weight:600}' +
-    '.sd-line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border,#f4f4f4);font-size:14px}' +
+    '.sd-sec h3{font-size:var(--fs-sm);color:var(--muted,#5b6470);margin:0 0 8px;font-weight:600}' +
+    '.sd-line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border,#f4f4f4);font-size:var(--fs-md)}' +
     '.sd-dot{width:12px;height:12px;border-radius:50%;flex:none}' +
-    '.sd-badge{margin-left:auto;font-size:11px;padding:2px 8px;border-radius:10px;flex:none}' +
+    '.sd-badge{margin-left:auto;font-size:var(--fs-xs);padding:2px 8px;border-radius:10px;flex:none}' +
     '.sd-badge.open{background:#e6f4ea;color:#137333}' +
     '.sd-badge.construction{background:#fef7e0;color:#b06000}' +
     '.sd-badge.planned{background:#f3e8fd;color:#6b21a8}' +
     '.sd-badge.proposed{background:#f1f3f4;color:#5f6368}' +
-    '.sd-adj{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--border,#f4f4f4);font-size:13px}' +
+    '.sd-adj{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--border,#f4f4f4);font-size:var(--fs-sm)}' +
     '.sd-adj .sd-lname{font-weight:600;white-space:nowrap}' +
     '.sd-st{cursor:pointer;color:var(--accent,#1a73e8);text-decoration:underline;text-underline-offset:2px}' +
     '.sd-st.sd-none{color:var(--muted,#5b6470);text-decoration:none;cursor:default}' +
     '.sd-arrow{color:var(--muted,#5b6470)}' +
-    '.sd-note{font-size:12px;color:var(--muted,#5b6470);margin-top:4px}' +
+    '.sd-note{font-size:var(--fs-xs);color:var(--muted,#5b6470);margin-top:4px}' +
     // 시세는 이 패널에서 유일하게 '돈'을 말하는 숫자라 크게 보여준다.
     '.sd-price{display:flex;align-items:baseline;gap:3px;margin-top:2px}' +
-    '.sd-price b{font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}' +
-    '.sd-price span{font-size:12px;color:var(--muted,#5b6470)}' +
-    '.sd-price-sub{font-weight:400;font-size:11px;color:var(--muted,#5b6470)}' +
+    '.sd-price b{font-size:var(--fs-2xl);letter-spacing:-.02em;font-variant-numeric:tabular-nums}' +
+    '.sd-price span{font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
+    '.sd-price-sub{font-weight:400;font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
     // 시세는 패널 맨 위에 온다. 배경색 대신 테두리로 구분해 테마 7종에서
     // 색이 깨지지 않게 한다 (다크 테마에서 흰 카드가 뜨는 사고를 피한다).
     '.sd-price-sec{margin-top:12px;padding:10px 0 12px;' +
@@ -79,36 +79,36 @@
     '.sd-cx-wrap{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border,#eee)}' +
     '.sd-glance{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}' +
     '.sd-chip{display:flex;flex-direction:column;gap:1px;padding:6px 10px;border:1px solid var(--border,#e3e6ea);border-radius:10px;background:var(--bg,#f7f8fa);min-width:0}' +
-    '.sd-chip small{font-size:10.5px;color:var(--muted,#5b6470)}' +
-    '.sd-chip b{font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}' +
-    '.sd-cx-wrap h4{font-size:12px;font-weight:600;margin-bottom:4px}' +
+    '.sd-chip small{font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
+    '.sd-chip b{font-size:var(--fs-md);font-variant-numeric:tabular-nums;white-space:nowrap}' +
+    '.sd-cx-wrap h4{font-size:var(--fs-xs);font-weight:600;margin-bottom:4px}' +
     '.sd-cx-list{list-style:none;margin:0;padding:0}' +
     '.sd-cx{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:5px 0;' +
     'border-bottom:1px solid var(--border,#eee)}' +
     '.sd-cx:last-child{border-bottom:0}' +
-    '.sd-cx-n{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
-    '.sd-cx-p{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}' +
-    '.sd-cx-m{grid-column:1/-1;font-size:11px;color:var(--muted,#5b6470);' +
+    '.sd-cx-n{font-size:var(--fs-sm);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.sd-cx-p{font-size:var(--fs-sm);font-variant-numeric:tabular-nums;white-space:nowrap}' +
+    '.sd-cx-m{grid-column:1/-1;font-size:var(--fs-xs);color:var(--muted,#5b6470);' +
     'font-variant-numeric:tabular-nums}' +
     // 세대수·공급면적은 K-apt 에서 온 값이라 실거래가 줄과 구분해 둔다.
     // 색을 살짝 다르게 해서 '이건 다른 자료에서 왔다'가 눈에 보이게 한다.
-    '.sd-cx-u{grid-column:1/-1;font-size:11px;color:var(--fg-2,#374151);' +
+    '.sd-cx-u{grid-column:1/-1;font-size:var(--fs-xs);color:var(--fg-2,#374151);' +
     'font-variant-numeric:tabular-nums;margin-top:1px}' +
     // 평형 구성은 한 단계 더 흐리게. 읽고 싶은 사람만 읽는 줄이다.
-    '.sd-cx-b{grid-column:1/-1;font-size:10px;color:var(--muted,#5b6470);' +
+    '.sd-cx-b{grid-column:1/-1;font-size:var(--fs-xs);color:var(--muted,#5b6470);' +
     'font-variant-numeric:tabular-nums;margin-top:1px;letter-spacing:-.1px}' +
     '.sd-cx-more{margin-top:6px;width:100%;padding:6px 0;border:1px solid var(--border-strong,#ddd);' +
     'border-radius:6px;background:var(--btn-bg,#fff);color:var(--btn-text,#222);' +
-    'cursor:pointer;font-size:12px}' +
+    'cursor:pointer;font-size:var(--fs-xs)}' +
     '.sd-cx-more:hover{background:var(--hover,#f6f6f6)}' +
     '.sd-exits{display:flex;flex-wrap:wrap;gap:6px}' +
     '.sd-exit{min-width:38px;padding:6px 8px;border:1px solid var(--border-strong,#ddd);border-radius:6px;' +
-    'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:12px;font-weight:600}' +
+    'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:var(--fs-xs);font-weight:600}' +
     '.sd-exit:hover{background:var(--hover,#f6f6f6);border-color:var(--accent,#1a73e8)}' +
     '.sd-exit.sd-exit-center{border-style:dashed;font-weight:400;color:var(--muted,#5b6470)}' +
     '.sd-btns{display:flex;gap:8px;margin-top:16px}' +
     '.sd-btns button{flex:1;padding:9px 0;border:1px solid var(--border-strong,#ddd);border-radius:6px;' +
-    'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:14px}' +
+    'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;font-size:var(--fs-md)}' +
     '.sd-btns button:hover{background:var(--hover,#f6f6f6)}' +
     // 역을 눌렀을 때 가장 먼저 하고 싶은 일은 '여기서 어디로 가지' 다.
     // 예전에는 이 버튼이 패널 맨 아래(출구·시간표 다음)에 있어서 스크롤하지
@@ -117,19 +117,19 @@
     '.sd-actions button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;' +
     'padding:9px 4px;border:1px solid var(--border-strong,#ddd);border-radius:9px;' +
     'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;' +
-    'font-size:12.5px;font-weight:600;line-height:1.15}' +
+    'font-size:var(--fs-sm);font-weight:600;line-height:1.15}' +
     '.sd-actions button:hover{background:var(--hover,#f6f6f6);border-color:var(--accent,#1a73e8)}' +
     '.sd-actions button.sd-primary{background:var(--accent,#1a73e8);color:var(--accent-text,#fff);' +
     'border-color:var(--accent,#1a73e8)}' +
     '.sd-actions button.sd-primary:hover{filter:brightness(1.06)}' +
     '.sd-actions button.sd-fav{flex:0 0 54px}' +
-    '.sd-actions .sd-ico{font-size:15px;line-height:1}' +
+    '.sd-actions .sd-ico{font-size:var(--fs-md);line-height:1}' +
     // 접었다 펴는 절 — 인접역·출구는 늘 필요하지 않다. 첫 화면을 짧게 유지한다.
     '.sd-det{margin-top:14px;border-top:1px solid var(--border,#eee);padding-top:9px}' +
-    '.sd-det>summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted,#5b6470);' +
+    '.sd-det>summary{cursor:pointer;font-size:var(--fs-sm);font-weight:600;color:var(--muted,#5b6470);' +
     'list-style:none;display:flex;align-items:center;gap:6px;padding:2px 0}' +
     '.sd-det>summary::-webkit-details-marker{display:none}' +
-    '.sd-det>summary::before{content:"\\25B8";font-size:10px;transition:transform .15s;display:inline-block}' +
+    '.sd-det>summary::before{content:"\\25B8";font-size:var(--fs-xs);transition:transform .15s;display:inline-block}' +
     '.sd-det[open]>summary::before{transform:rotate(90deg)}' +
     '.sd-det>summary:hover{color:var(--text,#222)}' +
     '@media (max-width:768px){' +
@@ -488,7 +488,7 @@
     var lineIds = parseLines(sp);
     var sid = sp.id || p.id;
 
-    var html = '<div><b style="font-size:17px">' + esc(nameKo) + '</b>' +
+    var html = '<div><b style="font-size:var(--fs-lg)">' + esc(nameKo) + '</b>' +
       (nameEn ? '<div class="sd-en">' + esc(nameEn) + '</div>' : '') + '</div>';
 
     // 액션은 이름 바로 아래. 패널을 열자마자 스크롤 없이 보여야 한다.
@@ -538,7 +538,7 @@
         StationAccess.sectionHtml(sid) +
         // 통근권 찾기(js/commute.js)로 — '이 역이 직장이면 어디서 다닐 수 있나'
         (typeof CommuteMap !== 'undefined'
-          ? '<button type="button" class="sd-commute" style="margin-top:8px;padding:0;border:0;background:none;color:var(--accent,#1a73e8);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline">이 역까지 통근권 보기 →</button>'
+          ? '<button type="button" class="sd-commute" style="margin-top:8px;padding:0;border:0;background:none;color:var(--accent,#1a73e8);font:inherit;font-size:var(--fs-sm);cursor:pointer;text-decoration:underline">이 역까지 통근권 보기 →</button>'
           : '') + '</div>';
     }
 

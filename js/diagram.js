@@ -668,20 +668,20 @@ const DiagramMode = (() => {
       card.className = 'dg-card';
       card.style.cssText =
         'position:absolute;z-index:5;min-width:172px;background:var(--panel);color:var(--text);' +
-        'border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);padding:10px 12px;font-size:12.5px';
+        'border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);padding:10px 12px;font-size:var(--fs-sm)';
       const r = g.getBoundingClientRect();
       const sr = scroll.getBoundingClientRect();
       card.style.left = Math.max(8, r.left - sr.left + scroll.scrollLeft - 70) + 'px';
       card.style.top = (r.top - sr.top + scroll.scrollTop + 18) + 'px';
       card.innerHTML =
-        '<div style="font-weight:700;font-size:14px;margin-bottom:6px">' + esc(name) + '</div>' +
+        '<div style="font-weight:700;font-size:var(--fs-md);margin-bottom:6px">' + esc(name) + '</div>' +
         ids.map(id => '<div style="display:flex;align-items:center;gap:5px;margin:2px 0">' +
           '<i style="width:7px;height:7px;border-radius:50%;background:' + colorOf(id) + '"></i>' +
           esc(nameOf(id)) + '</div>').join('') +
         '<div style="display:flex;gap:5px;margin-top:8px">' +
-        '<button data-act="from" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:12px;font-weight:600;color:var(--text)">출발</button>' +
-        '<button data-act="to" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:12px;font-weight:600;color:var(--text)">도착</button>' +
-        '<button data-act="info" style="flex:1.3;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:12px;font-weight:600;color:var(--text)">역 정보</button>' +
+        '<button data-act="from" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:var(--fs-xs);font-weight:600;color:var(--text)">출발</button>' +
+        '<button data-act="to" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:var(--fs-xs);font-weight:600;color:var(--text)">도착</button>' +
+        '<button data-act="info" style="flex:1.3;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:var(--fs-xs);font-weight:600;color:var(--text)">역 정보</button>' +
         '</div>';
       card.querySelectorAll('button').forEach(b => {
         b.onclick = ev => {

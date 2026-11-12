@@ -401,6 +401,7 @@
   }
 
   function copyLink(btn) {
+    if (global.KRTrack) global.KRTrack('링크 복사', { 곳: '떡상' });
     var u = new URL(location.href);
     u.search = '';
     u.hash = '';
@@ -432,6 +433,7 @@
       st.sel = (o.st && R.byId[o.st]) ? o.st : null;
       isOpen = true;
       el.hidden = false;
+      if (global.KRTrack) global.KRTrack('떡상 패널', o.st ? { 링크로: '예' } : null);
       el.classList.remove('is-peek');
       document.body.classList.add('rk-open');
       setBtn(true);

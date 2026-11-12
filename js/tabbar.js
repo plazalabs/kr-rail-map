@@ -67,6 +67,7 @@
       var b = e.target.closest('button[data-tab]');
       if (!b) return;
       var t = b.getAttribute('data-tab');
+      if (global.KRTrack) global.KRTrack('탭', { 이름: t });
       if (t !== 'more') setMore(false);
       if (ACT[t]) ACT[t]();
       setTimeout(sync, 0);

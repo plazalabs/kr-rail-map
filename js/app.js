@@ -699,6 +699,7 @@ document.getElementById('save-btn').addEventListener('click', () => {
 
 /* ---------- 링크 공유 ---------- */
 document.getElementById('share-btn').addEventListener('click', async () => {
+  if (window.KRTrack) KRTrack('링크 복사', { 곳: '지도' });
   try {
     const url = new URL(location.href);
     // 길찾기 상태 포함
@@ -1049,6 +1050,7 @@ document.getElementById('route-go').addEventListener('click', () => {
   // 3종 비교 모듈이 있으면 사용, 없으면 기존 단일 경로
   if (typeof RouteCompare !== 'undefined') {
     RouteCompare.show(from.properties.id, to.properties.id, { includeUnopened: routeIncludeUnopened() });
+    if (window.KRTrack) KRTrack('길찾기', { 개통예정포함: routeIncludeUnopened() ? '예' : '아니오' });
     // 아래 상태 줄에 '도착역을 입력하세요' 같은 옛 안내가 남지 않게 — 동명역 해석 안내는 위에서 이미 띄웠으면 그대로 둔다
     if (!pair.guessed.length) setStatus(`${from.properties.name_ko} → ${to.properties.name_ko} 경로를 찾았어요`);
     return;
@@ -1759,6 +1761,7 @@ function closeStationPopup() {
 // 이제 선택은 패널로 통일하고, 패널 모듈을 못 불러왔을 때만 팝업으로 물러난다.
 function showStation(feature, lngLat) {
   rememberStation(feature);
+  if (window.KRTrack) KRTrack('역 상세', { 역: feature.properties.name_ko });   // 어떤 역을 많이 보나 (js/track.js)
   closeStationPopup();
   if (typeof StationDetail !== 'undefined' && StationDetail.show) {
     StationDetail.show(feature);

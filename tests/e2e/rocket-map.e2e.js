@@ -9,6 +9,14 @@
 const path = require('path');
 const { launch, sleep, BASE, recorder, outDir } = require('./lib/cdp');
 const R = recorder('rocket-map');
+// 광운대 기대값 — 화면과 같은 계산(js/rank.js)으로 rank.json 에서 직접 낸다 (숫자를 박아 두지 않는다)
+const KW = (() => {
+  const fs = require('fs'), p = require('path');
+  const RT = require(p.join(__dirname, '..', '..', 'js', 'rank.js'));
+  const doc = JSON.parse(fs.readFileSync(p.join(__dirname, '..', '..', 'data', 'rank.json'), 'utf8'));
+  const r = RT.compute(doc, { weight: 'avg', region: 'capital' }).rows.find(x => x.name === '광운대');
+  return { now: r.now.rank, aft: r.aft.rank, change: r.change };
+})();
 
 async function ready(b) {
   for (let i = 0; i < 120; i++) { await sleep(300); if (await b.evaluate(`typeof dataReady!=='undefined'&&dataReady&&!!map.getSource('lines')`).catch(() => false)) break; }
@@ -34,7 +42,7 @@ async function ready(b) {
     const vis = map.queryRenderedFeatures({ layers: ['rocket-tier'] }).length;
     return { on: !!map.getLayer('rocket-tier'), legend: !document.getElementById('rk-legend').hidden, n, kw: kw && kw.properties, vis }; })()`);
   R.check('켜면 레이어·범례가 보이고 화면에 역 점이 그려진다', st.on && st.legend && st.vis > 50, st);
-  R.check('광운대는 🚀 떡상 (▲236, 수도권 순위)', st.kw && st.kw.t === 'rocket' && st.kw.c === 236 && st.kw.cap === 1, st.kw);
+  R.check(`광운대는 🚀 떡상 (▲${KW.change}, 수도권 순위 — rank.json 과 같음)`, st.kw && st.kw.t === 'rocket' && st.kw.c === KW.change && st.kw.cap === 1, st.kw);
   R.check('등급 5가지가 모두 있다', ['rocket', 'up', 'flat', 'down', 'new'].every(k => st.n[k] > 0), st.n);
   try { await b.shot(path.join(outDir('rocket-map'), 'on.png')); } catch (e) { /* 스크린샷 실패는 판정과 무관 */ }
 

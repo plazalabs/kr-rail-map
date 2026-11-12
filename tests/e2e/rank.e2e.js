@@ -8,6 +8,14 @@
 'use strict';
 const { launch, sleep, BASE, recorder, outDir } = require('./lib/cdp');
 const R = recorder('rank');
+// 광운대 기대값 — 화면과 같은 계산(js/rank.js)으로 rank.json 에서 직접 낸다 (숫자를 박아 두지 않는다)
+const KW = (() => {
+  const fs = require('fs'), p = require('path');
+  const RT = require(p.join(__dirname, '..', '..', 'js', 'rank.js'));
+  const doc = JSON.parse(fs.readFileSync(p.join(__dirname, '..', '..', 'data', 'rank.json'), 'utf8'));
+  const r = RT.compute(doc, { weight: 'avg', region: 'capital' }).rows.find(x => x.name === '광운대');
+  return { now: r.now.rank, aft: r.aft.rank, change: r.change };
+})();
 const RANK = BASE.replace(/index\.html.*$/, '').replace(/#.*$/, '') + 'rank.html';
 
 async function rows(b) {
@@ -90,8 +98,8 @@ const layout = b => b.evaluate(`(() => ({
     const card = await b.evaluate(`(() => { const c = document.querySelector('#list .card'); if (!c) return null; const g = c.querySelector('a.go');
       return { big: c.querySelector('.big').textContent.replace(/\\s+/g, ' '), bars: c.querySelectorAll('.bar-row').length, yr: c.textContent.includes('2031년'),
         href: g && g.getAttribute('href'), exp: document.querySelector('#list .row').getAttribute('aria-expanded'), fits: c.getBoundingClientRect().right <= innerWidth + 1 }; })()`);
-    R.check(`${w}px 광운대 카드: 지금 245위 → 개통 후 9위, 막대 3줄, GTX-C 2031년, 지도 링크 ?st=`,
-      !!card && /245위/.test(card.big) && /9위/.test(card.big) && card.bars === 3 && card.yr && /^\.\/\?st=st-/.test(card.href || '') && card.exp === 'true' && card.fits, card);
+    R.check(`${w}px 광운대 카드: 지금 ${KW.now}위 → 개통 후 ${KW.aft}위 (rank.json 과 같음), 막대 3줄, GTX-C 2031년, 지도 링크 ?st=`,
+      !!card && card.big.includes('지금 ' + KW.now + '위') && card.big.includes('개통 후 ' + KW.aft + '위') && card.bars === 3 && card.yr && /^\.\/\?st=st-/.test(card.href || '') && card.exp === 'true' && card.fits, card);
     // 📸 공유 이미지 — 1080×1080 그림이 만들어지고, (헤드리스는 파일 공유 불가) 내려받기로 저장했다는 안내가 뜬다
     const img = await b.evaluate(`(() => { const c = RankShare.canvas('st-355172776'); return c ? { w: c.width, h: c.height, len: c.toDataURL('image/png').length } : null; })()`);
     // 내려받기는 사용자 '다운로드' 폴더가 아니라 e2e 결과 폴더로 (2026-11-12 — 처음엔 다운로드 폴더에 남았다)

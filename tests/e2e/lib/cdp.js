@@ -156,4 +156,16 @@ async function clickStation(b, id, { timeout = 10000 } = {}) {
   return { ok: true, waitedMs: Date.now() - t0 };
 }
 
-module.exports = { launch, sleep, BASE, outDir, recorder, findChrome, clickStation, Profiles };
+// 휴대폰·태블릿(980px 이하)은 툴바가 아래 탭 바의 '더보기' 시트 안에 숨어 있다 (작업 1, 2026-11-12).
+// sel 이 툴바 안 요소이고 툴바가 숨어 있으면 '더보기'를 실제 클릭으로 연다. 열었으면 true.
+async function ensureToolbar(b, sel) {
+  const p = await b.evaluate(`(() => {
+    const tab = document.getElementById('tabbar'), tb = document.getElementById('toolbar');
+    ${sel ? `const e = document.querySelector(${JSON.stringify(sel)}); if (!e || !e.closest('#toolbar')) return null;` : ''}
+    if (!tab || !tb || getComputedStyle(tab).display === 'none' || getComputedStyle(tb).display !== 'none') return null;
+    const r = tab.querySelector('[data-tab="more"]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+  if (p) { await b.click(p[0], p[1]); await sleep(400); }
+  return !!p;
+}
+
+module.exports = { launch, sleep, BASE, outDir, recorder, findChrome, clickStation, Profiles, ensureToolbar };

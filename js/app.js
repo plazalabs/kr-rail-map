@@ -546,6 +546,77 @@ function markCursor(i) {
   else if (bot > searchBox.scrollTop + searchBox.clientHeight) searchBox.scrollTop = bot - searchBox.clientHeight;
 }
 
+// 검색 결과 한 줄 (검색·최근 본 역이 같이 쓴다)
+function hitRow(f, i) {
+  const p = f.properties;
+  const row = document.createElement('div');
+  row.className = 'hit';
+  row.id = `search-hit-${i}`;
+  row.setAttribute('role', 'option');
+  row.setAttribute('aria-selected', 'false');
+
+  const name = document.createElement('span');
+  name.className = 'hit-name';
+  name.textContent = p.name_ko || p.name_en || '(이름 없음)';
+  row.appendChild(name);
+  // 동명역이면 지역 (시청 · 서울 중구)
+  if (regionOf.has(p.id)) {
+    const rg = document.createElement('span');
+    rg.className = 'hit-region';
+    rg.textContent = '· ' + regionOf.get(p.id);
+    row.appendChild(rg);
+  }
+
+  // 노선 점 + 이름. 환승역은 점이 여러 개다.
+  const lines = document.createElement('span');
+  lines.className = 'hit-lines';
+  const ids = (p.lines && p.lines.length ? p.lines : [p.line_id]).filter(Boolean).slice(0, 3);
+  ids.forEach(id => {
+    const m = lineMetaOf(id);
+    const dot = document.createElement('i');
+    dot.className = 'hit-dot';
+    dot.style.background = m.color;
+    lines.appendChild(dot);
+  });
+  const label = document.createElement('span');
+  label.textContent = ids.map(id => lineMetaOf(id).name).join(' · ');
+  lines.appendChild(label);
+  row.appendChild(lines);
+
+  row.addEventListener('mouseenter', () => markCursor(i));
+  row.addEventListener('click', () => pickSearchHit(f));
+  return row;
+}
+
+// 최근 본 역 (작업 7) — 역 상세를 연 역 id 를 8개까지. 빈 검색창을 누르면 보여 준다. 저장 실패해도 동작엔 지장 없음
+const RECENT_KEY = 'krrail-recent-stations';
+function recentIds() {
+  try { const a = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function rememberStation(f) {
+  const id = f && f.properties && f.properties.id;
+  if (!id) return;
+  const a = recentIds().filter(x => x !== id); a.unshift(id);
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(a.slice(0, 8))); } catch (e) { /* 무시 */ }
+}
+function renderRecent() {
+  const ids = recentIds();
+  if (!ids.length || !STATIONS || !STATIONS.length) return;
+  const byId = new Map(STATIONS.map(f => [f.properties.id, f]));
+  const found = ids.map(id => byId.get(id)).filter(Boolean);
+  if (!found.length) return;
+  searchBox.innerHTML = ''; searchCursor = -1; searchHits = found;
+  const head = document.createElement('div');
+  head.className = 'hit-head';
+  head.innerHTML = '<span>최근 본 역</span>';
+  const clr = document.createElement('button');
+  clr.type = 'button'; clr.className = 'hit-clear'; clr.textContent = '지우기';
+  clr.addEventListener('click', e => { e.stopPropagation(); try { localStorage.removeItem(RECENT_KEY); } catch (er) { /* 무시 */ } closeSearch(); searchInput.focus(); });
+  head.appendChild(clr); searchBox.appendChild(head);
+  found.forEach((f, i) => searchBox.appendChild(hitRow(f, i)));
+  searchInput.setAttribute('aria-expanded', 'true');
+}
+
 function renderSearch(raw) {
   searchBox.innerHTML = '';
   searchCursor = -1;
@@ -569,53 +640,15 @@ function renderSearch(raw) {
   }
 
   searchHits = found;
-  found.forEach((f, i) => {
-    const p = f.properties;
-    const row = document.createElement('div');
-    row.className = 'hit';
-    row.id = `search-hit-${i}`;
-    row.setAttribute('role', 'option');
-    row.setAttribute('aria-selected', 'false');
-
-    const name = document.createElement('span');
-    name.className = 'hit-name';
-    name.textContent = p.name_ko || p.name_en || '(이름 없음)';
-    row.appendChild(name);
-    // 동명역이면 지역 (시청 · 서울 중구)
-    if (regionOf.has(p.id)) {
-      const rg = document.createElement('span');
-      rg.className = 'hit-region';
-      rg.textContent = '· ' + regionOf.get(p.id);
-      row.appendChild(rg);
-    }
-
-    // 노선 점 + 이름. 환승역은 점이 여러 개다.
-    const lines = document.createElement('span');
-    lines.className = 'hit-lines';
-    const ids = (p.lines && p.lines.length ? p.lines : [p.line_id]).filter(Boolean).slice(0, 3);
-    ids.forEach(id => {
-      const m = lineMetaOf(id);
-      const dot = document.createElement('i');
-      dot.className = 'hit-dot';
-      dot.style.background = m.color;
-      lines.appendChild(dot);
-    });
-    const label = document.createElement('span');
-    label.textContent = ids.map(id => lineMetaOf(id).name).join(' · ');
-    lines.appendChild(label);
-    row.appendChild(lines);
-
-    row.addEventListener('mouseenter', () => markCursor(i));
-    row.addEventListener('click', () => pickSearchHit(f));
-    searchBox.appendChild(row);
-  });
+  found.forEach((f, i) => searchBox.appendChild(hitRow(f, i)));
   searchInput.setAttribute('aria-expanded', 'true');
 }
 
 searchInput.addEventListener('input', () => renderSearch(searchInput.value.trim()));
 // 검색창을 다시 눌렀을 때, 글자가 남아 있으면 결과를 다시 띄운다
 searchInput.addEventListener('focus', () => {
-  if (searchInput.value.trim() && !searchHits.length) renderSearch(searchInput.value.trim());
+  if (!searchInput.value.trim()) { renderRecent(); return; }
+  if (!searchHits.length) renderSearch(searchInput.value.trim());
 });
 
 searchInput.addEventListener('keydown', e => {
@@ -1693,6 +1726,7 @@ function closeStationPopup() {
 // **아무도 그 패널을 열어주지 않아서** 한 번도 화면에 나온 적이 없었다.
 // 이제 선택은 패널로 통일하고, 패널 모듈을 못 불러왔을 때만 팝업으로 물러난다.
 function showStation(feature, lngLat) {
+  rememberStation(feature);
   closeStationPopup();
   if (typeof StationDetail !== 'undefined' && StationDetail.show) {
     StationDetail.show(feature);

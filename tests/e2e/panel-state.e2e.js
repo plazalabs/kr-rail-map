@@ -6,7 +6,7 @@
  */
 'use strict';
 process.env.PROMPT_TEXT = process.env.PROMPT_TEXT || '점검 메모';   // 메모 입력창(prompt)에 넣을 글
-const { launch, sleep, BASE, recorder } = require('./lib/cdp');
+const { launch, sleep, BASE, recorder, ensureToolbar } = require('./lib/cdp');
 const R = recorder('panel-state');
 
 async function ready(b) {
@@ -19,6 +19,7 @@ function mk(b) {
     const r = e.getBoundingClientRect(); const cx = r.x + r.width/2, cy = r.y + r.height/2; const t = document.elementFromPoint(cx, cy);
     return { exists: true, visible: r.width > 0 && r.height > 0, cx, cy, onTop: !!t && (t === e || e.contains(t)), top: t ? (t.id || String(t.className) || t.tagName) : null }; })()`);
   const press = async sel => {
+    await ensureToolbar(b, sel);
     const i = await info(sel);
     if (!i.exists) return { ok: false, why: '요소 없음' };
     if (!i.visible) return { ok: false, why: '보이지 않음' };

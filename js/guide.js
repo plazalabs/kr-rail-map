@@ -78,9 +78,11 @@
     b.querySelector('b').textContent = on ? '투자 모드 켜짐' : '투자 모드';
   }
 
-  function show() {
-    if (el || seen()) return;
-    if (global.location && global.location.search) return;   // 링크로 들어온 사람
+  // force: '사용법' 버튼으로 다시 열 때 — 이미 본 사람·링크로 온 사람도 연다 (작업 8)
+  function show(force) {
+    if (el) return;
+    if (!force && seen()) return;
+    if (!force && global.location && global.location.search) return;   // 링크로 들어온 사람
     el = document.createElement('div');
     el.id = 'guide-card';
     el.setAttribute('role', 'dialog');

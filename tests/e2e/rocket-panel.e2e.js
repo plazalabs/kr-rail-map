@@ -189,7 +189,7 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
   await m.evaluate(`document.getElementById('rocket-btn').click()`);
   await until(m, `!!document.querySelector('#rocket-panel .rkp-row')`);
   await sleep(1300);
-  const mb = await m.evaluate(`(() => { const p = document.getElementById('rocket-panel').getBoundingClientRect(); const t = document.getElementById('toolbar').getBoundingClientRect();
+  const mb = await m.evaluate(`(() => { const p = document.getElementById('rocket-panel').getBoundingClientRect(); const t = ['tabbar', 'toolbar'].map(id => document.getElementById(id)).find(e => e && getComputedStyle(e).display !== 'none').getBoundingClientRect();   /* 아래 바 = 탭 바 (작업 1) */
     const bg = getComputedStyle(document.getElementById('rocket-panel')).backgroundColor;
     return { p: { left: p.left, right: p.right, top: p.top, bottom: p.bottom, h: p.height }, tbTop: t.top, vw: innerWidth, vh: innerHeight, bg, grip: !!document.querySelector('.rkp-grip').offsetParent }; })()`);
   R.check('휴대폰: 아래 시트가 툴바 바로 위·화면 안·화면 높이 65% 이하', mb.p.left >= 0 && mb.p.right <= mb.vw && Math.abs(mb.p.bottom - mb.tbTop) <= 3 && mb.p.top > 0 && mb.p.h <= mb.vh * 0.65, mb);

@@ -16,7 +16,8 @@
     route: function () { return isOpen('route-panel'); },
     rocket: function () { return isOpen('rocket-panel'); },
     price: function () { var cb = $('layer-jeonse'); return !!(cb && cb.checked); },
-    more: function () { return document.body.classList.contains('tb-more-open'); }
+    more: function () { return document.body.classList.contains('tb-more-open'); },
+    side: function () { return !document.body.classList.contains('sidebar-hidden'); }
   };
 
   function setMore(on) {
@@ -39,7 +40,10 @@
     route: function () { var b = $('route-btn'); if (b) b.click(); },
     rocket: function () { var b = $('rocket-btn'); if (b) b.click(); },
     price: price,
-    more: function () { setMore(!STATE.more()); }
+    more: function () { setMore(!STATE.more()); },
+    // PC 레일 '노선' = 기존 사이드바 접기 버튼 (js/ui.js)
+    side: function () { var b = $('sidebar-toggle'); if (b) b.click(); },
+    help: function () { if (global.Guide) global.Guide.show(true); }
   };
 
   function sync() {
@@ -64,6 +68,8 @@
       if (ACT[t]) ACT[t]();
       setTimeout(sync, 0);
     });
+    var gb = $('guide-btn');
+    if (gb) gb.addEventListener('click', function () { if (global.Guide) global.Guide.show(true); });
     // 더보기 시트: 안의 버튼을 누르면 닫힘 (드롭다운 여는 버튼·배경 지도 고르기는 빼고), Esc·바깥 누르면 닫힘
     var tb = $('toolbar');
     if (tb) tb.addEventListener('click', function (e) {
@@ -84,6 +90,7 @@
     if (global.MutationObserver) new MutationObserver(sync).observe(wrap, { attributes: true, attributeFilter: ['hidden'], subtree: true, childList: true });
     var cb = $('layer-jeonse');
     if (cb) cb.addEventListener('change', sync);
+    if (global.MutationObserver) new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
     sync();
   }
 

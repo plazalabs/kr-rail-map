@@ -6,7 +6,7 @@
 // cdp.js 재사용. 뷰포트: 390x844(모바일), 768x1024(태블릿, ≤980), 1440x1000(데스크톱)
 // 항목마다 새로 로드 → 드롭다운 버튼 실클릭 → 항목 가시성·최상단 요소 판정 → 항목 실클릭 → 클릭 도달 여부
 // 오류 제보는 외부 구글 폼을 여므로 window.open 만 가로채 기록한다 (테스트 하네스 한정)
-const { launch, sleep, BASE, outDir } = require('./lib/cdp');
+const { launch, sleep, BASE, outDir, ensureToolbar } = require('./lib/cdp');
 const fs = require('fs'), path = require('path');
 const OUT = outDir('toolbar-menus');
 const VPS = (process.env.VPS || 'm390,t768,d1440').split(',');
@@ -43,6 +43,7 @@ const ddSel = name => `[...document.querySelectorAll('#toolbar .tb-dropdown')].f
         await b.goto('about:blank', 200);
         await b.goto(BASE + '#normal', 800); await ready(b);
         await b.evaluate(`window.__open = []; window.open = (u) => { __open.push(String(u)); return null; }; 0`);
+        await ensureToolbar(b);   // 980px 이하: 더보기 시트 열기 (작업 1)
         // 드롭다운 버튼을 툴바 안에서 보이게 하고 실클릭
         const bc = await b.evaluate(`(() => { const d = ${ddSel(menu)}; const e = d.querySelector('.tb-dropbtn'); e.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const r = e.getBoundingClientRect(); const t = document.elementFromPoint(r.x + r.width/2, r.y + r.height/2); return [r.x + r.width/2, r.y + r.height/2, t === e || e.contains(t)]; })()`);
         await b.click(bc[0], bc[1]); await sleep(300);
@@ -67,6 +68,7 @@ const ddSel = name => `[...document.querySelectorAll('#toolbar .tb-dropdown')].f
     // 데스크톱/모바일 스크린샷: 세 메뉴 각각 열린 상태
     for (const [menu] of MENUS) {
       await b.goto('about:blank', 200); await b.goto(BASE + '#normal', 800); await ready(b);
+      await ensureToolbar(b);
       const bc = await b.evaluate(`(() => { const e = ${ddSel(menu)}.querySelector('.tb-dropbtn'); e.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const r = e.getBoundingClientRect(); return [r.x + r.width/2, r.y + r.height/2]; })()`);
       await b.click(bc[0], bc[1]); await sleep(300);
       await b.shot(path.join(OUT, `${vk}-${menu}.png`));

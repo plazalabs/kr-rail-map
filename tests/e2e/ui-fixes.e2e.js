@@ -5,7 +5,7 @@
  *       ONLY=4,5,6,8,9,D 로 일부만.
  */
 'use strict';
-const { launch, sleep, BASE, outDir } = require('./lib/cdp');
+const { launch, sleep, BASE, outDir, ensureToolbar } = require('./lib/cdp');
 const fs = require('fs'), path = require('path');
 const LABEL = process.env.MOBILE === '1' ? 'ui-fixes-mobile' : 'ui-fixes';
 const ONLY = (process.env.ONLY || '').split(',').filter(Boolean);
@@ -24,6 +24,7 @@ async function info(sel) {
     return {exists:true, visible, cx, cy, onTop: !!top && (top === e || e.contains(top)), topDesc: top ? (top.id || String(top.className && top.className.baseVal !== undefined ? top.className.baseVal : top.className) || top.tagName) : null}; })()`);
 }
 async function press(sel, { scroll = true } = {}) {
+  await ensureToolbar(b, sel);
   if (scroll) { await ev(`(e => { if (e && e.scrollIntoView) e.scrollIntoView({block:'center', inline:'nearest'}); 0 })(document.querySelector(${JSON.stringify(sel)}))`); await sleep(120); }
   const i = await info(sel);
   if (!i.exists) return { ok: false, why: '요소 없음' };

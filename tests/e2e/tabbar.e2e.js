@@ -3,7 +3,8 @@
  *  - 탭을 진짜로 눌러서(좌표 클릭) 길찾기 패널·떡상 패널이 열리고 그 탭에 선택 표시
  *  - 시세 = 투자 모드 켜지고 전세가율 색칠·범례
  *  - 더보기 = 툴바가 시트로 뜨고, 안의 버튼(노선도)을 누르면 시트가 닫힘, Esc 로도 닫힘
- *  - 1440 PC 에서는 탭 바 없음, 툴바 보임
+ *  - 1440 PC: 탭 바가 왼쪽 세로 레일(노선·길찾기·떡상·시세·게시판·사용법), 툴바 보임, 레일 '노선'으로 사이드바 접고 펴기
+ *  - 사용법(휴대폰 더보기 시트 / PC 레일)으로 안내 카드 다시 열기, 최근 본 역(빈 검색창)
  * 실행: node tests/e2e/run.js --only tabbar
  */
 'use strict';
@@ -26,7 +27,7 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
 
   const lay = await b.evaluate(`(() => {
     const bar = document.getElementById('tabbar'); const r = bar.getBoundingClientRect();
-    const tabs = [...bar.querySelectorAll('[data-tab]')].map(e => e.textContent.trim());
+    const tabs = [...bar.querySelectorAll('[data-tab]')].filter(e => getComputedStyle(e).display !== 'none').map(e => e.textContent.trim());
     return { tabs, bottom: Math.round(r.bottom), h: Math.round(r.height), vis: getComputedStyle(bar).display,
       tb: getComputedStyle(document.getElementById('toolbar')).display };
   })()`);
@@ -52,6 +53,7 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
   const sheet = await b.evaluate(`(() => { const t = document.getElementById('toolbar'); const r = t.getBoundingClientRect(); const bar = document.getElementById('tabbar').getBoundingClientRect();
     return { disp: getComputedStyle(t).display, above: r.bottom <= bar.top + 1, ids: ['route-btn','diagram-btn','locate-btn','mode-btn'].every(id => { const e = document.getElementById(id); return e && e.getBoundingClientRect().width > 0; }) }; })()`);
   R.check('더보기 → 툴바가 탭 바 위 시트로', sheet.disp !== 'none' && sheet.above && sheet.ids, sheet);
+  R.check('더보기 시트에 사용법 버튼', await b.evaluate(`(() => { const e = document.getElementById('guide-btn'); return !!e && e.getBoundingClientRect().width > 0; })()`));
   await b.key('Escape', 'Escape', 27); await sleep(300);
   R.check('Esc → 시트 닫힘', await b.evaluate(`getComputedStyle(document.getElementById('toolbar')).display === 'none'`));
   await tap(b, '#tabbar [data-tab="more"]');
@@ -67,7 +69,31 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
   await d.send('Network.setBypassServiceWorker', { bypass: true });
   await d.goto(BASE + '#normal', 800);
   await ready(d);
-  R.check('PC: 탭 바 없음, 툴바 보임', await d.evaluate(`getComputedStyle(document.getElementById('tabbar')).display === 'none' && getComputedStyle(document.getElementById('toolbar')).display !== 'none'`));
+  const rail = await d.evaluate(`(() => { const t = document.getElementById('tabbar'); const r = t.getBoundingClientRect();
+    return { disp: getComputedStyle(t).display, x: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height),
+      tabs: [...t.querySelectorAll('[data-tab]')].filter(e => getComputedStyle(e).display !== 'none').map(e => e.textContent.trim()),
+      tb: getComputedStyle(document.getElementById('toolbar')).display, sbLeft: Math.round(document.getElementById('sidebar').getBoundingClientRect().left) }; })()`);
+  R.check('PC: 왼쪽 세로 레일 + 툴바 보임', rail.disp !== 'none' && rail.x === 0 && rail.w <= 72 && rail.h === 1000 && rail.tb !== 'none' && rail.sbLeft >= rail.w, rail);
+  R.check('PC 레일 항목', rail.tabs.join(',') === '노선,길찾기,떡상,시세,게시판,사용법', rail.tabs);
+  const sideP = await d.evaluate(center('#tabbar [data-tab="side"]'));
+  await d.click(sideP.x, sideP.y); await sleep(500);
+  const hid = await d.evaluate(`document.body.classList.contains('sidebar-hidden') && getComputedStyle(document.getElementById('sidebar')).display === 'none'`);
+  await d.click(sideP.x, sideP.y); await sleep(500);
+  const back = await d.evaluate(`!document.body.classList.contains('sidebar-hidden') && document.querySelector('#tabbar [data-tab="side"]').getAttribute('aria-current') === 'true'`);
+  R.check('PC 레일 노선 → 사이드바 접고 다시 펴기', hid && back, { hid, back });
+  await d.evaluate(`localStorage.setItem('krrail-guide-seen', '1'); true`);
+  const helpP = await d.evaluate(center('#tabbar [data-tab="help"]'));
+  await d.click(helpP.x, helpP.y); await sleep(500);
+  R.check('PC 레일 사용법 → 안내 카드 다시 열림 (이미 본 사람도)', await d.evaluate(`!!document.getElementById('guide-card')`));
+  await d.evaluate(`window.Guide && Guide.close(); true`);
+  // 최근 본 역: 역 하나 열고, 빈 검색창 누르면 그 역이 맨 위
+  await d.evaluate(`localStorage.removeItem('krrail-recent-stations'); showStation(STATIONS.find(f => f.properties.name_ko === '서울') || STATIONS[0], null); true`);
+  await sleep(600);
+  await d.evaluate(`document.getElementById('search').value = ''; document.getElementById('search').blur(); true`);
+  const sp = await d.evaluate(center('#search'));
+  await d.click(sp.x, sp.y); await sleep(400);
+  const rec = await d.evaluate(`({ head: !!document.querySelector('#search-results .hit-head'), first: (document.querySelector('#search-results .hit .hit-name') || {}).textContent || null })`);
+  R.check('빈 검색창 → 최근 본 역 (방금 연 역이 맨 위)', rec.head && rec.first === '서울', rec);
   // 작업 7: 직접 고른 테마가 없으면 기기 '어둡게' 설정을 따른다, 직접 고른 게 있으면 그게 우선
   await d.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] });
   await d.evaluate(`localStorage.removeItem('krrail-theme'); true`);

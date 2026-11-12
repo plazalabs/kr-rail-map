@@ -1211,7 +1211,7 @@ body[data-theme="dark"], body[data-theme="eclipse"], body[data-theme="neon"] { -
 /* 휴대폰: 아래 불투명 시트 */
 @media (max-width: 980px) {
   .rkp {
-    top: auto; left: 0; right: 0; bottom: calc(54px + env(safe-area-inset-bottom)); width: auto;
+    top: auto; left: 0; right: 0; bottom: calc(56px + env(safe-area-inset-bottom)); width: auto;
     max-height: 62vh; border-radius: 22px 22px 0 0; padding: 6px 16px 14px; gap: 10px;
     box-shadow: 0 -6px 24px rgba(16,24,40,.16); transition: max-height .25s cubic-bezier(.32,.72,0,1);
   }
@@ -1281,6 +1281,8 @@ i[data-ic] { display: inline-flex; align-items: center; font-style: normal; line
   #tabbar i[data-ic] { font-size: var(--fs-xl); line-height: 1; }
   #tabbar [aria-current="true"], #tabbar [aria-expanded="true"] { color: var(--accent); }
   #tabbar [aria-current="true"] span, #tabbar [aria-expanded="true"] span { font-weight: 800; }
+  #tabbar [data-tab="side"] { display: none; }
+  #tabbar { grid-template-columns: repeat(5, 1fr); }
 
   /* 툴바 = '더보기' 시트 */
   body:not(.tb-more-open) #toolbar { display: none; }
@@ -1312,3 +1314,38 @@ i[data-ic] { display: inline-flex; align-items: center; font-style: normal; line
   #route-panel:not([hidden]), #draw-panel:not([hidden]), .rkp:not([hidden]),
   body.tb-more-open #toolbar { animation: kr-sheet-in .24s cubic-bezier(.32,.72,0,1); }
 }
+
+/* ---------- PC 왼쪽 아이콘 레일 (작업 1, js/tabbar.js 같은 버튼) ----------
+   981px 이상: 탭 바가 왼쪽 세로 레일. 사이드바는 붙박이 판 대신 떠 있는 카드(자리는 그대로라 지도 위치 거의 안 바뀜).
+   '더보기'는 PC 에선 툴바가 늘 보이므로 숨김, 대신 '노선'(사이드바 열고 닫기). */
+@media (min-width: 981px) {
+  #app { padding-left: 68px; background: var(--surface); }
+  #tabbar {
+    display: flex; flex-direction: column; gap: 4px;
+    position: fixed; left: 0; top: 0; bottom: 0; width: 68px; z-index: 47;
+    padding: 12px 6px; background: var(--panel);
+    box-shadow: 1px 0 0 var(--border);
+  }
+  #tabbar > button, #tabbar > a {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    min-height: 58px; padding: 0; border: 0; border-radius: 14px; background: none; cursor: pointer;
+    color: var(--muted); font: inherit; font-size: var(--fs-xs); font-weight: 600; text-decoration: none;
+  }
+  #tabbar > button:hover, #tabbar > a:hover { background: var(--hover); color: var(--text); }
+  #tabbar i[data-ic] { font-size: var(--fs-xl); line-height: 1; }
+  #tabbar [aria-current="true"] { color: var(--accent); background: var(--accent-weak); }
+  #tabbar [data-tab="more"] { display: none; }
+  #sidebar { margin: 12px 0 12px 12px; border-right: 0; border-radius: 18px; box-shadow: var(--shadow); }
+}
+
+/* '사용법' (작업 8): 휴대폰은 더보기 시트 안 버튼, PC 는 레일 맨 아래 */
+#tabbar [data-tab="help"] { display: none; }
+@media (min-width: 981px) {
+  #guide-btn { display: none !important; }
+  #tabbar [data-tab="help"] { display: flex; margin-top: auto; }
+}
+
+/* 최근 본 역 머리줄 (작업 7) */
+.hit-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px 4px; font-size: var(--fs-xs); font-weight: 700; color: var(--muted); }
+.hit-clear { border: 0; background: none; color: var(--muted); font: inherit; font-size: var(--fs-xs); cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+.hit-clear:hover { color: var(--text); background: var(--hover); }

@@ -6,8 +6,8 @@
  "summary": {
   "lines": 82,
   "open_lines": 66,
-  "open_pairs": 1474,
-  "open_confirmed": 1465,
+  "open_pairs": 1472,
+  "open_confirmed": 1463,
   "open_confirmed_pct": 99.4,
   "open_lines_all_confirmed": 63
  },
@@ -382,15 +382,16 @@
   "gtx-c": {
    "name": "GTX-C",
    "status": "construction",
-   "stations": 14,
-   "confirmed": 14,
+   "stations": 13,
+   "confirmed": 13,
    "sources": [
     "osm-geometry"
    ],
    "unconfirmed": [],
    "provisional": true,
    "partial": false,
-   "gap_reason": ""
+   "gap_reason": "",
+   "note_fix": "상록수는 갈래(gtx-c-sangnoksu)에만 — 본선에서 뺌 (fix_gtxc.js, 2026-11-13)"
   },
   "gtx-c-sangnoksu": {
    "name": "GTX-C 상록수 갈래",
@@ -918,8 +919,8 @@
   "seoul-metropolitan-subway-gyeongchun-line": {
    "name": "경춘선",
    "status": "open",
-   "stations": 27,
-   "confirmed": 27,
+   "stations": 25,
+   "confirmed": 25,
    "sources": [
     "osm-geometry",
     "osm-relation"
@@ -927,7 +928,11 @@
    "unconfirmed": [],
    "provisional": false,
    "partial": false,
-   "gap_reason": ""
+   "gap_reason": "",
+   "nonstop_removed": [
+    "신이문",
+    "석계"
+   ]
   },
   "seoul-metropolitan-subway-gyeonggang-line": {
    "name": "경강선",

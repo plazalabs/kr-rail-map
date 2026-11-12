@@ -697,7 +697,8 @@ function restoreFromUrl() {
     if (from && to) setTimeout(() => document.getElementById('route-go').click(), 800);
   }
   // ?st=역ID — 교통 순위표(rank.html)에서 역을 누르면 그 역으로 가서 상세를 연다
-  const sid = q.get('st');
+  // ?rocket=1&st= 는 떡상 패널이 그 역을 고른다 (js/rocket-panel.js) — 역 상세는 열지 않는다
+  const sid = q.get('rocket') === '1' ? null : q.get('st');
   const sf = sid && stationById(sid);
   if (sf) {
     map.flyTo({ center: sf.geometry.coordinates, zoom: Math.max(map.getZoom(), 13), duration: 0 });
@@ -1530,6 +1531,7 @@ Promise.all([styleReadyP, dataPromise]).then(() => {
   if (typeof CommuteMap !== 'undefined') CommuteMap.init(map, STATIONS);
   if (typeof StationJeonse !== 'undefined' && StationJeonse.initLayer) StationJeonse.initLayer(map, STATIONS);   // 전세가율 색칠 레이어
   if (typeof StationRocket !== 'undefined') StationRocket.init(map, STATIONS);   // 🚀 떡상 지도 레이어 (rank.json, 켤 때 받음)
+  if (typeof RocketPanel !== 'undefined' && RocketPanel.init) RocketPanel.init(map, STATIONS);   // 🚀 지도 안 떡상 패널 (?rocket=1 이면 바로 연다)
   if (typeof StationArea !== 'undefined') { StationArea.init(map, STATIONS); StationArea.setLines([...visibleLines]); }
   if (!focusLineFromUrl()) restoreFromUrl();
 }).catch(e => { console.error('첫 화면 준비 실패', e); setStatus('지도 자료를 불러오지 못했습니다. 새로고침해 주세요.'); });
@@ -1753,6 +1755,8 @@ map.on('click', e => {
     feats = map.queryRenderedFeatures([[p.x - r, p.y - r], [p.x + r, p.y + r]], { layers: ['rail-stations'] });
   } catch (_) { return; }
   if (!feats.length) return;
+  // 떡상 패널이 열려 있으면 패널이 그 역을 보여 준다 (역 상세는 패널의 '역 상세' 버튼으로)
+  if (typeof RocketPanel !== 'undefined' && RocketPanel.handleMapClick && RocketPanel.handleMapClick(feats[0])) return;
   showStation(feats[0], e.lngLat);
 });
 map.on('mouseenter', 'rail-stations', () => { map.getCanvas().style.cursor = 'pointer'; });

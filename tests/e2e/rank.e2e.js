@@ -2,7 +2,7 @@
  *  - 데스크톱·휴대폰: 가로 스크롤 없음, 1~3위 카드 3장, 목록 50줄
  *  - 기준 버튼(GBD 중시)을 누르면 순위가 바뀌고 주소에 남는다
  *  - 찾기 '광운대' → 그 줄만, 더 보기 버튼 숨김
- *  - 역을 누르면 지도(index.html?st=)로 가서 그 역 상세가 열린다
+ *  - 역을 누르면 지도(index.html?rocket=1&st=)로 가서 떡상 패널이 그 역을 보여 준다 (v109)
  * 실행: node tests/e2e/run.js --only rank
  */
 'use strict';
@@ -98,8 +98,8 @@ const layout = b => b.evaluate(`(() => ({
     const card = await b.evaluate(`(() => { const c = document.querySelector('#list .card'); if (!c) return null; const g = c.querySelector('a.go');
       return { big: c.querySelector('.big').textContent.replace(/\\s+/g, ' '), bars: c.querySelectorAll('.bar-row').length, yr: c.textContent.includes('2031년'),
         href: g && g.getAttribute('href'), exp: document.querySelector('#list .row').getAttribute('aria-expanded'), fits: c.getBoundingClientRect().right <= innerWidth + 1 }; })()`);
-    R.check(`${w}px 광운대 카드: 지금 ${KW.now}위 → 개통 후 ${KW.aft}위 (rank.json 과 같음), 막대 3줄, GTX-C 2031년, 지도 링크 ?st=`,
-      !!card && card.big.includes('지금 ' + KW.now + '위') && card.big.includes('개통 후 ' + KW.aft + '위') && card.bars === 3 && card.yr && /^\.\/\?st=st-/.test(card.href || '') && card.exp === 'true' && card.fits, card);
+    R.check(`${w}px 광운대 카드: 지금 ${KW.now}위 → 개통 후 ${KW.aft}위 (rank.json 과 같음), 막대 3줄, GTX-C 2031년, 지도 링크 ?rocket=1&st=`,
+      !!card && card.big.includes('지금 ' + KW.now + '위') && card.big.includes('개통 후 ' + KW.aft + '위') && card.bars === 3 && card.yr && /^\.\/\?rocket=1&st=st-/.test(card.href || '') && card.exp === 'true' && card.fits, card);
     // 📸 공유 이미지 — 1080×1080 그림이 만들어지고, (헤드리스는 파일 공유 불가) 내려받기로 저장했다는 안내가 뜬다
     const img = await b.evaluate(`(() => { const c = RankShare.canvas('st-355172776'); return c ? { w: c.width, h: c.height, len: c.toDataURL('image/png').length } : null; })()`);
     // 내려받기는 사용자 '다운로드' 폴더가 아니라 e2e 결과 폴더로 (2026-11-12 — 처음엔 다운로드 폴더에 남았다)
@@ -119,10 +119,10 @@ const layout = b => b.evaluate(`(() => ({
     let opened = null;
     for (let i = 0; i < 80; i++) {
       await sleep(400);
-      opened = await b.evaluate(`(() => { const p = document.getElementById('sd-panel'); return p && p.classList.contains('sd-open') ? p.textContent.replace(/\\s+/g, ' ').slice(0, 80) : null; })()`).catch(() => null);
+      opened = await b.evaluate(`(() => { const p = document.getElementById('rocket-panel'); const n = p && !p.hidden && p.querySelector('.rkp-name'); return n ? n.textContent : null; })()`).catch(() => null);
       if (opened) break;
     }
-    R.check(`${w}px 순위표에서 누르면 지도에서 광운대 상세가 열린다`, !!opened && /광운대/.test(opened), opened);
+    R.check(`${w}px 순위표에서 누르면 지도 안 떡상 패널이 광운대를 보여 준다`, !!opened && /광운대/.test(opened), opened);
     const exc = b.logs.filter(x => /EXC/.test(x));
     R.check(`${w}px 예외 0`, exc.length === 0, exc.slice(0, 3));
     b.close(); await sleep(600);

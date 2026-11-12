@@ -18,6 +18,7 @@
 <meta property="og:image:alt" content="GTX 떡상 랭킹 — 많이 오르는 역 TOP 5">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0b57d0">
+<link rel="stylesheet" href="vendor/pretendard/pretendard.css">
 <style>
 :root{--bg:#fff;--surface:#f6f7f9;--card:#fff;--text:#16191d;--text2:#4a5158;--muted:#666e76;--border:#e3e6ea;
 --accent:#0b57d0;--accentbg:#e8f0fe;
@@ -33,7 +34,7 @@
 --t-down:#f0a060;--t-down-bg:#33230f;--t-new:#c4a3ff;--t-new-bg:#2a1f3d;--gold:#e8c35a;--goldbg:#33290f;--bar-now:#3a4148;--bar-aft:#8ab0ff;
 --i-rocket:#4fd88a;--i-up:#7fd3a3;--i-flat:#9aa2aa;--i-down:#f0a060;--i-new:#c4a3ff}}
 *{box-sizing:border-box}
-body{margin:0;font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);
+body{margin:0;font-family: "Pretendard Variable", "Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);
 background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 button{font:inherit;color:inherit}
@@ -336,7 +337,7 @@ h1{font-size:22px}
     const txt = c > 0 ? '▲' + c : c < 0 ? '▼' + (-c) : '–';
     return '<span class="badge" title="' + esc(T[t].label + ' · ' + T[t].hint) + '">' + T[t].icon + ' ' + txt + '</span>';
   }
-  const link = r => './?st=' + encodeURIComponent(r.id);
+  const link = r => './?rocket=1&st=' + encodeURIComponent(r.id);   // 지도 + 떡상 패널 (v109)
 
   // 떡상 TOP 10 — 지금 순위(왼쪽) → 개통 후 순위(오른쪽). 순위는 로그 눈금 (245위와 9위를 한 그림에)
   function slopeSvg(rows, total) {

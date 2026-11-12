@@ -231,8 +231,8 @@ const StationAccess = (() => {
     }
     if (r2.length) lines.push(r2.join(' · '));
     lines.forEach(t => { h += '<div class="sa-sum">' + t + '</div>'; });
-    // 🚀 떡상 랭킹(rank.html)에서 이 역 카드 바로 열기 — 지금 N위 → 개통 후 M위·연도 슬라이더 (2026-11-12)
-    h += '<div class="sa-sum"><a class="sa-rocket" href="rank.html?open=' + encodeURIComponent(stationId) + '">🚀 떡상 랭킹에서 보기 →</a></div>';
+    // 🚀 지도 안 떡상 패널에서 이 역 보기 (v109 — 예전엔 rank.html 로 나갔다). 패널이 없는 곳에선 주소로 연다
+    h += '<div class="sa-sum"><a class="sa-rocket" href="./?rocket=1&st=' + encodeURIComponent(stationId) + '" data-rocket-st="' + stationId + '">🚀 떡상 랭킹에서 보기 →</a></div>';
 
     const tot = (a.rank.after ? a.rank.after.total : 0).toLocaleString();
     h += '<div class="sa-note">※ 실제 시각표가 아니라 추정값입니다. 열차를 <b>기다리는 시간은 빼고</b> ' +

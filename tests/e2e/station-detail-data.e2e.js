@@ -89,7 +89,7 @@ function watch(b) {
   await v.evaluate(`(() => { const s = STATIONS.find(x => x.properties.name_ko === '강남' && x.properties.lines.includes('seoul-subway-line-2')); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`); await sleep(1500);
   // 지금부터 느린 회선 (Fast 3G 상당)
   await v.send('Network.emulateNetworkConditions', { offline: false, latency: 562.5, downloadThroughput: 180000, uploadThroughput: 84375 });
-  const m1 = await press(v, '#toolbar > .tb-dropdown:nth-child(6) .tb-dropbtn'); await sleep(250);
+  const m1 = await press(v, '#toolbar > .tb-dropdown:nth-child(' + (await v.evaluate(`[...document.getElementById('toolbar').children].findIndex(x => x.classList.contains('tb-dropdown') && x.querySelector('.tb-dropbtn').textContent.trim().startsWith('분석')) + 1`)) + ') .tb-dropbtn');   // v109: 툴바 맨 앞에 떡상 버튼이 생겨 순서로 찾지 않는다 await sleep(250);
   const m2 = await press(v, '#invest-btn');
   const pt = await v.evaluate(`(() => { const r = map.getCanvas().getBoundingClientRect(); return [r.x + r.width/2 + 40, r.y + r.height/2 + 30]; })()`);
   await v.click(pt[0], pt[1]);

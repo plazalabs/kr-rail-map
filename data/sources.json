@@ -69,22 +69,15 @@
       "attribution": "© OpenStreetMap contributors",
       "url": "https://www.openstreetmap.org/copyright",
       "licence": "ODbL-1.0",
-      "obtained": "Geofabrik south-korea-latest.osm.pbf → pyosmium 으로 railway=rail 선로 25,233개·노선 관계 318개 추출",
+      "obtained": "© OpenStreetMap contributors",
       "obtained_url": "https://download.geofabrik.de/asia/south-korea-latest.osm.pbf",
       "snapshot": "2026-10-27",
-      "used_for": "노선 선형. 우리가 정리한 역 순서대로 역 좌표에서 가장 가까운 선로 점을 찾아 선로를 따라 잇거나, 노선 경로 관계의 선로를 순서대로 이어붙이거나, 공사 중 노선은 같은 이름의 공사 선로를 모은다",
+      "used_for": "노선 선형",
       "feeds": [
         "data/lines.geojson"
       ],
       "affects": [],
-      "fields": [
-        "lines[].geometry",
-        "lines[].coord_source",
-        "lines[].coord_method",
-        "lines[].coord_relations"
-      ],
-      "commercial": "allowed",
-      "caveat": "반영한 노선은 coord_source=osm 과 만든 방법(coord_method: relation|graph|own-align)을 남긴다. 역 순서는 남의 지도를 참고하지 않고 data/own_align_config.py 에 직접 적었다. 길을 못 찾은 구간은 직선으로 메우지 않는다(실패로 보고). 측선·기지선은 통과 비용을 높이고, 관광 선로(옛 스위치백)는 쓰지 않는다."
+      "commercial": "allowed"
     },
     {
       "id": "own-sketch",
@@ -93,19 +86,15 @@
       "attribution": "",
       "url": "",
       "licence": "own",
-      "obtained": "정부·지자체 발표의 경유지 순서대로 역 좌표를 부드러운 곡선(Catmull-Rom)으로 이음 — data/build_own_alignments.py",
+      "obtained": "자체 작성 (플라자랩스)",
       "snapshot": "2026-11-10",
-      "used_for": "아직 선로가 없는 계획·구상 노선의 선형: GTX-D, GTX-E, GTX-F, 동부선, GTX-G, GTX-H",
+      "used_for": "아직 선로가 없는 계획 노선의 개략선 (GTX-D~H, 동부선)",
       "feeds": [
         "data/lines.geojson"
       ],
       "affects": [],
-      "fields": [
-        "lines[].geometry",
-        "lines[].coord_source"
-      ],
       "commercial": "allowed",
-      "caveat": "실제 선로 모양이 아니다. 노선 정보에 '개략선(자체 작성)'이라고 적는다. 노선·역은 확정 전이라 바뀔 수 있다."
+      "caveat": "실제 선로 모양이 아니며 계획은 바뀔 수 있다."
     },
     {
       "id": "osm-stations",
@@ -114,18 +103,16 @@
       "attribution": "© OpenStreetMap contributors",
       "url": "https://www.openstreetmap.org/copyright",
       "licence": "ODbL-1.0",
-      "obtained": "Overpass API — railway=station",
+      "obtained": "© OpenStreetMap contributors",
       "snapshot": "2026-10",
-      "used_for": "우리 역 좌표가 OSM 철도역과 같은 위치인지 대조 (1,202/1,247, 차이 중앙값 0m) · 계획 노선 새 역 15곳은 OSM 지명 검색(Nominatim)으로 이름이 가리키는 곳에 둔다 (역 위치 미확정)",
+      "used_for": "역 좌표 대조",
       "feeds": [],
       "affects": [],
       "intermediate": [
         "data/_osm_stations_raw.json",
         "data/_osm_compare.json"
       ],
-      "fields": [],
-      "commercial": "allowed",
-      "caveat": "대조만 하고 좌표를 가져다 쓰지는 않는다. 결과는 data.html 에 수치로 적어 두었다."
+      "commercial": "allowed"
     },
     {
       "id": "osm-stops",
@@ -134,23 +121,17 @@
       "attribution": "© OpenStreetMap contributors",
       "url": "https://www.openstreetmap.org/copyright",
       "licence": "ODbL-1.0",
-      "obtained": "Geofabrik south-korea-latest.osm.pbf → 노선 관계가 'stop' 역할로 참조하는 정차점 노드 2,341개 추출",
+      "obtained": "© OpenStreetMap contributors",
       "obtained_url": "https://download.geofabrik.de/asia/south-korea-latest.osm.pbf",
       "snapshot": "2026-10-27",
-      "used_for": "노선별 정차점 목록으로 (1) 승강장 사이 거리를 재 환승 도보 시간을 내고 (2) 노선에 어떤 역이 들어가는지 확인한다",
+      "used_for": "역 안 환승 도보 시간 · 노선별 정차역 확인",
       "feeds": [
         "data/transfer-times.json",
         "data/line-membership.json"
       ],
       "affects": [],
-      "fields": [
-        "stations[].pairs[].m",
-        "stations[].pairs[].min",
-        "lines[].stations",
-        "lines[].confirmed"
-      ],
       "commercial": "allowed",
-      "caveat": "환승 시간은 공식 자료가 아니라 추정값이다(±1분). 노선·역 배정은 이 목록과 공공데이터 역위치를 함께 보고 판단하며, 둘 다 확인해주지 못한 역은 data/line-membership.json 의 unconfirmed 에 이름으로 남긴다."
+      "caveat": "환승 도보 시간은 추정값이다."
     },
     {
       "id": "osm-exits",
@@ -159,21 +140,16 @@
       "attribution": "© OpenStreetMap contributors",
       "url": "https://www.openstreetmap.org/copyright",
       "licence": "ODbL-1.0",
-      "obtained": "Overpass API — railway=subway_entrance",
+      "obtained": "© OpenStreetMap contributors",
       "snapshot": "2026-10",
-      "used_for": "출구 4,306개. '역까지 몇 분' 을 역 중심점이 아니라 가까운 출구 기준으로 재기 위해",
+      "used_for": "역 출구 위치",
       "feeds": [
         "data/_exits_raw.json",
         "data/exits.geojson"
       ],
       "affects": [],
-      "fields": [
-        "exits[].no",
-        "exits[].geometry",
-        "exits[].osm"
-      ],
       "commercial": "allowed",
-      "caveat": "역의 75%(938/1,247)에만 있다. KTX·일반철도역은 대부분 없다."
+      "caveat": "일부 역에만 있다."
     },
     {
       "id": "korail-stations",
@@ -182,18 +158,17 @@
       "attribution": "국가철도공단 노선별 역위치",
       "url": "https://www.data.go.kr/",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 파일데이터 (18개 노선 CSV)",
+      "obtained": "국가철도공단 노선별 역위치",
       "snapshot": "2022-11 ~ 2026-06 (노선마다 다름)",
-      "used_for": "노선별 역 목록의 공식 정답지. 역 누락 0건 검증과 노선·역 배정 확인에 쓰고, tests/official.test.js 와 tests/membership.test.js 가 매번 다시 대조한다",
+      "used_for": "노선별 정차역 공식 대조",
       "feeds": [
         "data/_gov/"
       ],
       "affects": [
         "data/stations.geojson"
       ],
-      "fields": [],
       "commercial": "allowed",
-      "caveat": "수도권 도시철도 위주다. KTX·일반철도 역위치가 없다."
+      "caveat": "수도권 도시철도 위주다."
     },
     {
       "id": "korail-addr",
@@ -202,9 +177,9 @@
       "attribution": "국가철도공단 역 주소데이터",
       "url": "https://www.data.go.kr/",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 파일데이터 (28개 CSV)",
+      "obtained": "국가철도공단 역 주소데이터",
       "snapshot": "2026-10",
-      "used_for": "역의 법정동을 지번주소에서 뽑아 실거래가와 잇는다. 시군구는 (시도, 시군구코드) 로 구분한다 — 중구가 서울에도 인천에도 있다",
+      "used_for": "역의 법정동 (실거래가 연결)",
       "feeds": [],
       "affects": [
         "data/station-price.json",
@@ -215,12 +190,7 @@
         "data/_gov/addr/",
         "data/_station_dong.json"
       ],
-      "fields": [
-        "station_dong[].sgg",
-        "station_dong[].dong"
-      ],
-      "commercial": "allowed",
-      "caveat": "실거래가 API 는 좌표를 주지 않고, 지오코더 API 는 좌표 저장을 금지한다. 그래서 주소데이터로 이름을 잇는다."
+      "commercial": "allowed"
     },
     {
       "id": "korail-addr-region",
@@ -229,9 +199,9 @@
       "attribution": "국가철도공단 역 주소데이터",
       "url": "https://www.data.go.kr/",
       "licence": "data-go-kr-open",
-      "obtained": "korail-addr 의 역 주소데이터에서 뽑은 역별 시도·시군구 (data/_station_dong.json) 를 이름+노선으로 역 ID 에 연결",
+      "obtained": "국가철도공단 역 주소데이터",
       "snapshot": "2026-10",
-      "used_for": "이름이 겹치는 역(시청·양평 등)에 한해 자동완성·검색 결과에 시·군·구를 붙여 구분한다",
+      "used_for": "이름이 같은 역의 시·군·구 표시",
       "feeds": [],
       "affects": [
         "data/station-region.json"
@@ -239,12 +209,7 @@
       "intermediate": [
         "data/_station_dong.json"
       ],
-      "fields": [
-        "station_region.stations[].sido",
-        "station_region.stations[].sgg"
-      ],
-      "commercial": "allowed",
-      "caveat": "주소데이터에는 역 ID 가 없고 노선 표기에 도시가 없다('1호선'). 그래서 이름+노선으로 그 역 하나에만 맞을 때만 붙이고, 모호하거나 안 맞는 역은 붙이지 않는다(data/build_station_region.py)."
+      "commercial": "allowed"
     },
     {
       "id": "osm-region",
@@ -253,9 +218,9 @@
       "attribution": "© OpenStreetMap contributors",
       "url": "https://nominatim.openstreetmap.org/",
       "licence": "ODbL-1.0",
-      "obtained": "동명역 76곳의 역 좌표를 Nominatim 역지오코딩으로 물어 행정구역 주소 문자열을 받고(data/fetch_region_osm.py, 1초에 1번), 시도·시군구로 푼다. OSM 에 광역시 안 군 경계가 빠진 곳(기장군·달성군)은 법정동 표(data/_gov/bjd_codes.json)로 찾는다",
+      "obtained": "© OpenStreetMap contributors",
       "snapshot": "2026-11",
-      "used_for": "역 주소데이터로 지역을 못 붙인 동명역 36곳을 채우고, 주소데이터로 붙인 40곳은 대조한다(일치 39, 다름 1 — 다르면 주소데이터를 쓴다)",
+      "used_for": "이름이 같은 역의 시·군·구 표시 (보완)",
       "feeds": [],
       "affects": [
         "data/station-region.json"
@@ -263,8 +228,7 @@
       "intermediate": [
         "data/_region_osm.json"
       ],
-      "commercial": "allowed",
-      "caveat": "행정구역 이름이라는 사실 정보만 쓴다. 좌표를 새로 받지 않는다(좌표는 우리 역 자료)."
+      "commercial": "allowed"
     },
     {
       "id": "molit-rtms",
@@ -273,9 +237,9 @@
       "attribution": "국토교통부 아파트 매매 실거래가",
       "url": "https://www.data.go.kr/data/15126469/openapi.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 오픈API (RTMSDataSvcAptTrade)",
+      "obtained": "국토교통부 아파트 매매 실거래가",
       "snapshot": "2026-04 ~ 2026-09",
-      "used_for": "법정동 중위 평당가 464역, 단지 5,301곳의 평당가·준공연도·전용면적 (서울 25 + 경기 47 + 인천 12 시군구)",
+      "used_for": "역 주변 아파트 매매 시세 (법정동·단지)",
       "feeds": [
         "data/station-price.json",
         "data/station-complex.json",
@@ -285,15 +249,8 @@
       "intermediate": [
         "data/_rtms/"
       ],
-      "fields": [
-        "stations[].medianPerPyeong",
-        "stations[].medianPrice",
-        "complexes[].pp",
-        "complexes[].year",
-        "complexes[].area"
-      ],
       "commercial": "allowed",
-      "caveat": "좌표가 없다. 법정동 단위까지만 정확하고, 단지-역 도보 거리는 알 수 없다. 수도권만 수집했다(82개 시군구에서 거래가 있었다). 인천 중구 원도심은 6개월간 아파트 거래가 0건이라 시세가 없다."
+      "caveat": "법정동 단위까지만 정확하다. 수도권만 있다."
     },
     {
       "id": "molit-rtms-apt-rent",
@@ -302,9 +259,9 @@
       "attribution": "국토교통부 아파트 전월세 실거래가",
       "url": "https://www.data.go.kr/data/15126474/openapi.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 오픈API (RTMSDataSvcAptRent), 2026-11-09 수집",
+      "obtained": "국토교통부 아파트 전월세 실거래가",
       "snapshot": "2026-04 ~ 2026-09",
-      "used_for": "역 472곳의 법정동 중위값 (그중 거래 5건 미만 9곳은 건수만). 수도권 84개 시군구 거래 297,260건 중 역 연결 151,899건, 연결 근거 없음 145,361건",
+      "used_for": "역 주변 아파트 전월세 (투자 모드)",
       "feeds": [
         "data/station-market.json",
         "data/station-jeonse.json"
@@ -313,15 +270,8 @@
       "intermediate": [
         "data/_rtms/apt-rent/"
       ],
-      "fields": [
-        "stations[].apt-rent.jn",
-        "stations[].apt-rent.jd",
-        "stations[].apt-rent.wn",
-        "stations[].apt-rent.wd",
-        "stations[].apt-rent.wr"
-      ],
       "commercial": "allowed",
-      "caveat": "좌표가 없다. 법정동 단위까지만 정확하다. 투자 모드에서만 보인다. 수익률은 계산하지 않는다. 전월세 응답에는 계약해제 필드가 없다. 보증금 0원 월세도 정상 거래로 센다."
+      "caveat": "법정동 단위까지만 정확하다. 수도권만 있다."
     },
     {
       "id": "molit-rtms-silv-trade",
@@ -330,9 +280,9 @@
       "attribution": "국토교통부 아파트 분양권전매 실거래가",
       "url": "https://www.data.go.kr/data/15126471/openapi.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 오픈API (RTMSDataSvcSilvTrade), 2026-11-09 수집",
+      "obtained": "국토교통부 아파트 분양권전매 실거래가",
       "snapshot": "2026-04 ~ 2026-09",
-      "used_for": "역 133곳의 법정동 중위값 (그중 거래 5건 미만 53곳은 건수만). 수도권 84개 시군구 거래 5,056건 중 역 연결 1,702건, 연결 근거 없음 3,354건",
+      "used_for": "역 주변 분양권 전매 (투자 모드)",
       "feeds": [
         "data/station-market.json"
       ],
@@ -340,14 +290,8 @@
       "intermediate": [
         "data/_rtms/silv-trade/"
       ],
-      "fields": [
-        "stations[].silv-trade.n",
-        "stations[].silv-trade.med",
-        "stations[].silv-trade.pp",
-        "stations[].silv-trade.own"
-      ],
       "commercial": "allowed",
-      "caveat": "좌표가 없다. 법정동 단위까지만 정확하다. 투자 모드에서만 보인다. 수익률은 계산하지 않는다."
+      "caveat": "법정동 단위까지만 정확하다. 수도권만 있다."
     },
     {
       "id": "molit-rtms-offi-trade",
@@ -356,9 +300,9 @@
       "attribution": "국토교통부 오피스텔 매매 실거래가",
       "url": "https://www.data.go.kr/data/15126464/openapi.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 오픈API (RTMSDataSvcOffiTrade), 2026-11-09 수집",
+      "obtained": "국토교통부 오피스텔 매매 실거래가",
       "snapshot": "2026-04 ~ 2026-09",
-      "used_for": "역 372곳의 법정동 중위값 (그중 거래 5건 미만 69곳은 건수만). 수도권 84개 시군구 거래 14,506건 중 역 연결 9,004건, 연결 근거 없음 5,502건",
+      "used_for": "역 주변 오피스텔 매매 (투자 모드)",
       "feeds": [
         "data/station-market.json"
       ],
@@ -366,13 +310,8 @@
       "intermediate": [
         "data/_rtms/offi-trade/"
       ],
-      "fields": [
-        "stations[].offi-trade.n",
-        "stations[].offi-trade.med",
-        "stations[].offi-trade.pp"
-      ],
       "commercial": "allowed",
-      "caveat": "좌표가 없다. 법정동 단위까지만 정확하다. 투자 모드에서만 보인다. 수익률은 계산하지 않는다."
+      "caveat": "법정동 단위까지만 정확하다. 수도권만 있다."
     },
     {
       "id": "molit-rtms-offi-rent",
@@ -381,9 +320,9 @@
       "attribution": "국토교통부 오피스텔 전월세 실거래가",
       "url": "https://www.data.go.kr/data/15126475/openapi.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 오픈API (RTMSDataSvcOffiRent), 2026-11-09 수집",
+      "obtained": "국토교통부 오피스텔 전월세 실거래가",
       "snapshot": "2026-04 ~ 2026-09",
-      "used_for": "역 415곳의 법정동 중위값 (그중 거래 5건 미만 33곳은 건수만). 수도권 84개 시군구 거래 98,261건 중 역 연결 58,399건, 연결 근거 없음 39,862건",
+      "used_for": "역 주변 오피스텔 전월세 (투자 모드)",
       "feeds": [
         "data/station-market.json"
       ],
@@ -391,15 +330,8 @@
       "intermediate": [
         "data/_rtms/offi-rent/"
       ],
-      "fields": [
-        "stations[].offi-rent.jn",
-        "stations[].offi-rent.jd",
-        "stations[].offi-rent.wn",
-        "stations[].offi-rent.wd",
-        "stations[].offi-rent.wr"
-      ],
       "commercial": "allowed",
-      "caveat": "좌표가 없다. 법정동 단위까지만 정확하다. 투자 모드에서만 보인다. 수익률은 계산하지 않는다. 전월세 응답에는 계약해제 필드가 없다."
+      "caveat": "법정동 단위까지만 정확하다. 수도권만 있다."
     },
     {
       "id": "molit-rtms-rh-trade",
@@ -408,9 +340,9 @@
       "attribution": "국토교통부 연립다세대 매매 실거래가",
       "url": "https://www.data.go.kr/data/15126467/openapi.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 오픈API (RTMSDataSvcRHTrade2), 2026-11-09 수집",
+      "obtained": "국토교통부 연립다세대 매매 실거래가",
       "snapshot": "2026-04 ~ 2026-09",
-      "used_for": "역 456곳의 법정동 중위값 (그중 거래 5건 미만 54곳은 건수만). 수도권 84개 시군구 거래 38,362건 중 역 연결 23,241건, 연결 근거 없음 15,121건",
+      "used_for": "역 주변 연립다세대 매매 (투자 모드)",
       "feeds": [
         "data/station-market.json"
       ],
@@ -418,13 +350,8 @@
       "intermediate": [
         "data/_rtms/rh-trade/"
       ],
-      "fields": [
-        "stations[].rh-trade.n",
-        "stations[].rh-trade.med",
-        "stations[].rh-trade.pp"
-      ],
       "commercial": "allowed",
-      "caveat": "좌표가 없다. 법정동 단위까지만 정확하다. 투자 모드에서만 보인다. 수익률은 계산하지 않는다. 서비스 이름은 RTMSDataSvcRHTrade2 (2026-11-09 공식 페이지·실제 호출 확인)."
+      "caveat": "법정동 단위까지만 정확하다. 수도권만 있다."
     },
     {
       "id": "molit-rtms-land-trade",
@@ -433,9 +360,9 @@
       "attribution": "국토교통부 토지 매매 실거래가",
       "url": "https://www.data.go.kr/data/15126466/openapi.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 오픈API (RTMSDataSvcLandTrade), 2026-11-09 수집",
+      "obtained": "국토교통부 토지 매매 실거래가",
       "snapshot": "2026-04 ~ 2026-09",
-      "used_for": "역 459곳의 법정동 대지(지목 '대') ㎡당 중위값 (그중 대지 거래 5건 미만 376곳은 건수만). 수도권 84개 시군구 거래 40,151건 중 역 연결 8,029건, 연결 근거 없음 32,122건",
+      "used_for": "역 주변 토지(대지) 매매 (투자 모드)",
       "feeds": [
         "data/station-market.json"
       ],
@@ -443,15 +370,8 @@
       "intermediate": [
         "data/_rtms/land-trade/"
       ],
-      "fields": [
-        "stations[].land-trade.n",
-        "stations[].land-trade.med",
-        "stations[].land-trade.m2",
-        "stations[].land-trade.sh",
-        "stations[].land-trade.ex"
-      ],
       "commercial": "allowed",
-      "caveat": "좌표가 없다. 법정동 단위까지만 정확하다. 투자 모드에서만 보인다. 수익률은 계산하지 않는다. 대지(지목 '대')만 쓴다 — 도로·전·답·임야 등은 ㎡당 값을 끌어내려 빼고 건수(ex)만 센다(2026-11-09 결정, 지목별 분리 표시 안 함). 지번이 가려져 온다(예: 6**). 지분거래는 단가에서 뺐다. 하루 호출 한도 1,000."
+      "caveat": "법정동 단위까지만 정확하다. 수도권만 있다."
     },
     {
       "id": "molit-rtms-nrg-trade",
@@ -460,9 +380,9 @@
       "attribution": "국토교통부 상업업무용 매매 실거래가",
       "url": "https://www.data.go.kr/data/15126463/openapi.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 오픈API (RTMSDataSvcNrgTrade), 2026-11-09 수집",
+      "obtained": "국토교통부 상업업무용 매매 실거래가",
       "snapshot": "2026-04 ~ 2026-09",
-      "used_for": "역 473곳의 법정동 중위값 (그중 거래 5건 미만 100곳은 건수만). 수도권 84개 시군구 거래 13,321건 중 역 연결 7,456건, 연결 근거 없음 5,865건",
+      "used_for": "역 주변 상업업무용 매매 (투자 모드)",
       "feeds": [
         "data/station-market.json"
       ],
@@ -470,15 +390,8 @@
       "intermediate": [
         "data/_rtms/nrg-trade/"
       ],
-      "fields": [
-        "stations[].nrg-trade.n",
-        "stations[].nrg-trade.med",
-        "stations[].nrg-trade.pp",
-        "stations[].nrg-trade.sh",
-        "stations[].nrg-trade.top"
-      ],
       "commercial": "allowed",
-      "caveat": "좌표가 없다. 법정동 단위까지만 정확하다. 투자 모드에서만 보인다. 수익률은 계산하지 않는다. 지번 일부가 가려져 온다. 지분거래는 단가에서 뺐다."
+      "caveat": "법정동 단위까지만 정확하다. 수도권만 있다."
     },
     {
       "id": "molit-kapt",
@@ -487,9 +400,9 @@
       "attribution": "국토교통부 공동주택 기본정보(K-apt)",
       "url": "https://www.data.go.kr/data/15058453/openapi.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 오픈API (AptListService4 · AptBasisInfoServiceV5)",
+      "obtained": "국토교통부 공동주택 기본정보(K-apt)",
       "snapshot": "2026-10",
-      "used_for": "단지별 세대수·동수·사용승인일·평균 전용면적·평균 관리비부과면적·전용면적 구간별 세대수",
+      "used_for": "단지 세대수·면적·평형 구성",
       "feeds": [
         "data/station-complex.json"
       ],
@@ -497,17 +410,8 @@
       "intermediate": [
         "data/_kapt/"
       ],
-      "fields": [
-        "complexes[].h (세대수)",
-        "complexes[].d (동수)",
-        "complexes[].y (사용승인 연도)",
-        "complexes[].ea (평균 전용면적)",
-        "complexes[].ba (평균 관리비부과면적)",
-        "complexes[].pr (전용률 추정)",
-        "complexes[].bd (구간별 세대수)"
-      ],
       "commercial": "allowed",
-      "caveat": "**공급면적을 주지 않는다.** kaptMarea 는 관리비부과면적이라 공급면적과 같은 단지가 대부분이지만 전용면적에 부과하는 단지도 있다. 화면에서는 '공급*'으로 적고 각주로 밝힌다. 면적은 모두 단지 평균이며 세대별 값이 아니다. 단지 좌표가 없어 역에서의 거리는 여전히 알 수 없다."
+      "caveat": "면적은 단지 평균이다."
     },
     {
       "id": "openfreemap",
@@ -516,14 +420,12 @@
       "attribution": "© OpenStreetMap · OpenFreeMap",
       "url": "https://openfreemap.org/",
       "licence": "openfreemap",
-      "obtained": "https://tiles.openfreemap.org/styles/{bright,dark}",
+      "obtained": "© OpenStreetMap · OpenFreeMap",
       "snapshot": "실시간",
-      "used_for": "벡터 배경 지도 3종",
+      "used_for": "배경 지도",
       "feeds": [],
       "affects": [],
-      "fields": [],
-      "commercial": "allowed",
-      "caveat": "CARTO 다크 타일이 키 없이는 워터마크만 주는 바람에 갈아탔다. HTTP 200 으로 응답해서 한동안 몰랐다."
+      "commercial": "allowed"
     },
     {
       "id": "esri-imagery",
@@ -532,14 +434,13 @@
       "attribution": "위성 © Esri",
       "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer",
       "licence": "esri-imagery",
-      "obtained": "ArcGIS REST World_Imagery 타일",
+      "obtained": "위성 © Esri",
       "snapshot": "실시간",
-      "used_for": "위성 배경 레이어 (선택)",
+      "used_for": "위성 배경 (선택)",
       "feeds": [],
       "affects": [],
-      "fields": [],
       "commercial": "conditional",
-      "caveat": "부가 레이어다. 상업 서비스에서 문제가 되면 끄면 된다."
+      "caveat": "부가 레이어다."
     },
     {
       "id": "code-go-kr",
@@ -548,9 +449,9 @@
       "attribution": "행정안전부 행정표준코드관리시스템 법정동코드",
       "url": "https://www.code.go.kr/stdcode/regCodeL.do",
       "licence": "site-terms-unverified",
-      "obtained": "code.go.kr 법정동코드 전체자료 내려받기 (POST /etc/codeFullDown.do → ZIP → cp949 탭 구분 3열)",
+      "obtained": "행정안전부 행정표준코드관리시스템 법정동코드",
       "snapshot": "2026-11-01",
-      "used_for": "역 주소의 법정동 이름을 법정동코드로 바꾼다. 주택인허가 API 가 bjdongCd 를 요구하는데, 역 주소에는 이름만 있기 때문",
+      "used_for": "법정동 이름 → 법정동코드",
       "feeds": [
         "data/_gov/bjd_codes.json"
       ],
@@ -558,12 +459,8 @@
         "data/station-dev.json"
       ],
       "intermediate": [],
-      "fields": [
-        "시군구 5자리 → {법정동 이름: 법정동 5자리}",
-        "존재하는 법정동 20,276곳 / 시군구 256곳"
-      ],
       "commercial": "unverified",
-      "caveat": "**이용허락을 명시한 문서를 찾지 못했다.** code.go.kr 화면에 라이선스·이용약관 표시가 없다. 다만 (1) 법정동코드는 주소를 가리키는 국가 표준 식별자이고 (2) 공공데이터포털의 국토부 API 안내문이 직접 이 사이트의 5자리 코드를 쓰라고 지시한다 — 즉 우리가 쓰는 인허가·실거래 API 의 전제 자료다. 그래도 유료 서비스에 넣기 전에 대체 원천(공공데이터포털의 법정동 데이터셋)을 확인하거나 행안부에 문의해야 한다. 이 표가 없으면 역의 91개 법정동(종로1~6가·을지로1~7가 등)이 '자료 없음'으로 남는다."
+      "caveat": "이용허락을 명시한 문서를 찾지 못했다."
     },
     {
       "id": "molit-hpms",
@@ -572,9 +469,9 @@
       "attribution": "국토교통부 건축HUB 주택인허가정보",
       "url": "https://www.data.go.kr/data/15136560/openapi.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 오픈API (HsPmsHubService/getHpBasisOulnInfo, 법정동 단위)",
+      "obtained": "국토교통부 건축HUB 주택인허가정보",
       "snapshot": "2026-11",
-      "used_for": "역이 속한 법정동에 아직 준공되지 않은 주택건설사업계획 승인 건의 세대수와 입주 예정 연도",
+      "used_for": "역 주변 입주 예정 세대",
       "feeds": [
         "data/station-dev.json"
       ],
@@ -582,16 +479,8 @@
       "intermediate": [
         "data/_dev/"
       ],
-      "fields": [
-        "stations[].hh (앞으로 들어올 세대)",
-        "stations[].cnt (사업 건수)",
-        "stations[].overdue (착공예정일이 지난 세대)",
-        "stations[].byYear (연도별 세대수)",
-        "stations[].recent (최근 3년 준공 세대)",
-        "stations[].list[] (사업명·세대수·입주 예정 연도)"
-      ],
       "commercial": "allowed",
-      "caveat": "**좌표를 주지 않는다.** 대지위치 문자열과 법정동 코드뿐이라 역에서 몇 m 인지는 알 수 없고, 법정동 단위로만 붙는다. 역이 여러 법정동에 걸치면 같은 건이 두 역에 세어질 수 있다. **착공 여부는 알 수 없다** — 실제 착공일(stcnsDay)은 준공 처리 때 채워져서 미준공 건의 2% 에만 있다. 대신 착공예정일이 지난 세대를 따로 센다(취소·지연 가능). 준공예정일이 이미 지난 미준공 건은 공급으로 세지 않는다(이 API 는 다 지은 건에도 준공일을 비워 두는 경우가 많다). 같은 사업이 접수번호만 달리해 여러 줄로 오는 경우가 있어(7,347줄 중 994줄) 이름·세대수·대지위치가 같으면 접는다."
+      "caveat": "법정동 단위로만 붙고 착공 여부는 알 수 없다."
     },
     {
       "id": "srail-ktx-fares",
@@ -600,18 +489,15 @@
       "attribution": "(주)에스알 운임표(2026.9.1.)",
       "url": "https://www.data.go.kr/data/15154727/fileData.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 15154727 의 원문 링크(https://etk.srail.kr/cms/archive.do?pageId=TK0402050000)에서 '운임표 다운로드'(운임표(2026.9.1.).xls, 시트 28장 = 운행 계통). data/build_ktx_fares.py 가 우리 노선마다 맞는 계통 시트의 일반실 운임만 뽑는다. 원본 파일은 저장소에 넣지 않고 SHA-256 을 ktx-fares.json meta 에 남긴다",
+      "obtained": "(주)에스알 운임표(2026.9.1.)",
       "snapshot": "2026-09-01 (KTX·SRT 통합 운임)",
-      "used_for": "길찾기 요금의 KTX 구간. 표에 있는 역 쌍은 이 값을 그대로 쓰고 화면에 '공식 운임표'라고 적는다. 표에 없는 쌍은 통합 전 실측에 맞춘 공식 × 0.9(통합 인하율 평균 10%, 공정위·국토부 합동 보도자료 2026-08-02)로 추정하고 '추정'이라고 적는다",
+      "used_for": "길찾기 KTX 요금",
       "feeds": [],
       "affects": [
         "data/ktx-fares.json"
       ],
-      "fields": [
-        "lines[].pairs"
-      ],
       "commercial": "allowed",
-      "caveat": "포털 이용허락범위는 '제한 없음'이다. 다만 파일은 포털이 아니라 SR 홈페이지에서 받으며, 포털 항목의 기준일(20250601)과 파일 날짜(2026.9.1.)가 다르다 — 포털이 같은 페이지를 원문으로 가리키므로 같은 데이터로 본다. 같은 두 역도 선로(계통)에 따라 운임이 달라(서울~부산 신경주 경유 54,400원, 수원 경유 48,000원) 노선별 계통 시트를 고정했다(build_ktx_fares.py LINE_SHEETS). 통합 인하는 3년간이며 이후 재검토된다."
+      "caveat": "표에 없는 역 쌍은 추정이다."
     },
     {
       "id": "seoul-metro-runtimes",
@@ -620,9 +506,9 @@
       "attribution": "서울교통공사 역간거리 및 소요시간(2024.3.25. 기준), 서울열린데이터광장",
       "url": "https://data.seoul.go.kr/dataList/OA-12034/F/1/datasetView.do",
       "licence": "KOGL-1",
-      "obtained": "서울열린데이터광장 OA-12034 파일 '서울교통공사 역간거리 및 소요시간_240810.csv'",
+      "obtained": "서울교통공사 역간거리 및 소요시간(2024.3.25. 기준), 서울열린데이터광장",
       "snapshot": "2024-08-10",
-      "used_for": "길찾기·통근권·도심 접근성의 1~8호선(서울교통공사 구간) 역간 시간. 공식 '달리는 시간' + 정차 0.5분. data/build_official_runtimes.py 가 js/route.js 에 넣는다",
+      "used_for": "길찾기 역 사이 시간 (1~8호선)",
       "feeds": [
         "data/_gov/seoul_metro_runtimes_240810.csv"
       ],
@@ -630,14 +516,7 @@
         "js/route.js",
         "data/access.json"
       ],
-      "fields": [
-        "호선",
-        "역명",
-        "소요시간",
-        "역간거리(km)"
-      ],
-      "commercial": "allowed",
-      "caveat": "서울교통공사 구간만이다. 코레일·민자·경전철 구간은 레일포털 시각표(kric-urban-ops)로 채우고, 둘 다 없는 구간(개통 전 노선 등)만 노선 평균 속도로 낸 추정값이다."
+      "commercial": "allowed"
     },
     {
       "id": "seoul-metro-timetable",
@@ -646,23 +525,15 @@
       "attribution": "서울교통공사 서울 도시철도 열차운행시각표(2026.9.1.), 공공데이터포털",
       "url": "https://www.data.go.kr/data/15098251/fileData.do",
       "licence": "data-go-kr-open",
-      "obtained": "공공데이터포털 15098251 파일데이터 CSV (약 32MB, 로그인 없이 받음 — 저장소에는 넣지 않음)",
+      "obtained": "서울교통공사 서울 도시철도 열차운행시각표(2026.9.1.), 공공데이터포털",
       "snapshot": "2026-09-01",
-      "used_for": "떡상 랭킹 ⏱ 배차 포함 — 1~9호선(코레일 구간 포함) 역마다 평일 07~09시 방향별 출발 열차 수로 배차를 센다 (data/build_headways.py)",
+      "used_for": "출퇴근 배차 (1~9호선)",
       "feeds": [],
       "affects": [
         "data/headways.json",
         "data/rank.json"
       ],
-      "fields": [
-        "호선",
-        "역사명",
-        "주중주말",
-        "방향",
-        "열차출발시간"
-      ],
-      "commercial": "allowed",
-      "caveat": "평일 출근 2시간 평균이라 가장 붐비는 30분보다 조금 길다. 종점 근처 등 열차가 2대 미만인 방향은 뺐다."
+      "commercial": "allowed"
     },
     {
       "id": "kric-urban-ops",
@@ -671,9 +542,9 @@
       "attribution": "레일포털 전체_도시철도운행정보(데이터 기준 2026.5.31.), 전국도시철도운영기관",
       "url": "https://data.kric.go.kr/rips/M_01_01/detail.do?id=900",
       "licence": "data-go-kr-open",
-      "obtained": "레일포털 id=900 XLSX (약 18MB, 공공데이터포털 15093878 과 같은 표준데이터, 이용허락범위 제한 없음 — 저장소에는 넣지 않음)",
+      "obtained": "레일포털 전체_도시철도운행정보(데이터 기준 2026.5.31.), 전국도시철도운영기관",
       "snapshot": "2026-05-31",
-      "used_for": "① 길찾기·순위의 역 사이 달리는 시간 — 1호선 코레일 구간·3호선 일산선·4호선 안산과천선·7호선 부천·9호선·경의중앙·경춘·경강·수인분당·서해·신분당·공항철도·경전철·지방 도시철도 (평일 일반열차 중앙값, data/build_kric_runtimes.py → js/route.js KRIC_RUNTIMES) ② 떡상 랭킹 ⏱ 배차 포함 — 역마다 평일 07~09시 배차 (data/build_headways.py)",
+      "used_for": "길찾기 역 사이 시간 · 출퇴근 배차 (광역·민자·경전철·지방 도시철도)",
       "feeds": [],
       "affects": [
         "js/route.js",
@@ -681,16 +552,7 @@
         "data/headways.json",
         "data/rank.json"
       ],
-      "fields": [
-        "열차번호",
-        "노선명",
-        "요일구분",
-        "운행구간정거장",
-        "정거장도착시각",
-        "정가장출발시각"
-      ],
-      "commercial": "allowed",
-      "caveat": "역 이름이 줄임말이라(경광주·평내호 등) 우리 역 이름에 맞췄다 — 94% 맞춤, 나머지는 노선 중앙값. 에버라인은 평일 자료가 퇴근(17~20시) 운행간격 4분뿐, 인천 2호선은 운행시격 2분30초~10분 글뿐이라 각각 4분·2.5분으로 읽었다."
+      "commercial": "allowed"
     },
     {
       "id": "derived",
@@ -699,22 +561,17 @@
       "attribution": "",
       "url": "",
       "licence": "own",
-      "obtained": "공개된 공식 소요 시간을 기준으로 구간별 추정, 선형을 따라 잰 길이",
+      "obtained": "자체 계산",
       "snapshot": "2026-10",
-      "used_for": "역 사이 소요 시간, 환승 횟수, 역에서 도심까지 걸리는 시간, 교통 순위표, 노선 연장",
+      "used_for": "소요 시간·환승·도심 접근성·순위·연장",
       "feeds": [],
       "affects": [
         "data/lines.geojson",
         "data/access.json",
         "data/rank.json"
       ],
-      "fields": [
-        "lines[].length_km",
-        "access.stations[].now",
-        "access.stations[].after"
-      ],
       "commercial": "allowed",
-      "caveat": "실제 시간표가 아니라 추정값이다. 노선별 표정속도(영업거리÷소요시간)로 계산하며 개별 구간은 ±20~30% 틀릴 수 있다. 연장은 선형을 따라 잰 값이라 공식 영업거리와 조금 다르다(인천공항철도 +9%)."
+      "caveat": "추정값이다. 개통 전 노선은 발표 기준이다."
     }
   ],
   "not_used": [
@@ -722,7 +579,7 @@
       "id": "frdb",
       "name": "미래철도DB (FRDB)",
       "url": "https://frdb2.ivyro.net/",
-      "reason": "초기 노선·역 목록을 만들 때 참고했으나 출처로 쓰지 않는다. 사이트가 스스로 \"비영리, 비상업, 개인 사이트\" 라고 밝히고 이용허락 표시가 없다. 게다가 \"부동산 투자 목적으로 쓰려면 관계당국에서 다시 확인하라\" 고 적어 두었다. 지금 목록은 OSM 과 공공데이터로 다시 확인했고, 그 증빙이 data/line-membership.json 이다."
+      "reason": "이용허락 표시가 없는 비영리 개인 사이트라 출처로 쓰지 않는다. 노선·역 목록은 OSM 과 공공데이터로 다시 확인했다."
     }
   ]
 }

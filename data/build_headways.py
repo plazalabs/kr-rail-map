@@ -124,8 +124,7 @@ def main():
         lines[lid] = {'min': 5, 'src': 'estimate', 'source': '개통 전 — 공식 배차 없음 (추정)'}
     doc = {
         'schema': 'kr-rail-map/headways/2', 'updated': '2026-11-12',
-        'basis': '출퇴근(평일 07~09시) 배차 간격, 분. 기다리는 시간 = 배차 ÷ 2. 떡상 랭킹 \'⏱ 배차 포함\' 스위치에서만 쓴다. '
-                 '역마다 값이 있으면 역 값을, 없으면 노선 값(역 중앙값)을 쓴다. src=estimate 는 개통 전 노선뿐이다.',
+        'basis': '출퇴근 배차 간격(분). 운영기관 공식 시간표 기준, 개통 전 노선은 추정.',
         'default': {'urban': 5, 'metro': 5, 'conventional': 30, 'ktx': 0},
         'lines': lines,
     }

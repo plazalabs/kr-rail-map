@@ -140,9 +140,7 @@ const rows = groups.map(g => {
 
 const doc = {
   updated: access.updated,
-  basis: '역에서 CBD(시청·광화문·종각·서울역)·YBD(여의도·여의나루)·GBD(강남·역삼·선릉·삼성)까지 ' +
-    '타고 가는 시간 + 갈아타며 걷는 시간(분). 열차를 기다리는 시간은 넣지 않았다. ' +
-    '같은 이름·같은 자리 역(노선별)은 한 줄로 묶고 가장 빠른 값을 쓴다. 시간 모델은 js/route.js.',
+  basis: '역에서 CBD·YBD·GBD 까지 걸리는 시간(분)과 개통 연도별 값. 공개 자료를 바탕으로 한 추정값.',
   dest: ['CBD', 'YBD', 'GBD'],
   years: yearsDoc.years || [],
   year_lines: yearsDoc.year_lines || {},

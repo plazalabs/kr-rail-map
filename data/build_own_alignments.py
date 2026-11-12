@@ -429,7 +429,7 @@ def main(argv):
             else:
                 src, note = "osm", "선형: OpenStreetMap(ODbL) 선로를 따라 이음"
                 if res["median_km"] > 0:
-                    note += f" — 역 대조 중앙 오차 {res['median_km']*1000:.0f}m"
+                    pass   # 내부 검증 수치(역 대조 오차)는 공개 설명에 넣지 않는다 (2026-11-12)
             p["coord_source"] = src
             p["coord_method"] = "own-align"
             if cfg.get("note"):

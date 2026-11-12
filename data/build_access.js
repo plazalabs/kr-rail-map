@@ -164,11 +164,7 @@ Object.keys(out).forEach(id => {
 
 const doc = {
   updated: new Date().toISOString().slice(0, 10),
-  basis:
-    '역에서 거점까지 최단 소요시간(분). 지금(운행 중 노선만)과 개통 후(착공·계획·구상 포함) ' +
-    '두 값을 같은 시간 모델로 계산했다. 시간 모델은 js/route.js 이고, 역 안 환승 도보시간은 ' +
-    'data/transfer-times.json(OSM 정차점 거리 기반 추정)을 쓴다. 실제 시각표가 아니므로 ' +
-    '±5분 오차를 전제로 읽어야 한다. KTX 는 탑승 1회당 접근 12분을 더한다.',
+  basis: '역에서 거점까지 걸리는 시간(분) — 지금과 개통 후. 공개 자료를 바탕으로 한 추정값.',
   destinations: dests.map(d => ({
     id: d.id, name: d.name, label: d.label,
     station_id: d.station_id, member_ids: d.member_ids, lat: d.lat, lng: d.lng,

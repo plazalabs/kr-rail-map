@@ -146,7 +146,10 @@ const html = fs.readFileSync(path.join(ROOT, 'rank.html'), 'utf8');
 check('rank.js 를 불러옴', /<script src="js\/rank\.js"><\/script>/.test(html));
 check('기준 버튼 4개 (평균·CBD·YBD·GBD 중시)', ['avg', 'cbd', 'ybd', 'gbd'].every(v => html.includes('data-v="' + v + '"')));
 check('지역 버튼 (서울·수도권·전국)', ['seoul', 'capital', 'all'].every(v => html.includes('data-v="' + v + '"')));
-check('기다리는 시간을 뺐다고 밝힘', /기다리는 시간은 넣지 않았습니다/.test(html));
+// 2026-11-12 레시피 비공개: 계산법은 지우고 '숫자 읽는 법'(정의)만 남긴다
+check('숫자 읽는 법: 시간 정의·배차 스위치 뜻·점수·등급·추정값', /숫자 읽는 법/.test(html) && /타고 가는 시간 \+ 갈아탈 때 걷는 시간/.test(html) &&
+  /점수<\/b> = 100 − 세 곳 평균 분/.test(html) && /떡상 100계단 이상/.test(html) && /추정값/.test(html));
+check('계산 계수·자료 처리 과정을 적지 않음', !/0\.41|0\.413|1\.79|중앙값|94%|07~09시|열차 수를 세어/.test(html));
 check('역을 누르면 지도로 (?st=)', /\.\/\?st=/.test(html));
 check('밖에서 불러오는 스크립트 없음', !/<script[^>]+src="https?:/.test(html));
 check('링크 미리보기 그림 og-rank.jpg (1200×630, 300KB 아래)', /og:image" content="[^"]+\/image\/og-rank\.jpg"/.test(html) && fs.existsSync(path.join(ROOT, 'image/og-rank.jpg')) && fs.statSync(path.join(ROOT, 'image/og-rank.jpg')).size < 300 * 1024);

@@ -105,7 +105,7 @@ def new_note(old, med_m, via="relation"):
     선형을 설명하는 문장은 전부 걷어내고 하나만 새로 붙인다.
     """
     how = "선로를 따라 이음" if via == "graph" else "노선 relation"
-    base = f"선형: OpenStreetMap(ODbL) {how} — 역 대조 중앙 오차 {med_m:.0f}m"
+    base = f"선형: OpenStreetMap(ODbL) {how}"   # 내부 검증 수치(역 대조 오차)는 공개 설명에 넣지 않는다 (2026-11-12)
     return SEP.join(_strip_align(old) + [base])
 
 

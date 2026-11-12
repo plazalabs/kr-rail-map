@@ -1,6 +1,7 @@
 /* e2e: 지도 안 떡상 패널 (js/rocket-panel.js, 디자인 개편 v109, 2026-11-12)
  *  PC 1440×900
- *  - 툴바 '🚀 GTX 떡상' → 패널 열림, 떡상 지도 레이어 켜짐, 광운대 카드(취소선 지금 순위 → 개통 후 순위), 문장형 제목, 곡선, 막대 3개
+ *  - 툴바 '🚀 GTX 떡상' → 패널 열림, 처음엔 아무 역도 안 고르고 순위(TOP 10)부터 — 특정 역을 앞세우지 않는다
+ *  - 지도에서 광운대를 누르면 카드(취소선 지금 순위 → 개통 후 순위), 문장형 제목, 곡선, 막대 3개
  *  - 숫자는 rank.json + js/rank.js 로 직접 계산한 값과 같다 (기본 연도)
  *  - 연도 칩 '전체' → 순위·지도 점 다시 칠함 / 기준 '강남' → 순위 바뀜
  *  - 목록 1위 누르면 그 역이 골라지고 지도가 그 역으로 간다
@@ -48,8 +49,17 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
   R.check("툴바 맨 앞에 '🚀 GTX 떡상' 버튼, 처음엔 패널·레이어 없음", pre.btn && pre.first === 'rocket-btn' && !pre.panel && !pre.layer, pre);
 
   await b.evaluate(`document.getElementById('rocket-btn').click()`);
-  await until(b, `!!document.querySelector('#rocket-panel .rkp-hero') && !!map.getLayer('rocket-tier')`);
+  await until(b, `!!document.querySelector('#rocket-panel .rkp-row') && !!map.getLayer('rocket-tier')`);
   await sleep(1200);
+  const s0 = await b.evaluate(`(() => { const p = document.getElementById('rocket-panel');
+    return { title: p.querySelector('#rkp-title').textContent, hero: !!p.querySelector('.rkp-hero'), hint: !!p.querySelector('.rkp-hint'), sel: RocketPanel.state().sel, tip: !!document.querySelector('.rkp-tip'),
+      list: p.querySelectorAll('.rkp-row').length, first: (p.querySelector('.rkp-row b')||{}).textContent }; })()`);
+  R.check(`처음엔 고른 역 없음: 질문 제목·카드 없음·말풍선 없음·TOP 10 (1위 ${TOP1.name})`, s0.title === '개통하면 우리 역은 몇 등이 될까요?' && !s0.hero && s0.hint && s0.sel === null && !s0.tip && s0.list === 10 && s0.first === TOP1.name, s0);
+  await b.evaluate(`map.jumpTo({ center: STATIONS.find(s => s.properties.id === '${KW.id}').geometry.coordinates, zoom: 13 }); true`);
+  await sleep(900);
+  const pk = await clickStation(b, KW.id);
+  await sleep(900);
+  R.check('지도에서 광운대를 누르면 패널 카드가 광운대', pk.ok && await b.evaluate(`(document.querySelector('.rkp-name')||{}).textContent === '광운대'`), pk);
   const s1 = await b.evaluate(`(() => { const p = document.getElementById('rocket-panel'); const q = s => p.querySelector(s);
     return { open: !p.hidden, layer: !!map.getLayer('rocket-tier'), sel: !!map.getLayer('rocket-sel'), pressed: document.getElementById('rocket-btn').getAttribute('aria-pressed'),
       title: q('#rkp-title').textContent, was: (q('.rkp-was')||{}).textContent, now: (q('.rkp-now')||{}).textContent, name: (q('.rkp-name')||{}).textContent,
@@ -109,8 +119,8 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
 
   // 닫기
   await b.evaluate(`document.querySelector('.rkp-close').click()`); await sleep(500);
-  const s6 = await b.evaluate(`({ hidden: document.getElementById('rocket-panel').hidden, layer: !!map.getLayer('rocket-tier'), cb: document.getElementById('layer-rocket').checked, tip: !!document.querySelector('.rkp-tip'), cls: document.body.classList.contains('rk-open') })`);
-  R.check('닫으면 패널·레이어·말풍선 사라짐', s6.hidden && !s6.layer && !s6.cb && !s6.tip && !s6.cls, s6);
+  const s6 = await b.evaluate(`({ hidden: document.getElementById('rocket-panel').hidden, layer: !!map.getLayer('rocket-tier'), cb: document.getElementById('layer-rocket').checked, tip: !!document.querySelector('.rkp-tip'), cls: document.body.classList.contains('rk-open'), sel: RocketPanel.state().sel })`);
+  R.check('닫으면 패널·레이어·말풍선 사라지고 고른 역도 지움', s6.hidden && !s6.layer && !s6.cb && !s6.tip && !s6.cls && s6.sel === null, s6);
 
   // 사이드바에서 켠 레이어는 패널을 닫아도 그대로
   await b.evaluate(`document.getElementById('layer-rocket').click()`); await until(b, `!!map.getLayer('rocket-tier')`);
@@ -140,7 +150,7 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
   await m.send('Network.setBypassServiceWorker', { bypass: true });
   await m.goto(BASE + '#normal', 800); await ready(m);
   await m.evaluate(`document.getElementById('rocket-btn').click()`);
-  await until(m, `!!document.querySelector('#rocket-panel .rkp-hero')`);
+  await until(m, `!!document.querySelector('#rocket-panel .rkp-row')`);
   await sleep(1300);
   const mb = await m.evaluate(`(() => { const p = document.getElementById('rocket-panel').getBoundingClientRect(); const t = document.getElementById('toolbar').getBoundingClientRect();
     const bg = getComputedStyle(document.getElementById('rocket-panel')).backgroundColor;

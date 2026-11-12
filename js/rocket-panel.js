@@ -198,7 +198,7 @@
   function stops() { return (doc.years || []).map(String).concat(['all']); }
 
   function heroHtml(r) {
-    if (!r) return '<div class="rkp-hero rkp-hero-empty">지도의 역이나 아래 목록을 누르면 그 역의 순위 변화를 보여 드려요.</div>';
+    if (!r) return '<p class="rkp-hint">목록이나 지도의 역을 누르면 그 역의 순위 변화를 보여 드려요.</p>';
     var t = RankTable.tierOf(r);
     var where = [r.region, r.sgg].filter(Boolean).join(' ');
     var chg = r.isNew ? '<span class="rkp-chg is-new">신규</span>'
@@ -355,12 +355,8 @@
       if (o.y && (o.y === 'all' || (doc.years || []).map(String).indexOf(String(o.y)) >= 0)) st.y = String(o.y);
       if (o.w && WEIGHT_LABEL[o.w]) st.w = o.w;
       var R = res();
-      if (o.st && R.byId[o.st]) st.sel = o.st;
-      else if (!st.sel) {
-        // 처음엔 광운대(시안 기준 예시) — 없으면 가장 많이 오르는 역
-        var kw = R.rows.find(function (x) { return x.name === '광운대'; });
-        st.sel = kw ? kw.id : (RankTable.sortRows(R.rows, 'rise')[0] || {}).id || null;
-      }
+      // 처음엔 아무 역도 고르지 않고 순위부터 (특정 역을 앞세우지 않는다 — 회장님 지시 2026-11-12). 주소에 st= 가 있을 때만 그 역
+      st.sel = (o.st && R.byId[o.st]) ? o.st : null;
       isOpen = true;
       el.hidden = false;
       el.classList.remove('is-peek');
@@ -377,6 +373,7 @@
   function close() {
     stopPlay();
     isOpen = false;
+    st.sel = null;   // 다시 열면 순위부터
     if (el) el.hidden = true;
     document.body.classList.remove('rk-open');
     setBtn(false);

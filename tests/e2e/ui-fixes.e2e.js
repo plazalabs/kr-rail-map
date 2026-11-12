@@ -45,7 +45,7 @@ async function sidePress(sel) {
   if (r.ok && !c.ok) return { ok: false, why: '서랍 닫기 ' + c.why };
   return r;
 }
-const DROP = { '도구': 5, '분석': 6, '저장': 7 };
+const DROP = { '도구': 6, '분석': 7, '저장': 8 };   // v109: 툴바 맨 앞 🚀 GTX 떡상 버튼이 생겨 한 칸씩 밀림
 async function menu(label, btnId) {
   const o = await press(`#toolbar > .tb-dropdown:nth-child(${DROP[label]}) .tb-dropbtn`); if (!o.ok) return { ok: false, why: label + ' 버튼 ' + o.why };
   await sleep(250);

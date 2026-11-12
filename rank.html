@@ -204,10 +204,10 @@ h1{font-size:22px}
     <div class="seg" role="group" aria-labelledby="l-r" data-k="r">
       <button data-v="seoul">서울</button><button data-v="capital">수도권</button><button data-v="all">전국</button>
     </div>
-    <button class="wait-tg" id="wait" aria-pressed="false" title="처음 탈 때·갈아탈 때 출퇴근 시간에 열차를 기다리는 시간을 더합니다">⏱ 배차 포함 (출퇴근)</button>
+    <button class="wait-tg" id="wait" aria-pressed="false" title="처음 탈 때·갈아탈 때 출퇴근 시간에 열차를 기다리는 시간을 더합니다"><i data-ic="clock"></i> 배차 포함 (출퇴근)</button>
   </div>
   <div class="yr" id="yr-row" role="group" aria-label="개통 연도">
-    <button class="play" id="yr-play" aria-label="연도 차례로 보기">▶</button>
+    <button class="play" id="yr-play" aria-label="연도 차례로 보기"><i data-ic="play"></i></button>
     <div class="rng"><input type="range" id="yr" min="0" max="1" step="1" value="1" aria-label="이 해까지 개통한 노선으로 보기"><div class="ticks" id="yr-ticks"></div></div>
     <span class="now" id="yr-now"></span>
     <div class="opens" id="yr-opens"></div>
@@ -228,7 +228,7 @@ h1{font-size:22px}
 <div class="tiers" id="tiers" role="group" aria-label="등급으로 거르기"></div>
 
 <section id="slope-sec" aria-labelledby="slope-h">
-  <h2 class="sec" id="slope-h">🚀 개통하면 가장 많이 오르는 역 TOP 10</h2>
+  <h2 class="sec" id="slope-h">개통하면 가장 많이 오르는 역 TOP 10</h2>
   <p class="sec-sub">왼쪽은 지금 순위, 오른쪽은 개통 후 순위입니다. 선이 가파를수록 많이 오릅니다.</p>
   <div class="slope" id="slope"></div>
 </section>
@@ -241,10 +241,10 @@ h1{font-size:22px}
 <section class="note">
 <h2>숫자 읽는 법</h2>
 <ul>
-<li><b>시간</b> = 열차를 타고 가는 시간 + 갈아탈 때 걷는 시간. <b>⏱ 배차 포함</b>을 켜면 출퇴근 시간에 열차를 기다리는 시간도 더합니다.</li>
+<li><b>시간</b> = 열차를 타고 가는 시간 + 갈아탈 때 걷는 시간. <b><i data-ic="clock"></i> 배차 포함</b>을 켜면 출퇴근 시간에 열차를 기다리는 시간도 더합니다.</li>
 <li><b>CBD·YBD·GBD</b>는 역 하나가 아니라 묶음이며, 묶음 안에서 가장 빨리 닿는 역의 시간을 씁니다.</li>
-<li><b>점수</b> = 100 − 세 곳 평균 분 (1분 빠르면 1점 높음). <b>○○ 중시</b>는 그곳을 두 번 세서 평균을 냅니다.</li>
-<li><b>등급</b>: 🚀 떡상 100계단 이상 오름 · 📈 상승 10~99 · ➖ 보합 9계단 오름~49계단 밀림 · 📉 상대 하락 50계단 이상 밀림 · ✨ 신규(새 노선이 생겨야 갈 수 있는 역).
+<li><b>점수</b> = 100 − 세 곳 평균 분 (1분 빠르면 1점 높음). <b>어느 한 곳 중시</b>는 그곳을 두 번 세서 평균을 냅니다.</li>
+<li><b>등급</b>: 떡상 100계단 이상 오름 · 상승 10~99 · 보합 9계단 오름~49계단 밀림 · 상대 하락 50계단 이상 밀림 · 신규(새 노선이 생겨야 갈 수 있는 역).
 순위가 밀려도 시간은 대부분 줄어듭니다 — 다른 역이 더 많이 좋아질 뿐이니 오른쪽 +N점(줄어든 분)을 함께 보세요.</li>
 <li><b>개통 후</b>는 공사 중·계획 노선이 모두 열렸다고 본 값이고, 계획은 바뀔 수 있습니다. 점수가 같으면 공동 순위입니다.</li>
 <li>공개 자료를 바탕으로 한 <b>추정값</b>입니다. 출처는 <a href="data.html">자료 페이지</a>에 있습니다.</li>
@@ -252,6 +252,7 @@ h1{font-size:22px}
 </section>
 </main>
 
+<script src="js/icons.js"></script>
 <script src="js/rank.js"></script>
 <script>
 (() => {
@@ -332,10 +333,10 @@ h1{font-size:22px}
 
   function badge(r) {
     const t = RankTable.tierOf(r);
-    if (t === 'new') return '<span class="badge">' + T.new.icon + ' 신규</span>';
+    if (t === 'new') return '<span class="badge">' + Icons.svg(T.new.ic) + ' 신규</span>';
     const c = r.change;
     const txt = c > 0 ? '▲' + c : c < 0 ? '▼' + (-c) : '–';
-    return '<span class="badge" title="' + esc(T[t].label + ' · ' + T[t].hint) + '">' + T[t].icon + ' ' + txt + '</span>';
+    return '<span class="badge" title="' + esc(T[t].label + ' · ' + T[t].hint) + '">' + Icons.svg(T[t].ic) + ' ' + txt + '</span>';
   }
   const link = r => './?rocket=1&st=' + encodeURIComponent(r.id);   // 지도 + 떡상 패널 (v109)
 
@@ -393,14 +394,14 @@ h1{font-size:22px}
         }).join('') + '</div>'
       : (r.change > 0 ? '<div class="newlines"><div class="t">이 역에는 새 노선이 없지만, 가까운 역의 새 노선(GTX 등)으로 갈아타는 길이 빨라집니다.</div></div>' : '');
     const head = r.isNew
-      ? '<div class="big"><span class="a">지금은 철도로 갈 수 없음</span><span class="arrow">→</span><span class="b">' + r.aft.rank + '위</span><span class="badge">' + T.new.icon + ' 신규</span></div>'
+      ? '<div class="big"><span class="a">지금은 철도로 갈 수 없음</span><span class="arrow">→</span><span class="b">' + r.aft.rank + '위</span><span class="badge">' + Icons.svg(T.new.ic) + ' 신규</span></div>'
       : '<div class="big"><span class="a">지금 ' + r.now.rank + '위</span><span class="arrow">→</span><span class="b">' + aftLabel() + ' ' + r.aft.rank + '위</span>' + badge(r).replace('class="badge"', 'class="badge t-' + t + '"') + '</div>';
     return '<div class="card t-' + t + '" id="card-' + esc(r.id) + '">' + head +
       '<div class="bars">' + bars + '</div>' +
       '<div class="legend"><span><i style="background:var(--bar-now)"></i>지금</span><span><i style="background:var(--bar-aft)"></i>' + aftLabel() + '</span></div>' +
       nl + '<a class="go" href="' + link(r) + '">지도에서 보기 →</a>' +
-      '<button class="share" data-share="' + esc(r.id) + '">📸 공유 이미지 저장</button>' +
-      '<button class="share" data-link="' + esc(r.id) + '">🔗 링크 복사</button><span class="share-msg" role="status"></span></div>';
+      '<button class="share" data-share="' + esc(r.id) + '"><i data-ic="camera"></i> 공유 이미지 저장</button>' +
+      '<button class="share" data-link="' + esc(r.id) + '"><i data-ic="link"></i> 링크 복사</button><span class="share-msg" role="status"></span></div>';
   }
 
   // 개통 연도 단계 — rank.json years + '전체'
@@ -435,7 +436,7 @@ h1{font-size:22px}
     $('tiers').hidden = isNow;
     $('tiers').innerHTML = '<button class="tchip tc-all" data-tier="" aria-pressed="' + (!st.tier) + '">전체 <b>' + rows.length.toLocaleString() + '</b></button>' +
       TIER_ORDER.map(k => '<button class="tchip tc-' + k + '" data-tier="' + k + '" aria-pressed="' + (st.tier === k) + '" title="' + esc(T[k].hint) + '">' +
-        T[k].icon + ' ' + T[k].label + ' <b>' + tc[k].toLocaleString() + '</b></button>').join('');
+        Icons.svg(T[k].ic) + ' ' + T[k].label + ' <b>' + tc[k].toLocaleString() + '</b></button>').join('');
 
     // 떡상 TOP 10 — 개통 후, 찾기·등급 거르기 없을 때
     const showSlope = !isNow && !st.q && !st.tier;
@@ -453,11 +454,11 @@ h1{font-size:22px}
     }
     const total = isNow ? res.totalNow : res.total;
     const filtered = rows.filter(r => RankTable.matches(r, st.q));
-    $('slope-h').textContent = '🚀 ' + (st.y === 'all' ? '개통하면' : st.y + '년까지 개통하면') + ' 가장 많이 오르는 역 TOP 10';
+    $('slope-h').textContent = (st.y === 'all' ? '개통하면' : st.y + '년까지 개통하면') + ' 가장 많이 오르는 역 TOP 10';
     $('hint').textContent = REGION[st.r] + ' ' + total.toLocaleString() + '역 · ' + LABEL[st.w] + ' · ' +
-      (isNow ? '지금' : aftLabel() === '개통 후' ? '개통 후' : aftLabel() + '까지 개통') + ' 기준' + (st.wait ? ' · ⏱ 출퇴근 배차 포함' : '') + (st.tier ? ' · ' + T[st.tier].icon + ' ' + T[st.tier].label + ' ' + filtered.length + '곳' : '') +
+      (isNow ? '지금' : aftLabel() === '개통 후' ? '개통 후' : aftLabel() + '까지 개통') + ' 기준' + (st.wait ? ' · 출퇴근 배차 포함' : '') + (st.tier ? ' · ' + T[st.tier].label + ' ' + filtered.length + '곳' : '') +
       (st.q ? ' · "' + st.q + '" ' + filtered.length + '곳' : '');
-    $('list-h').textContent = st.tier ? T[st.tier].icon + ' ' + T[st.tier].label + ' 역' : (st.sort === 'rise' && !isNow ? '많이 오르는 순' : st.sort === 'gain' && !isNow ? '점수 많이 오르는 순' : '순위');
+    $('list-h').textContent = st.tier ? T[st.tier].label + ' 역' : (st.sort === 'rise' && !isNow ? '많이 오르는 순' : st.sort === 'gain' && !isNow ? '점수 많이 오르는 순' : '순위');
 
     // 1~3위 카드 — 순위순·거르기 없을 때만
     const podOn = !st.q && !st.tier && (isNow || st.sort === 'rank');
@@ -516,12 +517,12 @@ h1{font-size:22px}
   });
   $('yr').addEventListener('input', e => { stopPlay(); st.y = stops()[+e.target.value] || 'all'; render(); });
   let playT = null;
-  function stopPlay() { if (playT) { clearInterval(playT); playT = null; $('yr-play').textContent = '▶'; $('yr-play').setAttribute('aria-label', '연도 차례로 보기'); } }
+  function stopPlay() { if (playT) { clearInterval(playT); playT = null; $('yr-play').innerHTML = Icons.svg('play'); $('yr-play').setAttribute('aria-label', '연도 차례로 보기'); } }
   $('yr-play').addEventListener('click', () => {
     if (playT) { stopPlay(); return; }
     const S = stops(); let i = 0;
     st.y = S[0]; st.open = ''; render();
-    $('yr-play').textContent = '■'; $('yr-play').setAttribute('aria-label', '멈추기');
+    $('yr-play').innerHTML = Icons.svg('stop'); $('yr-play').setAttribute('aria-label', '멈추기');
     playT = setInterval(() => { i++; if (i >= S.length) { stopPlay(); return; } st.y = S[i]; render(); }, 1600);
   });
   $('wait').addEventListener('click', () => { st.wait = !st.wait; render(); });
@@ -554,7 +555,7 @@ h1{font-size:22px}
     const w1 = g.measureText(r.aft.rank + '위').width;
     g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText(st.y === 'all' ? '개통 후' : st.y + '년 개통 후', 80 + w1 + 24, 600);
     // 배지
-    const bt = t === 'new' ? '✨ 신규' : (r.change > 0 ? '▲' + r.change + '계단' : r.change < 0 ? '▼' + (-r.change) + '계단' : '그대로') + '  ' + RankTable.TIERS[t].label;
+    const bt = t === 'new' ? '신규' : (r.change > 0 ? '▲' + r.change + '계단' : r.change < 0 ? '▼' + (-r.change) + '계단' : '그대로') + '  ' + RankTable.TIERS[t].label;
     g.font = '800 44px ' + F; const bw = g.measureText(bt).width + 56;
     roundRect(g, 80, 640, bw, 78, 39); g.fillStyle = COL; g.fill();
     g.fillStyle = '#fff'; g.fillText(bt, 108, 694);
@@ -574,7 +575,7 @@ h1{font-size:22px}
     g.fillStyle = '#7f93b3'; g.font = '500 24px ' + F;
     g.fillText(st.wait ? '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림' : '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1000);
     g.fillStyle = '#c8d3e6'; g.font = '700 28px ' + F;
-    g.fillText('🚀 한국철도맵 GTX 떡상 랭킹 · plazalabs.github.io/kr-rail-map/rank.html', 80, 1044);
+    g.fillText('한국철도맵 GTX 떡상 랭킹 · plazalabs.github.io/kr-rail-map/rank.html', 80, 1044);
     return c;
   }
   async function shareStation(id, msgEl) {

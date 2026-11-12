@@ -977,7 +977,7 @@ document.getElementById('route-save').addEventListener('click', () => {
   if (exists) { setStatus('이미 저장된 경로입니다.'); return; }
   favorites.routes.push(Object.assign({ from, to }, fromId ? { fromId } : {}, toId ? { toId } : {}));
   saveFavorites(); renderFavorites();
-  setStatus(`⭐ 경로 저장됨: ${from} → ${to}`);
+  setStatus(`경로 저장됨: ${from} → ${to}`);
 });
 // 개통 예정 노선 포함 (2026-11-09 결정 1) — 기본은 꺼짐(지금 운행 중인 노선만). 켠 사람에게는 다음 방문에도 켜 둔다.
 const UNOPENED_KEY = 'krrail-route-unopened';
@@ -1052,7 +1052,7 @@ document.getElementById('route-go').addEventListener('click', () => {
   // (이 지도는 착공·계획 노선까지 그리므로, 지금 갈 수 있는 길로 오해하면 안 된다)
   if (r.unopenedLines && r.unopenedLines.length) {
     const names = r.unopenedLines.map(id => lineNameOf.get(id) || id).join(', ');
-    html += `<div class="unopened-notice">⚠ 미개통 구간 포함 — ${names}
+    html += `<div class="unopened-notice"><i data-ic="alert"></i> 미개통 구간 포함 — ${names}
       <span class="unopened-sub">개통 전이므로 실제로는 이용할 수 없습니다.</span></div>`;
   }
   r.legs.forEach((leg, idx) => {
@@ -1061,8 +1061,8 @@ document.getElementById('route-go').addEventListener('click', () => {
     const n = Math.abs(i2 - i1);
     if (leg.walk || !leg.lineId) {
       html += a === b
-        ? `<div class="leg">🚶 ${a}역 내 환승 (도보 이동)</div>`
-        : `<div class="leg">🚶 ${a} → ${b} (도보 이동)</div>`;
+        ? `<div class="leg"><i data-ic="walk"></i> ${a}역 내 환승 (도보 이동)</div>`
+        : `<div class="leg"><i data-ic="walk"></i> ${a} → ${b} (도보 이동)</div>`;
     } else {
       const ln = lineNameOf.get(leg.lineId) || leg.lineId;
       const lineColor = (LINES.find(l => l.properties.id === leg.lineId)?.properties.color) || '#888';
@@ -1088,8 +1088,8 @@ document.getElementById('route-go').addEventListener('click', () => {
     // 이 구간을 내린 뒤 갈아타는 시간. 역마다 다르다 (data/transfer-times.json).
     if (leg.transferAfter > 0) {
       html += leg.platform
-        ? `<div class="leg leg-transfer leg-platform">↔ <b>${b}</b>역 같은 승강장 평면환승 · 약 10초</div>`
-        : `<div class="leg leg-transfer">🚶 <b>${b}</b>역 내 환승 · 도보 약 ${leg.transferAfter}분</div>`;
+        ? `<div class="leg leg-transfer leg-platform"><i data-ic="transfer"></i> <b>${b}</b>역 같은 승강장 평면환승 · 약 10초</div>`
+        : `<div class="leg leg-transfer"><i data-ic="walk"></i> <b>${b}</b>역 내 환승 · 도보 약 ${leg.transferAfter}분</div>`;
     }
   });
   box.innerHTML = html;
@@ -1633,7 +1633,7 @@ function renderFavorites() {
   if (!box) return;
   box.innerHTML = '';
   if (favorites.stations.length) {
-    const h = document.createElement('div'); h.className = 'panel-head'; h.textContent = '⭐ 즐겨찾는 역';
+    const h = document.createElement('div'); h.className = 'panel-head'; h.textContent = '즐겨찾는 역';
     box.appendChild(h);
     const nameCount = {};
     STATIONS.forEach(x => { nameCount[x.properties.name_ko] = (nameCount[x.properties.name_ko] || 0) + 1; });
@@ -1653,13 +1653,13 @@ function renderFavorites() {
           showStation(s, { lng: s.geometry.coordinates[0], lat: s.geometry.coordinates[1] });
         }
       };
-      const del = document.createElement('button'); del.textContent = '✕'; del.className = 'memo-del';
+      const del = document.createElement('button'); del.innerHTML = Icons.svg('close'); del.setAttribute('aria-label', '삭제'); del.className = 'memo-del';
       del.onclick = (ev) => { ev.stopPropagation(); const i = favorites.stations.indexOf(e); if (i >= 0) favorites.stations.splice(i, 1); saveFavorites(); renderFavorites(); };
       div.appendChild(del); box.appendChild(div);
     });
   }
   if (favorites.routes.length) {
-    const h = document.createElement('div'); h.className = 'panel-head'; h.textContent = '⭐ 저장된 경로';
+    const h = document.createElement('div'); h.className = 'panel-head'; h.textContent = '저장된 경로';
     box.appendChild(h);
     favorites.routes.forEach((r, i) => {
       const div = document.createElement('div'); div.className = 'fav-item';
@@ -1670,13 +1670,13 @@ function renderFavorites() {
         setRouteStation(document.getElementById('route-to'), stationById(r.toId) || r.to);
         document.getElementById('route-go').click();
       };
-      const del = document.createElement('button'); del.textContent = '✕'; del.className = 'memo-del';
+      const del = document.createElement('button'); del.innerHTML = Icons.svg('close'); del.setAttribute('aria-label', '삭제'); del.className = 'memo-del';
       del.onclick = (e) => { e.stopPropagation(); favorites.routes.splice(i, 1); saveFavorites(); renderFavorites(); };
       div.appendChild(del); box.appendChild(div);
     });
   }
   if (!favorites.stations.length && !favorites.routes.length) {
-    box.innerHTML = '<p class="empty">역 팝업의 ⭐ 버튼으로 즐겨찾기를 추가하세요</p>';
+    box.innerHTML = '<p class="empty">역 팝업의 ' + Icons.svg('star') + ' 버튼으로 즐겨찾기를 추가하세요</p>';
   }
 }
 
@@ -1724,7 +1724,7 @@ function openStationPopup(feature, lngLat) {
     '<div class="st-btns">' +
       '<button data-act="from">출발지</button>' +
       '<button data-act="to">도착지</button>' +
-      '<button data-act="fav">' + (isFavStation(sname, p.id) ? '★' : '☆') + ' 즐겨찾기</button>' +
+      '<button data-act="fav">' + Icons.svg(isFavStation(sname, p.id) ? 'star_on' : 'star') + ' 즐겨찾기</button>' +
     '</div>';
   el.querySelectorAll('button').forEach(b => {
     b.addEventListener('click', ev => {
@@ -1732,7 +1732,7 @@ function openStationPopup(feature, lngLat) {
       const act = b.dataset.act;
       if (act === 'fav') {
         toggleFavStation(sname, p.id);
-        b.innerHTML = (isFavStation(sname, p.id) ? '★' : '☆') + ' 즐겨찾기';
+        b.innerHTML = Icons.svg(isFavStation(sname, p.id) ? 'star_on' : 'star') + ' 즐겨찾기';
         return;
       }
       setRouteStation(document.getElementById(act === 'from' ? 'route-from' : 'route-to'), orig || sname);

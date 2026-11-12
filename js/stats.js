@@ -185,7 +185,7 @@
     panel.id = 'rs-panel';
     panel.style.display = 'none';
     panel.innerHTML = `
-      <div id="rs-head">📊 철도망 통계 <button id="rs-close" title="닫기">✕</button></div>
+      <div id="rs-head">철도망 통계 <button id="rs-close" title="닫기" aria-label="닫기"><i data-ic="close"></i></button></div>
       <div id="rs-body"></div>`;
     document.body.appendChild(panel);
     panel.querySelector('#rs-close').addEventListener('click', hide);

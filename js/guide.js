@@ -34,21 +34,21 @@
   }
 
   var ITEMS = [
-    ['🧭', '길찾기', '두 역 사이 시간·환승·요금, 개통 전후 비교', function () {
+    ['route', '길찾기', '두 역 사이 시간·환승·요금, 개통 전후 비교', function () {
       var p = document.getElementById('route-panel');
       if (p && p.hidden) click('route-btn');
       var f = document.getElementById('route-from'); if (f) try { f.focus(); } catch (e) { /* 무시 */ }
     }],
-    ['⏱', '통근권 찾기', '직장까지 45분 안에 닿는 역을 지도에', function () {
+    ['clock', '통근권 찾기', '직장까지 45분 안에 닿는 역을 지도에', function () {
       if (global.CommuteMap) global.CommuteMap.show();
     }],
-    ['🏠', '투자 모드', '역 주변 시세·전세가율·실거래·공급 물량', function () {
+    ['home', '투자 모드', '역 주변 시세·전세가율·실거래·공급 물량', function () {
       if (global.KR_MODE) global.KR_MODE.toggle();
     }],
-    ['🗺', '노선도', '전국 노선을 지하철 노선도처럼', function () { click('diagram-btn'); }],
+    ['map', '노선도', '전국 노선을 지하철 노선도처럼', function () { click('diagram-btn'); }],
   ];
   function itemHtml(it, i, cls) {
-    return '<button type="button" class="' + cls + '" data-i="' + i + '"><span class="gd-ic" aria-hidden="true">' + it[0] +
+    return '<button type="button" class="' + cls + '" data-i="' + i + '"><span class="gd-ic" aria-hidden="true">' + Icons.svg(it[0]) +
       '</span><span><b>' + it[1] + '</b><small>' + it[2] + '</small></span></button>';
   }
   function run(i) {
@@ -87,7 +87,7 @@
     el.setAttribute('aria-label', '처음 오셨나요 — 할 수 있는 일');
     el.innerHTML =
       '<div class="gd-head"><b>처음 오셨나요?</b> 이런 걸 할 수 있어요' +
-      '<button type="button" class="gd-close" aria-label="안내 닫기">✕</button></div>' +
+      '<button type="button" class="gd-close" aria-label="안내 닫기"><i data-ic="close"></i></button></div>' +
       '<div class="gd-list">' + ITEMS.map(function (it, i) { return itemHtml(it, i, 'gd-item'); }).join('') + '</div>' +
       '<div class="gd-foot">이 버튼들은 왼쪽 메뉴 맨 위 <b>빠른 시작</b>에 늘 있어요</div>';
     el.querySelector('.gd-close').addEventListener('click', close);

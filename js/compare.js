@@ -143,7 +143,7 @@
     panel = document.createElement('div');
     panel.id = 'lc-panel';
     panel.innerHTML = `
-      <div id="lc-head">노선 비교 <button id="lc-close" title="닫기">✕</button></div>
+      <div id="lc-head">노선 비교 <button id="lc-close" title="닫기" aria-label="닫기"><i data-ic="close"></i></button></div>
       <div id="lc-picks">
         <select id="lc-sel0"></select>
         <select id="lc-sel1"></select>

@@ -11,6 +11,7 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
+const IconsLib = require(path.join(ROOT, 'js/icons.js'));   // 화면 조각이 Icons.svg 를 쓴다 (2026-11-12)
 const LINES_FC = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/lines.geojson'), 'utf8'));
 const STATIONS_FC = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/stations.geojson'), 'utf8'));
 
@@ -50,7 +51,7 @@ function loadModule(file) {
     performance: { now: () => 0 },
   };
   c.window = c; c.globalThis = c; c.self = c;
-  vm.createContext(c);
+  c.Icons = c.Icons || IconsLib; vm.createContext(c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), c, { filename: file });
   return c;
 }
@@ -303,7 +304,7 @@ console.log('\n[커버리지] 버튼 켜짐 표시를 show()/hide() 가 맡음 (
   const c = { console, Math, JSON, Date, Set, Map, Array, Object, String, Number, isNaN, isFinite, parseFloat, parseInt,
     document: doc, requestAnimationFrame: () => 0, cancelAnimationFrame() {}, setTimeout: () => 0, clearTimeout() {} };
   c.window = c; c.globalThis = c; c.self = c;
-  vm.createContext(c);
+  c.Icons = c.Icons || IconsLib; vm.createContext(c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/coverage.js'), 'utf8'), c, { filename: 'js/coverage.js' });
   const fakeMap = { on() {}, getSource() { return { setData() {} }; }, addSource() {}, addLayer() {}, getLayer() { return null; },
     removeLayer() {}, removeSource() {}, fitBounds() {} };
@@ -353,7 +354,7 @@ console.log('\n[그리기] 테마·배경 전환(setStyle) 후 그린 노선 복
   const c = { console, Math, JSON, Date, Set, Map, Array, Object, String, Number, isNaN, isFinite, parseFloat, parseInt,
     document: doc, localStorage: { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } } };
   c.window = c; c.globalThis = c; c.self = c;
-  vm.createContext(c);
+  c.Icons = c.Icons || IconsLib; vm.createContext(c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8') + '\n;this.__DT = DrawTools;', c, { filename: 'js/draw.js' });
   const DT = c.__DT;
   DT.init(fakeMap, () => {});
@@ -483,7 +484,7 @@ console.log('\n[남은 문제] 영향권 가림·노선도 버튼·메모 핀 (I
   const c = { console, Math, JSON, Date, Set, Map, Array, Object, String, Number, isNaN, isFinite, parseFloat, parseInt,
     document: doc, localStorage: { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } } };
   c.window = c; c.globalThis = c; c.self = c;
-  vm.createContext(c);
+  c.Icons = c.Icons || IconsLib; vm.createContext(c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8') + '\n;this.__DT = DrawTools;', c, { filename: 'js/draw.js' });
   c.__DT.init(fakeMap, () => {});
   c.__DT.refreshMemos();

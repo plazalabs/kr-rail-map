@@ -364,12 +364,12 @@ const RouteCompare = (() => {
     };
     if (t && all.transfer && all.transfer.transfers < t.transfers) {
       const dm = all.transfer.minutes - t.minutes;
-      out.push(`🔄 최소환승은 ${dm > 0 ? dm + '분 더 걸리지만' : '시간도 비슷하고'} 환승 ${t.transfers - all.transfer.transfers}회 절약`);
+      out.push(`최소환승은 ${dm > 0 ? dm + '분 더 걸리지만' : '시간도 비슷하고'} 환승 ${t.transfers - all.transfer.transfers}회 절약`);
     }
     if (t && all.fare && all.fare.fare < t.fare) {
-      out.push(`💰 최소요금은 ${(t.fare - all.fare.fare).toLocaleString()}원 절약 · ${trade(all.fare)}`);
+      out.push(`최소요금은 ${(t.fare - all.fare.fare).toLocaleString()}원 절약 · ${trade(all.fare)}`);
     } else if (t && all.fare && all.fare.minutes < t.minutes) {
-      out.push(`💰 최소요금 길은 ${trade(all.fare)}`);
+      out.push(`최소요금 길은 ${trade(all.fare)}`);
     }
     return out.join('<br>');
   }
@@ -533,7 +533,7 @@ const RouteCompare = (() => {
     // 이 지도는 착공·계획 노선까지 그리므로 '지금 갈 수 있는 길'로 오해하면 안 된다.
     if (r.unopenedLines && r.unopenedLines.length) {
       const names = r.unopenedLines.map(id => lineNameOf.get(id) || id).join(', ');
-      html += `<div class="unopened-notice">⚠ 미개통 구간 포함 — ${escapeHtml(names)}` +
+      html += `<div class="unopened-notice"><i data-ic="alert"></i> 미개통 구간 포함 — ${escapeHtml(names)}` +
         `<span class="unopened-sub">개통 전이므로 실제로는 이용할 수 없습니다.</span></div>`;
     }
     r.legs.forEach((leg, idx) => {
@@ -542,8 +542,8 @@ const RouteCompare = (() => {
       const n = Math.abs(i2 - i1);
       if (leg.walk || !leg.lineId) {
         html += leg.from === leg.to || sname(leg.from) === sname(leg.to)
-          ? `<div class="leg">🚶 ${a}역 내 환승 (도보 이동)</div>`
-          : `<div class="leg">🚶 ${a} → ${b} (도보 이동)</div>`;
+          ? `<div class="leg"><i data-ic="walk"></i> ${a}역 내 환승 (도보 이동)</div>`
+          : `<div class="leg"><i data-ic="walk"></i> ${a} → ${b} (도보 이동)</div>`;
       } else {
         const ln = escapeHtml(lineNameOf.get(leg.lineId) || leg.lineId);
         const segStations = [];
@@ -558,8 +558,8 @@ const RouteCompare = (() => {
       // 이 구간을 내린 뒤 갈아타는 시간 (역마다 다르다)
       if (leg.transferAfter > 0) {
         html += leg.platform
-        ? `<div class="leg leg-transfer leg-platform">↔ <b>${b}</b>역 같은 승강장 평면환승 · 약 10초</div>`
-        : `<div class="leg leg-transfer">🚶 <b>${b}</b>역 내 환승 · 도보 약 ${leg.transferAfter}분</div>`;
+        ? `<div class="leg leg-transfer leg-platform"><i data-ic="transfer"></i> <b>${b}</b>역 같은 승강장 평면환승 · 약 10초</div>`
+        : `<div class="leg leg-transfer"><i data-ic="walk"></i> <b>${b}</b>역 내 환승 · 도보 약 ${leg.transferAfter}분</div>`;
       }
     });
     return html;
@@ -571,10 +571,10 @@ const RouteCompare = (() => {
     if (!f || !(f.unopenedLines || []).length) return '';
     const names = escapeHtml(f.unopenedLines.map(id => lineNameOf.get(id) || id).join(' · '));
     const how = `<span class="rc-oo-how">위 <b>개통 예정 노선 포함</b>을 켜면 개통 후 경로를 볼 수 있습니다.</span>`;
-    if (!all.time) return `<div class="rc-oo-hint">🕓 개통 예정 <b>${names}</b> 개통 후에는 약 ${f.minutes}분 (지금은 갈 수 없음). ${how}</div>`;
+    if (!all.time) return `<div class="rc-oo-hint"><i data-ic="clock"></i> 개통 예정 <b>${names}</b> 개통 후에는 약 ${f.minutes}분 (지금은 갈 수 없음). ${how}</div>`;
     const saved = all.time.minutes - f.minutes;
     if (saved <= 0) return '';
-    return `<div class="rc-oo-hint">🕓 개통 예정 <b>${names}</b> 개통 후에는 약 ${f.minutes}분 (${saved}분 단축 예상). ${how}</div>`;
+    return `<div class="rc-oo-hint"><i data-ic="clock"></i> 개통 예정 <b>${names}</b> 개통 후에는 약 ${f.minutes}분 (${saved}분 단축 예상). ${how}</div>`;
   }
 
   // opts.includeUnopened: true 면 개통 예정 노선까지 쓴 경로(예전 동작), 아니면 운행 중인 노선만.
@@ -594,12 +594,12 @@ const RouteCompare = (() => {
     const tabs = [
       // '최적' — 시간 + 갈아타는 부담(환승마다 몇 분 벌점)으로 고른 길. 표시 시간만 보면 다른 탭이 1~2분 빠를 수 있어
       // '최단시간' 이라 부르면 틀린 말이 된다 (홍대입구→강남: 최소요금 37분·환승 2 < 이 길 38분·환승 0, 2026-11-12)
-      { id: 'time', label: '⚡ 최적', r: all.time },
+      { id: 'time', label: '<i data-ic="zap"></i> 최적', r: all.time },
       // 개통 예정 노선을 안 쓰는 경로가 따로 있을 때만 '지금' 탭을 붙인다.
       // 늘 붙이면 최단시간 탭과 같은 내용이 두 번 나와 헷갈린다.
-      ...(cmp.status === 'better' ? [{ id: 'now', label: '🕐 지금 바로', r: all.now }] : []),
-      { id: 'transfer', label: '🔄 최소환승', r: all.transfer },
-      { id: 'fare', label: '💰 최소요금', r: all.fare },
+      ...(cmp.status === 'better' ? [{ id: 'now', label: '<i data-ic="clock"></i> 지금 바로', r: all.now }] : []),
+      { id: 'transfer', label: '<i data-ic="repeat"></i> 최소환승', r: all.transfer },
+      { id: 'fare', label: '<i data-ic="won"></i> 최소요금', r: all.fare },
     ].filter(t => t.r);
 
     // 인사이트: 각 기준의 장점 요약 (insightOf — 시험용으로 따로)

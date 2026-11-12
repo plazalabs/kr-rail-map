@@ -289,7 +289,7 @@
     panel.setAttribute('aria-label', '역 상세 정보');
     panel.innerHTML =
       '<div id="sd-head"><h2>역 정보</h2>' +
-      '<button id="sd-close" title="닫기">✕</button></div>' +
+      '<button id="sd-close" title="닫기" aria-label="닫기"><i data-ic="close"></i></button></div>' +
       '<div id="sd-body"></div>';
     document.body.appendChild(panel);
     panel.querySelector('#sd-close').addEventListener('click', hide);
@@ -442,7 +442,7 @@
 
       // 단지별 전세가율 (같은 단지·같은 면적 매매·신규 전세 짝 — js/jeonse.js). 짝이 없으면 적지 않는다
       var jr = (typeof StationJeonse !== 'undefined' && StationJeonse.complexOf) ? StationJeonse.complexOf(c.key, x.j) : null;
-      if (jr) meta.push('전세가율 ' + Math.round(jr[0] * 100) + '%' + (jr[1] > 1 ? ' (' + jr[1] + '개 면적)' : '') + (jr[0] >= 0.8 ? ' ⚠' : ''));
+      if (jr) meta.push('전세가율 ' + Math.round(jr[0] * 100) + '%' + (jr[1] > 1 ? ' (' + jr[1] + '개 면적)' : '') + (jr[0] >= 0.8 ? ' (주의)' : ''));
       return '<li class="sd-cx"><span class="sd-cx-n">' + esc(x.n) + '</span>' +
         '<span class="sd-cx-p">' + StationPrice.pp(x.pp) + '/평</span>' +
         '<span class="sd-cx-m">' + esc(meta.join(' · ')) + '</span>' +
@@ -494,11 +494,11 @@
     // 액션은 이름 바로 아래. 패널을 열자마자 스크롤 없이 보여야 한다.
     html += '<div class="sd-actions">' +
       '<button class="sd-primary" data-act="from" title="' + esc(nameKo) + '에서 출발하는 경로 찾기">' +
-      '<span class="sd-ico">🚉</span>여기서 출발</button>' +
+      '<span class="sd-ico"><i data-ic="depart"></i></span>여기서 출발</button>' +
       '<button data-act="to" title="' + esc(nameKo) + '으로 가는 경로 찾기">' +
-      '<span class="sd-ico">🎯</span>여기로 도착</button>' +
+      '<span class="sd-ico"><i data-ic="flag"></i></span>여기로 도착</button>' +
       '<button class="sd-fav" data-act="fav" title="즐겨찾기" aria-label="즐겨찾기">' +
-      '<span class="sd-ico">⭐</span></button>' +
+      '<span class="sd-ico"><i data-ic="star"></i></span></button>' +
       '</div>';
 
     // 투자 모드(js/mode.js)가 꺼져 있으면 시세·단지·공급을 그리지 않는다 — 자료를 이미 받았더라도.
@@ -514,7 +514,7 @@
     }
     if (invest && typeof StationJeonse !== 'undefined' && StationJeonse.isReady()) {
       var jn = StationJeonse.of(sid);
-      if (jn && jn.r != null) chips.push(['전세가율', Math.round(jn.r * 100) + '%' + (jn.r >= 0.8 ? ' ⚠' : '')]);
+      if (jn && jn.r != null) chips.push(['전세가율', Math.round(jn.r * 100) + '%' + (jn.r >= 0.8 ? ' (주의)' : '')]);
     }
     if (typeof StationAccess !== 'undefined' && StationAccess.isReady()) {
       var ac = StationAccess.of(sid);
@@ -626,7 +626,7 @@
     // 철도만 보는 사람은 지나치면 되고, 집값을 찾는 사람은 여기서 바로 켠다.
     if (!invest) {
       html += '<div class="sd-mode-hint"><button type="button" class="sd-mode-on" ' +
-        'title="역 상세에 시세·단지·공급을 보여 줍니다">🏠 이 역의 집값·공급 보기 → 투자 모드 켜기</button></div>';
+        'title="역 상세에 시세·단지·공급을 보여 줍니다"><i data-ic="home"></i> 이 역의 집값·공급 보기 → 투자 모드 켜기</button></div>';
     }
 
     // '첫차 / 막차' 칸은 없앴다. 자료가 없어서 '시간표 데이터 없음' 한 줄만
@@ -671,7 +671,7 @@
           if (x.a) m.push(Math.round(x.a) + '㎡');
           m.push(x.n_deals + '건');
           var jr = (typeof StationJeonse !== 'undefined' && StationJeonse.complexOf) ? StationJeonse.complexOf(full.key, x.j) : null;
-          if (jr) m.push('전세가율 ' + Math.round(jr[0] * 100) + '%' + (jr[0] >= 0.8 ? ' ⚠' : ''));
+          if (jr) m.push('전세가율 ' + Math.round(jr[0] * 100) + '%' + (jr[0] >= 0.8 ? ' (주의)' : ''));
           return '<li class="sd-cx"><span class="sd-cx-n">' + esc(x.n) + '</span>' +
             '<span class="sd-cx-p">' + StationPrice.pp(x.pp) + '/평</span>' +
             '<span class="sd-cx-m">' + esc(m.join(' · ')) + '</span></li>';

@@ -114,7 +114,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', '통근권 찾기');
     panel.innerHTML = `
-<div id="cm-head">통근권 찾기 <button id="cm-close" aria-label="닫기">✕</button></div>
+<div id="cm-head">통근권 찾기 <button id="cm-close" aria-label="닫기"><i data-ic="close"></i></button></div>
 <div id="cm-body">
   <div class="cm-row">
     <label for="cm-dest">직장(목적지) 역</label>
@@ -131,7 +131,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
   <div id="cm-summary" role="status" aria-live="polite"></div>
   <ul id="cm-list"></ul>
   <div class="cm-note">소요 시간은 운행 속도·환승 도보·승강장 접근 시간으로 낸 <b>추정값</b>입니다(시각표·배차 대기 미반영, ±20~30%).
-  길찾기와 같은 계산입니다. 시세는 투자 모드에서 역이 속한 법정동의 아파트 매매 중위 평당가(최근 6개월)이며, 역 바로 옆 값이 아닙니다. 전세가율은 같은 단지·같은 면적의 매매·신규 전세 짝의 중위값(80% 이상 ⚠).</div>
+  길찾기와 같은 계산입니다. 시세는 투자 모드에서 역이 속한 법정동의 아파트 매매 중위 평당가(최근 6개월)이며, 역 바로 옆 값이 아닙니다. 전세가율은 같은 단지·같은 면적의 매매·신규 전세 짝의 중위값(80% 이상 (주의)).</div>
 </div>`;
     document.body.appendChild(panel);
     const dest = panel.querySelector('#cm-dest');
@@ -245,7 +245,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     ul.innerHTML = shown.map(r => {
       const reg = regionLabel(r.id);
       const pp = pOn ? `<span class="cm-pp">${r.pp != null ? '평당 ' + StationPrice.pp(r.pp) : '시세 —'}` +
-        (r.jr != null ? ` · 전세가율 ${Math.round(r.jr * 100)}%${r.jr >= 0.8 ? ' ⚠' : ''}` : '') + `</span>` : '';
+        (r.jr != null ? ` · 전세가율 ${Math.round(r.jr * 100)}%${r.jr >= 0.8 ? ' (주의)' : ''}` : '') + `</span>` : '';
       return `<li><button type="button" data-id="${esc(r.id)}"><span>${esc(r.name)}${reg ? ' <small>· ' + esc(reg) + '</small>' : ''}</span>` +
         `<span>${pp} <span class="cm-min">${r.min}분</span></span></button></li>`;
     }).join('') + (rows.length > shown.length ? `<li class="cm-note">외 ${rows.length - shown.length}역 — 시간을 줄이면 목록이 짧아집니다</li>` : '');

@@ -1244,3 +1244,7 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
 .rkp-allbtn { background: var(--accent-weak); color: var(--rk-blue); }
 .rkp-more[hidden] { display: none; }
 .rkp-list .rkp-chg.down { color: #d9701a; }
+
+/* ---------- 14. 선 아이콘 (js/icons.js) ---------- */
+i[data-ic] { display: inline-flex; align-items: center; font-style: normal; line-height: 1; }
+.rp-close i[data-ic], .icon-btn i[data-ic], #locate-btn i[data-ic] { font-size: 16px; }

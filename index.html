@@ -54,7 +54,7 @@
   <aside id="sidebar" aria-label="노선 및 검색 패널">
     <div class="sb-head">
       <h1 class="brand">한국철도맵</h1>
-      <button id="sidebar-close" class="icon-btn mob-only" aria-label="패널 닫기">✕</button>
+      <button id="sidebar-close" class="icon-btn mob-only" aria-label="패널 닫기"><i data-ic="close"></i></button>
     </div>
     <p class="sb-sub">전국 철도 노선도 · <span id="data-summary">불러오는 중…</span></p>
 
@@ -81,7 +81,7 @@
     <div class="panel-head">지도 레이어</div>
     <div class="layer-row">
       <label class="layer-opt"><input type="checkbox" id="layer-station-area"> 역세권 범위 <span class="sa-approx">근사</span></label>
-      <label class="layer-opt"><input type="checkbox" id="layer-rocket"> 🚀 떡상 지도 <span class="sa-approx">GTX 개통 후</span></label>
+      <label class="layer-opt"><input type="checkbox" id="layer-rocket"> <i data-ic="trend"></i> 떡상 지도 <span class="sa-approx">GTX 개통 후</span></label>
       <div id="rk-legend" class="jn-legend" hidden><span><i style="background:#0a8f4a"></i>떡상 ▲100+</span><span><i style="background:#3aa76d"></i>상승 ▲10+</span><span><i style="background:#9aa1a8"></i>보합</span><span><i style="background:#d9701a"></i>상대 하락</span><span><i style="background:#7a3fd0"></i>신규</span><span class="rk-more">수도권 역만 · 점이 클수록 업무지구에 가깝다 · <a href="rank.html">순위표 →</a></span></div>
       <label class="layer-opt"><input type="checkbox" id="layer-jeonse"> 전세가율 색칠 <span class="sa-approx">투자</span></label>
       <div id="jn-legend" class="jn-legend" hidden><span><i style="background:#1e63d6"></i>50% 미만</span><span><i style="background:#2e9e4f"></i>50~70%</span><span><i style="background:#f59e0b"></i>70~80%</span><span><i style="background:#c62828"></i>80% 이상</span></div>
@@ -119,7 +119,7 @@
     </button>
 
     <div id="toolbar" role="toolbar" aria-label="지도 도구">
-      <button id="rocket-btn" class="tb-rocket" data-rocket-open aria-pressed="false" aria-controls="rocket-panel" title="GTX 개통하면 우리 역은 몇 등이 될까 — 지도 안 떡상 랭킹">🚀 GTX 떡상</button>
+      <button id="rocket-btn" class="tb-rocket" data-rocket-open aria-pressed="false" aria-controls="rocket-panel" title="GTX 개통하면 우리 역은 몇 등이 될까 — 지도 안 떡상 랭킹"><i data-ic="trend"></i> GTX 떡상</button>
       <div class="tb-group" role="group" aria-label="배경 지도">
         <button data-style="normal" class="active" title="일반 지도" aria-label="일반 지도로 보기" aria-pressed="true">일반</button>
         <button data-style="satellite" title="위성 지도" aria-label="위성 지도로 보기" aria-pressed="false">위성</button>
@@ -127,7 +127,7 @@
       </div>
       <button id="route-btn" class="tb-primary">길찾기</button>
       <button id="diagram-btn" title="45도 개략 노선도">노선도</button>
-      <button id="locate-btn" class="tb-icon" title="내 위치" aria-label="내 위치로 이동">◎</button>
+      <button id="locate-btn" class="tb-icon" title="내 위치" aria-label="내 위치로 이동"><i data-ic="locate"></i></button>
       <div class="tb-dropdown">
         <button class="tb-dropbtn" aria-expanded="false" aria-controls="tb-dropmenu-1">도구</button>
         <div class="tb-dropmenu" role="group" aria-label="도구 모음">
@@ -146,7 +146,7 @@
           <button id="invest-btn" role="menuitem">역세권 투자분석</button>
           <button id="coverage-btn" role="menuitem">노선 영향권</button>
           <button id="commute-btn" role="menuitem">통근권 찾기</button>
-          <button id="rocket-menu-btn" role="menuitem" data-rocket-open>🚀 GTX 떡상 랭킹</button>
+          <button id="rocket-menu-btn" role="menuitem" data-rocket-open><i data-ic="trend"></i> GTX 떡상 랭킹</button>
         </div>
       </div>
       <div class="tb-dropdown">
@@ -156,14 +156,14 @@
           <button id="save-btn" role="menuitem">지도 PNG</button>
           <button id="share-btn" role="menuitem">링크 복사</button>
           <button id="report-btn" role="menuitem">오류 제보</button>
-          <a href="board.html" role="menuitem" class="tb-menulink">💬 게시판·의견</a>
+          <a href="board.html" role="menuitem" class="tb-menulink"><i data-ic="message"></i> 게시판·의견</a>
         </div>
       </div>
-      <button id="mode-btn" class="tb-mode" aria-pressed="false" title="투자 모드 켜기 (시세·단지·공급 보기)">🏠 투자</button>
+      <button id="mode-btn" class="tb-mode" aria-pressed="false" title="투자 모드 켜기 (시세·단지·공급 보기)"><i data-ic="home"></i> 투자</button>
     </div>
 
     <div id="draw-panel" hidden>
-      <div class="rp-head">나만의 노선 그리기 <button class="rp-close" data-close="draw-panel" aria-label="닫기">✕</button></div>
+      <div class="rp-head">나만의 노선 그리기 <button class="rp-close" data-close="draw-panel" aria-label="닫기"><i data-ic="close"></i></button></div>
       <div class="dp-row"><label for="draw-name">이름</label><input id="draw-name" placeholder="나의 노선" autocomplete="off"></div>
       <div class="dp-row"><span>색상</span><div id="draw-palette"></div></div>
       <div class="dp-row"><label for="draw-dash">선 모양</label><select id="draw-dash"></select></div>
@@ -171,7 +171,7 @@
     </div>
 
     <div id="route-panel" hidden>
-      <div class="rp-head">길찾기 <button id="route-close" class="rp-close" aria-label="닫기">✕</button></div>
+      <div class="rp-head">길찾기 <button id="route-close" class="rp-close" aria-label="닫기"><i data-ic="close"></i></button></div>
       <div class="ac-wrap">
         <label class="ac-label" for="route-from">출발</label>
         <input id="route-from" placeholder="출발역" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false">
@@ -183,9 +183,9 @@
         <div class="ac-list" hidden></div>
       </div>
       <div class="rp-row">
-        <button id="route-swap" title="출발·도착 바꾸기" aria-label="출발·도착 바꾸기">⇅</button>
+        <button id="route-swap" title="출발·도착 바꾸기" aria-label="출발·도착 바꾸기"><i data-ic="swap"></i></button>
         <button id="route-go">경로 찾기</button>
-        <button id="route-save" title="이 경로를 즐겨찾기에 저장" aria-label="경로 저장">☆</button>
+        <button id="route-save" title="이 경로를 즐겨찾기에 저장" aria-label="경로 저장"><i data-ic="star"></i></button>
       </div>
       <label class="rp-opt" for="route-unopened"><input type="checkbox" id="route-unopened"> 개통 예정 노선 포함 <span class="rp-opt-sub">(기본: 지금 운행 중인 노선만)</span></label>
       <div id="route-result" role="region" aria-label="경로 검색 결과" aria-live="polite"></div>
@@ -197,6 +197,7 @@
 </div>
 
 <script defer src="vendor/maplibre-gl.js"></script>
+<script defer src="js/icons.js"></script>
 <script defer src="js/mode.js"></script>
 <script defer src="js/ui.js"></script>
 <script defer src="js/search.js"></script>

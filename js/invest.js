@@ -213,7 +213,7 @@ padding:2px 10px;font-weight:700;margin-left:8px}
     panel = document.createElement('div');
     panel.id = 'iv-panel';
     panel.innerHTML = `
-      <div id="iv-head">📊 역세권 투자 분석 <button id="iv-close" title="닫기">✕</button></div>
+      <div id="iv-head">역세권 투자 분석 <button id="iv-close" title="닫기" aria-label="닫기"><i data-ic="close"></i></button></div>
       <div id="iv-body"></div>`;
     document.getElementById('map').appendChild(panel);
     panel.querySelector('#iv-close').addEventListener('click', hide);
@@ -287,7 +287,7 @@ padding:2px 10px;font-weight:700;margin-left:8px}
     // 찍었을 때 '강남까지 몇 분'이 바로 나오는 것이 이 카드의 목적이다.
     const accTop = stationAccess(top3[0]);
     if (accTop) {
-      h += `<div class="iv-card"><h4>🚇 도심까지 (${esc(top3[0].feature.properties.name_ko)}역 기준)</h4>` +
+      h += `<div class="iv-card"><h4><i data-ic="train"></i> 도심까지 (${esc(top3[0].feature.properties.name_ko)}역 기준)</h4>` +
         StationAccess.sectionHtml(top3[0].feature.properties.id) + '</div>';
     }
 
@@ -299,7 +299,7 @@ padding:2px 10px;font-weight:700;margin-left:8px}
       const sid = top3[0].feature.properties.id;   // 역 ID 로 찾는다 (IMPL12)
       const dv = StationDev.of(sid);
       if (dv) {
-        h += `<div class="iv-card"><h4>🏗️ 앞으로 들어올 세대 (${esc(nm)}역 일대)</h4>` +
+        h += `<div class="iv-card"><h4><i data-ic="building"></i> 앞으로 들어올 세대 (${esc(nm)}역 일대)</h4>` +
           StationDev.sectionHtml(sid) + '</div>';
       }
     }
@@ -308,7 +308,7 @@ padding:2px 10px;font-weight:700;margin-left:8px}
     if (g) {
       const nm = g.feature.properties.name_ko;
       const gLines = (g.feature.properties.lines || []).filter(isGtxLine);
-      h += `<div class="iv-card iv-gtx"><h4>🚄 가장 가까운 GTX역</h4>
+      h += `<div class="iv-card iv-gtx"><h4><i data-ic="train"></i> 가장 가까운 GTX역</h4>
         <div class="iv-row"><b>${esc(nm)}</b><span>도보 ${fmtWalk(g.dist)}</span></div>
         <div class="iv-reason">${g.kind === 'exit'
           ? `${esc(g.exitNo)}번 출구까지 ${fmtDist(g.dist)}`
@@ -318,11 +318,11 @@ padding:2px 10px;font-weight:700;margin-left:8px}
         ).join(' ')}</span></div>
       </div>`;
     } else {
-      h += `<div class="iv-card"><h4>🚄 가장 가까운 GTX역</h4><div>주변에 GTX역이 없습니다</div></div>`;
+      h += `<div class="iv-card"><h4><i data-ic="train"></i> 가장 가까운 GTX역</h4><div>주변에 GTX역이 없습니다</div></div>`;
     }
 
     // TOP3
-    h += `<div class="iv-card"><h4>🚉 가장 가까운 역 TOP 3</h4>`;
+    h += `<div class="iv-card"><h4><i data-ic="train"></i> 가장 가까운 역 TOP 3</h4>`;
     top3.forEach((t, i) => {
       const nm = t.feature.properties.name_ko;
       const lines = (t.feature.properties.lines || []);
@@ -338,12 +338,12 @@ padding:2px 10px;font-weight:700;margin-left:8px}
     h += `</div>`;
 
     // 반경 500m
-    h += `<div class="iv-card"><h4>📍 도보 500m 내</h4>
+    h += `<div class="iv-card"><h4><i data-ic="pin"></i> 도보 500m 내</h4>
       <div class="iv-row"><span>역 개수</span><b>${near.length}개</b></div>
       <div class="iv-row"><span>노선 수</span><b>${lineSet.size}개</b></div>
     </div>`;
 
-    h += `<div class="iv-note">⚠️ 추론 기반 분석입니다. 거리는 가장 가까운 <b>출구</b>까지의 직선거리에
+    h += `<div class="iv-note"><i data-ic="alert"></i> 추론 기반 분석입니다. 거리는 가장 가까운 <b>출구</b>까지의 직선거리에
       우회계수 ${DETOUR}를 곱한 보행거리 추정치입니다. 실제 도보 경로·경사·신호 대기와 다를 수 있습니다.
       점수는 자체 가중치 모델로 산출한 참고용 수치입니다.</div>`;
 

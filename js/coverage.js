@@ -150,7 +150,7 @@ background:var(--bg,#fff);color:var(--text,#222);font-size:13px;margin-bottom:10
         return `<option value="${esc(p.id)}">${esc(p.name_ko || p.id)}${esc(st)}</option>`;
       }).join('');
     panel.innerHTML = `
-<div id="cv-head">노선 영향권 <button id="cv-close" title="닫기">✕</button></div>
+<div id="cv-head">노선 영향권 <button id="cv-close" title="닫기" aria-label="닫기"><i data-ic="close"></i></button></div>
 <div id="cv-body">
   <div class="cv-row">
     <label>노선 선택</label>

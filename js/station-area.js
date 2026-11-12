@@ -421,7 +421,7 @@
     legendEl.hidden = true;
     legendEl.innerHTML =
       '<div class="sa-head"><b>역세권 범위</b><span class="sa-approx">근사</span>' +
-      '<button class="sa-close" type="button" aria-label="역세권 범위 끄기" title="끄기">✕</button></div>' +
+      '<button class="sa-close" type="button" aria-label="역세권 범위 끄기" title="끄기"><i data-ic="close"></i></button></div>' +
       '<div class="sa-row"><span class="sa-sw" style="border-color:' + COLORS[250] + '"></span>1차 250m</div>' +
       '<div class="sa-row"><span class="sa-sw" style="border-color:' + COLORS[350] + '"></span>2차 350m</div>' +
       '<p class="sa-note"><b>승강장 경계 기준이 아닌 근사 표시</b>입니다. ' +

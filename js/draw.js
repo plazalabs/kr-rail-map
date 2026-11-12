@@ -160,9 +160,9 @@ const DrawTools = (() => {
     memos.forEach(m => {
       const div = document.createElement('div');
       div.className = 'memo-item';
-      div.textContent = `📌 ${m.text}`;
+      div.textContent = m.text; if (div.insertAdjacentHTML && typeof Icons !== 'undefined') div.insertAdjacentHTML('afterbegin', Icons.svg('pin') + ' ');
       const del = document.createElement('button');
-      del.textContent = '✕'; del.className = 'memo-del';
+      del.innerHTML = Icons.svg('close'); del.setAttribute('aria-label', '삭제'); del.className = 'memo-del';
       del.onclick = () => { memos = memos.filter(x => x.id !== m.id); saveMemos(); refreshMemos(); };
       div.appendChild(del);
       div.onclick = (e) => { if (e.target !== del) map.flyTo({ center: [m.lng, m.lat], zoom: 14 }); };
@@ -242,7 +242,7 @@ const DrawTools = (() => {
       if (text && text.trim()) {
         memos.push({ id: Date.now(), lng: lngLat.lng, lat: lngLat.lat, text: text.trim() });
         saveMemos(); refreshMemos();
-        setStatus(`📌 메모 추가됨: ${text.trim().slice(0, 20)}`);
+        setStatus(`메모 추가됨: ${text.trim().slice(0, 20)}`);
       }
       return;
     }
@@ -294,7 +294,7 @@ const DrawTools = (() => {
     if (mode === 'measure') {
       const km = totalKm(pts.map(p => p.coord));
       setStatus(`측정 중: ${km.toFixed(2)} km ${hint()}`);
-    } else setStatus(hint() + (snapName ? ` · 📌 ${snapName}에 스냅됨` : ''));
+    } else setStatus(hint() + (snapName ? ` · ${snapName}에 붙음` : ''));
   }
 
   function undo() {
@@ -349,7 +349,7 @@ const DrawTools = (() => {
       const sw = document.createElement('span');
       sw.className = 'swatch'; sw.style.background = l.color;
       const del = document.createElement('button');
-      del.className = 'mini-del'; del.textContent = '✕'; del.title = '삭제';
+      del.className = 'mini-del'; del.innerHTML = Icons.svg('close'); del.setAttribute('aria-label', '삭제'); del.title = '삭제';
       del.addEventListener('click', () => {
         myLines = myLines.filter(x => x.id !== l.id);
         saveMyLines();
@@ -415,7 +415,7 @@ const DrawTools = (() => {
       const f = e.features[0];
       new maplibregl.Popup()
         .setLngLat(f.geometry.coordinates)
-        .setHTML(`<div style="max-width:200px"><b>📌 메모</b><br>${escapeHtml(f.properties.text)}</div>`)
+        .setHTML(`<div style="max-width:200px"><b><i data-ic="pin"></i> 메모</b><br>${escapeHtml(f.properties.text)}</div>`)
         .addTo(map);
     });
 

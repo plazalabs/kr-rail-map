@@ -14,7 +14,7 @@
   var B = function () { return typeof KrBoard !== 'undefined' ? KrBoard : null; };
 
   function sectionHtml(sid, name) {
-    var head = '<h3>💬 이 역 이야기</h3>';
+    var head = '<h3><i data-ic="message"></i> 이 역 이야기</h3>';
     if (!B() || !B().ready()) {
       return '<div class="sd-sec sd-talk" data-sid="' + esc(sid) + '">' + head +
         '<div class="sd-note">이 역에 대한 이야기를 나누는 곳이에요. 지금 준비 중이에요 · <a href="board.html">게시판</a></div></div>';
@@ -81,7 +81,7 @@
         if (!r.ok) { msg.textContent = r.why || '올리지 못했어요.'; return; }
         try { if (nick.trim()) localStorage.setItem(NICK_KEY, nick.trim().slice(0, 20)); } catch (e2) { /* 무시 */ }
         form.querySelector('.sd-talk-body').value = '';
-        msg.textContent = '올렸어요 ✓';
+        msg.textContent = '올렸어요';
         return load(sec, sid);
       }).catch(function () { btn.disabled = false; msg.textContent = '올리지 못했어요. 잠시 뒤 다시 해 주세요.'; });
     });

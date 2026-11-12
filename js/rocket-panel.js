@@ -141,13 +141,13 @@
     el.innerHTML =
       '<button class="rkp-grip mob-only" type="button" aria-label="시트 접기·펴기" aria-expanded="true"><i></i></button>' +
       '<div class="rkp-head"><p class="rkp-eyebrow">GTX 떡상 랭킹 · 수도권 <span id="rkp-total"></span>역</p>' +
-      '<button class="rkp-close" type="button" aria-label="떡상 패널 닫기">✕</button></div>' +
+      '<button class="rkp-close" type="button" aria-label="떡상 패널 닫기"><i data-ic="close"></i></button></div>' +
       '<h2 class="rkp-title" id="rkp-title" aria-live="polite"></h2>' +
       '<div class="rkp-seg" role="group" aria-label="기준">' +
         Object.keys(WEIGHT_LABEL).map(function (k) { return '<button type="button" data-w="' + k + '" aria-pressed="false">' + WEIGHT_LABEL[k] + '</button>'; }).join('') +
       '</div>' +
       '<div class="rkp-years" role="group" aria-label="이 해까지 개통한 노선으로 보기">' +
-        '<button type="button" class="rkp-play" aria-label="연도 차례로 보기">▶</button>' +
+        '<button type="button" class="rkp-play" aria-label="연도 차례로 보기"><i data-ic="play"></i></button>' +
         '<div class="rkp-chips" id="rkp-chips"></div>' +
       '</div>' +
       '<div id="rkp-hero"></div>' +
@@ -163,7 +163,7 @@
         '<span><i style="background:#0a8f4a"></i>떡상</span><span><i style="background:#3aa76d"></i>상승</span><span><i style="background:#9aa1a8"></i>보합</span><span><i style="background:#d9701a"></i>상대 하락</span><span><i style="background:#7a3fd0"></i>신규</span>' +
       '</div>' +
       '<div class="rkp-foot">' +
-        '<button type="button" class="rkp-wait" aria-pressed="false" title="처음 탈 때·갈아탈 때 출퇴근 시간에 열차를 기다리는 시간을 더합니다">⏱ 배차 포함</button>' +
+        '<button type="button" class="rkp-wait" aria-pressed="false" title="처음 탈 때·갈아탈 때 출퇴근 시간에 열차를 기다리는 시간을 더합니다"><i data-ic="clock"></i> 배차 포함</button>' +
       '</div>' +
       '<p class="rkp-note">업무지구(도심·여의도·강남)까지 걸리는 시간으로 매긴 수도권 순위 · 공개 자료 바탕 추정값 · <a href="data.html">출처</a></p>';
     document.getElementById('map-wrap').appendChild(el);
@@ -214,7 +214,7 @@
         if (!row || typeof StationShareImage === 'undefined') return;
         var t0 = b.textContent; b.disabled = true;
         StationShareImage.save(row, { doc: doc, y: st.y, w: st.w, wait: st.wait }).then(function (m) {
-          b.disabled = false; if (m) { b.textContent = m + ' ✓'; setTimeout(function () { b.textContent = t0; }, 1800); }
+          b.disabled = false; if (m) { b.textContent = m; setTimeout(function () { b.textContent = t0; }, 1800); }
         }, function () { b.disabled = false; b.textContent = '저장 실패'; setTimeout(function () { b.textContent = t0; }, 1800); });
       }
     });
@@ -260,8 +260,8 @@
         '<b class="rkp-now">' + rankText(r.aft.rank, r.tie) + '</b>' + chg + '</div>' + svg + '</div>' +
       '<div class="rkp-bars">' + bars + '</div>' +
       '<div class="rkp-acts"><button type="button" data-act="detail">역 상세</button>' +
-        '<button type="button" data-act="link">🔗 링크 복사</button>' +
-        '<button type="button" data-act="share">📸 공유 이미지</button></div>' +
+        '<button type="button" data-act="link"><i data-ic="link"></i> 링크 복사</button>' +
+        '<button type="button" data-act="share"><i data-ic="camera"></i> 공유 이미지</button></div>' +
       '</div>';
   }
 
@@ -367,7 +367,7 @@
     var i = 0;
     st.y = s[0]; render(true);
     var b = el.querySelector('.rkp-play');
-    b.textContent = '❚❚'; b.setAttribute('aria-label', '재생 멈추기');
+    b.innerHTML = Icons.svg('pause'); b.setAttribute('aria-label', '재생 멈추기');
     playT = setInterval(function () {
       i++;
       if (i >= s.length) { stopPlay(); return; }
@@ -378,7 +378,7 @@
     if (!playT) return;
     clearInterval(playT); playT = null;
     var b = el && el.querySelector('.rkp-play');
-    if (b) { b.textContent = '▶'; b.setAttribute('aria-label', '연도 차례로 보기'); }
+    if (b) { b.innerHTML = Icons.svg('play'); b.setAttribute('aria-label', '연도 차례로 보기'); }
   }
 
   function copyLink(btn) {
@@ -389,7 +389,7 @@
     if (st.sel) u.searchParams.set('st', st.sel);
     if (st.y) u.searchParams.set('y', st.y);
     if (st.w !== 'avg') u.searchParams.set('w', st.w);
-    var done = function (ok) { var t = btn.textContent; btn.textContent = ok ? '복사됨 ✓' : '복사 실패'; setTimeout(function () { btn.textContent = t; }, 1500); };
+    var done = function (ok) { var t = btn.textContent; btn.textContent = ok ? '복사됨' : '복사 실패'; setTimeout(function () { btn.textContent = t; }, 1500); };
     try { navigator.clipboard.writeText(u.toString()).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
   }
 

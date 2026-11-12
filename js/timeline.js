@@ -155,8 +155,8 @@
       panel.className = 'rt-panel';
       panel.id = 'rt-panel';
       panel.innerHTML =
-        '<div class="rt-head"><span>🚧 개통 타임라인</span>' +
-        '<button class="rt-close" id="rt-close" title="닫기">✕</button></div>' +
+        '<div class="rt-head"><span><i data-ic="calendar"></i> 개통 타임라인</span>' +
+        '<button class="rt-close" id="rt-close" title="닫기" aria-label="닫기"><i data-ic="close"></i></button></div>' +
         '<div class="rt-body" id="rt-body"></div>';
       backdrop.appendChild(panel);
       document.body.appendChild(backdrop);

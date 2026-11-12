@@ -51,7 +51,7 @@
       active = (typeof DiagramMode !== 'undefined') && DiagramMode.isActive();
     } catch (e) {}
     if (!active) {
-      notify('다이어그램 모드를 먼저 켜주세요 (🗺️ 노선도 버튼)');
+      notify('다이어그램 모드를 먼저 켜주세요 (노선도 버튼)');
       return;
     }
 

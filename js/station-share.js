@@ -36,7 +36,7 @@
     g.fillStyle = '#ffffff'; g.font = '800 150px ' + F; g.fillText(r.aft.rank + '위', 80, 600);
     var w1 = g.measureText(r.aft.rank + '위').width;
     g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText(o.y === 'all' ? '개통 후' : o.y + '년 개통 후', 80 + w1 + 24, 600);
-    var bt = t === 'new' ? '✨ 신규' : (r.change > 0 ? '▲' + r.change + '계단' : r.change < 0 ? '▼' + (-r.change) + '계단' : '그대로') + '  ' + RankTable.TIERS[t].label;
+    var bt = t === 'new' ? '신규' : (r.change > 0 ? '▲' + r.change + '계단' : r.change < 0 ? '▼' + (-r.change) + '계단' : '그대로') + '  ' + RankTable.TIERS[t].label;
     g.font = '800 44px ' + F; var bw = g.measureText(bt).width + 56;
     roundRect(g, 80, 640, bw, 78, 39); g.fillStyle = COLS[t]; g.fill();
     g.fillStyle = '#fff'; g.fillText(bt, 108, 694);
@@ -52,7 +52,7 @@
     g.fillStyle = '#7f93b3'; g.font = '500 24px ' + F;
     g.fillText(o.wait ? '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림' : '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1000);
     g.fillStyle = '#c8d3e6'; g.font = '700 28px ' + F;
-    g.fillText('🚀 한국철도맵 GTX 떡상 랭킹 · plazalabs.github.io/kr-rail-map', 80, 1044);
+    g.fillText('한국철도맵 GTX 떡상 랭킹 · plazalabs.github.io/kr-rail-map', 80, 1044);
     return c;
   }
 

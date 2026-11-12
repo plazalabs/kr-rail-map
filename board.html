@@ -68,11 +68,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 <header class="top"><div class="wrap"><a class="logo" href="./"><i></i>한국철도맵</a>
 <nav><a href="./">지도</a><a href="./?rocket=1">떡상 랭킹</a><a href="board.html" aria-current="page">게시판</a></nav></div></header>
 <main class="wrap">
-<h1>💬 게시판</h1>
+<h1>게시판</h1>
 <p class="lede">우리 역 이야기, GTX 개통 이야기, 개발자에게 하고 싶은 말을 남겨 주세요. 로그인 없이 쓸 수 있어요.</p>
 <div class="side">
-  <a class="pill" id="fb-link" href="#" target="_blank" rel="noopener">🛠️ 오류 제보·기능 제안</a>
-  <a class="pill coffee" id="coffee-link" href="#" target="_blank" rel="noopener" hidden>☕ 개발자에게 커피 한잔</a>
+  <a class="pill" id="fb-link" href="#" target="_blank" rel="noopener"><i data-ic="tool"></i> 오류 제보·기능 제안</a>
+  <a class="pill coffee" id="coffee-link" href="#" target="_blank" rel="noopener" hidden><i data-ic="coffee"></i> 개발자에게 커피 한잔</a>
 </div>
 
 <div class="notice" id="not-ready" hidden>게시판을 준비하고 있어요. 곧 열립니다. 그동안 의견은 위의 <b>오류 제보·기능 제안</b>으로 보내 주세요.</div>
@@ -101,6 +101,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 </section>
 </main>
 
+<script src="js/icons.js"></script>
 <script src="js/board-config.js"></script>
 <script src="js/board.js"></script>
 <script>
@@ -128,7 +129,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     if (p.station) {
       // 역 이야기(역 상세에서 쓴 글)는 '역이름·역ID' — 이름만 보여 주고 누르면 지도에서 그 역
       const ps = KrBoard.parseStation(p.station);
-      const s = document.createElement(ps.id ? 'a' : 'span'); s.className = 'st'; s.textContent = '🚉 ' + ps.name;
+      const s = document.createElement(ps.id ? 'a' : 'span'); s.className = 'st'; s.textContent = ps.name; s.insertAdjacentHTML('afterbegin', Icons.svg('train') + ' ');
       if (ps.id) s.href = './?st=' + encodeURIComponent(ps.id);
       meta.append(s);
     }

@@ -117,11 +117,11 @@ const RankTable = (() => {
    *          (수도권은 절반 넘는 역이 개통 후 9분 넘게 빨라진다 — 순위만 보고 '밀림'이라 부르면 오해를 산다, 2026-11-12)
    *   new    ✨ 신규 : 지금은 철도로 못 가는 역 (새 노선이 생겨야 생기는 역) */
   const TIERS = {
-    rocket: { label: '떡상', icon: '🚀', hint: '100계단 이상 오름' },
-    up: { label: '상승', icon: '📈', hint: '10~99계단 오름' },
-    flat: { label: '보합', icon: '➖', hint: '9계단 오름 ~ 49계단 밀림' },
-    down: { label: '상대 하락', icon: '📉', hint: '시간은 줄어도 다른 역이 더 좋아져 50계단 이상 밀림' },
-    new: { label: '신규', icon: '✨', hint: '새 노선이 생겨야 갈 수 있는 역' },
+    rocket: { label: '떡상', ic: 'trend', hint: '100계단 이상 오름' },
+    up: { label: '상승', ic: 'up', hint: '10~99계단 오름' },
+    flat: { label: '보합', ic: 'flat', hint: '9계단 오름 ~ 49계단 밀림' },
+    down: { label: '상대 하락', ic: 'down', hint: '시간은 줄어도 다른 역이 더 좋아져 50계단 이상 밀림' },
+    new: { label: '신규', ic: 'sparkle', hint: '새 노선이 생겨야 갈 수 있는 역' },
   };
   function tierOf(r) {
     if (!r || r.isNew) return 'new';

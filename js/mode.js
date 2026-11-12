@@ -52,8 +52,8 @@
     var box = document.createElement('div');
     box.id = 'invest-tip';
     box.setAttribute('role', 'status');
-    box.innerHTML = '<p><b>🏠 투자 모드를 켰어요.</b> 역을 누르면 맨 위에 <b>평당 시세 · 전세가율 · 강남까지 시간</b>이 보여요. ' +
-      '지도 전체를 전세가율로 색칠하려면 왼쪽 목록(휴대폰은 ☰)의 <b>‘전세가율 색칠’</b>을 켜세요. ' +
+    box.innerHTML = '<p><b><i data-ic="home"></i> 투자 모드를 켰어요.</b> 역을 누르면 맨 위에 <b>평당 시세 · 전세가율 · 강남까지 시간</b>이 보여요. ' +
+      '지도 전체를 전세가율로 색칠하려면 왼쪽 목록(휴대폰은 메뉴 버튼)의 <b>‘전세가율 색칠’</b>을 켜세요. ' +
       '통근권 목록은 시세·전세가율 순으로 정렬돼요.</p><button type="button">알겠어요</button>';
     var timer = null;
     function close() { if (timer) clearTimeout(timer); if (box.parentNode) box.parentNode.removeChild(box); }

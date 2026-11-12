@@ -1417,3 +1417,9 @@ body.map-ready #map-skeleton .sk { animation: none; }
   .maplibregl-ctrl-group button { width: 36px; height: 36px; }
   .maplibregl-ctrl-attrib-button { width: 32px; height: 32px; }
 }
+
+/* 휴대폰: 길찾기 시트와 역 정보 시트가 겹쳐 지도가 하나도 안 보이던 것 (빠른 피드백 7번, 2026-11-13)
+   역 정보가 열려 있는 동안만 길찾기 시트를 숨긴다 — 결과는 그대로 있어 역 정보를 닫으면 다시 보인다. PC 는 나란히 그대로. */
+@media (max-width: 980px) {
+  body:has(#sd-panel.sd-open) #route-panel { display: none !important; }
+}

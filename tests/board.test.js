@@ -55,6 +55,12 @@ check('anon 은 고치기·지우기 권한 없음', !/grant[^;]*\b(update|delet
 check('client_id 는 anon 이 읽을 수 없음', /grant select \(id, created_at, kind, nick, station, body, reports\)/.test(sql));
 check('글자 수 제약 (내용 2~1000, 닉네임 1~20)', /char_length\(btrim\(body\)\) between 2 and 1000/.test(sql) && /char_length\(nick\) between 1 and 20/.test(sql));
 check('도배 막기 트리거 + 신고 3건 숨김', /board_posts_guard/.test(sql) && /hidden = \(reports \+ 1 >= 3\)/.test(sql));
+// 감사 N11 (2026-11-13): 신고에는 제한이 없었다 → board_guard_v2.sql (켜기 전에 한 번 더 실행)
+const g2 = read('supabase/board_guard_v2.sql');
+check('2판: 글 한 사람 1시간 20개·사이트 10분 120개', /interval '1 hour'\) >= 20/.test(g2) && /interval '10 minutes'\) >= 120/.test(g2));
+check('2판: 신고 자기 글 금지·한 사람 1시간 10건·사이트 10분 60건', /board_reports_guard/.test(g2) && /자기 글은 신고할 수 없어요/.test(g2) && /interval '1 hour'\) >= 10/.test(g2) && /interval '10 minutes'\) >= 60/.test(g2));
+check('2판: IP 를 모으지 않음', !/x-forwarded-for|cf-connecting-ip|request\.headers/i.test(g2));
+check('DB 안내(한국어)를 그대로 보여 줌 — 글쓰기·신고', /\/\[가-힣\]\/\.test\(msg\)/.test(read('js/board.js')) && /r\.why \|\| '신고 실패'/.test(read('board.html')));
 
 console.log('\n[연결]');
 check('지도 메뉴에 게시판 링크', /href="board\.html"/.test(read('index.html')));

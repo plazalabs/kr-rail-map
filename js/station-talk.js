@@ -89,7 +89,7 @@
       var b = e.target.closest('.sd-talk-report'); if (!b || b.disabled) return;
       if (typeof confirm === 'function' && !confirm('이 글을 신고할까요? 3번 신고되면 숨겨져요.')) return;
       b.disabled = true;
-      B().report(b.getAttribute('data-id')).then(function (r) { b.textContent = r.ok ? (r.already ? '이미 신고함' : '신고됨') : '실패'; });
+      B().report(b.getAttribute('data-id')).then(function (r) { b.textContent = r.ok ? (r.already ? '이미 신고함' : '신고됨') : (r.why || '실패'); });
     });
     return load(sec, sid);
   }

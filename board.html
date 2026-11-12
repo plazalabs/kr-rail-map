@@ -174,7 +174,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     const b = e.target.closest('.rep'); if (!b) return;
     if (!confirm('이 글을 신고할까요? 신고가 3번 쌓이면 숨겨집니다.')) return;
     const r = await KrBoard.report(b.dataset.id).catch(() => ({ ok: false }));
-    b.textContent = r.ok ? (r.already ? '이미 신고함' : '신고됨') : '신고 실패';
+    b.textContent = r.ok ? (r.already ? '이미 신고함' : '신고됨') : (r.why || '신고 실패');
     b.disabled = true;
   });
   syncTabs(); load(false);

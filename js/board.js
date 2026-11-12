@@ -74,7 +74,8 @@ const KrBoard = (() => {
     if (!r.ok) {
       let msg = '';
       try { msg = (await r.json()).message || ''; } catch (e) { msg = ''; }
-      return { ok: false, why: /같은 내용|잠시 뒤/.test(msg) ? msg : '올리지 못했어요 (' + r.status + '). 잠시 뒤 다시 해 주세요.' };
+      // 우리 트리거(supabase/board.sql·board_guard_v2.sql)가 보내는 안내는 한국어다 — 그대로 보여 준다
+      return { ok: false, why: /[가-힣]/.test(msg) ? msg : '올리지 못했어요 (' + r.status + '). 잠시 뒤 다시 해 주세요.' };
     }
     try { localStorage.setItem('krrail-board-last', String(now)); } catch (e) { /* 무시 */ }
     return { ok: true };
@@ -87,7 +88,12 @@ const KrBoard = (() => {
       body: JSON.stringify({ post_id: Number(postId), client_id: clientId() }),
     });
     if (r.status === 409) return { ok: true, already: true };   // 이미 신고한 글
-    return { ok: r.ok };
+    if (!r.ok) {
+      let msg = '';
+      try { msg = (await r.json()).message || ''; } catch (e) { msg = ''; }
+      return { ok: false, why: /[가-힣]/.test(msg) ? msg : '' };   // 자기 글·한 시간 10건·전체 상한 (board_guard_v2.sql)
+    }
+    return { ok: true };
   }
 
   // 역 이야기 — station 칸에 '역이름·역ID' (30자 안). 역 ID 로 묶어 동명역이 섞이지 않게 (js/station-talk.js)

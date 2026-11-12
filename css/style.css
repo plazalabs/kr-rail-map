@@ -784,6 +784,8 @@ body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
     max-height: 62vh; overflow-y: auto;
     border-radius: 14px;
   }
+  /* 그리기 시트는 지도를 눌러 점을 찍는 동안 떠 있다 — 글자가 커진(v117) 만큼 여백을 줄여 지도를 덜 가린다 */
+  #draw-panel { gap: 6px; padding: 10px 12px; }
   #route-result { max-height: 32vh; }
 
   .maplibregl-ctrl-top-right { top: 6px; right: 6px; }

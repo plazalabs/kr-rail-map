@@ -52,6 +52,7 @@ const KrBoard = (() => {
     const q = new URLSearchParams({ select: 'id,created_at,kind,nick,station,body,reports', order: 'created_at.desc', limit: String((opts && opts.limit) || 50) });
     if (opts && opts.kind && KINDS[opts.kind]) q.set('kind', 'eq.' + opts.kind);
     if (opts && opts.station) q.set('station', 'eq.' + opts.station);
+    if (opts && opts.stationId && /^st-[0-9]+$/.test(opts.stationId)) q.set('station', 'like.*·' + opts.stationId);
     if (opts && opts.before) q.set('created_at', 'lt.' + opts.before);
     const r = await fetch(base(c) + 'board_posts?' + q.toString(), { headers: headers(c) });
     if (!r.ok) throw new Error('목록을 불러오지 못했어요 (' + r.status + ')');
@@ -89,6 +90,18 @@ const KrBoard = (() => {
     return { ok: r.ok };
   }
 
+  // 역 이야기 — station 칸에 '역이름·역ID' (30자 안). 역 ID 로 묶어 동명역이 섞이지 않게 (js/station-talk.js)
+  function stationKey(name, id) {
+    id = String(id || '');
+    const room = LIMIT.station - id.length - 1;
+    return String(name || '').trim().slice(0, Math.max(0, room)) + '·' + id;
+  }
+  // '광운대·st-355172776' → { name: '광운대', id: 'st-355172776' } · 옛 글('광운대') → { name: '광운대', id: null }
+  function parseStation(s) {
+    const m = /^(.*)·(st-[0-9]+)$/.exec(String(s || ''));
+    return m ? { name: m[1], id: m[2] } : { name: String(s || ''), id: null };
+  }
+
   // '3분 전', '어제', '11월 9일'
   function ago(iso, now) {
     const t = Date.parse(iso); now = now || Date.now();
@@ -101,7 +114,7 @@ const KrBoard = (() => {
     return (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
   }
 
-  return { KINDS, LIMIT, ready, validate, list, post, report, clientId, ago, cfg };
+  return { KINDS, LIMIT, ready, validate, list, post, report, clientId, ago, cfg, stationKey, parseStation };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = KrBoard;

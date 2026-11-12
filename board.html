@@ -125,7 +125,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     const k = document.createElement('span'); k.className = 'kind'; k.textContent = KrBoard.KINDS[p.kind] || '자유';
     const n = document.createElement('span'); n.className = 'nick'; n.textContent = p.nick || '익명';
     meta.append(k, n);
-    if (p.station) { const s = document.createElement('span'); s.className = 'st'; s.textContent = '🚉 ' + p.station; meta.append(s); }
+    if (p.station) {
+      // 역 이야기(역 상세에서 쓴 글)는 '역이름·역ID' — 이름만 보여 주고 누르면 지도에서 그 역
+      const ps = KrBoard.parseStation(p.station);
+      const s = document.createElement(ps.id ? 'a' : 'span'); s.className = 'st'; s.textContent = '🚉 ' + ps.name;
+      if (ps.id) s.href = './?st=' + encodeURIComponent(ps.id);
+      meta.append(s);
+    }
     const t = document.createElement('time'); t.dateTime = p.created_at; t.textContent = KrBoard.ago(p.created_at); t.title = new Date(p.created_at).toLocaleString('ko-KR'); meta.append(t);
     const r = document.createElement('button'); r.className = 'rep'; r.type = 'button'; r.textContent = '신고'; r.dataset.id = p.id; meta.append(r);
     const b = document.createElement('div'); b.className = 'body'; b.textContent = p.body;

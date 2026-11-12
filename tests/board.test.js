@@ -60,5 +60,26 @@ check('지도 메뉴에 게시판 링크', /href="board\.html"/.test(read('index
 check('서비스워커 앱 셸에 board.html·board.js·board-config.js', ['board.html', 'js/board.js', 'js/board-config.js'].every(f => read('sw.js').includes("'./" + f + "'")));
 check('사이트맵에 board.html', /kr-rail-map\/board\.html/.test(read('sitemap.xml')));
 
-console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
-process.exit(fail ? 1 : 0);
+console.log('\n[역 이야기] station 칸 = 역이름·역ID (2026-11-12)');
+check("stationKey('광운대','st-355172776')", B.stationKey('광운대', 'st-355172776') === '광운대·st-355172776');
+const longKey = B.stationKey('디지털미디어시티디지털미디어시티', 'st-12345678901');
+check('긴 이름도 30자 안 + ID 는 온전히', longKey.length <= B.LIMIT.station && longKey.endsWith('·st-12345678901'), longKey);
+check('parseStation 새 글', JSON.stringify(B.parseStation('광운대·st-355172776')) === JSON.stringify({ name: '광운대', id: 'st-355172776' }));
+check('parseStation 옛 글(이름만)', JSON.stringify(B.parseStation('광운대')) === JSON.stringify({ name: '광운대', id: null }));
+check('validate 가 stationKey 를 자르지 않는다', B.validate({ kind: 'station', body: '좋아요 좋아요', station: longKey }).post.station === longKey);
+{
+  // list({stationId}) 가 만드는 주소 — like.*·역ID, 이상한 ID 는 무시
+  const seen = [];
+  global.window = { KR_BOARD_CONFIG: { supabaseUrl: 'https://abcdefgh.supabase.co', anonKey: 'x'.repeat(40) } };
+  global.fetch = async (u) => { seen.push(u); return { ok: true, json: async () => [] }; };
+  (async () => {
+    await B.list({ kind: 'station', stationId: 'st-355172776' });
+    await B.list({ kind: 'station', stationId: 'st-1&station=eq.x' });
+    const u1 = decodeURIComponent(seen[0]), u2 = decodeURIComponent(seen[1]);
+    check('역 ID 로 거르기: station=like.*·st-355172776 + kind=eq.station', /station=like\.\*·st-355172776/.test(u1) && /kind=eq\.station/.test(u1), u1);
+    check('ID 모양이 아니면 거르기 안 붙임 (주소 끼워넣기 막기)', !/station=/.test(u2), u2);
+    console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
+    process.exit(fail ? 1 : 0);
+  })();
+}
+

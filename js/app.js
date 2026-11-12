@@ -71,6 +71,9 @@ const styleReadyP = new Promise(res => {
   map.once('style.load', res);
   map.once('load', res);   // 안전망 — 둘 중 먼저 오는 것
 });
+// 첫 로딩 자리 표시 걷기 (작업 7) — 배경 지도 설계도가 오면, 늦어도 10초 뒤엔 무조건
+styleReadyP.then(() => document.body.classList.add('map-ready'));
+setTimeout(() => document.body.classList.add('map-ready'), 10000);
 
 /* 배경 지도 서버가 죽었을 때 (2026-11-12) — 노선은 배경 지도 '설계도'(스타일 JSON)가 와야 그릴 수 있다.
  * 무료 서버(OpenFreeMap)가 응답하지 않으면 노선까지 영영 안 뜬다. 8초 안에 설계도가 안 오거나 설계도 오류가 나면
@@ -1356,6 +1359,8 @@ function highlightRoute(path, legs) {
     const legend = document.createElement('div');
     legend.className = 'route-legend';
     legend.id = 'route-legend';
+    // 겹침 규칙 ② (작업 8): 경로 범례와 처음 안내 카드는 둘 다 왼쪽 아래 — 길찾기를 쓰기 시작했으니 안내는 닫는다
+    if (window.Guide && document.getElementById('guide-card')) window.Guide.close();
     legend.innerHTML = seen.map(x =>
       '<span><i style="background:' + x.color + '"></i>' + x.name + '</span>').join('');
     if (host) host.appendChild(legend);

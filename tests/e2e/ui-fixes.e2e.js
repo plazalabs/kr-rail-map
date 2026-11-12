@@ -162,6 +162,7 @@ const want = s => !ONLY.length || ONLY.includes(s);
   if (want('6')) {
     await fresh();
     const o = await press('#diagram-btn'); await sleep(2500);
+    await ensureToolbar(b, '#toolbar');   // 980px 이하: 저장 버튼은 더보기 시트 안 (작업 1)
     await ev(`document.querySelector('#toolbar > .tb-dropdown:nth-child(${DROP['저장']}) .tb-dropbtn').scrollIntoView({block:'center', inline:'nearest'}); 0`); await sleep(150);
     const drop = await info(`#toolbar > .tb-dropdown:nth-child(${DROP['저장']}) .tb-dropbtn`);
     const d0 = downloads.length;

@@ -6,7 +6,7 @@
  * 실행: node tests/e2e/run.js --only ktx-fare
  */
 'use strict';
-const { launch, sleep, BASE, recorder, outDir } = require('./lib/cdp');
+const { launch, sleep, BASE, recorder, outDir, ensureToolbar } = require('./lib/cdp');
 const path = require('path');
 const R = recorder('ktx-fare');
 const OUT = outDir('ktx-fare');
@@ -21,6 +21,7 @@ async function waitFor(b, expr, ms) {
   return null;
 }
 async function press(b, sel) {
+  await ensureToolbar(b, sel);   // 980px 이하: 툴바는 더보기 시트 안 (작업 1)
   const i = await b.evaluate(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null; e.scrollIntoView({block:'center', inline:'nearest'});
     const r = e.getBoundingClientRect(); const t = document.elementFromPoint(r.x + r.width/2, r.y + r.height/2);
     return { x: r.x + r.width/2, y: r.y + r.height/2, on: !!t && (t === e || e.contains(t)), top: t && (t.id || t.className || t.tagName) }; })()`);

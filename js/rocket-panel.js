@@ -25,6 +25,11 @@
   }
   function when(y) { return y === 'all' ? '모두 개통하면' : y + '년,'; }
   function rankText(rk, tie) { return rk == null ? '—' : (tie ? '공동 ' : '') + rk + '위'; }
+  // 큰 순위 숫자: 보이는 숫자만 올라가고(css .rkp-now[data-n]) 진짜 글자는 최종값 (작업 6)
+  function rankBig(rk, tie) {
+    if (rk == null || !(rk > 0) || rk > 9999) return '<b class="rkp-now">' + rankText(rk, tie) + '</b>';
+    return '<b class="rkp-now" data-n="' + rk + '" data-pre="' + (tie ? '공동 ' : '') + '" style="--rkp-n:' + rk + '"><span class="rkp-now-t">' + rankText(rk, tie) + '</span></b>';
+  }
 
   // 가장 많이 빨라지는 업무지구 (지금 갈 수 없던 곳이 생기면 그곳)
   function bestDest(r) {
@@ -257,7 +262,7 @@
     return '<div class="rkp-hero t-' + t + '">' +
       '<p class="rkp-hero-where">선택한 역 · ' + esc(where || '수도권') + '</p>' +
       '<div class="rkp-hero-main"><div class="rkp-rankline"><span class="rkp-name">' + esc(r.name) + '</span>' + before +
-        '<b class="rkp-now">' + rankText(r.aft.rank, r.tie) + '</b>' + chg + '</div>' + svg + '</div>' +
+        rankBig(r.aft.rank, r.tie) + chg + '</div>' + svg + '</div>' +
       '<div class="rkp-bars">' + bars + '</div>' +
       '<div class="rkp-acts"><button type="button" data-act="detail">역 상세</button>' +
         '<button type="button" data-act="link"><i data-ic="link"></i> 링크 복사</button>' +

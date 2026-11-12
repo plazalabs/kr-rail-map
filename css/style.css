@@ -1107,6 +1107,7 @@ body[data-theme="dark"], body[data-theme="eclipse"], body[data-theme="neon"] { -
   /* 떡상 패널이 열리면 오른쪽 자리를 비운다 */
   body.rk-open #toolbar { right: 412px; max-width: calc(100% - 472px); justify-content: flex-start; }
   body.rk-open .maplibregl-ctrl-top-right { right: 400px; }
+  body.rk-open .sa-legend { right: 408px; }   /* 겹침 규칙 ① (작업 8) */
   /* 패널이 열리면 툴바를 조금 줄여 1440px 에서도 한 줄 (필요 748 → 약 620px) */
   body.rk-open #toolbar { gap: 4px; }
   body.rk-open #toolbar button, body.rk-open #toolbar .tb-dropbtn { padding: 7px 10px; font-size: var(--fs-sm); }
@@ -1349,3 +1350,31 @@ i[data-ic] { display: inline-flex; align-items: center; font-style: normal; line
 .hit-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px 4px; font-size: var(--fs-xs); font-weight: 700; color: var(--muted); }
 .hit-clear { border: 0; background: none; color: var(--muted); font: inherit; font-size: var(--fs-xs); cursor: pointer; padding: 2px 4px; border-radius: 6px; }
 .hit-clear:hover { color: var(--text); background: var(--hover); }
+
+/* 첫 로딩 스켈레톤 (작업 7) — 눌리지 않게(pointer-events:none), 움직임 줄이기면 반짝임 없음 */
+@keyframes kr-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.sk {
+  display: block; border-radius: 10px;
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
+  background-size: 200% 100%; animation: kr-shimmer 1.3s linear infinite;
+}
+.sk-list { display: grid; gap: 8px; padding: 4px 0; }
+.sk-list .sk { height: 30px; }
+.sk-list .sk:nth-child(2n) { width: 82%; }
+#map-skeleton {
+  position: absolute; inset: 0; z-index: 5; pointer-events: none;
+  background: var(--surface); transition: opacity .35s, visibility .35s;
+}
+#map-skeleton .sk { position: absolute; height: 10px; }
+#map-skeleton .sk-a { left: 12%; top: 38%; width: 58%; transform: rotate(-8deg); }
+#map-skeleton .sk-b { left: 28%; top: 54%; width: 46%; transform: rotate(12deg); }
+#map-skeleton .sk-c { left: 40%; top: 22%; width: 10px; height: 46%; }
+body.map-ready #map-skeleton { opacity: 0; visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+
+/* 떡상 패널 큰 순위 카운트업 (작업 6) */
+@property --rkp-n { syntax: '<integer>'; inherits: false; initial-value: 0; }
+@keyframes kr-count { from { --rkp-n: 0; } }
+.rkp-now[data-n] { counter-reset: rkn var(--rkp-n); animation: kr-count .7s cubic-bezier(.2,.7,.2,1); }
+.rkp-now[data-n]::before { content: attr(data-pre) counter(rkn) "위" / ""; }
+.rkp-now[data-n] .rkp-now-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

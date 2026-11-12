@@ -1044,6 +1044,7 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
   #route-panel .rc-nf-time { font-size: var(--fs-lg); }
   #route-panel .rc-tabs { margin-bottom: 4px; }
   #route-panel .rc-insight { margin: 4px 0; }
+  #route-panel .rc-fare { margin: -2px 0 4px; padding: 3px 8px; line-height: 1.4; }   /* 별도 운임 줄이 늘어난 만큼 (2026-11-13) */
   #route-panel .unopened-notice { margin: 4px 0; padding: 5px 8px; }
   #route-result .leg { padding: 3px 0; }
   #route-result .total { margin-bottom: 4px; padding: 6px 9px; }

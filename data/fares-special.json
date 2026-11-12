@@ -1,0 +1,43 @@
+{
+  "updated": "2026-11-13",
+  "note": "수도권 통합요금(1,550원 + 거리)에 더해 노선 운영사가 따로 받는 별도 운임. 성인·교통카드 기준. js/route-compare.js 가 읽는다(못 읽으면 같은 값의 기본값을 쓴다).",
+  "lines": {
+    "seoul-metropolitan-subway-shinbundang-line": {
+      "name": "신분당선",
+      "kind": "sections",
+      "sections": [
+        { "id": "A", "label": "신사~강남", "stations": ["신사", "논현", "신논현", "강남"] },
+        { "id": "B", "label": "강남~정자", "stations": ["강남", "양재", "양재시민의숲", "청계산입구", "판교", "정자"] },
+        { "id": "C", "label": "정자~광교", "stations": ["정자", "미금", "동천", "수지구청", "성복", "상현", "광교중앙", "광교"] }
+      ],
+      "fare": { "A": 700, "B": 1000, "C": 1000, "BC": 1500, "AB": 1700, "AC": 1700, "ABC": 2200 },
+      "source": "https://www.shinbundang.co.kr/dxline/dxline4_1.jsp",
+      "source_note": "신분당선 운임안내(2025-06-28 시행): 신사~강남 700, 강남~정자 1,000, 정자~광교 1,000, 강남~정자+정자~광교 1,500, 신사~강남+다른 한 구간 1,700, 세 구간 2,200원. 공식 페이지 글자가 일부 깨져 있어 두 구간 조합 이름은 금액 구조로 맞춤(2026-11-13 확인)"
+    },
+    "great-train-express-line-a": {
+      "name": "GTX-A",
+      "kind": "distance",
+      "base": 1650,
+      "base_km": 10,
+      "per_step": 150,
+      "step_km": 5,
+      "weekend_base": 1300,
+      "source": "https://www.gtx-a.com/fareIF.do",
+      "source_note": "GTX-A 운임(평일, 선·후불 교통카드): 기본 3,200 = 수도권 1,550 + 별도 1,650, 5km당 250 = 거리 100 + 별도 150. 주말 기본 2,850(별도 1,300). 공식 구간 요금으로 맞춤 확인: 수서~동탄 4,450 · 수서~성남 3,450 · 수서~구성 3,950 · 운정중앙~서울역 4,450"
+    },
+    "arex": {
+      "name": "공항철도",
+      "kind": "independent",
+      "integrated_until": "청라국제도시",
+      "independent": ["청라국제도시", "영종", "운서", "공항화물청사", "인천공항1터미널"],
+      "terminal_link": ["인천공항1터미널", "인천공항2터미널"],
+      "base": 1200,
+      "base_km": 10,
+      "per_km": 130,
+      "terminal_per_km": 108.02,
+      "round_down": 10,
+      "source": "https://www.airportrailroad.com/train/normal/fare",
+      "source_note": "공항철도 일반열차: 서울역~청라국제도시는 수도권 요금, 청라국제도시~인천공항1터미널은 독립운임 1,200(10km) + 1km당 130, 1터미널~2터미널은 1km당 108.02. 공식 예: 서울역→인천공항1터미널 4,750 · →2터미널 5,350. 우리 거리(지도 선로 기준)로 1터미널은 4,750 일치, 2터미널은 약 20원 차이"
+    }
+  }
+}

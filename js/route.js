@@ -694,7 +694,7 @@ const RouteFinder = (() => {
     // leg 분해 (노선 바뀌면 환승)
     const legs = [];
     let legStart = 0, curLine = edges[0] ? (edges[0].lineId || null) : null;
-    let minutes = 0, legKm = 0;
+    let minutes = 0, legKm = 0, segs = [];   // segs: 지난 역 쌍·거리 (공항철도 독립구간 요금)
     // 첫 구간부터 KTX 면 접근 시간을 붙인다
     minutes += accessMinutes(curLine);
     for (let i = 0; i < edges.length; i++) {
@@ -709,17 +709,18 @@ const RouteFinder = (() => {
           ? transferMinutes(path[i], curLine, lid, path[i - 1], path[i + 1]) : 0;
         const wt = transferWait(lid, curLine, path[i], path[i - 1], path[i + 1]);
         legs.push({ lineId: curLine, from: path[legStart], to: path[i],
-                    walk: curLine === null, distKm: legKm, transferAfter: tm, waitAfter: wt,
+                    walk: curLine === null, distKm: legKm, transferAfter: tm, waitAfter: wt, segs,
                     platform: !!(curLine && lid && isPlatformTransfer(path[i], curLine, lid, path[i - 1], path[i + 1])) });
         if (tm) minutes += tm;
         minutes += wt;
         minutes += accessMinutes(lid);
-        legStart = i; curLine = lid; legKm = 0;
+        legStart = i; curLine = lid; legKm = 0; segs = [];
       }
       legKm += e.distKm;
+      segs.push({ a: path[i], b: path[i + 1], km: e.distKm || 0 });
     }
     legs.push({ lineId: curLine, from: path[legStart], to: path[path.length - 1],
-                walk: curLine === null, distKm: legKm, transferAfter: 0 });
+                walk: curLine === null, distKm: legKm, transferAfter: 0, segs });
 
     // 각 leg 에 개통 상태를 실어 보낸다 → 화면에서 '미개통' 배지로 표시.
     const unopenedNames = [];

@@ -142,5 +142,48 @@ console.log("\n[탭 요약] '최적' 보다 빠른 길이 있으면 대가(환�
     hr.time && hr.fare && `최적 ${hr.time.minutes}분·환승 ${hr.time.transfers} / 요금 ${hr.fare.minutes}분·환승 ${hr.fare.transfers} — ${msg}`);
 }
 
+// ── 감사 N1~N3 (2026-11-13): 신분당선·GTX-A·공항철도 별도 운임 — 운영사 공식 요금과 같아야 한다 ──
+// 출처: data/fares-special.json (신분당선 dxline4_1, gtx-a.com/fareIF.do, airportrailroad.com 일반열차 운임)
+{
+  RC.loadSpecialFares(JSON.parse(fs.readFileSync(path.join(ROOT, 'data/fares-special.json'), 'utf8')));
+  const onLine = (name, line) => (stations.features.find(f => f.properties.name_ko === name && (!line || (f.properties.lines || []).includes(line))) || {}).properties;
+  const SB = 'seoul-metropolitan-subway-shinbundang-line', GA = 'great-train-express-line-a';
+  const nowFare = (a, b, la, lb) => {
+    const A = onLine(a, la), B = onLine(b, lb || la);
+    const r = A && B && RC.findAll(A.id, B.id, { includeUnopened: false }).now;
+    return r ? RC.calcFareDetail(r, r.distKm || 0) : null;
+  };
+  const OFFICIAL = [
+    ['수원', '강남', null, SB, 3250, '수인분당 → 정자 → 신분당(강남~정자 +1,000)'],
+    ['판교', '강남', SB, SB, 2650, '1,650 + 신분당 강남~정자 1,000'],
+    ['신사', '강남', SB, SB, 2250, '1,550 + 신분당 신사~강남 700'],
+    ['수서', '동탄', GA, GA, 4450, 'GTX-A 공식 구간 요금'],
+    ['운정중앙', '서울', GA, GA, 4450, 'GTX-A 공식 운정중앙~서울역'],
+    ['서울', '인천공항1터미널', 'arex', 'arex', 4750, '공항철도 공식 서울역~1터미널'],
+  ];
+  OFFICIAL.forEach(([a, b, la, lb, want, why]) => {
+    const fd = nowFare(a, b, la, lb);
+    check(`요금 ${a}→${b} = 공식 ${want.toLocaleString()}원 (${why})`, fd && fd.total === want, fd && `${fd.total}원 ` + fd.parts.map(p => p.kind + ':' + p.fare).join('+'));
+  });
+  // 별도 운임 줄은 출처가 '공식'으로 보여야 한다 (합계만 바꾸고 출처 표기를 빼면 안 된다)
+  const sw = nowFare('수원', '강남', null, SB);
+  const html = RC.fareBreakdownHtml(sw);
+  check('수원→강남 내역에 "신분당선 별도 운임" + 운영사 공식 요금', /신분당선 별도 운임/.test(html) && /운영사 공식 요금/.test(html), html);
+  // 2터미널은 거리(지도 기준) 때문에 공식 5,350원과 수십 원 차이 — '공식 계산식' 으로 밝힌다
+  const t2 = nowFare('서울', '인천공항2터미널', 'arex', 'arex');
+  check('서울→2터미널은 공식 5,350원에서 ±50원 안, 출처는 공식 계산식', t2 && Math.abs(t2.total - 5350) <= 50 && t2.parts.some(p => p.kind === 'extra' && p.basis === 'formula'), t2 && t2.total + '원');
+  // 공항철도 통합구간만 타면 별도 운임 없음
+  const gm = nowFare('서울', '검암', 'arex', 'arex');
+  check('서울→검암(통합구간만)은 별도 운임 없음', gm && !gm.parts.some(p => p.kind === 'extra'), gm && gm.total + '원');
+  // 기존에 맞던 일반 전철 요금은 그대로
+  [['잠실', '홍대입구', 1850], ['김포공항', '여의도', 1650], ['청량리', '인천', 2350], ['의정부', '수원', 2650]].forEach(([a, b, want]) => {
+    const fd = nowFare(a, b);
+    check(`일반 전철 ${a}→${b} = ${want.toLocaleString()}원 (그대로)`, fd && fd.total === want, fd && fd.total + '원');
+  });
+  // 개통 전 GTX(B·C 등)를 쓰는 경로는 '추정' 표시
+  const fut = RC.calcFareDetail({ legs: [{ lineId: 'gtx-c', distKm: 20, from: 'x', to: 'y' }] }, 20);
+  check('개통 전 GTX 구간은 공식 요금 없음 → 추정 표시', fut.estimated && fut.parts.some(p => p.kind === 'pending'), JSON.stringify(fut.parts));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

@@ -86,6 +86,39 @@ const RouteCompare = (() => {
   const KTX_CUT = 0.9;
   let ktxFares = null;           // { lines: { lineId: { pairs: { '가|나': 원 } } }, meta }
   function loadKtxFares(doc) { ktxFares = (doc && doc.lines) ? doc : null; }
+
+  // ── 노선별 별도 운임 (감사 N1~N3, 2026-11-13) ─────────────────────────────
+  // 신분당선·GTX-A·공항철도 독립구간은 수도권 통합요금(1,550원+거리)에 운영사 별도 운임이 더 붙는다.
+  // 예전엔 전부 일반 전철 공식 하나로 계산해 수천 원 낮게 보였다. 값·출처는 data/fares-special.json (못 읽으면 아래 같은 값).
+  let SPECIAL = {
+    'seoul-metropolitan-subway-shinbundang-line': { name: '신분당선', kind: 'sections',
+      sections: [{ id: 'A', label: '신사~강남', stations: ['신사', '논현', '신논현', '강남'] },
+        { id: 'B', label: '강남~정자', stations: ['강남', '양재', '양재시민의숲', '청계산입구', '판교', '정자'] },
+        { id: 'C', label: '정자~광교', stations: ['정자', '미금', '동천', '수지구청', '성복', '상현', '광교중앙', '광교'] }],
+      fare: { A: 700, B: 1000, C: 1000, BC: 1500, AB: 1700, AC: 1700, ABC: 2200 } },
+    'great-train-express-line-a': { name: 'GTX-A', kind: 'distance', base: 1650, base_km: 10, per_step: 150, step_km: 5, weekend_base: 1300 },
+    'arex': { name: '공항철도', kind: 'independent', independent: ['청라국제도시', '영종', '운서', '공항화물청사', '인천공항1터미널'],
+      terminal_link: ['인천공항1터미널', '인천공항2터미널'], base: 1200, base_km: 10, per_km: 130, terminal_per_km: 108.02, round_down: 10 },
+  };
+  function loadSpecialFares(doc) { if (doc && doc.lines) SPECIAL = Object.assign({}, SPECIAL, doc.lines); }
+  // GTX-A 의 미개통 구간(서울역~수서·창릉)은 개통하면 같은 요금제일 것 — 다만 공식 발표 전이라 '추정'
+  const GTXA_FAMILY = ['great-train-express-line-a', 'gtx-a-seoul-suseo', 'gtx-a-changneung'];
+  const isFutureGtx = id => /^gtx-|great-train-express/.test(id || '') && !GTXA_FAMILY.includes(id);
+  const segName = id => String(sname(id) || '').replace(/역$/, '');
+  // 신분당선: 지난 구간(A·B·C)을 역 순서로 판정. 경계 역(강남·정자)에만 닿은 것은 그 구간을 지난 것이 아니다
+  function shinbundangSections(legs, rule) {
+    const order = [];
+    rule.sections.forEach(sec => sec.stations.forEach(n => { if (!order.includes(n)) order.push(n); }));
+    const bound = rule.sections.map(sec => [order.indexOf(sec.stations[0]), order.indexOf(sec.stations[sec.stations.length - 1])]);
+    const hit = new Set();
+    legs.forEach(l => {
+      const i = order.indexOf(segName(l.from)), j = order.indexOf(segName(l.to));
+      if (i < 0 || j < 0 || i === j) return;
+      const lo = Math.min(i, j), hi = Math.max(i, j);
+      rule.sections.forEach((sec, k) => { if (lo < bound[k][1] && hi > bound[k][0]) hit.add(sec.id); });
+    });
+    return Array.from(hit).sort().join('');
+  }
   const fareNorm = s => String(s || '').trim().replace(/[()]/g, '').replace(/역$/, '').replace(/\s/g, '');
   function officialKtxFare(lineId, fromId, toId) {
     const t = ktxFares && ktxFares.lines[lineId];
@@ -121,11 +154,51 @@ const RouteCompare = (() => {
     // 전철 거리는 실제로 탄 전철 구간(legs)만 더한다. 예전에는 '전체 거리 − KTX − 일반철도' 의 나머지로 셌는데,
     // 전체 거리(선형을 따라 잰 값)와 구간 거리 합이 몇 km 어긋나서 KTX 만 탄 서울→부산에도 전철 1,400원이 붙었다.
     // 구간 거리가 없는 옛 모양의 결과에서만 예전 방식으로 물러난다.
+    // 별도 운임 (신분당선·GTX-A·공항철도 독립구간). 공항철도 독립구간 거리는 수도권 거리에서 뺀다
+    const extraParts = [];
+    const legsOn = id => (r.legs || []).filter(l => !l.walk && l.lineId === id);
+    const sb = SPECIAL['seoul-metropolitan-subway-shinbundang-line'];
+    const sbLegs = legsOn('seoul-metropolitan-subway-shinbundang-line');
+    if (sb && sbLegs.length) {
+      const key = shinbundangSections(sbLegs, sb);
+      const fee = key ? (sb.fare[key] != null ? sb.fare[key] : key.split('').reduce((a, k) => a + (sb.fare[k] || 0), 0)) : 0;
+      if (fee > 0) extraParts.push({ kind: 'extra', line: '신분당선', detail: key.split('').map(k => (sb.sections.find(x => x.id === k) || {}).label).join('·'), fare: fee, basis: 'official' });
+    }
+    const ga = SPECIAL['great-train-express-line-a'];
+    const gaLegs = (r.legs || []).filter(l => !l.walk && GTXA_FAMILY.includes(l.lineId));
+    if (ga && gaLegs.length) {
+      const km = gaLegs.reduce((a, l) => a + (l.distKm || 0), 0);
+      const fee = ga.base + ga.per_step * Math.ceil(Math.max(0, km - ga.base_km) / ga.step_km);
+      const future = gaLegs.some(l => l.lineId !== 'great-train-express-line-a');
+      extraParts.push({ kind: 'extra', line: 'GTX-A', detail: '평일 기준 · 주말은 ' + (ga.base - ga.weekend_base).toLocaleString() + '원 낮음', fare: fee, basis: future ? 'estimate' : 'official' });
+    }
+    const ax = SPECIAL['arex'];
+    let arexIndepKm = 0;
+    if (ax) {
+      let ind = 0, term = 0;
+      legsOn('arex').forEach(l => (l.segs || []).forEach(sg => {
+        const a = segName(sg.a), b = segName(sg.b);
+        if (ax.terminal_link.includes(a) && ax.terminal_link.includes(b)) term += sg.km;
+        else if (ax.independent.includes(a) && ax.independent.includes(b)) ind += sg.km;
+      }));
+      if (ind > 0 || term > 0) {
+        arexIndepKm = ind + term;
+        let fee = ind > 0
+          ? ax.base + ax.per_km * Math.max(0, ind - ax.base_km) + ax.terminal_per_km * term
+          : ax.base + ax.terminal_per_km * Math.max(0, term - ax.base_km);
+        fee = Math.floor(fee / ax.round_down) * ax.round_down;
+        extraParts.push({ kind: 'extra', line: '공항철도', detail: '청라~공항 구간', fare: fee, basis: term > 0 ? 'formula' : 'official' });
+      }
+    }
+    // 개통 전 GTX(B·C 등) — 공식 요금이 없다. 일반 전철 요금으로만 셈했다는 사실을 밝힌다
+    const futureGtx = Array.from(new Set((r.legs || []).filter(l => !l.walk && isFutureGtx(l.lineId)).map(l => lineNameOf.get(l.lineId) || l.lineId)));
+    if (futureGtx.length) extraParts.push({ kind: 'pending', line: futureGtx.join('·'), fare: 0, basis: 'estimate' });
+    if (arexIndepKm > 0) metroLegKm = Math.max(0, metroLegKm - arexIndepKm);
     const metroKm = legKmKnown ? metroLegKm : Math.max(0, distKm - ktxKm - convKm);
     const metroPart = metroKm > 0 ? { kind: 'metro', fare: calcFare(metroKm), basis: 'formula' } : null;
     const convPart = convKm > 0 ? { kind: 'conventional', fare: calcConvFare(convKm), basis: 'estimate' } : null;
     if (metroPart && !order.includes('metro')) order.unshift('metro');   // 옛 모양(구간 거리 없음)
-    const parts = order.map(o => o === 'metro' ? metroPart : o === 'conventional' ? convPart : ktxParts[o]).filter(Boolean);
+    const parts = order.map(o => o === 'metro' ? metroPart : o === 'conventional' ? convPart : ktxParts[o]).filter(Boolean).concat(extraParts);
     const total = parts.reduce((a, p) => a + p.fare, 0);
     return { total, parts, estimated: parts.some(p => p.basis === 'estimate') };
   }
@@ -176,7 +249,7 @@ const RouteCompare = (() => {
     let legStart = 0, curLine = edges[0].lineId;
     let minutes = RF.accessMinutes(curLine);   // 첫 구간이 KTX 면 접근 시간
     // leg 별 거리도 남긴다 — 요금 계산에서 KTX 구간만 따로 떼어내야 한다
-    let km = 0;
+    let km = 0, segs = [];   // segs: 이 구간에서 지난 역 쌍과 거리 — 공항철도 독립구간 요금에 쓴다 (2026-11-13)
     edges.forEach((e, i) => {
       minutes += edgeMinutes(e);
       if (e.lineId !== curLine) {
@@ -184,16 +257,17 @@ const RouteCompare = (() => {
         const tm = (curLine !== null && e.lineId !== null)
           ? RF.transferMinutes(stations[i], curLine, e.lineId, stations[i - 1], stations[i + 1]) : 0;
         legs.push({ lineId: curLine, from: stations[legStart], to: stations[i],
-                    walk: curLine === null, distKm: km, transferAfter: tm,
+                    walk: curLine === null, distKm: km, transferAfter: tm, segs,
                     platform: !!(curLine && e.lineId && RF.isPlatformTransfer(stations[i], curLine, e.lineId, stations[i - 1], stations[i + 1])) });
         if (tm) minutes += tm;
         minutes += RF.accessMinutes(e.lineId);
-        legStart = i; curLine = e.lineId; km = 0;
+        legStart = i; curLine = e.lineId; km = 0; segs = [];
       }
       km += e.distKm;
+      segs.push({ a: stations[i], b: stations[i + 1], km: e.distKm || 0 });
     });
     legs.push({ lineId: curLine, from: stations[legStart], to: stations[stations.length - 1],
-                walk: curLine === null, distKm: km, transferAfter: 0 });
+                walk: curLine === null, distKm: km, transferAfter: 0, segs });
     const transfers = RF.countTransfers(legs);   // 이어 달리는 구간(GTX-A 미개통 구간)은 환승이 아니다
     return { legs, minutes: Math.round(minutes), transfers };
   }
@@ -466,6 +540,13 @@ const RouteCompare = (() => {
           : `<li>${seg} 약 ${won} <span class="rc-est">추정 — 공식 운임표에 없는 구간이라 통합 전 요금에 인하율 10%를 적용</span></li>`;
       }
       if (p.kind === 'conventional') return `<li>일반철도 약 ${won} <span class="rc-est">추정 — 거리로 계산</span></li>`;
+      if (p.kind === 'extra') {
+        const what = `${escapeHtml(p.line)} 별도 운임${p.detail ? ' (' + escapeHtml(p.detail) + ')' : ''}`;
+        if (p.basis === 'official') return `<li>${what} <b>+${won}</b> <span class="rc-src">운영사 공식 요금</span></li>`;
+        if (p.basis === 'formula') return `<li>${what} <b>+${won}</b> <span class="rc-src">공식 계산식 · 거리는 지도 기준이라 수십 원 다를 수 있음</span></li>`;
+        return `<li>${what} 약 +${won} <span class="rc-est">추정 — 개통 전이라 공식 요금 없음, 지금 운행 구간 요금제로 셈</span></li>`;
+      }
+      if (p.kind === 'pending') return `<li>${escapeHtml(p.line)} 요금 미정 <span class="rc-est">추정 — 개통 전, 더 비쌀 수 있음</span></li>`;
       return `<li>수도권 전철 ${won} <span class="rc-src">거리 기준 계산</span></li>`;
     }).join('');
     return `<ul class="rc-fare">${rows}</ul>`;
@@ -669,7 +750,7 @@ const RouteCompare = (() => {
 
   // 테스트에서 요금표를 직접 검증할 수 있도록 노출한다.
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
-  return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, fareBreakdownHtml,
+  return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, loadSpecialFares, fareBreakdownHtml,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
     compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf,
     _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich } };

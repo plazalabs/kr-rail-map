@@ -500,6 +500,23 @@
       "caveat": "표에 없는 역 쌍은 추정이다."
     },
     {
+      "id": "operator-special-fares",
+      "title": "노선별 별도 운임 (신분당선 · GTX-A · 공항철도)",
+      "provider": "운영사 공개 운임 안내를 보고 자체 정리 — 신분당선 · GTX-A · 공항철도 각 운영사 누리집",
+      "attribution": "신분당선·GTX-A·공항철도 운임 안내",
+      "url": "https://www.gtx-a.com/fareIF.do",
+      "licence": "own",
+      "obtained": "운영사 누리집 운임 안내(2026-11-13 확인): shinbundang.co.kr/dxline/dxline4_1.jsp · gtx-a.com/fareIF.do · airportrailroad.com/train/normal/fare",
+      "snapshot": "2026-11-13",
+      "used_for": "길찾기 요금 — 수도권 통합요금에 더하는 별도 운임",
+      "feeds": [],
+      "affects": [
+        "data/fares-special.json"
+      ],
+      "commercial": "allowed",
+      "caveat": "요금 금액(사실)을 옮겨 적은 것. 공항철도 2터미널 구간은 지도 거리로 계산해 수십 원 다를 수 있다. 운임이 바뀌면 이 파일을 고쳐야 한다."
+    },
+    {
       "id": "seoul-metro-runtimes",
       "title": "지하철 역간 소요시간 (1~8호선)",
       "provider": "서울교통공사 — 역간거리 및 소요시간",

@@ -399,7 +399,8 @@ const UI = (() => {
 
     whenReady(() => {
       const sum = document.getElementById('data-summary');
-      if (sum) sum.textContent = '노선 ' + LINES.length + '개 · 역 ' + STATIONS.length.toLocaleString() + '개';
+      // 숫자마다 기준을 밝힌다 — 위 '86' 은 전국·계획 포함, 목록 '54' 는 수도권 범위 (감사 N13, 2026-11-13)
+      if (sum) sum.textContent = '전국 노선 ' + LINES.length + '개(계획 포함) · 역 ' + STATIONS.length.toLocaleString() + '개';
       if (cleanDuplicates()) {
         try {
           const src = map.getSource('lines');

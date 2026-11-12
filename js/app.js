@@ -473,7 +473,7 @@ function renderLineList() {
       });
     box.appendChild(det);
   });
-  document.getElementById('line-count').textContent = `(${lines.length})`;
+  document.getElementById('line-count').textContent = `(${scope === 'metro' ? '수도권' : '전국'} ${lines.length})`;   // 기준을 밝힌다 (감사 N13)
 }
 
 /* ?line=<id> 로 특정 노선만 보기 */

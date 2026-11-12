@@ -62,6 +62,8 @@ for (const rule of NON_STOP) {
 }
 // 경춘선 25역 = 상봉~춘천 본선 + 청량리·회기·중랑(청량리 갈래) + 광운대(광운대 갈래). 선형 92km 는 갈래 선로까지 합친 길이라
 // 본선 영업거리(망우~춘천)와 다르다 — 연장은 잠그지 않고 역 수만 잠근다.
+// 대구 1호선: 2024-12 안심~하양 연장 신설역은 대구한의대병원·부호·하양 셋(KDI) — 옛 대구선 청천이 붙어 36역이던 것을 뺌. 연장 37.5km 는 연장 뒤 길이(위키 34.3 은 옛 값)라 역 수만 잠근다
+check('대구 1호선 35역 (청천은 대구선만)', members('daegu-metro-line-1').length === 35 && !members('daegu-metro-line-1').some(s => s.properties.name_ko === '청천'), members('daegu-metro-line-1').length);
 check('경춘선 25역 (청량리·광운대 갈래 포함 기준)', members('seoul-metropolitan-subway-gyeongchun-line').length === 25, members('seoul-metropolitan-subway-gyeongchun-line').length);
 check('GTX-C 본선에 상록수 없음 (갈래 gtx-c-sangnoksu 에만)', !members('gtx-c').some(s => s.properties.name_ko === '상록수') && members('gtx-c-sangnoksu').some(s => s.properties.name_ko === '상록수') && !line('gtx-c').properties.stops.includes('상록수'));
 

@@ -6,8 +6,8 @@
  "summary": {
   "lines": 82,
   "open_lines": 66,
-  "open_pairs": 1471,
-  "open_confirmed": 1462,
+  "open_pairs": 1470,
+  "open_confirmed": 1461,
   "open_confirmed_pct": 99.4,
   "open_lines_all_confirmed": 63
  },
@@ -129,8 +129,8 @@
   "daegu-metro-line-1": {
    "name": "대구 도시철도 1호선",
    "status": "open",
-   "stations": 36,
-   "confirmed": 36,
+   "stations": 35,
+   "confirmed": 35,
    "sources": [
     "osm-geometry",
     "osm-relation"
@@ -138,7 +138,10 @@
    "unconfirmed": [],
    "provisional": false,
    "partial": false,
-   "gap_reason": ""
+   "gap_reason": "",
+   "nonstop_removed": [
+    "청천"
+   ]
   },
   "daegu-metro-line-2": {
    "name": "대구 도시철도 2호선",

@@ -26,7 +26,8 @@ async function open(b, name, line) {
   const ilPct = il && +((il.match(/(\d+)%/) || [])[1]);
   R.check('투자 모드: 일산 역 상세에 전세가율 절 (%, 짝 수, 같은 단지·같은 면적)', !!il && ilPct >= 50 && /\d+쌍/.test(il) && /같은 단지/.test(il) && /신규 전세/.test(il), il && il.slice(0, 160));
   const gl = await b.evaluate(`(() => { const e = document.querySelector('#sd-panel .sd-glance'); return e ? e.innerText.replace(/\s+/g, ' ') : null; })()`);
-  R.check('역 상세 맨 위 한눈에: 평당 · 전세가율 · 강남까지', !!gl && /평당/.test(gl) && /전세가율/.test(gl) && /강남까지/.test(gl), gl);
+  // '강남까지' → '강남권까지' (강남·역삼·선릉·삼성 중 가장 빠른 역 — 감사 이전1, 2026-11-13)
+  R.check('역 상세 맨 위 한눈에: 평당 · 전세가율 · 강남권까지', !!gl && /평당/.test(gl) && /전세가율/.test(gl) && /강남권까지/.test(gl), gl);
   R.check('80% 이상 짝 수를 함께 보여 준다', !!il && /80% 이상/.test(il), il && il.slice(0, 200));
   const js = await open(b, '잠실', 'seoul-subway-line-2');
   const jsPct = js && +((js.match(/(\d+)%/) || [])[1]);

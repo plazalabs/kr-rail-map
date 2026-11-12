@@ -101,7 +101,20 @@
     var cb = $('layer-jeonse');
     if (cb) cb.addEventListener('change', sync);
     if (global.MutationObserver) new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    markSoon();
     sync();
+  }
+
+  // 게시판이 아직 안 켜졌으면(Supabase 키 없음) 탭·메뉴에 '준비 중' (회장님 결정 2026-11-13)
+  function markSoon() {
+    var on = typeof KrBoard !== 'undefined' && KrBoard.ready && KrBoard.ready();
+    if (on) return;
+    document.querySelectorAll('#tabbar [data-tab="board"], a.tb-menulink[href="board.html"]').forEach(function (a) {
+      if (a.querySelector('.soon')) return;
+      var em = document.createElement('em'); em.className = 'soon'; em.textContent = '준비 중';
+      a.appendChild(em);
+      a.setAttribute('aria-label', '게시판 (준비 중)');
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

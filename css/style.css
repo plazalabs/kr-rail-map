@@ -1398,3 +1398,8 @@ body.map-ready #map-skeleton .sk { animation: none; }
   body.drawer-open #m-search { visibility: hidden; }
   .sa-legend { top: 62px; }
 }
+
+/* 게시판 '준비 중' 표시 (Supabase 키 넣으면 사라짐) */
+.soon { white-space: nowrap; font-style: normal; font-size: var(--fs-xs); font-weight: 700; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 0 6px; margin-left: 6px; }
+#tabbar [data-tab="board"] { position: relative; }
+#tabbar [data-tab="board"] .soon { position: absolute; top: 2px; left: 50%; margin-left: 2px; line-height: 16px; padding: 0 5px; }

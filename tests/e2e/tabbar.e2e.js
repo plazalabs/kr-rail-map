@@ -28,7 +28,7 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
 
   const lay = await b.evaluate(`(() => {
     const bar = document.getElementById('tabbar'); const r = bar.getBoundingClientRect();
-    const tabs = [...bar.querySelectorAll('[data-tab]')].filter(e => getComputedStyle(e).display !== 'none').map(e => e.textContent.trim());
+    const tabs = [...bar.querySelectorAll('[data-tab]')].filter(e => getComputedStyle(e).display !== 'none').map(e => (e.querySelector('span') || e).textContent.trim());
     return { tabs, bottom: Math.round(r.bottom), h: Math.round(r.height), vis: getComputedStyle(bar).display,
       tb: getComputedStyle(document.getElementById('toolbar')).display };
   })()`);
@@ -79,7 +79,7 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
   await ready(d);
   const rail = await d.evaluate(`(() => { const t = document.getElementById('tabbar'); const r = t.getBoundingClientRect();
     return { disp: getComputedStyle(t).display, x: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height), vh: innerHeight,
-      tabs: [...t.querySelectorAll('[data-tab]')].filter(e => getComputedStyle(e).display !== 'none').map(e => e.textContent.trim()),
+      tabs: [...t.querySelectorAll('[data-tab]')].filter(e => getComputedStyle(e).display !== 'none').map(e => (e.querySelector('span') || e).textContent.trim()),
       tb: getComputedStyle(document.getElementById('toolbar')).display, sbLeft: Math.round(document.getElementById('sidebar').getBoundingClientRect().left) }; })()`);
   R.check('PC: 왼쪽 세로 레일 + 툴바 보임', rail.disp !== 'none' && rail.x === 0 && rail.w <= 72 && rail.h === rail.vh && rail.tb !== 'none' && rail.sbLeft >= rail.w, rail);
   R.check('PC 레일 항목', rail.tabs.join(',') === '노선,길찾기,떡상,시세,게시판,사용법', rail.tabs);

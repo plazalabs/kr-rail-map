@@ -143,6 +143,8 @@
   function build() {
     el = document.createElement('section');
     el.id = 'rocket-panel';
+    // 패널이 생긴 뒤에야 버튼이 가리킬 수 있다 (axe aria-valid-attr-value — 감사 N9, 2026-11-13)
+    var rb = document.getElementById('rocket-btn'); if (rb) rb.setAttribute('aria-controls', 'rocket-panel');
     el.className = 'rkp';
     el.hidden = true;
     el.setAttribute('aria-label', 'GTX 떡상 랭킹');

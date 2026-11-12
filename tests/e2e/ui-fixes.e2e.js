@@ -45,7 +45,13 @@ async function sidePress(sel) {
   if (r.ok && !c.ok) return { ok: false, why: '서랍 닫기 ' + c.why };
   return r;
 }
-const DROP = { '도구': 6, '분석': 7, '저장': 8 };   // v109: 툴바 맨 앞 🚀 GTX 떡상 버튼이 생겨 한 칸씩 밀림
+// 툴바 메뉴의 칸 번호(nth-child) — 숫자를 박아 두면 툴바에 버튼이 하나만 늘어도 시험 23개가 깨진다(v109).
+// 페이지를 열 때마다 메뉴 이름으로 다시 센다 (ready() 끝에서 syncDrop).
+const DROP = { '도구': 0, '분석': 0, '저장': 0 };
+async function syncDrop() {
+  const m = await ev(`(() => { const o = {}; [...document.getElementById('toolbar').children].forEach((x, i) => { const d = x.classList.contains('tb-dropdown') && x.querySelector('.tb-dropbtn'); if (d) o[d.textContent.trim().replace(/\s.*$/, '')] = i + 1; }); return o; })()`).catch(() => ({}));
+  Object.keys(DROP).forEach(k => { if (m[k]) DROP[k] = m[k]; });
+}
 async function menu(label, btnId) {
   const o = await press(`#toolbar > .tb-dropdown:nth-child(${DROP[label]}) .tb-dropbtn`); if (!o.ok) return { ok: false, why: label + ' 버튼 ' + o.why };
   await sleep(250);
@@ -57,6 +63,7 @@ async function ready() {
   await ev(`window.KR_loadExits && window.KR_loadExits(); 0`).catch(() => {});   // 출구 지연 로딩(IMPL12 건 4) — 먼저 받게 함
   for (let i = 0; i < 20; i++) { if (await ev(`!!map.getLayer('station-exits')`).catch(() => false)) break; await sleep(500); }
   await sleep(800);
+  await syncDrop();
 }
 async function fresh(url) {
   await b.goto('about:blank', 200);

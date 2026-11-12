@@ -63,11 +63,16 @@ const RankTable = (() => {
     const region = (opts && opts.region) || 'capital';
     // at: 연도(2031 등) — 그 해까지 개통한 노선만 탄 '개통 후'. 없거나 'all' 이면 전체(시기 미정 노선까지)
     const at = opts && opts.at && opts.at !== 'all' ? String(opts.at) : null;
-    const aftOf = r => (at && r.y && r.y[at]) ? r.y[at] : r.aft;
+    // wait: ⏱ 출퇴근 배차 포함 — 처음 탈 때·갈아탈 때 배차 ÷ 2 (rank.json now_w / aft_w / y_w). 자료가 없으면 빼고 계산
+    const wait = !!(opts && opts.wait);
+    const nowOf = r => (wait && r.now_w) ? r.now_w : r.now;
+    const aftOf = r => wait
+      ? ((at && r.y_w && r.y_w[at]) ? r.y_w[at] : (r.aft_w || r.aft))
+      : ((at && r.y && r.y[at]) ? r.y[at] : r.aft);
     const rows = doc.rows.filter(r => inRegion(r, region)).map(r => {
-      const ta = aftOf(r);
-      const mn = minutesOf(r.now, w), ma = minutesOf(ta, w);
-      return { src: r, ta, sNow: scoreOf(mn), sAft: scoreOf(ma), mNow: mn, mAft: ma };
+      const ta = aftOf(r), tn = nowOf(r);
+      const mn = minutesOf(tn, w), ma = minutesOf(ta, w);
+      return { src: r, ta, tn, sNow: scoreOf(mn), sAft: scoreOf(ma), mNow: mn, mAft: ma };
     });
     const rn = rankMap(rows, 'sNow'), ra = rankMap(rows, 'sAft');
     const count = new Map();
@@ -76,7 +81,7 @@ const RankTable = (() => {
       const now = rn.map.get(x) || null, aft = ra.map.get(x);
       return {
         src: x.src, name: x.src.n, id: x.src.id, region: x.src.r, sgg: x.src.g, lines: x.src.l,
-        now: { min: x.mNow, score: x.sNow, rank: now, times: x.src.now },
+        now: { min: x.mNow, score: x.sNow, rank: now, times: x.tn },
         aft: { min: x.mAft, score: x.sAft, rank: aft, times: x.ta },
         change: now == null ? null : now - aft,
         isNew: now == null,

@@ -75,6 +75,22 @@ const RouteFinder = (() => {
     if (stationId && isPlatformTransfer(stationId, line, nl, fromId, toId)) return 0;
     return waitMin(nl);
   }
+  // 출퇴근 배차 (data/headways.json, 2026-11-12) — 떡상 랭킹 '⏱ 배차 포함' 스위치용. 기다리는 시간 = 배차 ÷ 2.
+  // 처음 탈 때와 갈아탈 때 붙인다 (같은 열차로 이어 가기·같은 승강장 맞은편 환승은 0).
+  let headwayDoc = null;
+  function loadHeadways(doc) { headwayDoc = (doc && doc.lines) ? doc : null; return !!headwayDoc; }
+  function peakWaitAt(lineId, stationId) {
+    if (!headwayDoc || !lineId) return 0;
+    const cat = lineCat.get(lineId);
+    if (cat === 'ktx' || (typeof EXPRESS !== 'undefined' && EXPRESS[lineId])) return 0;   // KTX·급행은 접근 시간으로 따로
+    const h = headwayDoc.lines[lineId] || headwayDoc.lines[serviceOf(lineId)];
+    let min = h ? h.min : ((headwayDoc.default || {})[cat] != null ? headwayDoc.default[cat] : 5);
+    const s = stationId && stationsById.get(stationId);
+    const nm = s && s.properties.name_ko;
+    if (h && h.stations && nm && h.stations[nm] != null) min = h.stations[nm];   // 역마다 공식 시간표로 센 값 (있으면)
+    if (h && h.south_min && nm && (h.south_stations || []).includes(nm)) min = h.south_min;
+    return min / 2;
+  }
   const WALK_KMH = 4;
   // KTX 탑승 1회당 붙는 접근 시간 (분). 좌석 지정·개찰·승강장 이동.
   //
@@ -731,6 +747,7 @@ const RouteFinder = (() => {
     // opts.noWait: 기다리는 시간을 하나도 넣지 않는다 — 타고 가는 시간 + 환승 걷기만. 역 순위(도심 접근성)용
     // (2026-11-12 회장님 결정: 순위는 '타고 가는 시간' 기준, 배차는 역마다 공평하게 빼고 비교).
     const noWait = !!(opts && opts.noWait);
+    const peakWait = !!(opts && opts.peakWait) && !!headwayDoc;   // 출퇴근 배차 포함 (noWait 보다 우선)
     const pfrom = new Map();   // 상태 → 직전 역 (평면환승 방향)
     // 두 값을 따로 들고 간다 (2026-11-11 고침).
     //  - 탐색 비용 d: 경로 '고르기' 용. 환승마다 TRANSFER_DECISION_EXTRA 를 더 얹는다 (findRoute 와 같음)
@@ -762,7 +779,11 @@ const RouteFinder = (() => {
         // 표시: findRoute 처럼 노선 id 가 바뀌면 그 역의 환승 도보 시간을 넣는다
         if (line !== START && line !== null && nl !== null && nl !== line) shown += transferMinutes(u, line, nl, pu, e.to);
         if (nl !== line) { cost += accessMinutes(nl); shown += accessMinutes(nl); }
-        if (!noWait) { const w = transferWait(nl, line, u, pu, e.to); cost += w; shown += w; }   // 기다리는 시간 (findRoute 와 같음)
+        if (peakWait) {
+          // 출퇴근 배차 — 처음 탈 때(출발역·걸어온 뒤) 와 갈아탈 때. 같은 열차·맞은편 환승은 0
+          const boarding = nl && (line === START || line === null || (nl !== line && !sameService(nl, line) && !isPlatformTransfer(u, line, nl, pu, e.to)));
+          if (boarding) { const w = peakWaitAt(nl, u); cost += w; shown += w; }
+        } else if (!noWait) { const w = transferWait(nl, line, u, pu, e.to); cost += w; shown += w; }   // 기다리는 시간 (findRoute 와 같음)
         const nk = stateKey(e.to, nl, u);
         const nd = d + cost;
         if (nd < (dist.get(nk) ?? Infinity)) {
@@ -799,7 +820,7 @@ const RouteFinder = (() => {
 
   return {
     buildGraph, findRoute, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
-    loadTransfers, transferMinutes, sameService, countTransfers,
+    loadTransfers, loadHeadways, peakWaitAt, transferMinutes, sameService, countTransfers,
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
     // 예전에는 route-compare 가 그래프를 따로 만들었는데, 그쪽은 선형 조각을 이어붙여
     // 평탄화하는 바람에 GTX-D 분기(팔당 ↔ 삼성)에 없는 엣지가 생겼다.

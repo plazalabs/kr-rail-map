@@ -73,6 +73,28 @@ check('개통 연도 읽기', RT.yearOf('2031년 목표 (2026년 9월 착공)') 
   check('GTX-C 개통 연도가 2031년 (2026-09 착공·60개월)', RT.yearOf((doc.lines['gtx-c'] || {}).o) === 2031, (doc.lines['gtx-c'] || {}).o);
 }
 
+console.log('\n[⏱ 출퇴근 배차] data/headways.json — 공식 시간표로 센 값, 추정은 개통 전 노선만');
+{
+  const H = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/headways.json'), 'utf8'));
+  const L = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/lines.geojson'), 'utf8')).features;
+  const status = new Map(L.map(f => [f.properties.id, f.properties.status]));
+  const official = Object.entries(H.lines).filter(([, v]) => v.src === 'official');
+  const est = Object.entries(H.lines).filter(([, v]) => v.src !== 'official');
+  check('공식 값 노선 30개 이상', official.length >= 30, official.length);
+  check('추정은 개통 전 노선뿐 (운행 중 노선 추정 0)', est.every(([id]) => status.get(id) && status.get(id) !== 'open'), est.filter(([id]) => status.get(id) === 'open').map(([id]) => id).join(','));
+  check('공식 값마다 출처가 적혀 있음', official.every(([, v]) => /시각표|운행정보|국토교통부/.test(v.source || '')));
+  const st = (id, n) => (H.lines[id].stations || {})[n];
+  check('2호선 강남 3.2분 · 1호선 수원 6.7분 · 경춘선 중앙 20분 (시각표에서 센 값)', st('seoul-subway-line-2', '강남') === 3.16 && st('seoul-metropolitan-subway-line-1', '수원') === 6.67 && H.lines['seoul-metropolitan-subway-gyeongchun-line'].min === 20);
+  check('GTX-A 운정중앙~서울역 6.25분 (국토부), 수서~동탄 17분', H.lines['great-train-express-line-a'].min === 6.25 && H.lines['great-train-express-line-a'].south_min === 17);
+  const c0 = RT.compute(doc, { weight: 'avg', region: 'capital' }), c1 = RT.compute(doc, { weight: 'avg', region: 'capital', wait: true });
+  const k0 = c0.rows.find(r => r.name === '광운대'), k1 = c1.rows.find(r => r.name === '광운대');
+  check('배차 포함하면 시간이 늘기만 한다 (광운대 9/15/9 → 12/19/12)', k1 && k1.aft.times.join() === '12,19,12' && k1.aft.times.every((t, i) => t >= k0.aft.times[i]), k1 && k1.aft.times.join());
+  check('배차 포함 광운대 수도권 10위 안', k1 && k1.aft.rank <= 10, k1 && k1.aft.rank);
+  check('모든 역이 배차 포함 값을 가짐 (now_w·aft_w·y_w)', doc.rows.every(r => Array.isArray(r.now_w) && Array.isArray(r.aft_w) && r.y_w && Object.keys(r.y_w).length === doc.years.length));
+  const html2 = fs.readFileSync(path.join(ROOT, 'rank.html'), 'utf8');
+  check('순위표에 ⏱ 배차 포함 스위치 (기본 꺼짐, 주소 wait=1)', /id="wait" aria-pressed="false"/.test(html2) && /qs\.get\('wait'\) === '1'/.test(html2));
+}
+
 console.log('\n[자료] data/rank.json');
 check('역 1,000곳 이상', doc.rows.length >= 1000, doc.rows.length);
 check('access.json 과 날짜가 같다 (같이 다시 만들었는지)', doc.updated === access.updated, doc.updated + ' / ' + access.updated);

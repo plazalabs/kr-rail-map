@@ -67,6 +67,8 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{ou
 select,input[type=search]{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--text)}
 input[type=search]{flex:1;min-width:140px}
 .hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+.wait-tg{border:1px solid var(--border);background:var(--card);border-radius:10px;padding:6px 11px;font-size:13px;cursor:pointer;color:var(--text2);white-space:nowrap}
+.wait-tg[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 /* 개통 연도 슬라이더 */
 .yr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 12px;margin-top:8px}
 .yr .play{border:0;background:var(--t-rocket);color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:14px;flex:none}
@@ -201,6 +203,7 @@ h1{font-size:22px}
     <div class="seg" role="group" aria-labelledby="l-r" data-k="r">
       <button data-v="seoul">서울</button><button data-v="capital">수도권</button><button data-v="all">전국</button>
     </div>
+    <button class="wait-tg" id="wait" aria-pressed="false" title="처음 탈 때·갈아탈 때 열차를 기다리는 시간(출퇴근 배차 ÷ 2)을 더합니다 — 공식 시간표로 센 평일 7~9시 배차">⏱ 배차 포함 (출퇴근)</button>
   </div>
   <div class="yr" id="yr-row" role="group" aria-label="개통 연도">
     <button class="play" id="yr-play" aria-label="연도 차례로 보기">▶</button>
@@ -237,7 +240,8 @@ h1{font-size:22px}
 <section class="note">
 <h2>어떻게 계산했나요</h2>
 <ul>
-<li><b>시간</b> = 열차를 타고 가는 시간 + 갈아탈 때 걷는 시간. 열차를 <b>기다리는 시간은 넣지 않았습니다</b>(모든 역을 같은 기준으로 비교하려고).</li>
+<li><b>시간</b> = 열차를 타고 가는 시간 + 갈아탈 때 걷는 시간. 기본은 열차를 <b>기다리는 시간은 넣지 않았습니다</b>(모든 역을 같은 기준으로 비교하려고).</li>
+<li><b>⏱ 배차 포함 (출퇴근)</b>을 켜면 처음 탈 때와 갈아탈 때 <b>평일 출근 시간(7~9시) 배차의 절반</b>을 더합니다. 배차는 <b>공식 시간표</b>(서울교통공사 열차운행시각표 2026-09-01, 레일포털 전체 도시철도운행정보 2026-05-31)에서 역마다 열차 수를 세어 냈고, GTX-A 는 국토교통부 발표(운정중앙~서울역 6.25분). 아직 안 연 GTX-B·C 등은 공식 배차가 없어 GTX-A 와 같게 두었습니다(<a href="data.html#headway">자세히</a>).</li>
 <li>업무지구는 역 하나가 아니라 묶음입니다. 묶음 안에서 <b>가장 빨리 닿는 역</b>의 시간을 씁니다.</li>
 <li><b>점수</b> = 100 − 세 곳 평균 분. <b>○○ 중시</b>는 그곳을 두 번 세서 평균을 냅니다(예: GBD 중시 = (CBD + YBD + 2×GBD) ÷ 4).</li>
 <li><b>개통 후</b>는 공사 중·계획 노선(GTX A·B·C 등)이 모두 열렸다고 보고 계산한 값입니다. 계획은 바뀔 수 있습니다.</li>
@@ -271,7 +275,8 @@ h1{font-size:22px}
     tier: T[qs.get('tier')] ? qs.get('tier') : '',
     q: qs.get('q') || '',
     open: qs.get('open') || '',
-    y: qs.get('y') || 'all',   // 개통 연도 슬라이더 — 'all' = 전체(시기 미정 노선 포함)
+    y: qs.get('y') || 'all',
+    wait: qs.get('wait') === '1',   // ⏱ 출퇴근 배차 포함 (기본 꺼짐)   // 개통 연도 슬라이더 — 'all' = 전체(시기 미정 노선 포함)
     shown: PAGE,
   };
   let doc = null, lineInfo = {};
@@ -280,7 +285,7 @@ h1{font-size:22px}
     const u = new URL(location.href);
     const set = (k, v, d) => { if (v === d || !v) u.searchParams.delete(k); else u.searchParams.set(k, v); };
     set('w', st.w, 'avg'); set('t', st.t, 'aft'); set('r', st.r, 'capital'); set('sort', st.sort, 'rank');
-    set('tier', st.tier, ''); set('q', st.q, ''); set('open', st.open, ''); set('y', st.y, 'all');
+    set('tier', st.tier, ''); set('q', st.q, ''); set('open', st.open, ''); set('y', st.y, 'all'); set('wait', st.wait ? '1' : '', '');
     history.replaceState(null, '', u);
   }
 
@@ -292,6 +297,7 @@ h1{font-size:22px}
     $('sort').value = st.sort;
     $('q').value = st.q;
     $('sort').disabled = st.t === 'now';   // '지금' 순위에는 오름 정렬이 뜻이 없다
+    $('wait').setAttribute('aria-pressed', String(st.wait));
   }
 
   function lineChips(ids, onlyPlan) {
@@ -419,7 +425,7 @@ h1{font-size:22px}
   function render() {
     if (!doc) return;
     syncControls(); renderYear(); saveUrl();
-    const res = RankTable.compute(doc, { weight: st.w, region: st.r, at: st.t === 'aft' ? st.y : 'all' });
+    const res = RankTable.compute(doc, { weight: st.w, region: st.r, at: st.t === 'aft' ? st.y : 'all', wait: st.wait });
     let rows = res.rows;
     const isNow = st.t === 'now';
 
@@ -448,7 +454,7 @@ h1{font-size:22px}
     const filtered = rows.filter(r => RankTable.matches(r, st.q));
     $('slope-h').textContent = '🚀 ' + (st.y === 'all' ? '개통하면' : st.y + '년까지 개통하면') + ' 가장 많이 오르는 역 TOP 10';
     $('hint').textContent = REGION[st.r] + ' ' + total.toLocaleString() + '역 · ' + LABEL[st.w] + ' · ' +
-      (isNow ? '지금' : aftLabel() === '개통 후' ? '개통 후' : aftLabel() + '까지 개통') + ' 기준' + (st.tier ? ' · ' + T[st.tier].icon + ' ' + T[st.tier].label + ' ' + filtered.length + '곳' : '') +
+      (isNow ? '지금' : aftLabel() === '개통 후' ? '개통 후' : aftLabel() + '까지 개통') + ' 기준' + (st.wait ? ' · ⏱ 출퇴근 배차 포함' : '') + (st.tier ? ' · ' + T[st.tier].icon + ' ' + T[st.tier].label + ' ' + filtered.length + '곳' : '') +
       (st.q ? ' · "' + st.q + '" ' + filtered.length + '곳' : '');
     $('list-h').textContent = st.tier ? T[st.tier].icon + ' ' + T[st.tier].label + ' 역' : (st.sort === 'rise' && !isNow ? '많이 오르는 순' : st.sort === 'gain' && !isNow ? '점수 많이 오르는 순' : '순위');
 
@@ -517,6 +523,7 @@ h1{font-size:22px}
     $('yr-play').textContent = '■'; $('yr-play').setAttribute('aria-label', '멈추기');
     playT = setInterval(() => { i++; if (i >= S.length) { stopPlay(); return; } st.y = S[i]; render(); }, 1600);
   });
+  $('wait').addEventListener('click', () => { st.wait = !st.wait; render(); });
   $('sort').addEventListener('change', e => { st.sort = e.target.value; st.shown = PAGE; render(); });
   let tmr = null;
   $('q').addEventListener('input', e => { clearTimeout(tmr); tmr = setTimeout(() => { st.q = e.target.value.trim(); st.shown = PAGE; render(); }, 150); });
@@ -564,13 +571,13 @@ h1{font-size:22px}
       if (n != null && a != null && n > a) { g.fillStyle = '#5fe39a'; g.font = '800 34px ' + F; g.fillText('−' + (n - a) + '분', 720, y); }
     });
     g.fillStyle = '#7f93b3'; g.font = '500 24px ' + F;
-    g.fillText('추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1000);
+    g.fillText(st.wait ? '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림' : '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1000);
     g.fillStyle = '#c8d3e6'; g.font = '700 28px ' + F;
     g.fillText('🚀 한국철도맵 GTX 떡상 랭킹 · plazalabs.github.io/kr-rail-map/rank.html', 80, 1044);
     return c;
   }
   async function shareStation(id, msgEl) {
-    const r = RankTable.compute(doc, { weight: st.w, region: st.r }).rows.find(x => x.id === id);
+    const r = RankTable.compute(doc, { weight: st.w, region: st.r, at: st.t === 'aft' ? st.y : 'all', wait: st.wait }).rows.find(x => x.id === id);
     if (!r) return;
     const c = shareCanvas(r);
     const blob = await new Promise(res => c.toBlob(res, 'image/png'));
@@ -589,7 +596,7 @@ h1{font-size:22px}
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     if (msgEl) msgEl.textContent = '이미지를 저장했어요 (' + name + ').';
   }
-  window.RankShare = { canvas: id => { const r = RankTable.compute(doc, { weight: st.w, region: st.r }).rows.find(x => x.id === id); return r ? shareCanvas(r) : null; } };
+  window.RankShare = { canvas: id => { const r = RankTable.compute(doc, { weight: st.w, region: st.r, at: st.t === 'aft' ? st.y : 'all', wait: st.wait }).rows.find(x => x.id === id); return r ? shareCanvas(r) : null; } };
   $('list').addEventListener('click', e => { const b = e.target.closest('[data-share]'); if (!b) return; e.stopPropagation(); shareStation(b.getAttribute('data-share'), b.parentNode.querySelector('.share-msg')); }, true);
   // 🔗 링크 복사 — 이 역 카드가 펼쳐진 순위표 주소 (지금 기준·지역·연도 그대로). 카톡에 붙여 넣으면 바로 그 역
   function cardUrl(id) {

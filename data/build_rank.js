@@ -103,6 +103,12 @@ for (const id of ids) {
 
 const lineMeta = new Map(lines.map(l => [l.properties.id, l.properties]));
 const usedLines = new Set();
+// 묶음 안 역들 중 가장 빠른 값 (CBD·YBD·GBD 셋)
+const pick = (g, get) => [0, 1, 2].map(k => {
+  let v = null;
+  for (const id of g.ids) { const arr = get(yearsDoc.stations[id] || {}) || []; const t = arr[k]; if (t != null && (v == null || t < v)) v = t; }
+  return v;
+});
 const rows = groups.map(g => {
   const best = key => idx.map(i => {
     let v = null;
@@ -124,11 +130,11 @@ const rows = groups.map(g => {
     now: best('now'),
     aft: best('after'),
     // 연도별 CBD·YBD·GBD (access.json y) — 묶음 안 가장 빠른 값
-    y: Object.fromEntries((yearsDoc.years || []).map(yr => [yr, [0, 1, 2].map(k => {
-      let v = null;
-      for (const id of g.ids) { const t = (((yearsDoc.stations[id] || {})[yr]) || [])[k]; if (t != null && (v == null || t < v)) v = t; }
-      return v;
-    })])),
+    y: Object.fromEntries((yearsDoc.years || []).map(yr => [yr, pick(g, s => (s.y || {})[yr])])),
+    // ⏱ 출퇴근 배차 포함 (지금 / 개통 후 / 연도별)
+    now_w: pick(g, s => (s.w || {}).now),
+    aft_w: pick(g, s => (s.w || {}).aft),
+    y_w: Object.fromEntries((yearsDoc.years || []).map(yr => [yr, pick(g, s => ((s.w || {}).y || {})[yr])])),
   };
 }).filter(r => r.aft.filter(v => v != null).length >= 2);
 

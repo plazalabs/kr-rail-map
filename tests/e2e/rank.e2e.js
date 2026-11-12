@@ -73,6 +73,12 @@ const layout = b => b.evaluate(`(() => ({
       await b.goto(RANK + '?open=st-5782717000', 800); await rows(b);
       const o2 = await b.evaluate(`({ card: !!document.querySelector('#card-st-5782717000'), r: document.querySelector('.seg[data-k="r"] [aria-pressed="true"]').dataset.v })`);
       R.check('?open=부산 서면 → 전국으로 바꿔 카드 펼침', o2.card && o2.r === 'all', o2);
+      // ⏱ 배차 포함 (출퇴근) 스위치 — 켜면 주소 wait=1, 안내 줄, 광운대 시간이 늘어난다
+      await b.goto(RANK + '?q=' + encodeURIComponent('광운대'), 800); await rows(b);
+      const w0 = await b.evaluate(`document.querySelector('#list .row .tms').textContent`);
+      await b.evaluate(`document.getElementById('wait').click()`); await sleep(300);
+      const w1 = await b.evaluate(`({ tms: document.querySelector('#list .row .tms').textContent, pressed: document.getElementById('wait').getAttribute('aria-pressed'), url: location.search, hint: document.getElementById('hint').textContent })`);
+      R.check('⏱ 배차 포함 켜면 주소 wait=1·안내·광운대 9분→12분', w1.pressed === 'true' && /wait=1/.test(w1.url) && /배차 포함/.test(w1.hint) && /9분/.test(w0) && /12분/.test(w1.tms), { w0, w1 });
     }
     // 줄을 누르면 역 카드가 펼쳐지고, '지도에서 보기' 를 누르면 지도에서 그 역 상세
     await b.goto(RANK, 800); await rows(b);

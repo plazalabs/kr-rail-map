@@ -38,6 +38,8 @@ vm.runInContext(rsrc, rctx);
 const RF = rctx.RouteFinder;
 const info = RF.buildGraph(lines.features, stations.features);
 if (transfers) RF.loadTransfers(transfers);
+// 출퇴근 배차 (data/build_headways.py — 공식 시간표로 센 값) — 떡상 랭킹 '⏱ 배차 포함' 용
+RF.loadHeadways(read('data/headways.json'));
 
 /* 거점 정의.
  * label 은 화면에 쓰는 이름, name 은 stations.geojson 의 역명.
@@ -138,6 +140,17 @@ for (const id of ids) {
     });
     out[id].y[y] = v; prev = v;
   }
+  // ⏱ 출퇴근 배차 포함 — 처음 탈 때·갈아탈 때 배차 ÷ 2 를 기다린다 (지금 / 개통 후 / 연도별)
+  const coreOf = m => dests.filter((d, i) => CORE_IDX.includes(i)).map(d => bestOf(m, d));
+  const minOf = (t, p) => t == null ? p : (p == null ? t : Math.min(t, p));
+  const wn = coreOf(RF.allTimesFrom(id, { openOnly: true, peakWait: true }));
+  const wa = coreOf(RF.allTimesFrom(id, { openOnly: false, peakWait: true })).map((t, k) => minOf(t, wn[k]));
+  out[id].w = { now: wn, aft: wa, y: {} };
+  let pw = wn;
+  for (const y of YEARS) {
+    const v = coreOf(RF.allTimesFrom(id, { openOnly: true, allow: allowOf(y), peakWait: true })).map((t, k) => minOf(t, pw[k]));
+    out[id].w.y[y] = v; pw = v;
+  }
 }
 const secs = (Date.now() - t0) / 1000;
 
@@ -170,9 +183,9 @@ const yearsDoc = {
   years: YEARS,
   year_lines: Object.fromEntries(YEARS.map(y => [y, Object.keys(lineYear).filter(id => lineYear[id] === y)])),
   undated_lines: Object.keys(lineYear).filter(id => lineYear[id] == null),
-  stations: Object.fromEntries(Object.keys(out).map(id => [id, out[id].y])),
+  stations: Object.fromEntries(Object.keys(out).map(id => [id, { y: out[id].y, w: out[id].w }])),
 };
-Object.keys(out).forEach(id => { delete out[id].y; });
+Object.keys(out).forEach(id => { delete out[id].y; delete out[id].w; });
 fs.writeFileSync(path.join(ROOT, 'data/_access_years.json'), JSON.stringify(yearsDoc));
 const file = path.join(ROOT, 'data/access.json');
 fs.writeFileSync(file, JSON.stringify(doc));

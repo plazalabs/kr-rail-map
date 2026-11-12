@@ -640,6 +640,57 @@
       "caveat": "서울교통공사 구간만이다. 코레일 구간(1호선 청량리 밖·3호선 지축 밖·4호선 남태령 밖)과 다른 노선은 여전히 노선 평균 속도로 낸 추정값이다."
     },
     {
+      "id": "seoul-metro-timetable",
+      "title": "출퇴근 배차 — 1~9호선 열차운행시각표",
+      "provider": "서울교통공사 — 서울 도시철도 열차운행시각표",
+      "attribution": "서울교통공사 서울 도시철도 열차운행시각표(2026.9.1.), 공공데이터포털",
+      "url": "https://www.data.go.kr/data/15098251/fileData.do",
+      "licence": "data-go-kr-open",
+      "obtained": "공공데이터포털 15098251 파일데이터 CSV (약 32MB, 로그인 없이 받음 — 저장소에는 넣지 않음)",
+      "snapshot": "2026-09-01",
+      "used_for": "떡상 랭킹 ⏱ 배차 포함 — 1~9호선(코레일 구간 포함) 역마다 평일 07~09시 방향별 출발 열차 수로 배차를 센다 (data/build_headways.py)",
+      "feeds": [],
+      "affects": [
+        "data/headways.json",
+        "data/rank.json"
+      ],
+      "fields": [
+        "호선",
+        "역사명",
+        "주중주말",
+        "방향",
+        "열차출발시간"
+      ],
+      "commercial": "allowed",
+      "caveat": "평일 출근 2시간 평균이라 가장 붐비는 30분보다 조금 길다. 종점 근처 등 열차가 2대 미만인 방향은 뺐다."
+    },
+    {
+      "id": "kric-urban-ops",
+      "title": "출퇴근 배차 — 광역·민자·경전철 운행정보",
+      "provider": "레일포털(국가철도공단) — 전체 도시철도운행정보",
+      "attribution": "레일포털 전체_도시철도운행정보(데이터 기준 2026.5.31.), 전국도시철도운영기관",
+      "url": "https://data.kric.go.kr/rips/M_01_01/detail.do?id=900",
+      "licence": "data-go-kr-open",
+      "obtained": "레일포털 id=900 XLSX (약 18MB, 공공데이터포털 15093878 과 같은 표준데이터, 이용허락범위 제한 없음 — 저장소에는 넣지 않음)",
+      "snapshot": "2026-05-31",
+      "used_for": "떡상 랭킹 ⏱ 배차 포함 — 경의중앙·경춘·경강·수인분당·서해·신분당·공항철도·신림·우이신설·김포골드·의정부·에버라인·인천 1·2호선·지방 도시철도 역마다 평일 07~09시 배차 (data/extract_kric_headways.py → data/build_headways.py)",
+      "feeds": [],
+      "affects": [
+        "data/headways.json",
+        "data/rank.json"
+      ],
+      "fields": [
+        "열차번호",
+        "노선명",
+        "요일구분",
+        "운행구간정거장",
+        "정거장도착시각",
+        "정가장출발시각"
+      ],
+      "commercial": "allowed",
+      "caveat": "역 이름이 줄임말이라(경광주·평내호 등) 우리 역 이름에 맞췄다 — 94% 맞춤, 나머지는 노선 중앙값. 에버라인은 평일 자료가 퇴근(17~20시) 운행간격 4분뿐, 인천 2호선은 운행시격 2분30초~10분 글뿐이라 각각 4분·2.5분으로 읽었다."
+    },
+    {
       "id": "derived",
       "title": "소요 시간·환승·도심 접근성·연장",
       "provider": "자체 계산",

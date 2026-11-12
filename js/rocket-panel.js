@@ -208,6 +208,14 @@
         if (f && global.showStation) global.showStation(f);
       } else if (act === 'link') {
         copyLink(b);
+      } else if (act === 'share') {
+        // 패널 안에서 바로 1080×1080 이미지 저장·공유 (예전엔 rank.html 로 넘어갔다)
+        var row = res().byId[st.sel];
+        if (!row || typeof StationShareImage === 'undefined') return;
+        var t0 = b.textContent; b.disabled = true;
+        StationShareImage.save(row, { doc: doc, y: st.y, w: st.w, wait: st.wait }).then(function (m) {
+          b.disabled = false; if (m) { b.textContent = m + ' ✓'; setTimeout(function () { b.textContent = t0; }, 1800); }
+        }, function () { b.disabled = false; b.textContent = '저장 실패'; setTimeout(function () { b.textContent = t0; }, 1800); });
       }
     });
     el.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } });
@@ -253,7 +261,7 @@
       '<div class="rkp-bars">' + bars + '</div>' +
       '<div class="rkp-acts"><button type="button" data-act="detail">역 상세</button>' +
         '<button type="button" data-act="link">🔗 링크 복사</button>' +
-        '<a href="rank.html?open=' + encodeURIComponent(r.id) + '">📸 공유 이미지</a></div>' +
+        '<button type="button" data-act="share">📸 공유 이미지</button></div>' +
       '</div>';
   }
 

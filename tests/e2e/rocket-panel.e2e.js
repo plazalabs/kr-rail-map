@@ -117,6 +117,19 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
   R.check("카드의 '역 상세' → 역 상세가 열림", sd === true, sd);
   await b.evaluate(`StationDetail.hide()`); await sleep(300);
 
+  // 공유 이미지 — 패널 안에서 바로 (rank.html 로 넘어가지 않음)
+  await b.send('Browser.setDownloadBehavior', { behavior: 'deny' }).catch(() => {});
+  const sh = await b.evaluate(`(() => { const btn = document.querySelector('#rkp-hero [data-act="share"]'); const link = document.querySelector('#rkp-hero a[href*="rank.html"]');
+    const r = RocketPanel.state(); const row = RankTable.compute(StationRocket.doc(), { weight: r.w, region: 'capital', at: r.y }).rows.find(x => x.id === r.sel);
+    const c = StationShareImage.draw(row, { doc: StationRocket.doc(), y: r.y, w: r.w, wait: r.wait });
+    const px = c.getContext('2d').getImageData(540, 540, 1, 1).data;
+    return { btn: !!btn, link: !!link, w: c.width, h: c.height, painted: px[3] === 255, name: StationShareImage.fileName(row) }; })()`);
+  R.check('카드의 📸 공유 이미지 = 패널 안 버튼 (rank.html 링크 없음), 1080×1080 그림', sh.btn && !sh.link && sh.w === 1080 && sh.h === 1080 && sh.painted && /^GTX떡상_.+위→\d+위\.png$/.test(sh.name), sh);
+  const u0 = await b.evaluate('location.href');
+  await b.evaluate(`document.querySelector('#rkp-hero [data-act="share"]').click(); true`); await sleep(1500);
+  const sh2 = await b.evaluate(`({ url: location.href, txt: document.querySelector('#rkp-hero [data-act="share"]').textContent })`);
+  R.check('누르면 같은 화면에서 저장 (주소 그대로, 저장했어요/공유했어요)', sh2.url === u0 && /저장했어요|공유했어요|📸/.test(sh2.txt), sh2);
+
   // 전체 순위 — 패널 안에서 (rank.html 로 넘어가지 않음, 2026-11-12)
   const url0 = await b.evaluate('location.href');
   await b.evaluate(`document.querySelector('.rkp-allbtn').click(); true`); await sleep(500);

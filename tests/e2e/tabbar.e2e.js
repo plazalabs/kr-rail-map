@@ -68,6 +68,15 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
   await d.goto(BASE + '#normal', 800);
   await ready(d);
   R.check('PC: 탭 바 없음, 툴바 보임', await d.evaluate(`getComputedStyle(document.getElementById('tabbar')).display === 'none' && getComputedStyle(document.getElementById('toolbar')).display !== 'none'`));
+  // 작업 7: 직접 고른 테마가 없으면 기기 '어둡게' 설정을 따른다, 직접 고른 게 있으면 그게 우선
+  await d.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] });
+  await d.evaluate(`localStorage.removeItem('krrail-theme'); true`);
+  await d.goto(BASE + '#normal', 800); await ready(d);
+  R.check('기기 어둡게 + 고른 테마 없음 → 어두운 테마', await d.evaluate(`document.body.dataset.theme`) === 'dark');
+  await d.evaluate(`localStorage.setItem('krrail-theme', 'light'); true`);
+  await d.goto(BASE + '#normal', 800); await ready(d);
+  R.check('직접 고른 밝은 테마가 기기 설정보다 우선', await d.evaluate(`document.body.dataset.theme`) === 'light');
+  await d.evaluate(`localStorage.removeItem('krrail-theme'); true`);
   await d.close();
   R.finish();
 })().catch(e => { console.error(e); process.exit(1); });

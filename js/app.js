@@ -40,7 +40,9 @@ const THEMES = [
 ];
 const DARK_THEMES = new Set(['dark', 'eclipse', 'neon']);
 
-let theme = localStorage.getItem('krrail-theme') || 'light';
+// 처음 온 사람(직접 고른 테마 없음)은 기기의 밝게/어둡게 설정을 따른다. 직접 고르면 그게 우선 (작업 7)
+const prefersDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+let theme = localStorage.getItem('krrail-theme') || (prefersDark ? 'dark' : 'light');
 if (!THEMES.some(t => t.id === theme)) theme = 'light';
 
 function baseStyle() {

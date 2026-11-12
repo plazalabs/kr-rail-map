@@ -1108,6 +1108,8 @@ body[data-theme="dark"], body[data-theme="eclipse"], body[data-theme="neon"] { -
   body.rk-open #toolbar { right: 412px; max-width: calc(100% - 472px); justify-content: flex-start; }
   body.rk-open .maplibregl-ctrl-top-right { right: 400px; }
   body.rk-open .sa-legend { right: 408px; }   /* 겹침 규칙 ① (작업 8) */
+  /* PC 레일에 길찾기·떡상이 있으므로, 떡상 패널이 열려 자리가 좁을 땐 툴바의 같은 버튼을 숨겨 한 줄로 (v119 사진에서 두 줄이던 것) */
+  body.rk-open #toolbar #rocket-btn, body.rk-open #toolbar #route-btn { display: none; }
   /* 패널이 열리면 툴바를 조금 줄여 1440px 에서도 한 줄 (필요 748 → 약 620px) */
   body.rk-open #toolbar { gap: 4px; }
   body.rk-open #toolbar button, body.rk-open #toolbar .tb-dropbtn { padding: 7px 10px; font-size: var(--fs-sm); }

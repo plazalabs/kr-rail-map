@@ -517,7 +517,7 @@ console.log('\n[대비] 강조 상자 흐린 글자 — light·neon 만 보정 (
     const c = fix(th), bg = varOf(th, 'accent-weak');
     check(`${th}: 강조 상자 흐린 글자 ${c} / ${bg} ≥ 4.5`, !!c && !!bg && cr(c, bg) >= 4.5, c && bg ? cr(c, bg).toFixed(2) : '규칙 없음');
   }
-  check('테마 변수는 그대로 (light --muted #6b7280, neon --muted #7d8f3c)', varOf('light', 'muted') === '#6b7280' && varOf('neon', 'muted') === '#7d8f3c',
+  check('테마 변수는 그대로 (light --muted #5b6470, neon --muted #7d8f3c)', varOf('light', 'muted') === '#5b6470' && varOf('neon', 'muted') === '#7d8f3c',
     `${varOf('light', 'muted')} / ${varOf('neon', 'muted')}`);
   check('다른 테마에는 흐린 글자 보정 규칙이 없음', !/body\[data-theme="(dark|eclipse|pink|hospital|win95)"\] \.rc-nf\.hot :is/.test(css));
 }

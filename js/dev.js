@@ -73,10 +73,10 @@ const StationDev = (() => {
       '.dv-top{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-bottom:2px}' +
       '.dv-big{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;' +
       'color:var(--text,#111827)}' +
-      '.dv-unit{font-size:12px;color:var(--muted,#6b7280)}' +
+      '.dv-unit{font-size:12px;color:var(--muted,#5b6470)}' +
       '.dv-split{font-size:12px;color:var(--text-2,#374151);margin-bottom:8px}' +
       '.dv-split b{font-variant-numeric:tabular-nums}' +
-      '.dv-plan{color:var(--muted,#6b7280)}' +
+      '.dv-plan{color:var(--muted,#5b6470)}' +
       '.dv-yrs{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px}' +
       '.dv-yr{font-size:11.5px;padding:2px 7px;border-radius:10px;' +
       'background:var(--surface-2,#f3f4f6);color:var(--text-2,#374151);' +
@@ -98,8 +98,8 @@ const StationDev = (() => {
       '.dv-recent{margin-top:9px;padding-top:8px;border-top:1px dashed var(--border,#e5e7eb);' +
       'font-size:12px;color:var(--text-2,#374151)}' +
       '.dv-recent b{font-variant-numeric:tabular-nums}' +
-      '.dv-none{font-size:12.5px;color:var(--muted,#6b7280);line-height:1.55}' +
-      '.dv-note{font-size:12px;color:var(--muted,#6b7280);margin-top:7px;line-height:1.5}';
+      '.dv-none{font-size:12.5px;color:var(--muted,#5b6470);line-height:1.55}' +
+      '.dv-note{font-size:12px;color:var(--muted,#5b6470);margin-top:7px;line-height:1.5}';
     document.head.appendChild(st);
   }
 

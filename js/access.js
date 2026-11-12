@@ -156,18 +156,18 @@ const StationAccess = (() => {
       '.sa-lab{color:var(--fg-2,#374151)}' +
       '.sa-now{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}' +
       '.sa-aft{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;' +
-      'color:var(--muted,#6b7280);padding-left:8px}' +
+      'color:var(--muted,#5b6470);padding-left:8px}' +
       '.sa-gain{text-align:right;font-size:11px;font-weight:600;white-space:nowrap;padding-left:8px;' +
       'color:#0f7b3f}' +
       '.sa-gain.sa-new{color:#1a73e8}' +
-      '.sa-none{color:var(--muted,#6b7280)}' +
+      '.sa-none{color:var(--muted,#5b6470)}' +
       '.sa-sum{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border,#e5e7eb);' +
       'font-size:12px;color:var(--fg-2,#374151)}' +
       '.sa-sum b{font-variant-numeric:tabular-nums;white-space:nowrap}' +
       '.sa-sum span{white-space:nowrap}' +
-      '.sa-rank{color:var(--muted,#6b7280)}' +
-      '.sa-note{font-size:12px;color:var(--muted,#6b7280);margin-top:6px;line-height:1.5}' +
-      '.sa-rocket{color:var(--accent,#0b57d0);font-weight:700;text-decoration:none}.sa-rocket:hover{text-decoration:underline}';
+      '.sa-rank{color:var(--muted,#5b6470)}' +
+      '.sa-note{font-size:12px;color:var(--muted,#5b6470);margin-top:6px;line-height:1.5}' +
+      '.sa-rocket{color:var(--accent,#1b64da);font-weight:700;text-decoration:none}.sa-rocket:hover{text-decoration:underline}';
     document.head.appendChild(st);
   }
 

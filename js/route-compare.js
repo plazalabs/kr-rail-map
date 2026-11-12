@@ -430,18 +430,18 @@ const RouteCompare = (() => {
       /* '지금 vs 개통 후' 비교 */
       .rc-nf { border: 1px solid var(--border, #e3e6ea); border-radius: 10px; padding: 10px 12px;
         margin-bottom: 10px; background: var(--surface, #f6f7f9); }
-      .rc-nf.hot { border-color: var(--accent, #0b57d0); background: var(--accent-weak, #e8f0fe); }
+      .rc-nf.hot { border-color: var(--accent, #1b64da); background: var(--accent-weak, #e8f0fe); }
       .rc-nf-row { display: flex; align-items: flex-end; gap: 8px; }
       .rc-nf-col { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-      .rc-nf-label { font-size: 11px; color: var(--muted, #6b7280); letter-spacing: .02em; }
+      .rc-nf-label { font-size: 11px; color: var(--muted, #5b6470); letter-spacing: .02em; }
       .rc-nf-time { font-size: 21px; font-weight: 700; line-height: 1.1; color: var(--text, #16191d);
         font-variant-numeric: tabular-nums; }
       .rc-nf-time small { font-size: 12px; font-weight: 600; margin-left: 1px; }
-      .rc-nf-sub { font-size: 11px; color: var(--muted, #6b7280); }
-      .rc-nf-arrow { font-size: 15px; color: var(--muted, #6b7280); padding-bottom: 14px; }
+      .rc-nf-sub { font-size: 11px; color: var(--muted, #5b6470); }
+      .rc-nf-arrow { font-size: 15px; color: var(--muted, #5b6470); padding-bottom: 14px; }
       .rc-nf-delta { margin-left: auto; text-align: right; font-size: 13px; font-weight: 700;
-        color: var(--accent, #0b57d0); padding-bottom: 2px; white-space: nowrap; }
-      .rc-nf-why { font-size: 11.5px; color: var(--muted, #6b7280); margin-top: 7px; line-height: 1.5; }
+        color: var(--accent, #1b64da); padding-bottom: 2px; white-space: nowrap; }
+      .rc-nf-why { font-size: 11.5px; color: var(--muted, #5b6470); margin-top: 7px; line-height: 1.5; }
       .rc-nf-why b { color: var(--text, #16191d); font-weight: 600; }
       .rc-nf.flat .rc-nf-time { font-size: 15px; font-weight: 600; }
     `;

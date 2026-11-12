@@ -17,15 +17,15 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="GTX 떡상 랭킹 — 많이 오르는 역 TOP 5">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#0b57d0">
+<meta name="theme-color" content="#1b64da">
 <link rel="stylesheet" href="vendor/pretendard/pretendard.css">
 <style>
-:root{--bg:#fff;--surface:#f6f7f9;--card:#fff;--text:#16191d;--text2:#4a5158;--muted:#666e76;--border:#e3e6ea;
---accent:#0b57d0;--accentbg:#e8f0fe;
+:root{--bg:#fff;--surface:#f6f7f9;--card:#fff;--text:#16191d;--text2:#4a5158;--muted:#5b6470;--border:#e3e6ea;
+--accent:#1b64da;--accentbg:#e8f0fe;
 /* 등급 색 — 떡상(진한 초록)·상승(초록)·유지(회색)·밀림(주황)·신규(보라) */
 --t-rocket:#0a8f4a;--t-rocket-bg:#dcf5e6;--t-up:#3aa76d;--t-up-bg:#ecf8f1;--t-flat:#8a929a;--t-flat-bg:#f1f3f5;
---t-down:#d9701a;--t-down-bg:#fff1e5;--t-new:#7a3fd0;--t-new-bg:#f1eafd;
---gold:#8a6200;--goldbg:#fff6da;--bar-now:#c9ced4;--bar-aft:#0b57d0;
+--t-down:#b45309;--t-down-bg:#fff1e5;--t-new:#7a3fd0;--t-new-bg:#f1eafd;
+--gold:#8a6200;--goldbg:#fff6da;--bar-now:#c9ced4;--bar-aft:#1b64da;
 /* 글자용 등급 색 — 흰·연한 바탕에서 대비 4.5 이상 (선·띠는 위 색 그대로, 2026-11-12) */
 --i-rocket:#08743c;--i-up:#1f7a4a;--i-flat:#5f676f;--i-down:#a85200;--i-new:#6a2fc0}
 @media(prefers-color-scheme:dark){:root{--bg:#14171a;--surface:#1c2024;--card:#191d21;--text:#e8eaed;--text2:#b3bac1;--muted:#8b939b;
@@ -539,7 +539,7 @@ h1{font-size:22px}
     const g = c.getContext('2d');
     const F = '"Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
     const t = RankTable.tierOf(r);
-    const COL = { rocket: '#0a8f4a', up: '#3aa76d', flat: '#8a929a', down: '#d9701a', new: '#7a3fd0' }[t];
+    const COL = { rocket: '#0a8f4a', up: '#3aa76d', flat: '#8a929a', down: '#b45309', new: '#7a3fd0' }[t];
     // 배경
     const bg = g.createLinearGradient(0, 0, 0, S); bg.addColorStop(0, '#0b1d3a'); bg.addColorStop(1, '#10305e');
     g.fillStyle = bg; g.fillRect(0, 0, S, S);

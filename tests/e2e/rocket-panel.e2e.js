@@ -128,7 +128,7 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
   const u0 = await b.evaluate('location.href');
   await b.evaluate(`document.querySelector('#rkp-hero [data-act="share"]').click(); true`); await sleep(1500);
   const sh2 = await b.evaluate(`({ url: location.href, txt: document.querySelector('#rkp-hero [data-act="share"]').textContent })`);
-  R.check('누르면 같은 화면에서 저장 (주소 그대로, 저장했어요/공유했어요)', sh2.url === u0 && /저장했어요|공유했어요|📸/.test(sh2.txt), sh2);
+  R.check('누르면 같은 화면에서 저장 (주소 그대로, 저장했어요/공유했어요)', sh2.url === u0 && /저장했어요|공유했어요|공유 이미지/.test(sh2.txt), sh2);
 
   // 전체 순위 — 패널 안에서 (rank.html 로 넘어가지 않음, 2026-11-12)
   const url0 = await b.evaluate('location.href');

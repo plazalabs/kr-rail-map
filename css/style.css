@@ -1095,6 +1095,11 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
   /* 떡상 패널이 열리면 오른쪽 자리를 비운다 */
   body.rk-open #toolbar { right: 412px; max-width: calc(100% - 472px); justify-content: flex-start; }
   body.rk-open .maplibregl-ctrl-top-right { right: 400px; }
+  /* 패널이 열리면 툴바를 조금 줄여 1440px 에서도 한 줄 (필요 748 → 약 620px) */
+  body.rk-open #toolbar { gap: 4px; }
+  body.rk-open #toolbar button, body.rk-open #toolbar .tb-dropbtn { padding: 7px 10px; font-size: 13px; }
+  body.rk-open #toolbar .tb-group button { padding: 5px 8px !important; }
+  body.rk-open #toolbar .tb-dropmenu button { padding: 8px 12px; }
 }
 #toolbar button.tb-rocket {
   background: linear-gradient(135deg, var(--rk-blue), var(--rk-blue-2)); color: #fff;

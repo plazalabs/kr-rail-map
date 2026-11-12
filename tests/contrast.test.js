@@ -27,9 +27,9 @@ const dark = Object.assign({}, light, tokens('body\\[data-theme="dark"\\]'),
 const PAIRS = [
   ['text', 'bg'], ['text', 'surface'], ['text-2', 'bg'], ['text-2', 'surface'], ['muted', 'bg'], ['muted', 'panel'], ['muted', 'surface'],
   ['accent', 'bg'], ['accent', 'surface'], ['accent', 'accent-weak'], ['accent-text', 'accent'],
-  ['rk-up', 'bg'], ['rk-up', 'surface'], ['rk-down', 'bg'], ['rk-green', 'bg'], ['rk-new', 'bg'], ['warn-text', 'bg'],   // rk-blue 는 글자로 안 씀 (칠 전용, 글자는 --accent)
+  ['rk-up', 'bg'], ['rk-up', 'surface'], ['rk-down', 'bg'], ['rk-green', 'bg'], ['rk-new', 'bg'], ['warn-text', 'bg'], ['tip-up', 'tip-bg'], ['tip-down', 'tip-bg'], ['tip-new', 'tip-bg'],   // rk-blue 는 글자로 안 씀 (칠 전용, 글자는 --accent)
 ];
-const WHITE_ON = ['rk-blue', 'rk-blue-2'];   // 떡상 카드·버튼: 흰 글자가 파랑 그라데이션 위
+const WHITE_ON = ['rk-blue', 'rk-blue-2', 'hero-flat-1', 'hero-flat-2', 'hero-new-1', 'hero-new-2', 'tip-bg'];   // 떡상 카드·버튼·지도 말풍선: 흰 글자가 색 위
 
 let pass = 0, fail = 0;
 const rows = [];

@@ -70,10 +70,10 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
   await d.goto(BASE + '#normal', 800);
   await ready(d);
   const rail = await d.evaluate(`(() => { const t = document.getElementById('tabbar'); const r = t.getBoundingClientRect();
-    return { disp: getComputedStyle(t).display, x: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height),
+    return { disp: getComputedStyle(t).display, x: Math.round(r.left), w: Math.round(r.width), h: Math.round(r.height), vh: innerHeight,
       tabs: [...t.querySelectorAll('[data-tab]')].filter(e => getComputedStyle(e).display !== 'none').map(e => e.textContent.trim()),
       tb: getComputedStyle(document.getElementById('toolbar')).display, sbLeft: Math.round(document.getElementById('sidebar').getBoundingClientRect().left) }; })()`);
-  R.check('PC: 왼쪽 세로 레일 + 툴바 보임', rail.disp !== 'none' && rail.x === 0 && rail.w <= 72 && rail.h === 1000 && rail.tb !== 'none' && rail.sbLeft >= rail.w, rail);
+  R.check('PC: 왼쪽 세로 레일 + 툴바 보임', rail.disp !== 'none' && rail.x === 0 && rail.w <= 72 && rail.h === rail.vh && rail.tb !== 'none' && rail.sbLeft >= rail.w, rail);
   R.check('PC 레일 항목', rail.tabs.join(',') === '노선,길찾기,떡상,시세,게시판,사용법', rail.tabs);
   const sideP = await d.evaluate(center('#tabbar [data-tab="side"]'));
   await d.click(sideP.x, sideP.y); await sleep(500);

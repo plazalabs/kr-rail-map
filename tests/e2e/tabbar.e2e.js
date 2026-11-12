@@ -16,7 +16,8 @@ async function ready(b) {
   return false;
 }
 const center = sel => `(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`;
-async function tap(b, sel) { const p = await b.evaluate(center(sel)); if (p) await b.click(p.x, p.y); await sleep(500); return !!p; }
+async function settle(b) { for (let i = 0; i < 30; i++) { await sleep(100); if (await b.evaluate(`!document.getAnimations().some(a => a.playState === 'running')`).catch(() => true)) return; } }
+async function tap(b, sel) { await settle(b); const p = await b.evaluate(center(sel)); if (p) await b.click(p.x, p.y); await sleep(500); await settle(b); return !!p; }
 const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribute('aria-current') === 'true'`;
 
 (async () => {
@@ -40,12 +41,13 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
   R.check('휴대폰 맨 위 검색 칸 보임', ms.vis && ms.top <= 12 && ms.w > 200, ms);
   await tap(b, '#m-search'); await sleep(400);
   R.check('검색 칸 누르면 서랍 열리고 검색창에 커서', await b.evaluate(`document.body.classList.contains('drawer-open') && document.activeElement === document.getElementById('search')`));
-  await b.evaluate(`window.UI && UI.closeDrawer(); document.activeElement && document.activeElement.blur(); true`); await sleep(400);
+  await b.evaluate(`window.UI && UI.closeDrawer(); document.activeElement && document.activeElement.blur(); true`); await sleep(400); await settle(b);
   await tap(b, '#tabbar [data-tab="route"]');
   R.check('길찾기 탭 → 길찾기 패널 열림 + 선택 표시', await b.evaluate(`!document.getElementById('route-panel').hidden && ${cur('route')}`));
   await tap(b, '#tabbar [data-tab="rocket"]');
   await sleep(1200);
   R.check('떡상 탭 → 떡상 패널 열림 + 선택 표시', await b.evaluate(`(() => { const p = document.getElementById('rocket-panel'); return !!p && !p.hidden && ${cur('rocket')}; })()`));
+  await settle(b);
   const over = await b.evaluate(`(() => { const p = document.getElementById('rocket-panel').getBoundingClientRect(); const t = document.getElementById('tabbar').getBoundingClientRect(); return Math.round(p.bottom - t.top); })()`);
   R.check('떡상 시트가 탭 바를 가리지 않음 (겹침 2px 이하)', over <= 2, over);
   await b.evaluate(`document.querySelector('#rocket-panel .rkp-close') && document.querySelector('#rocket-panel .rkp-close').click(); true`);

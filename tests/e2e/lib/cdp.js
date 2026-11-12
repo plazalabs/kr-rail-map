@@ -164,7 +164,17 @@ async function ensureToolbar(b, sel) {
     ${sel ? `const e = document.querySelector(${JSON.stringify(sel)}); if (!e || !e.closest('#toolbar')) return null;` : ''}
     if (!tab || !tb || getComputedStyle(tab).display === 'none' || getComputedStyle(tb).display !== 'none') return null;
     const r = tab.querySelector('[data-tab="more"]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
-  if (p) { await b.click(p[0], p[1]); await sleep(400); }
+  if (p) {
+    await b.click(p[0], p[1]);
+    // 시트가 미끄러져 올라오는 동안 재면 버튼 위치가 어긋난다 — 위치가 멈출 때까지 (최대 2초)
+    let last = null;
+    for (let i = 0; i < 20; i++) {
+      await sleep(100);
+      const r = await b.evaluate(`(() => { const r = document.getElementById('toolbar').getBoundingClientRect(); return Math.round(r.top) + ',' + Math.round(r.height); })()`);
+      if (r === last && !(await b.evaluate(`document.getAnimations().some(a => a.playState === 'running' && a.effect && a.effect.target && a.effect.target.id === 'toolbar')`))) break;
+      last = r;
+    }
+  }
   return !!p;
 }
 

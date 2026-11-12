@@ -116,6 +116,8 @@ const StationAccess = (() => {
         // 아니라 '신규' 로 표시해야 한다 (0분 단축으로 보이면 안 된다).
         save: (nw == null || af == null) ? null : nw - af,
         isNew: nw == null && af != null,
+        // 묶음(권역) 안 어느 역이 가장 빨랐나 — member_ids 번호 [지금, 개통 후]. GBD 만 자료에 있다 (감사 이전1)
+        members: d.member_ids, via: (d.id === 'gbd' && rec.g) ? rec.g : null,
       };
     });
     return {

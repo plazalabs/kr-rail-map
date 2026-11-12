@@ -78,6 +78,7 @@
     // 좁은 패널에서 열이 뭉개지지 않게 하기 위해서다.
     '.sd-cx-wrap{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border,#eee)}' +
     '.sd-glance{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}' +
+    '.sd-glance-note{margin:2px 0 6px;font-size:var(--fs-xs);color:var(--muted,#5b6470);line-height:1.5}' +
     '.sd-chip{display:flex;flex-direction:column;gap:1px;padding:6px 10px;border:1px solid var(--border,#e3e6ea);border-radius:10px;background:var(--bg,#f7f8fa);min-width:0}' +
     '.sd-chip small{font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
     '.sd-chip b{font-size:var(--fs-md);font-variant-numeric:tabular-nums;white-space:nowrap}' +
@@ -516,15 +517,23 @@
       var jn = StationJeonse.of(sid);
       if (jn && jn.r != null) chips.push(['전세가율', Math.round(jn.r * 100) + '%' + (jn.r >= 0.8 ? ' (주의)' : '')]);
     }
+    var glanceNote = '';
     if (typeof StationAccess !== 'undefined' && StationAccess.isReady()) {
       var ac = StationAccess.of(sid);
       var gb = ac && ac.rows.find(function (r) { return r.id === 'gbd'; });
-      if (gb && gb.now != null && gb.now > 0) chips.push(['강남까지', gb.now + '분' + (gb.save > 0 ? ' → ' + gb.after + '분' : '')]);
+      // '강남까지'라고 쓰면 강남역으로 읽힌다 — 실제 값은 강남·역삼·선릉·삼성 중 가장 빠른 역이라 '강남권'으로 쓰고 기준 역을 밝힌다 (감사 이전1, 2026-11-13)
+      if (gb && gb.now != null && gb.now > 0) {
+        chips.push(['강남권까지', gb.now + '분' + (gb.save > 0 ? ' → ' + gb.after + '분' : '')]);
+        var vn = function (k) { var id = gb.via && gb.members && gb.members[gb.via[k]]; var f = id && typeof STATIONS !== 'undefined' && STATIONS.find(function (x) { return x.properties.id === id; }); return f ? f.properties.name_ko + '역' : null; };
+        var v0 = vn(0), v1 = vn(1);
+        glanceNote = '강남권 = 강남·역삼·선릉·삼성 중 가장 빠른 역' + (v0 ? ' · 지금 ' + v0 + (gb.save > 0 && v1 && v1 !== v0 ? ' → 개통 후 ' + v1 : '') : '');
+      }
     }
     if (chips.length) {
       html += '<div class="sd-glance" role="list" aria-label="한눈에">' + chips.map(function (c) {
         return '<span class="sd-chip" role="listitem"><small>' + esc(c[0]) + '</small><b>' + esc(c[1]) + '</b></span>';
       }).join('') + '</div>';
+      if (glanceNote) html += '<p class="sd-glance-note">' + esc(glanceNote) + '</p>';
     }
 
     // 시세를 먼저. 없으면 빈 문자열이라 자연스럽게 노선부터 시작한다.

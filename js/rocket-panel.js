@@ -15,7 +15,9 @@
 
   /* ---------- 순수 계산 ---------- */
   var WEIGHT_LABEL = { avg: '평균', cbd: '도심', ybd: '여의도', gbd: '강남' };
-  var DEST = ['도심', '여의도', '강남'];
+  // 권역 — 그 안 역 중 가장 빠른 역까지의 시간이라 '강남'이 아니라 '강남권'이다 (감사 이전1, 2026-11-13)
+  var DEST = ['도심권', '여의도권', '강남권'];
+  var HUB_NOTE = '도심권 = 시청·광화문·종각·서울역, 여의도권 = 여의도·여의나루, 강남권 = 강남·역삼·선릉·삼성 — 그중 가장 빠른 역까지';
 
   // 받침이 있으면 '은', 없으면 '는' (한글이 아니면 '는')
   function topic(name) {
@@ -269,6 +271,7 @@
       '<div class="rkp-hero-main"><div class="rkp-rankline"><span class="rkp-name">' + esc(r.name) + '</span>' + before +
         rankBig(r.aft.rank, r.tie) + chg + '</div>' + svg + '</div>' +
       '<div class="rkp-bars">' + bars + '</div>' +
+      '<p class="rkp-hub-note">' + esc(HUB_NOTE) + '</p>' +
       '<div class="rkp-acts"><button type="button" data-act="detail">역 상세</button>' +
         '<button type="button" data-act="link"><i data-ic="link"></i> 링크 복사</button>' +
         '<button type="button" data-act="share"><i data-ic="camera"></i> 공유 이미지</button></div>' +

@@ -1168,8 +1168,9 @@ body[data-theme="dark"], body[data-theme="eclipse"], body[data-theme="neon"] { -
 .rkp-curve circle.cur { fill: var(--on-color); stroke: rgba(255,255,255,.45); stroke-width: 4; }
 @keyframes rkp-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
 .rkp-bars { margin-top: 12px; display: grid; gap: 7px; }
-.rkp-bar { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; font-size: var(--fs-sm); }
-.rkp-bar-l { opacity: .85; }
+.rkp-bar { display: grid; grid-template-columns: 58px 1fr auto; align-items: center; gap: 8px; font-size: var(--fs-sm); }
+.rkp-bar-l { opacity: .85; white-space: nowrap; }
+.rkp-hub-note { margin: 2px 0 0; font-size: var(--fs-xs); line-height: 1.45; opacity: .8; }
 .rkp-track { position: relative; height: 7px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; }
 .rkp-track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; transition: width .6s cubic-bezier(.3,.7,.2,1); }
 .rkp-track i.was { background: rgba(255,255,255,.32); }

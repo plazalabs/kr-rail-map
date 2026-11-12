@@ -94,6 +94,9 @@ const dests = DESTS.map(d => {
 });
 // 묶음 안 가장 빠른 시간
 const bestOf = (m, d) => { let v = null; for (const id of d.member_ids) { const t = m.get(id); if (t != null && (v == null || t < v)) v = t; } return v; };
+// 묶음 안 어느 역이 가장 빨랐나 (member_ids 의 번호) — 화면에 '강남권(삼성) 9분'처럼 기준 역을 밝히려고 (감사 이전1, 2026-11-13)
+const bestIdx = (m, d) => { let v = null, k = null; d.member_ids.forEach((id, i) => { const t = m.get(id); if (t != null && (v == null || t < v)) { v = t; k = i; } }); return k; };
+const GBD_I = dests.findIndex(d => d.id === 'gbd');
 
 // --- 연도별 개통 (2026-11-12) -------------------------------------------
 // 노선 'opened' 글에서 개통 연도를 읽는다. '미정…'·'…년대' 는 시기를 모름 → 연도별 단계에는 넣지 않고 '개통 후(전체)' 에만.
@@ -129,6 +132,12 @@ for (const id of ids) {
     // 고르느라(환승 판단 여유분) 표시 분이 지금보다 길게 나오는 경우(2026-11-11, 19역)는 지금 값을 쓴다.
     out[id].after.push(b == null ? (a == null ? null : a) : (a == null ? b : Math.min(a, b)));
   });
+  // GBD 기준 역 번호 [지금, 개통 후] — 개통 후 값이 지금 길로 정해졌으면(같거나 지금이 빠름) 지금 번호
+  if (GBD_I >= 0) {
+    const gd = dests[GBD_I], na = out[id].now[GBD_I], aa = out[id].after[GBD_I];
+    const gn = bestIdx(nowMap, gd), ga = bestIdx(aftMap, gd);
+    out[id].g = [gn, (na != null && aa === na) ? gn : ga];
+  }
   // 연도별 — CBD·YBD·GBD 셋만. 개통은 길을 더할 뿐이므로 앞 해(또는 지금)보다 길면 앞 값을 쓴다
   out[id].y = {};
   let prev = CORE_IDX.map(i => out[id].now[i]);

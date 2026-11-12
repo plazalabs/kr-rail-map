@@ -268,6 +268,18 @@ check('표 머리에 지금/개통 후가 있다', /지금/.test(html) && /개�
 check('추정값이라고 밝힌다', /추정/.test(html));
 check('자료 없는 역은 그렇다고 말한다', /계산하지 못했습니다/.test(SA.sectionHtml('st-nope')));
 
+// 감사 이전1 (2026-11-13): '강남까지'는 강남·역삼·선릉·삼성 중 가장 빠른 역 — 어느 역인지(g)를 자료에 남기고 화면은 '강남권'
+{
+  const gd = access.destinations.find(d => d.id === 'gbd');
+  const nm = id => (stations.features.find(f => f.properties.id === id) || { properties: {} }).properties.name_ko;
+  const withG = Object.values(access.stations).filter(r => Array.isArray(r.g)).length;
+  check('모든 역에 강남권 기준 역 번호(g)가 있다', withG === Object.keys(access.stations).length, withG);
+  const kw = access.stations['st-355172776'];
+  check('광운대: 지금은 선릉, 개통 후는 삼성 기준 (28→9분)', kw && nm(gd.member_ids[kw.g[0]]) === '선릉' && nm(gd.member_ids[kw.g[1]]) === '삼성' && kw.now[2] === 28 && kw.after[2] === 9, kw && kw.g);
+  const sd = fs.readFileSync(path.join(ROOT, 'js/station-detail.js'), 'utf8');
+  check("역 상세 칩은 '강남권까지' + 기준 역 안내", /'강남권까지'/.test(sd) && /강남·역삼·선릉·삼성 중 가장 빠른 역/.test(sd) && !/\['강남까지'/.test(sd));
+}
+
 console.log('\n결과: ' + pass + '개 통과, ' + fail + '개 실패');
 if (fail) {
   console.log('\n실패 목록');

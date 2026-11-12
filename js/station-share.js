@@ -42,7 +42,7 @@
     g.fillStyle = '#fff'; g.fillText(bt, 108, 694);
     var plan = planLines(o.doc, r);
     if (plan.length) { g.font = '600 30px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('새 노선 ' + plan.join(' · '), 80 + bw + 26, 692); }
-    ['CBD 도심', 'YBD 여의도', 'GBD 강남'].forEach(function (d, k) {
+    ['도심권 CBD', '여의도권 YBD', '강남권 GBD'].forEach(function (d, k) {
       var y = 800 + k * 70, n = r.now.times ? r.now.times[k] : null, a = r.aft.times ? r.aft.times[k] : null;
       g.fillStyle = '#9fb3d1'; g.font = '600 32px ' + F; g.fillText(d, 80, y);
       g.fillStyle = '#ffffff'; g.font = '800 40px ' + F;

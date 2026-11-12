@@ -226,6 +226,8 @@ def main():
 <meta name="theme-color" content="{esc(color)}">
 <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>
 <style>{STYLE}</style>
+<!-- 방문 통계: Umami(쿠키 없음, 실제 사이트에서만 셈 — data-domains). 자료 페이지 '방문 통계' 참고 -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="090a0561-5e07-4582-8c99-095ddf26e6cd" data-domains="plazalabs.github.io" data-exclude-hash="true"></script>
 </head>
 <body>
 <header><div class="wrap"><a class="logo" href="../"><i></i>한국철도맵</a>

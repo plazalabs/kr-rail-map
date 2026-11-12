@@ -44,7 +44,8 @@ const html = read('board.html');
 check('설정·모듈을 불러옴', /<script src="js\/board-config\.js"><\/script>/.test(html) && /<script src="js\/board\.js"><\/script>/.test(html));
 check('글 내용을 innerHTML 로 넣지 않음 (XSS)', !/innerHTML\s*=\s*[^'"`]*\bp\./.test(html) && /b\.textContent = p\.body/.test(html) && /n\.textContent = p\.nick/.test(html));
 check('준비 중 안내와 오류 제보 링크', /id="not-ready"/.test(html) && /id="fb-link"/.test(html));
-check('밖에서 불러오는 스크립트 없음', !/<script[^>]+src="https?:/.test(html));
+// 예외는 방문 통계 Umami 하나뿐 (회장님 확정 2026-11-12, 쿠키 없음) — 그 밖의 바깥 스크립트는 여전히 금지
+check('밖에서 불러오는 스크립트 없음 (Umami 통계만 예외)', !/<script[^>]+src="https?:/.test(html.replace(/<script defer src="https:\/\/cloud\.umami\.is\/script\.js"[^>]*><\/script>/g, '')));
 
 console.log('\n[DB] supabase/board.sql — 보안');
 const sql = read('supabase/board.sql');

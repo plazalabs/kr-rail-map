@@ -1036,6 +1036,12 @@ document.getElementById('route-go').addEventListener('click', () => {
   const pair = resolveRoutePair(document.getElementById('route-from'), document.getElementById('route-to'));
   const from = pair.from, to = pair.to;
   if (!from || !to) { box.innerHTML = '출발역과 도착역을 목록에서 선택해주세요.'; return; }
+  // 출발 = 도착이면 '0분·0원' 결과 대신 안내만 (같은 이름의 다른 역 — 예: 서울 시청 → 부산 시청 — 은 다른 역이라 그대로 찾는다)
+  if (from.properties.id === to.properties.id) {
+    box.innerHTML = '<p class="rc-same">출발역과 도착역이 같아요. 다른 역을 골라 주세요.</p>';
+    setStatus('출발역과 도착역이 같아요');
+    return;
+  }
   if (pair.guessed.length) {
     setStatus('동명역: ' + pair.guessed.map(s => `${s.properties.name_ko}(${stationLinesLabel(s)})`).join(', ') +
       ' 으로 해석했습니다. 다른 역이면 입력칸 목록에서 고르세요.');
@@ -1043,6 +1049,8 @@ document.getElementById('route-go').addEventListener('click', () => {
   // 3종 비교 모듈이 있으면 사용, 없으면 기존 단일 경로
   if (typeof RouteCompare !== 'undefined') {
     RouteCompare.show(from.properties.id, to.properties.id, { includeUnopened: routeIncludeUnopened() });
+    // 아래 상태 줄에 '도착역을 입력하세요' 같은 옛 안내가 남지 않게 — 동명역 해석 안내는 위에서 이미 띄웠으면 그대로 둔다
+    if (!pair.guessed.length) setStatus(`${from.properties.name_ko} → ${to.properties.name_ko} 경로를 찾았어요`);
     return;
   }
   const r = RouteFinder.findRoute(from.properties.id, to.properties.id,

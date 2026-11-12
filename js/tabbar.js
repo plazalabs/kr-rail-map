@@ -21,6 +21,9 @@
   };
 
   function setMore(on) {
+    // 시트를 열고 닫을 때 안의 드롭다운(도구·분석·저장)은 늘 닫힌 상태로 — 열린 채 남으면
+    // 다음에 시트를 열고 그 메뉴를 누를 때 열리는 대신 닫혀 버린다 (e2e ui-fixes ⑧·panel-state 에서 발견)
+    if (global.UI && global.UI.closeDropdowns) global.UI.closeDropdowns();
     document.body.classList.toggle('tb-more-open', !!on);
     var b = document.querySelector('#tabbar [data-tab="more"]');
     if (b) b.setAttribute('aria-expanded', on ? 'true' : 'false');
@@ -67,6 +70,13 @@
       if (t !== 'more') setMore(false);
       if (ACT[t]) ACT[t]();
       setTimeout(sync, 0);
+    });
+    var ms = $('m-search');
+    if (ms) ms.addEventListener('click', function () {
+      setMore(false);
+      if (global.UI && global.UI.openDrawer) global.UI.openDrawer();
+      var inp = $('search');
+      if (inp) { try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); } }
     });
     var gb = $('guide-btn');
     if (gb) gb.addEventListener('click', function () { if (global.Guide) global.Guide.show(true); });

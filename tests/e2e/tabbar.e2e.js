@@ -35,6 +35,12 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
   R.check('탭 바가 화면 맨 아래', lay.vis !== 'none' && lay.bottom === 844 && lay.h >= 56, lay);
   R.check('평소엔 툴바 숨김', lay.tb === 'none', lay.tb);
 
+  // 맨 위 검색 칸 (시안 C): 보이고, 누르면 서랍이 열리고 진짜 검색창에 커서
+  const ms = await b.evaluate(`(() => { const r = document.getElementById('m-search').getBoundingClientRect(); return { top: Math.round(r.top), w: Math.round(r.width), vis: getComputedStyle(document.getElementById('m-search')).display !== 'none' }; })()`);
+  R.check('휴대폰 맨 위 검색 칸 보임', ms.vis && ms.top <= 12 && ms.w > 200, ms);
+  await tap(b, '#m-search'); await sleep(400);
+  R.check('검색 칸 누르면 서랍 열리고 검색창에 커서', await b.evaluate(`document.body.classList.contains('drawer-open') && document.activeElement === document.getElementById('search')`));
+  await b.evaluate(`window.UI && UI.closeDrawer(); document.activeElement && document.activeElement.blur(); true`); await sleep(400);
   await tap(b, '#tabbar [data-tab="route"]');
   R.check('길찾기 탭 → 길찾기 패널 열림 + 선택 표시', await b.evaluate(`!document.getElementById('route-panel').hidden && ${cur('route')}`));
   await tap(b, '#tabbar [data-tab="rocket"]');

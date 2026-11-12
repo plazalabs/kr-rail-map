@@ -1378,3 +1378,18 @@ body.map-ready #map-skeleton { opacity: 0; visibility: hidden; }
 .rkp-now[data-n] { counter-reset: rkn var(--rkp-n); animation: kr-count .7s cubic-bezier(.2,.7,.2,1); }
 .rkp-now[data-n]::before { content: attr(data-pre) counter(rkn) "위" / ""; }
 .rkp-now[data-n] .rkp-now-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 휴대폰 맨 위 검색 칸 (시안 C) */
+#m-search { display: none; }
+@media (max-width: 980px) {
+  #m-search {
+    display: flex; align-items: center; gap: 8px;
+    position: absolute; top: 10px; left: 62px; right: 10px; z-index: 20; height: 44px;
+    padding: 0 16px; border: 0; border-radius: 999px; cursor: text;
+    background: var(--panel); color: var(--muted); box-shadow: var(--shadow);
+    font: inherit; font-size: var(--fs-md); text-align: left;
+  }
+  #m-search i[data-ic] { font-size: var(--fs-lg); color: var(--text-2); }
+  body.drawer-open #m-search { visibility: hidden; }
+  .sa-legend { top: 62px; }
+}

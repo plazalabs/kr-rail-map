@@ -378,14 +378,15 @@
   function play() {
     var s = stops();
     var i = 0;
-    st.y = s[0]; render(true);
     var b = el.querySelector('.rkp-play');
     b.innerHTML = Icons.svg('pause'); b.setAttribute('aria-label', '재생 멈추기');
+    // 재생 표시(playT)를 먼저 켜서 첫 연도도 지금 보이는 순위부터 움직이게 한다 (0 부터 X)
     playT = setInterval(function () {
       i++;
       if (i >= s.length) { stopPlay(); return; }
       st.y = s[i]; render(true);
     }, 1100);
+    st.y = s[0]; render(true);
   }
   function stopPlay() {
     if (!playT) return;

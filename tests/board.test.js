@@ -20,7 +20,11 @@ check('Supabase 주소 + anon 키면 켜짐', B.ready({ supabaseUrl: 'https://ab
 check('다른 주소(http·다른 도메인)는 안 켜짐', !B.ready({ supabaseUrl: 'http://abcdefgh.supabase.co', anonKey: 'x'.repeat(40) }) && !B.ready({ supabaseUrl: 'https://evil.example.com', anonKey: 'x'.repeat(40) }));
 const conf = read('js/board-config.js');
 check('설정 파일에 service_role 키가 없다 (anon 만)', !/service_role["']?\s*[:=]\s*['"][^'"]+/.test(conf) && !/"role"\s*:\s*"service_role"/.test(conf));
-check('배포 설정은 지금 비어 있음 (회장님 키 대기)', /supabaseUrl: ''/.test(conf) && /anonKey: ''/.test(conf));
+// 2026-11-13 켬 — 배포 설정은 실제 프로젝트 주소 + 공개용(publishable) 키여야 하고, 비밀 키는 절대 없어야 한다
+check('배포 설정: Supabase 주소 + 공개용 키 → 켜짐', /supabaseUrl: 'https:\/\/[a-z0-9]+\.supabase\.co'/.test(conf) && /anonKey: 'sb_publishable_/.test(conf));
+// 주석의 경고 문구('service_role 키는 넣지 말 것')는 빼고, 따옴표 안 실제 값만 본다
+const confValues = (conf.match(/'[^'\n]*'/g) || []).join(' ');
+check('배포 설정에 비밀 키(secret·service_role) 없음', !/sb_secret_|service_role|eyJ[^']*InNlcnZpY2Vfcm9sZSI/.test(confValues), confValues.slice(0, 80));
 
 console.log('\n[글 검사]');
 check('2글자 미만 거절', !B.validate({ body: 'a' }).ok);

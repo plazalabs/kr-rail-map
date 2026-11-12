@@ -7,8 +7,8 @@
  * 3) 커피 후원: 토스·카카오페이 송금 링크 (https://… 로 시작)
  */
 window.KR_BOARD_CONFIG = {
-  supabaseUrl: '',      // 예: 'https://abcdefgh.supabase.co'
-  anonKey: '',          // 예: 'eyJhbGciOi…' (anon public)
+  supabaseUrl: 'https://gpohvfiypzgxuatwjria.supabase.co',   // 2026-11-13 켬 (board.sql + board_guard_v2.sql 실행 확인)      // 예: 'https://abcdefgh.supabase.co'
+  anonKey: 'sb_publishable_DMtne7gQfxaetsWs5z-s5w_t4z0arGi',   // 공개용(publishable) 키 — 공개돼도 되는 키          // 예: 'eyJhbGciOi…' (anon public)
   coffeeUrl: '',        // 예: 'https://toss.me/아이디'
   feedbackUrl: 'https://docs.google.com/forms/d/e/1FAIpQLScv2JPh45AjKo9Lif7SM4hCQtCqrN5BofI_xeJ04Wh9unPaXw/viewform',   // 지금 쓰는 '오류 제보' 구글 폼
 };

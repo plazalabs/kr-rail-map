@@ -21,9 +21,12 @@ const open = (b, id) => b.evaluate(`(() => { const f = STATIONS.find(s => s.prop
 async function until(b, expr, n = 40) { for (let i = 0; i < n; i++) { if (await b.evaluate(expr).catch(() => false)) return true; await sleep(250); } return false; }
 
 (async () => {
-  // 1) 설정 없음 (지금 배포 상태)
+  // 1) 설정 없음 (키를 넣기 전 모습)
   const a = await launch({ port: 9841, w: 1440, h: 900 });
   await a.send('Network.setBypassServiceWorker', { bypass: true });
+  // 게시판을 켠 뒤(2026-11-13)에도 '키가 없을 때' 화면을 지키려고 board-config.js 를 빈 설정으로 흉내 낸다
+  await a.send('Fetch.enable', { patterns: [{ urlPattern: '*board-config.js*' }] });
+  a.handlers.push(m => { if (m.method !== 'Fetch.requestPaused') return; a.send('Fetch.fulfillRequest', { requestId: m.params.requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: 'application/javascript' }], body: Buffer.from("window.KR_BOARD_CONFIG = { supabaseUrl: '', anonKey: '', coffeeUrl: '', feedbackUrl: 'https://docs.google.com/forms/d/e/1FAIpQLScv2JPh45AjKo9Lif7SM4hCQtCqrN5BofI_xeJ04Wh9unPaXw/viewform' };").toString('base64') }).catch(() => {}); });
   await a.goto(BASE + '#normal', 800); await ready(a);
   await open(a, KW);
   await until(a, `!!document.querySelector('#sd-panel .sd-talk')`);

@@ -11,9 +11,12 @@ const SB = 'https://testproj01.supabase.co';
 const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e2e-anon-key-for-tests-only';
 
 (async () => {
-  // 1) 지금 배포 설정 (비어 있음)
+  // 1) 설정이 비어 있을 때 (키를 넣기 전 모습)
   const a = await launch({ port: 9799, w: 1100, h: 800 });
   await a.send('Network.setBypassServiceWorker', { bypass: true });
+  // 게시판을 켠 뒤(2026-11-13)에도 '키가 없을 때' 화면을 지키려고 board-config.js 를 빈 설정으로 흉내 낸다
+  await a.send('Fetch.enable', { patterns: [{ urlPattern: '*board-config.js*' }] });
+  a.handlers.push(m => { if (m.method !== 'Fetch.requestPaused') return; a.send('Fetch.fulfillRequest', { requestId: m.params.requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: 'application/javascript' }], body: Buffer.from("window.KR_BOARD_CONFIG = { supabaseUrl: '', anonKey: '', coffeeUrl: '', feedbackUrl: 'https://docs.google.com/forms/d/e/1FAIpQLScv2JPh45AjKo9Lif7SM4hCQtCqrN5BofI_xeJ04Wh9unPaXw/viewform' };").toString('base64') }).catch(() => {}); });
   await a.goto(PAGE, 1200);
   const s0 = await a.evaluate(`({ nr: !document.getElementById('not-ready').hidden, board: !document.getElementById('board').hidden, fb: document.getElementById('fb-link').href, coffee: document.getElementById('coffee-link').hidden })`);
   R.check("설정이 비면 '준비 중' 안내 + 오류 제보 링크, 커피 버튼 숨김", s0.nr && !s0.board && /docs\.google\.com\/forms/.test(s0.fb) && s0.coffee, s0);

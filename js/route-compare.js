@@ -351,6 +351,29 @@ const RouteCompare = (() => {
     return { time, transfer, fare, now };
   }
 
+  // 탭 위 한 줄 요약. '최적' 보다 다른 길이 빠르면 그 대가(환승)를 같이 적는다 — 숨기면 '최적' 이 거짓말처럼 보인다.
+  function insightOf(all) {
+    const out = [];
+    const t = all.time;
+    const trade = (r) => {
+      const dm = r.minutes - t.minutes;
+      const dx = r.transfers - t.transfers;
+      if (dm > 0) return `${dm}분 더 걸림`;
+      if (dm < 0) return `${-dm}분 빠르지만 환승 ${r.transfers}회` + (dx > 0 ? ` (${dx}회 더)` : '');
+      return '시간은 같음';
+    };
+    if (t && all.transfer && all.transfer.transfers < t.transfers) {
+      const dm = all.transfer.minutes - t.minutes;
+      out.push(`🔄 최소환승은 ${dm > 0 ? dm + '분 더 걸리지만' : '시간도 비슷하고'} 환승 ${t.transfers - all.transfer.transfers}회 절약`);
+    }
+    if (t && all.fare && all.fare.fare < t.fare) {
+      out.push(`💰 최소요금은 ${(t.fare - all.fare.fare).toLocaleString()}원 절약 · ${trade(all.fare)}`);
+    } else if (t && all.fare && all.fare.minutes < t.minutes) {
+      out.push(`💰 최소요금 길은 ${trade(all.fare)}`);
+    }
+    return out.join('<br>');
+  }
+
   // '지금 vs 개통 후' 요약. 화면과 테스트가 같은 판단을 쓰도록 여기 한 곳에 모은다.
   //   status: 'same'      — 개통 예정 노선이 도움 안 됨 (지금 경로가 이미 최선)
   //           'better'    — 개통 후 더 빨라짐
@@ -569,7 +592,9 @@ const RouteCompare = (() => {
     // 기본(운행 중만)에서는 '지금 vs 개통 후' 상자를 그리지 않는다 — 대신 한 줄 안내.
     const cmp = include ? compareNowFuture(fromId, toId, all) : { status: 'none' };
     const tabs = [
-      { id: 'time', label: '⚡ 최단시간', r: all.time },
+      // '최적' — 시간 + 갈아타는 부담(환승마다 몇 분 벌점)으로 고른 길. 표시 시간만 보면 다른 탭이 1~2분 빠를 수 있어
+      // '최단시간' 이라 부르면 틀린 말이 된다 (홍대입구→강남: 최소요금 37분·환승 2 < 이 길 38분·환승 0, 2026-11-12)
+      { id: 'time', label: '⚡ 최적', r: all.time },
       // 개통 예정 노선을 안 쓰는 경로가 따로 있을 때만 '지금' 탭을 붙인다.
       // 늘 붙이면 최단시간 탭과 같은 내용이 두 번 나와 헷갈린다.
       ...(cmp.status === 'better' ? [{ id: 'now', label: '🕐 지금 바로', r: all.now }] : []),
@@ -577,16 +602,8 @@ const RouteCompare = (() => {
       { id: 'fare', label: '💰 최소요금', r: all.fare },
     ].filter(t => t.r);
 
-    // 인사이트: 각 기준의 장점 요약
-    let insight = '';
-    if (all.time && all.transfer && all.transfer.transfers < all.time.transfers) {
-      const dm = all.transfer.minutes - all.time.minutes;
-      insight += `🔄 최소환승은 ${dm > 0 ? dm + '분 더 걸리지만' : '시간도 비슷하고'} 환승 ${all.time.transfers - all.transfer.transfers}회 절약<br>`;
-    }
-    if (all.time && all.fare && all.fare.fare < all.time.fare) {
-      const dm = all.fare.minutes - all.time.minutes;
-      insight += `💰 최소요금은 ${(all.time.fare - all.fare.fare).toLocaleString()}원 절약${dm > 0 ? ` (${dm}분 더 소요)` : ''}`;
-    }
+    // 인사이트: 각 기준의 장점 요약 (insightOf — 시험용으로 따로)
+    const insight = insightOf(all);
 
     let html = include ? nowFutureHtml(cmp) : openOnlyHintHtml(all);
     html += `<div class="rc-tabs${tabs.length > 3 ? ' four' : ''}">` + tabs.map((t, i) =>
@@ -654,6 +671,6 @@ const RouteCompare = (() => {
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
   return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, fareBreakdownHtml,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
-    compareNowFuture, nowFutureHtml, openOnlyHintHtml,
+    compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf,
     _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich } };
 })();

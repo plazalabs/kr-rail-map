@@ -122,5 +122,25 @@ console.log('\n[KTX 공식 운임표] 2026-09-01 통합 운임 (data/ktx-fares.j
   check('일반철도는 추정이라고 적음', RC.fareBreakdownHtml(RC.calcFareDetail(routeOf('gyeongbu-line', 100), 100)).includes('추정'));
   check('수도권 전철만 탄 경로는 내역 생략', RC.fareBreakdownHtml(RC.findAll(id('강남'), id('역삼')).time.fareDetail) === '');
 }
+console.log("\n[탭 요약] '최적' 보다 빠른 길이 있으면 대가(환승)를 같이 적는다 (2026-11-12)");
+{
+  // 꾸민 값: 최적 38분·환승 0·1,850원 / 최소요금 37분·환승 2·1,750원 (홍대입구→강남 실제 모양)
+  const T = { minutes: 38, transfers: 0, fare: 1850 }, F = { minutes: 37, transfers: 2, fare: 1750 };
+  const s1 = RC.insightOf({ time: T, transfer: null, fare: F });
+  check('더 싸고 더 빠른 최소요금 → "100원 절약 · 1분 빠르지만 환승 2회 (2회 더)"', s1 === '💰 최소요금은 100원 절약 · 1분 빠르지만 환승 2회 (2회 더)', s1);
+  const s2 = RC.insightOf({ time: T, transfer: null, fare: { minutes: 45, transfers: 1, fare: 1750 } });
+  check('더 싸고 더 느린 최소요금 → "7분 더 걸림"', s2 === '💰 최소요금은 100원 절약 · 7분 더 걸림', s2);
+  const s3 = RC.insightOf({ time: T, transfer: null, fare: { minutes: 36, transfers: 1, fare: 1850 } });
+  check('요금이 같아도 더 빠르면 알린다', s3 === '💰 최소요금 길은 2분 빠르지만 환승 1회 (1회 더)', s3);
+  const s4 = RC.insightOf({ time: T, transfer: null, fare: T });
+  check('같은 길이면 아무 말 없음', s4 === '', s4);
+  // 실제 자료: 홍대입구→강남
+  const hr = RC.findAll(id('홍대입구'), id('강남'), { openOnly: true });
+  const msg = RC.insightOf(hr);
+  const ok = hr.time && hr.fare && (hr.fare.minutes >= hr.time.minutes || /빠르지만 환승/.test(msg));
+  check('실제 홍대입구→강남: 최소요금이 더 빠르면 요약에 "빠르지만 환승" 이 있다', ok,
+    hr.time && hr.fare && `최적 ${hr.time.minutes}분·환승 ${hr.time.transfers} / 요금 ${hr.fare.minutes}분·환승 ${hr.fare.transfers} — ${msg}`);
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

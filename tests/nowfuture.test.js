@@ -72,8 +72,10 @@ console.log('[경로] openOnly 는 미개통 간선을 건너뛴다');
   check('지금 경로에 미개통 노선이 없음',
     nowOnly && unopenedIn(nowOnly).length === 0,
     nowOnly && nowOnly.legs.map(l => l.lineId || '도보').join(' → '));
-  check('개통 후 경로는 동부선을 씀',
-    all && all.legs.some(l => l.lineId === 'dongbu-line'),
+  // 2026-11-12: 코레일·2호선 구간이 공식 시각표 시간으로 바뀌자 상봉→종합운동장 개통 후 최단이 동부선 대신 GTX-B·C 로 바뀌었다.
+  // 이 시험의 뜻은 '개통 후 경로는 미개통 노선을 쓸 수 있다' 이므로 그것만 본다.
+  check('개통 후 경로는 미개통 노선(동부선·GTX 등)을 씀',
+    all && unopenedIn(all).length > 0,
     all && all.legs.map(l => l.lineId || '도보').join(' → '));
   check('개통 후가 더 빠름', all && nowOnly && all.minutes < nowOnly.minutes,
     all && nowOnly && `${nowOnly.minutes} → ${all.minutes}분`);

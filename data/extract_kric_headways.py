@@ -1,3 +1,4 @@
+# 실행: python -I data/extract_kric_headways.py <kric.pkl> <hw_kric.json>  → python data/build_headways.py <서울교통공사 CSV> <hw_kric.json>
 # 레일포털 전체 도시철도운행정보 → 노선·역·방향별 평일 07:00~09:00 출발 횟수 → 배차(분)
 import sys, pickle, collections, statistics, json, datetime
 sys.stdout.reconfigure(encoding='utf-8')

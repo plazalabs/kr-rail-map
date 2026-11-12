@@ -64,7 +64,8 @@ check('개통 연도 읽기', RT.yearOf('2031년 목표 (2026년 9월 착공)') 
   check('시기 미정 노선은 연도 단계에 없음 (평택 연장·동부선·GTX-G·H)', ['gtx-a-pyeongtaek', 'dongbu-line', 'gtx-g', 'gtx-h'].every(x => doc.undated_lines.includes(x)));
   const at = y => RT.compute(doc, { weight: 'avg', region: 'capital', at: y }).rows.find(r => r.name === '광운대');
   const k27 = at(2027), k31 = at(2031);
-  check('광운대 2027년: 아직 GTX-C 전 — 시간 그대로(26/44/24)', k27 && k27.aft.times.join() === '26,44,24', k27 && k27.aft.times.join());
+  // 2026-11-12 코레일 구간 공식 시각표 시간: 광운대 지금 25/42/28분 (전엔 추정 26/44/24)
+  check('광운대 2027년: 아직 GTX-C 전 — 지금과 같은 시간', k27 && k27.aft.times.join() === k27.now.times.join(), k27 && k27.aft.times.join() + ' / 지금 ' + k27.now.times.join());
   check('광운대 2031년: GTX-C 개통 — 9/15/9분, 10위 안', k31 && k31.aft.times.join() === '9,15,9' && k31.aft.rank <= 10, k31 && k31.aft.rank);
   const kRow = doc.rows.find(r => r.n === '광운대');
   check('연도별 시간은 해가 갈수록 늘지 않는다 (개통은 길을 더할 뿐)', doc.rows.every(r => { let p = r.now; return doc.years.every(y => { const v = r.y[y]; const ok = v.every((t, i) => t == null || p[i] == null || t <= p[i]); p = v; return ok; }); }), kRow && JSON.stringify(kRow.y));

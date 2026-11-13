@@ -21,6 +21,7 @@
   let map = null, ST = [], byId = new Map();
   let panel = null, active = false;
   let destId = null, maxMin = 45, withUnopened = false, sortBy = 'time';
+  let headwayTried = false, headwayFailed = false;   // I2: 출퇴근 배차 자료를 받으려 했는지·실패했는지
   let lastRows = [];
   const BANDS = [
     [15, '#1b7f3b', '15분'], [30, '#43a047', '30분'], [45, '#f9a825', '45분'],
@@ -204,6 +205,12 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     const dest = byId.get(destId);
     if (!dest) { sum.textContent = '직장(목적지) 역을 고르세요.'; panel.querySelector('#cm-list').innerHTML = ''; return; }
     panel.querySelector('#cm-dest').value = optionLabel(dest);
+    // 배차 넣기가 켜졌는데 배차 자료가 아직 없으면: 받고 나서 다시 그린다 (I2). 못 받으면 요약에 '배차 없이 계산'이라고 적는다
+    const wantPeak = !!(window.KR_WAIT && window.KR_WAIT.isPeak());
+    if (wantPeak && RouteFinder.hasHeadways && !RouteFinder.hasHeadways() && window.KR_ensureHeadways && !headwayTried) {
+      headwayTried = true;
+      window.KR_ensureHeadways().then(ok => { headwayFailed = !ok; if (active) render(false); });
+    }
     lastRows = compute(destId, maxMin, { withUnopened });
     try {
       ensureLayers();
@@ -224,8 +231,10 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
       const n = lastRows.filter(r => r.min <= b[0]).length;
       return `${b[2]} 안 <b>${n}</b>역`;
     }).join(' · ');
+    const hwNow = !!(RouteFinder.hasHeadways && RouteFinder.hasHeadways());
+    const hwNote = !wantPeak ? '' : hwNow ? ' · 출퇴근 배차 넣음' : headwayFailed ? ' · <b>배차 자료를 못 받아 배차 없이 계산</b>' : ' · 배차 자료 받는 중…';
     sum.innerHTML = `<b>${esc(dest.properties.name_ko)}</b>까지 ${maxMin}분 안: <b>${lastRows.length}</b>역` +
-      (withUnopened ? ' (개통 예정 포함)' : '') + '<br>' + per;
+      (withUnopened ? ' (개통 예정 포함)' : '') + hwNote + '<br>' + per;
     renderList();
   }
 

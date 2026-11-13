@@ -239,6 +239,16 @@ function watchData(name, p) {
 }
 window.KR_dataFail = dataFail;
 window.KR_dataFails = () => dataFails.slice();
+// 출퇴근 배차 자료 (data/headways.json, 26KB) — '출퇴근 배차 넣기'를 켠 계산이 처음 필요할 때 한 번 받는다 (감사5, 2026-11-14).
+// 예전엔 어디서도 받지 않아 통근권의 '배차 넣기'가 숫자를 하나도 바꾸지 못했다. 못 받으면 알림(H4)에 올린다.
+let headwaysP = null;
+window.KR_ensureHeadways = function () {
+  if (typeof RouteFinder === 'undefined' || !RouteFinder.loadHeadways) return Promise.resolve(false);
+  if (RouteFinder.hasHeadways && RouteFinder.hasHeadways()) return Promise.resolve(true);
+  if (!headwaysP) headwaysP = watchData('출퇴근 배차', fetch('data/headways.json').then(r => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+    .then(doc => RouteFinder.loadHeadways(doc)));
+  return headwaysP;
+};
 
 async function loadData() {
   // 단일파일 빌드용 인라인 데이터 우선

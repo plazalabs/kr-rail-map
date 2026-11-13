@@ -871,6 +871,7 @@ const RouteFinder = (() => {
   return {
     buildGraph, findRoute, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
     loadTransfers, loadHeadways, peakWaitAt, transferMinutes, sameService, countTransfers,
+    transferWait, hasHeadways: () => !!headwayDoc,   // I1·I2 (2026-11-14): route-compare 가 같은 대기 시간을 쓰게 · 배차 자료 받았는지
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
     // 예전에는 route-compare 가 그래프를 따로 만들었는데, 그쪽은 선형 조각을 이어붙여
     // 평탄화하는 바람에 GTX-D 분기(팔당 ↔ 삼성)에 없는 엣지가 생겼다.

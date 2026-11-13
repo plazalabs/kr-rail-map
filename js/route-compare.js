@@ -258,10 +258,13 @@ const RouteCompare = (() => {
         // 환승은 지금 역(stations[i])에서. 역·노선쌍마다 실제 도보 시간이 다르다.
         const tm = (curLine !== null && e.lineId !== null)
           ? RF.transferMinutes(stations[i], curLine, e.lineId, stations[i - 1], stations[i + 1]) : 0;
+        // 갈아탈 때 기다리는 시간 — findRoute(route.js)와 같은 정의. 예전엔 여기만 빠져 같은 경로가 탭마다 31분/28분으로 달랐다 (감사1, 2026-11-14)
+        const wt = (curLine !== null && e.lineId !== null && RF.transferWait) ? RF.transferWait(e.lineId, curLine, stations[i], stations[i - 1], stations[i + 1]) : 0;
         legs.push({ lineId: curLine, from: stations[legStart], to: stations[i],
-                    walk: curLine === null, distKm: km, transferAfter: tm, segs,
+                    walk: curLine === null, distKm: km, transferAfter: tm, waitAfter: wt, segs,
                     platform: !!(curLine && e.lineId && RF.isPlatformTransfer(stations[i], curLine, e.lineId, stations[i - 1], stations[i + 1])) });
         if (tm) minutes += tm;
+        minutes += wt;
         minutes += RF.accessMinutes(e.lineId);
         legStart = i; curLine = e.lineId; km = 0; segs = [];
       }
@@ -796,7 +799,7 @@ const RouteCompare = (() => {
 
   // 테스트에서 요금표를 직접 검증할 수 있도록 노출한다.
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
-  return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, loadSpecialFares, fareBreakdownHtml,
+  return { init, findAll, findAllOpen, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, loadSpecialFares, fareBreakdownHtml,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
     compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf, fastestTabId, pickCheapest,
     _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich } };

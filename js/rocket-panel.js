@@ -168,7 +168,7 @@
       '<div id="rkp-hero"></div>' +
       '<h3 class="rkp-sub" id="rkp-list-h"></h3>' +
       '<div class="rkp-tools" hidden>' +
-        '<input type="search" class="rkp-q" placeholder="우리 역 찾기 (예: 노원구, 광운대)" aria-label="순위에서 역 찾기" autocomplete="off">' +
+        '<input type="search" class="rkp-q" placeholder="우리 역 찾기 (예: 종로구, 광화문)" aria-label="순위에서 역 찾기" autocomplete="off">' +
         '<div class="rkp-sort" role="group" aria-label="정렬"><button type="button" data-sort="rise">많이 오른 순</button><button type="button" data-sort="after">개통 후 순위</button><button type="button" data-sort="now">지금 순위</button></div>' +
       '</div>' +
       '<ol class="rkp-list" id="rkp-list" aria-labelledby="rkp-list-h"></ol>' +

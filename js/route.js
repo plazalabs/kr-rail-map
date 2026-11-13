@@ -422,6 +422,10 @@ const RouteFinder = (() => {
   // 공식 시간은 '달리는 시간'만이라 역마다 DWELL_MIN 을 더한다(구간 하나 = 한 역에 도착·정차).
   // 공식 자료가 없는 코레일 구간(1호선 청량리 밖 등)은 지금처럼 속도로 낸다.
   const DWELL_MIN = 0.5;
+  // 노선 끝-끝 공식 시간 보정 (2026-11-13, 2차 감사 V4): 레일포털 시각표는 분 단위라 구간마다 '다음 역 도착 − 출발' 을 빼면
+  // 반올림이 쌓여 길어진다. 공항철도 일반열차는 구간 합 62분 + 정차 6분 = 68분인데 공식 안내는 서울역→인천공항1터미널 59분
+  // (airportrailroad.com 일반열차 노선 안내: 59분, 2터미널 66분) → 이 노선 구간 시간에 59/68 을 곱한다.
+  const LINE_TIME_SCALE = { arex: 59 / 68 };
   let officialRuntimeEdges = 0;
   function applyOfficialRuntimes() {
     officialRuntimeEdges = 0;
@@ -443,7 +447,7 @@ const RouteFinder = (() => {
         const key = e.lineId + '|' + nu + '|' + nv;
         const sec = look.get(key);
         if (sec == null) return;
-        e.officialMin = sec / 60 + DWELL_MIN;
+        e.officialMin = (sec / 60 + DWELL_MIN) * (LINE_TIME_SCALE[e.lineId] || 1);
         e.official = src.get(key);
         officialRuntimeEdges++;
       });

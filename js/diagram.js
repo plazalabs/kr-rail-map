@@ -124,29 +124,37 @@ const DiagramMode = (() => {
 
     const lineSeqs = [];
     lines.forEach(f => {
-      const coords = flatCoords(f.geometry);
-      if (coords.length < 2) return;
-      let pts = coords;
-      if (coords.length > 300) {
-        const step = Math.ceil(coords.length / 300);
-        pts = coords.filter((_, i) => i % step === 0 || i === coords.length - 1);
-      }
-      const pl = planar(pts, lat0);
-      const cum = [0];
-      for (let i = 0; i < pl.length - 1; i++) {
-        cum.push(cum[i] + Math.hypot(pl[i + 1][0] - pl[i][0], pl[i + 1][1] - pl[i][1]));
-      }
-      const mine = [];
+      const g = f.geometry || {};
+      // 조각마다 (2026-11-14 D8): 예전엔 모든 조각을 한 줄로 이어 붙여 역 순서를 매겨 2호선 같은 순환·지선 노선이 엇갈려 그려졌다
+      const rawParts = g.type === 'MultiLineString' ? g.coordinates : g.type === 'LineString' ? [g.coordinates] : [flatCoords(g)];
+      const parts = rawParts.filter(c => c && c.length >= 2).map(coords => {
+        let pts = coords;
+        if (coords.length > 300) {
+          const step = Math.ceil(coords.length / 300);
+          pts = coords.filter((_, i) => i % step === 0 || i === coords.length - 1);
+        }
+        const pl = planar(pts, lat0);
+        const cum = [0];
+        for (let i = 0; i < pl.length - 1; i++) cum.push(cum[i] + Math.hypot(pl[i + 1][0] - pl[i][0], pl[i + 1][1] - pl[i][1]));
+        const ring = Math.hypot(pl[0][0] - pl[pl.length - 1][0], pl[0][1] - pl[pl.length - 1][1]) < 0.3 && cum[cum.length - 1] > 3;
+        return { pl, cum, ring, mine: [] };
+      });
+      if (!parts.length) return;
       STATIONS.forEach(s => {
         if (!(s.properties.lines || []).includes(f.properties.id)) return;
         const c = s.geometry.coordinates;
-        const pr = projectAlong([c[0] * kx, c[1] * ky], pl, cum);
-        if (pr.dist > 1.6) return;
-        mine.push({ s, along: pr.along });
+        let best = null;
+        parts.forEach(P => { const pr = projectAlong([c[0] * kx, c[1] * ky], P.pl, P.cum); if (!best || pr.dist < best.pr.dist) best = { P, pr }; });
+        if (!best || best.pr.dist > 1.6) return;
+        best.P.mine.push({ s, along: best.pr.along });
       });
-      if (mine.length < 2) return;
-      mine.sort((a, b) => a.along - b.along);
-      lineSeqs.push({ line: f, stations: mine.map(m => m.s) });
+      parts.forEach(P => {
+        if (P.mine.length < 2) return;
+        P.mine.sort((a, b) => a.along - b.along);
+        const st = P.mine.map(m => m.s);
+        if (P.ring && st.length > 2) st.push(st[0]);   // 고리는 닫는다
+        lineSeqs.push({ line: f, stations: st });
+      });
     });
     if (!lineSeqs.length) return null;
 
@@ -417,8 +425,9 @@ const DiagramMode = (() => {
       });
       if (pts.length < 2) return;
       const d = 'M' + pts.map(p => p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join('L');
-      mk('path', { d, stroke: bg, 'stroke-width': 13 }, gCasing);
-      mk('path', { d, stroke: ls.line.properties.color || '#8a8f98', 'stroke-width': 7, opacity: .95 }, gLines);
+      const lid = ls.line.properties.id;
+      mk('path', { d, stroke: bg, 'stroke-width': 13, 'data-line': lid }, gCasing);
+      mk('path', { d, stroke: ls.line.properties.color || '#8a8f98', 'stroke-width': 7, opacity: .95, 'data-line': lid, class: 'dg-line' }, gLines);
     });
 
     nodes.forEach(n => {
@@ -446,12 +455,13 @@ const DiagramMode = (() => {
     labelCtx = { nodes, gLabels, fg, muted };
     placeLabels(1);
 
-    return { svg, W, H, nodeCount: nodes.length, edgeCount: N.edges.length, lineCount: N.lines.length };
+    return { svg, W, H, nodeCount: nodes.length, edgeCount: N.edges.length, lineCount: new Set(N.lines.map(ls => ls.line.properties.id)).size };
   }
 
   /* ---------- 라벨 배치 (확대 수준에 따라 다시 계산) ---------- */
   let labelCtx = null;
   let labelTimer = 0;
+  let focusLid = null;   // D8: 고른 노선 (null = 전체)
 
   function placeLabels(scale) {
     if (!labelCtx) return;
@@ -460,7 +470,7 @@ const DiagramMode = (() => {
 
     // 화면에서 일정한 크기로 보이도록 역수를 곱한다
     const dense = scale < 0.52;
-    const font = Math.max(6.5, Math.min(30, (dense ? 9.5 : 11.5) / scale));
+    const font = Math.max(6.5, Math.min(30, (focusLid ? 10 : dense ? 9.5 : 11.5) / scale));
     const cell = Math.max(3, 6 / scale);
 
     const occ = new Set();
@@ -472,15 +482,18 @@ const DiagramMode = (() => {
       return true;
     }
     nodes.forEach(n => {
+      if (focusLid && !n.lines.has(focusLid)) return;   // 흐린 역 자리는 비워 둔다 — 고른 노선 이름이 더 들어가게
       const s = Math.max(7, 4.5 / scale);
       fits(n.x - s, n.y - s, s * 2, s * 2);
     });
 
-    const ordered = [...nodes].sort((a, b) => (b.lines.size - a.lines.size) || (b.deg - a.deg));
+    const ordered = [...nodes].sort((a, b) => (focusLid ? (b.lines.has(focusLid) - a.lines.has(focusLid)) : 0) || (b.lines.size - a.lines.size) || (b.deg - a.deg));
     let placed = 0;
     ordered.forEach(n => {
       const isTransfer = n.lines.size > 1;
-      if (dense && !isTransfer) return;
+      const onFocus = !!(focusLid && n.lines.has(focusLid));
+      if (focusLid && !onFocus) return;          // 노선을 골랐으면 그 노선 역 이름만
+      if (dense && !isTransfer && !onFocus) return;
       const w = n.name.length * font * 0.98 + 4;
       const h = font + 2;
       const gap = Math.max(7, 6 / scale);
@@ -537,6 +550,7 @@ const DiagramMode = (() => {
       '<span class="dg-spacer"></span>' +
       '<button id="dg-zoom-out" aria-label="축소">−</button>' +
       '<button id="dg-zoom-in" aria-label="확대">＋</button>' +
+      '<label class="dg-pick-l"><span class="sr-only">노선 고르기</span><select id="dg-pick" aria-label="노선 고르기 — 고른 노선만 진하게"><option value="">전체 노선</option></select></label>' +
       '<button id="dg-fit">화면 맞춤</button>' +
       '<button id="dg-save">PNG</button>' +
       '<button id="dg-close">닫기</button>';
@@ -574,6 +588,12 @@ const DiagramMode = (() => {
           '노선 ' + out.lineCount + '개 · 역 ' + out.nodeCount + '곳 · ' + Math.round(performance.now() - t0) + 'ms';
         centerOnCore();
         bindStationClick(scroll);
+        const pick = bar.querySelector('#dg-pick');
+        if (pick) {
+          [...new Map(net.lines.map(ls => [ls.line.properties.id, ls.line.properties])).values()].sort((a, c) => (a.name_ko || '').localeCompare(c.name_ko || '', 'ko', { numeric: true }))
+            .forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name_ko || p.id; pick.appendChild(o); });
+          pick.onchange = () => focusLine(pick.value || null);
+        }
       } catch (e) {
         console.error('[DiagramMode]', e);
         scroll.innerHTML = '<p style="padding:40px;text-align:center;color:var(--muted)">' +
@@ -638,6 +658,32 @@ const DiagramMode = (() => {
     if (scale < 0.08) scale = 0.08;
     applyScale();
     scroll.scrollLeft = 0; scroll.scrollTop = 0;
+    // 가운데 놓기 (68점 평가 13번: 화면 맞춤에서 오른쪽에 큰 빈 공간) — 남는 너비·높이의 절반만큼 띄운다
+    canvas.style.marginLeft = Math.max(0, (scroll.clientWidth - viewW * scale) / 2) + 'px';
+    canvas.style.marginTop = Math.max(0, (scroll.clientHeight - viewH * scale) / 2) + 'px';
+  }
+
+  /* D8: 노선 하나만 진하게 — 나머지 선·역은 흐리게, 그 노선 역 이름을 모두 쓰고 그 노선에 맞춘다. null 이면 전체로 */
+  function focusLine(lid) {
+    focusLid = lid || null;
+    const svg = overlay && overlay.querySelector('.dg-canvas svg');
+    if (!svg || !labelCtx) return;
+    svg.querySelectorAll('path[data-line]').forEach(p => { p.style.opacity = !focusLid || p.getAttribute('data-line') === focusLid ? '' : '0.12'; });
+    svg.querySelectorAll('.dg-station').forEach(g => { const on = !focusLid || (g.dataset.lines || '').split(',').includes(focusLid); g.style.opacity = on ? '' : '0.18'; });
+    if (!focusLid) { placeLabels(scale); return; }
+    const ns = labelCtx.nodes.filter(n => n.lines.has(focusLid));
+    if (ns.length) fitBox(Math.min(...ns.map(n => n.x)), Math.min(...ns.map(n => n.y)), Math.max(...ns.map(n => n.x)), Math.max(...ns.map(n => n.y)));
+    else placeLabels(scale);
+  }
+  // 그림 좌표 상자를 화면 가운데에 맞춘다 (여백 60)
+  function fitBox(x0, y0, x1, y1) {
+    const scroll = overlay && overlay.querySelector('.dg-scroll');
+    if (!scroll) return;
+    const w = Math.max(40, x1 - x0) + 120, h = Math.max(40, y1 - y0) + 120;
+    scale = Math.max(0.08, Math.min(1.6, Math.min(scroll.clientWidth / w, scroll.clientHeight / h)));
+    applyScale();
+    scroll.scrollLeft = Math.max(0, ((x0 + x1) / 2) * scale - scroll.clientWidth / 2);
+    scroll.scrollTop = Math.max(0, ((y0 + y1) / 2) * scale - scroll.clientHeight / 2);
   }
 
   /* 서울 도심(환승역 밀집 지역)을 화면 중앙에 두고 1:1 로 시작 */
@@ -673,7 +719,7 @@ const DiagramMode = (() => {
   }
   function applyScale() {
     const canvas = overlay && overlay.querySelector('.dg-canvas');
-    if (canvas) canvas.style.transform = 'scale(' + scale + ')';
+    if (canvas) { canvas.style.transform = 'scale(' + scale + ')'; canvas.style.marginLeft = ''; canvas.style.marginTop = ''; }
     scheduleLabels();
   }
 
@@ -766,7 +812,7 @@ const DiagramMode = (() => {
   }
 
   const api = {
-    init, enter, exit, isActive,
+    init, enter, exit, isActive, focusLine, focused: () => focusLid,   // D8 노선 고르기
     // 카드의 출발·도착 버튼 → (act, 역 이름, 역 ID). app.js 가 연결한다.
     onAction: null,
     // 테스트용 — 좌표 변환·역 묶음만 검사한다

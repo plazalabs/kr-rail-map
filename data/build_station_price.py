@@ -49,6 +49,7 @@ def main():
 
     sgg_name = load_sgg_name()
     stations = json.loads(DONG.read_text("utf8"))
+    junggu_dongs = {s["dong"] for s in stations if s.get("lawd") == "28125" and s.get("sgg") == "중구" and s.get("dong")}
 
     # 공식 주소데이터는 '서울역'·'총신대입구' 라고 부르고 지도는 '서울'·'이수'
     # 라고 부른다. 이름을 안 맞추면 그 역은 시세가 통째로 사라진다 —
@@ -93,7 +94,9 @@ def main():
                 continue
             r["lawd"] = code
             r["sido"] = sido
-            r["sgg"] = sgg
+            # 인천 28125 에는 옛 동구와 옛 중구 원도심(인현동·북성동 등)이 함께 있다. 이름표('동구')를
+            # 그대로 쓰면 동인천역이 '동구 인현동'으로 나온다 → 역 주소데이터가 '중구'라 적은 동은 '중구'.
+            r["sgg"] = "중구" if code == "28125" and r["umd"] in junggu_dongs else sgg
             deals.append(r)
 
     print(f"실거래 {len(deals)}건 (해제·가격없음 제외)")

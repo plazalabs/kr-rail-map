@@ -224,6 +224,10 @@ def resolve_lawd(sido, sgg, dong, index):
     cand = set(LAWD.CODE)
     if sgg:
         cand = {c for c in cand if LAWD.CODE[c][2] == sgg or LAWD.CODE[c][1] == sgg}
+        # 인천 중구 원도심(인현동·사동·북성동 등)의 실거래가는 코드 28125(이름표 '동구')에 있다.
+        # '중구' 이름표만 보면 못 찾으므로 후보에 더한다. 법정동이 한 곳에서만 맞을 때만 붙는다.
+        if sgg == "중구" and (sido or "").startswith("인천") and "28125" in LAWD.CODE:
+            cand.add("28125")
     if sido:
         cand = {c for c in cand if LAWD.CODE[c][0] == sido}
     if not cand or not dong:

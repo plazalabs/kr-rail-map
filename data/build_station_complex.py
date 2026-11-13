@@ -103,6 +103,11 @@ def collect_deals(sgg_name):
     """
     deals = []
     seen_file = 0
+    # 인천 28125: 역 주소데이터가 '중구'라 적은 동(옛 중구 원도심)은 '중구'로 (build_station_price 와 같음)
+    junggu_dongs = set()
+    if DONG.exists():
+        junggu_dongs = {s["dong"] for s in json.loads(DONG.read_text("utf8"))
+                        if s.get("lawd") == "28125" and s.get("sgg") == "중구" and s.get("dong")}
     for f in sorted(glob.glob(str(RTMS / f"*_{PERIOD[0]}_{PERIOD[1]}.json"))):
         name = pathlib.Path(f).name
         code = name.split("_")[0]
@@ -117,7 +122,7 @@ def collect_deals(sgg_name):
                 continue
             r["lawd"] = code
             r["sido"] = sido
-            r["sgg"] = sgg
+            r["sgg"] = "중구" if code == "28125" and r["umd"] in junggu_dongs else sgg
             deals.append(r)
     return deals, seen_file
 

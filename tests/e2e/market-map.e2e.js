@@ -112,6 +112,19 @@ async function until(b, expr, n = 40) {
   await b.evaluate(`document.querySelector('#mm-panel .mm-unfocus').click(); 0`); await sleep(500);
   const fb = await b.evaluate(`({ focus: MarketMap.state().focus, groups: MarketMap.model().groups.length, bar: document.querySelector('#mm-panel .mm-focus').hidden })`);
   R.check("'전체 보기' 누르면 묶음이 다 돌아옴", fb.focus === null && fb.groups === g0 && fb.bar, fb);
+  // H8 노선×빨라짐 구간 표 (2026-11-14): 행 = 묶음, 칸 = 역 수, 칸 누르면 그 묶음·구간 역만 목록 → '전체 보기'
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'bands'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
+  const bd = await b.evaluate(`(() => { const rows = [...document.querySelectorAll('#mm-panel .mm-bd tbody tr')]; const cells = [...document.querySelectorAll('#mm-panel .mm-bcell')];
+    const sum = cells.reduce((a, c) => a + (+c.textContent), 0); return { rows: rows.length, groups: MarketMap.model().groups.length, total: MarketMap.model().total, sum,
+      head: (document.querySelector('#mm-panel .mm-bd-t') || {}).textContent || '', hscroll: document.getElementById('mm-panel').scrollWidth > document.getElementById('mm-panel').clientWidth + 1 }; })()`);
+  R.check('구간 표: 줄 = 묶음 수 · 칸 숫자 합 = 역 수 · 단위(역 수) 설명 · 패널 가로 넘침 없음', bd.rows === bd.groups && bd.sum === bd.total && /역 수/.test(bd.head) && !bd.hscroll, bd);
+  const pickCell = await b.evaluate(`(() => { const c = document.querySelector('#mm-panel .mm-bcell[data-b="b4"]') || document.querySelector('#mm-panel .mm-bcell'); const r = { g: c.dataset.g, b: c.dataset.b, n: +c.textContent }; c.click(); return r; })()`); await sleep(500);
+  const bl = await b.evaluate(`({ st: MarketMap.state(), rows: document.querySelectorAll('#mm-panel .mm-row').length, bar: document.querySelector('#mm-panel .mm-focus').textContent })`);
+  R.check('구간 칸 누르면 그 묶음·구간 역만 목록으로 (줄 수 = 칸 숫자)', bl.st.view === 'list' && bl.st.focus === pickCell.g && bl.st.band === pickCell.b && bl.rows === pickCell.n && /만 보는 중/.test(bl.bar), { pickCell, rows: bl.rows, bar: bl.bar });
+  await b.evaluate(`document.querySelector('#mm-panel .mm-unfocus').click(); 0`); await sleep(400);
+  const bu = await b.evaluate(`({ band: MarketMap.state().band, focus: MarketMap.state().focus })`);
+  R.check("'전체 보기'로 구간 거르기도 풀림", bu.band === null && bu.focus === null, bu);
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'tiles'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
   // 표(노선×역)
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'matrix'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
   const mx = await b.evaluate(`(() => { const rows = [...document.querySelectorAll('#mm-panel .mm-mxr')]; return { rows: rows.length, groups: MarketMap.model().groups.length, cells: document.querySelectorAll('#mm-panel .mm-cell').length, total: MarketMap.model().total, first: rows[0] ? rows[0].querySelector('.mm-mxh b').textContent : null }; })()`);

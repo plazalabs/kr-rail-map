@@ -70,6 +70,31 @@
       return { pts: pts, med: med, split: SC_GAIN_SPLIT, from: SC_FROM, to: SC_TO, noPrice: noPrice, isNew: isNew, q: q };
     }
     // 사분면 이름 — 기획서 4.5 그대로. '저평가'·'매수' 같은 단정 말은 쓰지 않는다.
+    // H8 노선 × 빨라지는 분 구간 (고정 구간 — 같은 값은 언제나 같은 칸)
+    var BANDS = [
+      { key: 'b0', label: '0분', test: function (g) { return g != null && g <= 0; } },
+      { key: 'b1', label: '0~5분', test: function (g) { return g > 0 && g < 5; } },
+      { key: 'b2', label: '5~10분', test: function (g) { return g >= 5 && g < 10; } },
+      { key: 'b3', label: '10~20분', test: function (g) { return g >= 10 && g < 20; } },
+      { key: 'b4', label: '20분+', test: function (g) { return g >= 20; } },
+      { key: 'bn', label: '신규', test: null }
+    ];
+    function bandOf(t) {
+      if (t.row.isNew) return 'bn';
+      if (t.gain == null) return null;
+      for (var i = 0; i < BANDS.length - 1; i++) if (BANDS[i].test(t.gain)) return BANDS[i].key;
+      return null;
+    }
+    function bandMatrix(groups) {
+      return groups.map(function (G) {
+        var c = {}; BANDS.forEach(function (B) { c[B.key] = 0; });
+        var gs = [];
+        G.tiles.forEach(function (t) { var k = bandOf(t); if (k) c[k]++; if (!t.row.isNew && t.gain != null) gs.push(t.gain); });
+        gs.sort(function (a, b) { return a - b; });
+        var med = gs.length ? (gs.length % 2 ? gs[(gs.length - 1) / 2] : (gs[gs.length / 2 - 1] + gs[gs.length / 2]) / 2) : null;
+        return { name: G.name, n: G.tiles.length, c: c, med: med == null ? null : Math.round(med * 10) / 10 };
+      });
+    }
     var QUAD_LABEL = {
       hiLo: '접근성 개선 대비 가격 반응 제한', hiHi: '접근성과 시장 반응 동반',
       loHi: '교통 외 요인 점검', loLo: '두 지표 변화 제한'
@@ -221,7 +246,7 @@
       return model;
     }
 
-    return { scatterPoints: scatterPoints, QUAD_LABEL: QUAD_LABEL, FAMILY: FAMILY, GAIN_BINS: GAIN_BINS, TIER_COLORS: TIER_COLORS, JEONSE_BINS: JEONSE_BINS, PRICE_BINS: PRICE_BINS, NEW_COLOR: NEW_COLOR, NA_COLOR: NA_COLOR,
+    return { BANDS: BANDS, bandOf: bandOf, bandMatrix: bandMatrix, scatterPoints: scatterPoints, QUAD_LABEL: QUAD_LABEL, FAMILY: FAMILY, GAIN_BINS: GAIN_BINS, TIER_COLORS: TIER_COLORS, JEONSE_BINS: JEONSE_BINS, PRICE_BINS: PRICE_BINS, NEW_COLOR: NEW_COLOR, NA_COLOR: NA_COLOR,
       OTHER_NEW: OTHER_NEW, NO_NEW: NO_NEW, NONE: NONE,
       familyOf: familyOf, isNewLine: isNewLine, gainOf: gainOf, colorOf: colorOf, groupOf: groupOf, squarify: squarify, build: build, layout: layout };
   })();
@@ -231,7 +256,7 @@
   /* ---------------- 화면 ---------------- */
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var WLABEL = { avg: '평균', cbd: '도심', ybd: '여의도', gbd: '강남' };
-  var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', view: 'tiles', sel: null, cmp: [], tab: 'tiles', focus: null };
+  var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', view: 'tiles', sel: null, cmp: [], tab: 'tiles', focus: null, band: null };
   var el = null, isOpen = false, model = null, doc = null, rowsById = new Map(), tileById = new Map(), opener = null;
 
   // rank.js 는 'const RankTable' 로 선언돼 window 에 안 붙는다 — 이름으로 직접 찾는다
@@ -284,6 +309,11 @@
       '.mm-mxc{display:flex;flex-wrap:wrap;gap:2px}' +
       '.mm-tile.mm-cell{position:static;width:34px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;overflow:hidden;white-space:nowrap}' +
       '.mm-list{list-style:none;margin:0;padding:0}' +
+      '.mm-bd-t{margin:2px 2px 6px;font-size:var(--fs-xs);color:var(--muted,#5b6470);line-height:1.45}' +
+      '.mm-bd{border-collapse:collapse;width:100%;font-size:var(--fs-sm)}.mm-bd th,.mm-bd td{border-bottom:1px solid var(--border,#e3e6ea);padding:3px 4px;text-align:center}' +
+      '.mm-bd th[scope=row]{text-align:left;white-space:nowrap}.mm-bd th[scope=row] span{color:var(--muted,#5b6470);font-weight:normal;font-size:var(--fs-xs)}.mm-bd thead th{font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
+      '.mm-bd td.z{color:var(--muted,#9aa1a8)}.mm-bd td.md{font-size:var(--fs-xs);white-space:nowrap}' +
+      '.mm-bcell{width:100%;min-width:34px;min-height:28px;border:0;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:800;font-size:var(--fs-sm)}.mm-bcell:focus-visible{outline:3px solid var(--accent,#1565c0);outline-offset:1px}' +
       'button.mm-gname{border:0;background:none;padding:0;margin:0;cursor:pointer;text-align:left;font-family:inherit;z-index:1}button.mm-gname:hover{text-decoration:underline}' +
       'button.mm-gname:focus-visible{outline:3px solid var(--accent,#1565c0);outline-offset:1px}' +
       '.mm-gname-mx{position:static;font-size:var(--fs-sm);font-weight:800;color:var(--text,#222)}' +
@@ -347,7 +377,7 @@
         '<label>색 <select data-k="color"><option value="gain">빨라지는 분</option><option value="tier">순위 변화</option><option value="jeonse">전세가율 (투자 모드)</option><option value="price">평당가 (투자 모드)</option></select></label>' +
         '<label>크기 <select data-k="size"><option value="equal">모두 같게</option><option value="deals">아파트 거래 건수 (투자 모드)</option><option value="supply">입주 예정 세대 (투자 모드)</option></select></label>' +
         '<label>기준 <select data-k="w"><option value="avg">평균</option><option value="cbd">도심</option><option value="ybd">여의도</option><option value="gbd">강남</option></select></label>' +
-        '<label>보기 <select data-k="view"><option value="tiles">타일</option><option value="list">목록(순위)</option><option value="matrix">표(노선×역)</option><option value="scatter">산점도(빨라짐×가격)</option></select></label>' +
+        '<label>보기 <select data-k="view"><option value="tiles">타일</option><option value="list">목록(순위)</option><option value="matrix">표(노선×역)</option><option value="bands">표(노선×빨라짐 구간)</option><option value="scatter">산점도(빨라짐×가격)</option></select></label>' +
         '<label><input type="checkbox" class="mm-wait"> 출퇴근 배차 넣기</label>' +
         '<label>역 <select data-k="scope"><option value="new">새 노선이 서는 역</option><option value="affected">빨라지는 역 모두</option><option value="all">수도권 전체</option></select></label>' +
       '</div>' +
@@ -396,6 +426,8 @@
     el.querySelector('.mm-tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) setTab(b.dataset.tab); });
     var board = el.querySelector('.mm-board');
     board.addEventListener('click', function (e) {
+      var bc = e.target.closest('.mm-bcell');
+      if (bc) { stopPlay(); st.focus = bc.dataset.g; st.band = bc.dataset.b; st.view = 'list'; track('market_map_filter_change', { 종류: '표 칸' }); render(); var u = el.querySelector('.mm-unfocus'); if (u) u.focus(); return; }
       var g = e.target.closest('.mm-gname');
       if (g) { setFocus(st.focus ? null : g.dataset.g); return; }
       var t = e.target.closest('.mm-tile'); if (t) pick(t.dataset.id, { fromTile: true });
@@ -424,7 +456,7 @@
   // 링크: ?market=1&y=&w=&c=&g=&s=&st= — 모르는 값은 무시(기본값)
   var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier', 'jeonse', 'price'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
   function linkQuery() {
-    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
+    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.band ? '&b=' + st.band : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
   }
   function note(msg) { var s = document.getElementById('status'); if (s) s.textContent = msg; }
 
@@ -471,6 +503,12 @@
     if (st.focus) {
       var FG = model.groups.filter(function (G) { return G.name === st.focus; })[0];
       if (FG) model = Object.assign({}, model, { groups: [FG], total: FG.tiles.length }); else st.focus = null;
+    }
+    // H8 구간 거르기 (표 칸을 누르면): 그 구간 역만
+    if (st.band) {
+      var gs2 = model.groups.map(function (G) { return Object.assign({}, G, { tiles: G.tiles.filter(function (t) { return Logic.bandOf(t) === st.band; }) }); })
+        .filter(function (G) { return G.tiles.length; });
+      model = Object.assign({}, model, { groups: gs2, total: gs2.reduce(function (s, G) { return s + G.tiles.length; }, 0) });
     }
     el.querySelector('.mm-n').textContent = out.total;
   }
@@ -672,11 +710,33 @@
     var f = (st.sel && tileById.get(st.sel)); if (f) { board.querySelectorAll('.mm-dot').forEach(function (o) { o.tabIndex = -1; }); f.tabIndex = 0; }
   }
 
+  // H8 노선 × 빨라짐 구간 표 — 칸 = 역 수. 칸을 누르면 그 묶음·구간 역만 '목록'으로
+  function drawBands(board) {
+    tileById = new Map();
+    board.style.overflow = 'auto';
+    var M = Logic.bandMatrix(model.groups), B = Logic.BANDS;
+    var max = 1; M.forEach(function (r) { B.forEach(function (x) { if (r.c[x.key] > max) max = r.c[x.key]; }); });
+    var head = '<p class="mm-bd-t">행 = ' + (st.group === 'line' ? '새 노선 묶음' : '묶음') + ' · 열 = 개통 후 빨라지는 분(' + esc(WLABEL[st.w]) + ' 기준, ' + (st.y === 'all' ? '전체 개통 가정' : esc(st.y) + '년까지') + ') · 칸 = <b>역 수</b> · 중앙값 = 그 묶음 역들의 빨라지는 분 가운데 값</p>';
+    var first = true;
+    var html = head + '<table class="mm-bd"><thead><tr><th scope="col">묶음</th>' + B.map(function (x) { return '<th scope="col">' + esc(x.label) + '</th>'; }).join('') + '<th scope="col">중앙값</th></tr></thead><tbody>' +
+      M.map(function (r) {
+        return '<tr><th scope="row">' + esc(r.name) + ' <span>' + r.n + '역</span></th>' + B.map(function (x) {
+          var v = r.c[x.key];
+          if (!v) return '<td class="z">·</td>';
+          var a = Math.round(0.12 + 0.6 * v / max * 100) / 100;
+          var h = '<td><button type="button" class="mm-bcell" data-g="' + esc(r.name) + '" data-b="' + x.key + '" aria-label="' + esc(r.name) + ' · 빨라짐 ' + esc(x.label) + ' · ' + v + '역 — 이 역들만 목록으로" style="background:rgba(26,122,72,' + a + ');color:' + (a > 0.45 ? '#fff' : 'inherit') + '">' + v + '</button></td>';
+          first = false; return h;
+        }).join('') + '<td class="md">' + (r.med == null ? '—' : '−' + r.med + '분') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+    board.innerHTML = html;
+  }
+
   function draw() {
     if (!model) return;
     var board = el.querySelector('.mm-board');
     if (st.view === 'matrix') { if (!model.total) { board.innerHTML = '<div class="mm-empty">이 조건에 맞는 역이 없습니다</div>'; return; } drawMatrix(board); return; }
     if (st.view === 'scatter') { drawScatter(board); return; }
+    if (st.view === 'bands') { if (!model.total) { board.innerHTML = '<div class="mm-empty">이 조건에 맞는 역이 없습니다</div>'; return; } drawBands(board); return; }
     if (st.view === 'list') { if (!model.total) { board.innerHTML = '<div class="mm-empty">이 조건에 맞는 역이 없습니다</div>'; return; } drawList(board); return; }
     board.style.overflow = 'hidden';
     var W = board.clientWidth, H = board.clientHeight;
@@ -709,6 +769,7 @@
   function setFocus(name) {
     stopPlay();
     st.focus = name || null;
+    if (!name) st.band = null;
     if (name) track('market_map_filter_change', { 종류: '묶음 확대' });
     render();
     var f = st.focus ? el.querySelector('.mm-unfocus') : el.querySelector('.mm-board .mm-gname, .mm-board .mm-tile');
@@ -717,9 +778,10 @@
   function renderFocus() {
     var bar = el.querySelector('.mm-focus');
     if (!bar) return;
-    if (!st.focus) { bar.hidden = true; bar.innerHTML = ''; return; }
+    if (!st.focus && !st.band) { bar.hidden = true; bar.innerHTML = ''; return; }
     bar.hidden = false;
-    bar.innerHTML = '<span><b>' + esc(st.focus) + '</b> 묶음만 보는 중 · ' + (model ? model.total : 0) + '역</span>' +
+    var bl = st.band ? Logic.BANDS.filter(function (B) { return B.key === st.band; })[0] : null;
+    bar.innerHTML = '<span>' + (st.focus ? '<b>' + esc(st.focus) + '</b> 묶음' : '') + (st.focus && bl ? ' · ' : '') + (bl ? '빨라짐 <b>' + esc(bl.label) + '</b>' : '') + '만 보는 중 · ' + (model ? model.total : 0) + '역</span>' +
       '<button type="button" class="mm-unfocus">← 전체 보기</button>';
   }
 
@@ -906,8 +968,9 @@
     ['w', 'group', 'color', 'scope'].forEach(function (k) { if (o[k] && ALLOWED[k].indexOf(String(o[k])) >= 0) st[k] = String(o[k]); });
     if (o.y && /^(all|20[0-9][0-9])$/.test(String(o.y))) st.y = String(o.y);
     if (['deals', 'supply', 'equal'].indexOf(o.size) >= 0) st.size = o.size;
-    if (['list', 'tiles', 'matrix', 'scatter'].indexOf(o.view) >= 0) st.view = o.view;
-    if (o.focus && String(o.focus).length < 40) st.focus = String(o.focus);   // 없는 묶음이면 compute 가 풀어 준다
+    if (['list', 'tiles', 'matrix', 'scatter', 'bands'].indexOf(o.view) >= 0) st.view = o.view;
+    if (o.focus && String(o.focus).length < 40) st.focus = String(o.focus);
+    if (o.band && /^b[0-4n]$/.test(String(o.band))) st.band = String(o.band);   // 없는 묶음이면 compute 가 풀어 준다
     if (st.view === 'scatter' && !invest()) st.view = 'tiles';
     if (st.size !== 'equal' && !invest()) st.size = 'equal';
     if ((st.color === 'jeonse' || st.color === 'price') && !invest()) st.color = 'gain';
@@ -968,11 +1031,11 @@
       b.addEventListener('click', function () { open({}); });
     });
     var q = new URLSearchParams(location.search);
-    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s'), view: q.get('v'), focus: q.get('f') });
+    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s'), view: q.get('v'), focus: q.get('f'), band: q.get('b') });
   }
 
   global.MarketMap = { Logic: Logic, init: init, open: open, close: close, pick: pick,
-    isOpen: function () { return isOpen; }, state: function () { return { focus: st.focus, view: st.view, w: st.w, y: st.y, group: st.group, size: st.size, color: st.color, sel: st.sel, tab: st.tab }; },
+    isOpen: function () { return isOpen; }, state: function () { return { band: st.band, focus: st.focus, view: st.view, w: st.w, y: st.y, group: st.group, size: st.size, color: st.color, sel: st.sel, tab: st.tab }; },
     model: function () { return model; }, _pngCanvas: function () { return pngCanvas(); }, playing: function () { return !!playT; } };
 })(typeof window !== 'undefined' ? window : globalThis);
 

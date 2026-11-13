@@ -118,5 +118,18 @@ console.log('\n[산점도 H1] 고정 기간·5건 미만 제외·신규 제외·
   check('실자료 사분면 합 = 점 수', Object.values(real.q).reduce((a, b) => a + b, 0) === real.pts.length, real.q);
 }
 
+console.log('\n[노선×빨라짐 구간 H8] 칸 = 역 수, 합 = 묶음 역 수');
+{
+  const mk = (gain, isNew) => ({ row: { isNew: !!isNew }, gain });
+  check('구간 경계: 0→b0, 4.9→b1, 5→b2, 10→b3, 20→b4, 신규→bn', [mk(0), mk(4.9), mk(5), mk(10), mk(20), mk(null, true)].map(L.bandOf).join() === 'b0,b1,b2,b3,b4,bn');
+  const out = RT.compute(doc, { weight: 'avg', region: 'capital' });
+  const m = L.build(out.rows, doc.lines, { group: 'line', size: 'equal', color: 'gain', scope: 'new' }, RT.tierOf);
+  const M = L.bandMatrix(m.groups);
+  check('행 수 = 묶음 수', M.length === m.groups.length, M.length);
+  const sums = M.map(r => Object.values(r.c).reduce((a, b) => a + b, 0) === r.n);
+  check('행마다 칸 합 = 그 묶음 역 수 (빠지는 역 없음)', sums.every(Boolean), M.map(r => [r.name, r.n, r.c]));
+  check('GTX-A 행에 20분+ 칸이 있음', (M.find(r => r.name === 'GTX-A') || { c: {} }).c.b4 > 0, M.find(r => r.name === 'GTX-A'));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

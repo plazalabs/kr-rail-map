@@ -239,11 +239,11 @@ def main():
 <p class="lede">{esc(desc)}</p>
 <ul class="stats">
 <li><b>{len(seq)}</b>정차역</li>
-<li><b>{km:.1f}km</b>노선 연장</li>
+<li><b>{km:.1f}km</b>노선 연장{"*" if p.get("length_note") else ""}</li>
 <li><b>{esc(cat)}</b>구분</li>
 <li><b>{esc(status)}</b>상태</li>
 </ul>
-<h2>{esc(p["name_ko"])} 정차역 {len(seq)}곳</h2>
+{('<p style="font-size:13px;color:var(--muted);margin:6px 0 0">* 노선 연장은 지도에 그린 선을 잰 값입니다. ' + esc(p["length_note"]) + '</p>') if p.get("length_note") else ""}<h2>{esc(p["name_ko"])} 정차역 {len(seq)}곳</h2>
 <ol class="st">
 {station_rows}
 </ol>

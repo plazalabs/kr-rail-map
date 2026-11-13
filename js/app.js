@@ -515,6 +515,62 @@ function lineMetaOf(id) {
            : { name: id, color: '#888888' };
 }
 
+/* 검색 팔레트 — 역뿐 아니라 기능도 찾는다 (뮤즈 TASK 1, 2026-11-13)
+ *   '떡상' '통근' '타일' '시세' … → 그 기능을 맨 위에. '강남에서 서울역' '강남→판교' → 바로 길찾기.
+ *   빈 칸을 누르면 '빠른 실행' 4개 + 최근 본 역. 기능 줄은 역 줄과 같은 목록·같은 키보드(↑↓ Enter)를 쓴다. */
+const clickId = id => () => { const b = document.getElementById(id); if (b) b.click(); };
+const PALETTE = [
+  { id: 'route', label: '길찾기', hint: '출발·도착 역으로 경로·요금', keys: ['길찾기', '경로', '가는 길', '환승', '요금'], ic: 'route',
+    run: () => { const p = document.getElementById('route-panel'); if (p) p.hidden = false; const f = document.getElementById('route-from'); if (f) f.focus(); } },
+  { id: 'rocket', label: 'GTX 떡상 랭킹', hint: '개통하면 우리 역은 몇 등?', keys: ['떡상', '랭킹', '순위', 'gtx', '개통 후'], ic: 'trend', run: clickId('rocket-menu-btn') },
+  { id: 'market', label: 'RAIL MARKET MAP (역 타일)', hint: '노선별로 얼마나 빨라지나 한눈에', keys: ['타일', '마켓', 'market', '히트맵', '한눈에'], ic: 'chart',
+    run: () => { if (typeof MarketMap !== 'undefined') MarketMap.open({}); } },
+  { id: 'commute', label: '통근권 찾기', hint: '직장 역까지 N분 안의 역', keys: ['통근', '출퇴근', '직장', '회사'], ic: 'clock', run: clickId('commute-btn') },
+  { id: 'diagram', label: '45도 노선도', hint: '지하철 노선도 모양으로 보기', keys: ['노선도', '다이어그램', '도식'], ic: 'map', run: clickId('diagram-btn') },
+  { id: 'stats', label: '철도망 통계', hint: '노선·역·연장 합계', keys: ['통계'], ic: 'chart', run: clickId('stats-btn') },
+  { id: 'timeline', label: '개통 타임라인', hint: '언제 무엇이 개통하나', keys: ['타임라인', '개통 예정', '언제'], ic: 'calendar', run: clickId('timeline-btn') },
+  { id: 'compare', label: '노선 비교', hint: '두 노선 길이·역 수', keys: ['비교'], ic: 'repeat', run: clickId('compare-btn') },
+  { id: 'invest', label: '투자 모드 켜기·끄기', hint: '시세·전세가율·공급 보기', keys: ['투자', '시세', '전세', '집값', '아파트'], ic: 'home', run: clickId('mode-btn') },
+];
+const PALETTE_QUICK = ['route', 'rocket', 'market', 'commute'];
+function paletteMatches(raw) {
+  const q = raw.replace(/\s+/g, '').toLowerCase();
+  if (q.length < 2) return [];
+  return PALETTE.filter(a => a.label.replace(/\s+/g, '').toLowerCase().includes(q) || a.keys.some(k => { const kk = k.replace(/\s+/g, '').toLowerCase(); return kk.includes(q) || (q.length >= 2 && q.includes(kk)); }));
+}
+// '강남에서 서울역(까지)' · '강남 → 판교' · '강남->판교' → { from, to } (둘 다 역으로 풀릴 때만)
+function parseRouteQuery(raw) {
+  const m = /^(.+?)\s*(?:→|->|에서|부터|~)\s*(.+)$/.exec(raw.trim());
+  if (!m) return null;
+  const one = t => { t = t.trim(); if (!t) return null; const c = stationsNamed(t); if (c.length) return c[0]; const h = window.StationSearch ? StationSearch.search(STATIONS, t, { limit: 1 }) : []; return h.length && h[0].score >= 900 ? h[0].feature : null; };
+  // '서울역까지' '판교로' — 끝말을 뗀 것도 본다. 다만 '을지로' 처럼 원래 이름이 '로' 로 끝나면 그대로가 먼저
+  const pick = t => one(t) || one(t.replace(/(까지|으로|로|가는\s*길)$/, ''));
+  const a = pick(m[1]), b = pick(m[2]);
+  return a && b && a !== b ? { from: a, to: b } : null;
+}
+function actionRow(a, i) {
+  const row = document.createElement('div');
+  row.className = 'hit hit-action';
+  row.id = `search-hit-${i}`;
+  row.setAttribute('role', 'option');
+  row.setAttribute('aria-selected', 'false');
+  const nm = document.createElement('span'); nm.className = 'hit-name';
+  if (a.ic && window.Icons) nm.innerHTML = Icons.svg(a.ic) + ' ';   // 아이콘은 고정 SVG (사용자 글자 아님)
+  nm.appendChild(document.createTextNode(a.label));   // 길찾기 문장은 역 이름이라 글자로만 넣는다
+  const hn = document.createElement('span'); hn.className = 'hit-lines';
+  const ht = document.createElement('span'); ht.textContent = a.hint || ''; hn.appendChild(ht);
+  row.appendChild(nm); row.appendChild(hn);
+  row.addEventListener('mouseenter', () => markCursor(i));
+  row.addEventListener('click', () => pickSearchHit(a));
+  return row;
+}
+function runRoute(fr, to) {
+  const p = document.getElementById('route-panel'); if (p) p.hidden = false;
+  setRouteStation(document.getElementById('route-from'), fr);
+  setRouteStation(document.getElementById('route-to'), to);
+  const go = document.getElementById('route-go'); if (go) go.click();
+}
+
 function closeSearch() {
   searchBox.innerHTML = '';
   searchHits = [];
@@ -524,6 +580,12 @@ function closeSearch() {
 }
 
 function pickSearchHit(f) {
+  if (f && f.__palette) {
+    closeSearch(); searchInput.blur();
+    if (window.KRTrack) KRTrack('검색 팔레트', { 기능: f.id });
+    try { f.run(); } catch (e) { /* 기능 모듈이 없으면 조용히 */ }
+    return;
+  }
   const c = f.geometry.coordinates;
   map.flyTo({ center: c, zoom: 14 });
   closeSearch();
@@ -551,6 +613,7 @@ function markCursor(i) {
 
 // 검색 결과 한 줄 (검색·최근 본 역이 같이 쓴다)
 function hitRow(f, i) {
+  if (f && f.__palette) return actionRow(f, i);
   const p = f.properties;
   const row = document.createElement('div');
   row.className = 'hit';
@@ -604,11 +667,16 @@ function rememberStation(f) {
 }
 function renderRecent() {
   const ids = recentIds();
-  if (!ids.length || !STATIONS || !STATIONS.length) return;
+  if (!STATIONS || !STATIONS.length) return;
   const byId = new Map(STATIONS.map(f => [f.properties.id, f]));
-  const found = ids.map(id => byId.get(id)).filter(Boolean);
-  if (!found.length) return;
+  const recent = ids.map(id => byId.get(id)).filter(Boolean);
+  // 빠른 실행 4개 (검색 팔레트) — 최근 본 역이 없어도 보인다
+  const quick = PALETTE_QUICK.map(id => PALETTE.find(a => a.id === id)).filter(Boolean).map(a => Object.assign({ __palette: true }, a));
+  const found = quick.concat(recent);
   searchBox.innerHTML = ''; searchCursor = -1; searchHits = found;
+  const qh = document.createElement('div'); qh.className = 'hit-head'; qh.innerHTML = '<span>빠른 실행</span>'; searchBox.appendChild(qh);
+  quick.forEach((a, i) => searchBox.appendChild(hitRow(a, i)));
+  if (!recent.length) { searchInput.setAttribute('aria-expanded', 'true'); return; }
   const head = document.createElement('div');
   head.className = 'hit-head';
   head.innerHTML = '<span>최근 본 역</span>';
@@ -616,7 +684,7 @@ function renderRecent() {
   clr.type = 'button'; clr.className = 'hit-clear'; clr.textContent = '지우기';
   clr.addEventListener('click', e => { e.stopPropagation(); try { localStorage.removeItem(RECENT_KEY); } catch (er) { /* 무시 */ } closeSearch(); searchInput.focus(); });
   head.appendChild(clr); searchBox.appendChild(head);
-  found.forEach((f, i) => searchBox.appendChild(hitRow(f, i)));
+  recent.forEach((f, i) => searchBox.appendChild(hitRow(f, quick.length + i)));
   searchInput.setAttribute('aria-expanded', 'true');
 }
 
@@ -631,6 +699,11 @@ function renderSearch(raw) {
     : STATIONS.filter(f => (f.properties.name_ko || '').includes(raw))
         .slice(0, 12).map(feature => ({ feature }))
   ).map(h => h.feature);
+  // 팔레트 줄을 역 앞에 (68점 감사·뮤즈 TASK 1). 기능은 최대 3개.
+  const acts = paletteMatches(raw).slice(0, 3).map(a => Object.assign({ __palette: true }, a));
+  const rq = parseRouteQuery(raw);
+  if (rq) acts.unshift({ __palette: true, id: 'route-query', label: rq.from.properties.name_ko + ' → ' + rq.to.properties.name_ko + ' 길찾기', hint: '바로 경로 찾기', ic: 'route', run: () => runRoute(rq.from, rq.to) });
+  found.unshift(...acts);
 
   if (!found.length) {
     searchHits = [];
@@ -1608,7 +1681,8 @@ Promise.all([styleReadyP, dataPromise]).then(() => {
   if (typeof CommuteMap !== 'undefined') CommuteMap.init(map, STATIONS);
   if (typeof StationJeonse !== 'undefined' && StationJeonse.initLayer) StationJeonse.initLayer(map, STATIONS);   // 전세가율 색칠 레이어
   if (typeof StationRocket !== 'undefined') StationRocket.init(map, STATIONS);   // 🚀 떡상 지도 레이어 (rank.json, 켤 때 받음)
-  if (typeof RocketPanel !== 'undefined' && RocketPanel.init) RocketPanel.init(map, STATIONS);   // 🚀 지도 안 떡상 패널 (?rocket=1 이면 바로 연다)
+  if (typeof RocketPanel !== 'undefined' && RocketPanel.init) RocketPanel.init(map, STATIONS);
+  if (typeof MarketMap !== 'undefined' && MarketMap.init) MarketMap.init();   // RAIL MARKET MAP 역 타일 (?market=1 이면 바로 연다, 2026-11-13)   // 🚀 지도 안 떡상 패널 (?rocket=1 이면 바로 연다)
   if (typeof StationArea !== 'undefined') { StationArea.init(map, STATIONS); StationArea.setLines([...visibleLines]); }
   if (!focusLineFromUrl()) restoreFromUrl();
 }).catch(e => { console.error('첫 화면 준비 실패', e); setStatus('지도 자료를 불러오지 못했습니다. 새로고침해 주세요.'); });

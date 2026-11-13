@@ -79,7 +79,8 @@
       statusRaw: p.status,
       category: CAT_KO[p.category] || p.category || '-',
       transfers: transferCount(lid, names),
-      avgGap: n >= 2 ? km / (n - 1) : km
+      avgGap: n >= 2 ? km / (n - 1) : km,
+      lengthNote: p.length_note || ''   // 길이 기준·공식값 (2차 감사 R1·R2·R5)
     };
   }
 
@@ -196,7 +197,8 @@
     const kmDiff = Math.abs(s0.km - s1.km);
     const stDiff = Math.abs(s0.stations - s1.stations);
     html += `</table>
-      <div id="lc-empty">길이 차이 ${fmt(kmDiff, 1)} km · 역 수 차이 ${fmt(stDiff, 0)}개</div>`;
+      <div id="lc-empty">길이 차이 ${fmt(kmDiff, 1)} km · 역 수 차이 ${fmt(stDiff, 0)}개 · 길이는 지도에 그린 선(갈래 포함)을 잰 값</div>` +
+      [s0, s1].filter(x => x.lengthNote).map(x => `<div class="lc-note" style="font-size:var(--fs-xs);color:var(--muted);margin-top:4px">${escapeHtml(x.name)}: ${escapeHtml(x.lengthNote)}</div>`).join('');
     body.innerHTML = html;
   }
 

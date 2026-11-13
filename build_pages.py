@@ -109,6 +109,7 @@ border:1px solid var(--border);border-radius:8px;padding:7px 11px}
 .cta{display:inline-flex;align-items:center;gap:8px;margin:34px 0 0;background:var(--accent);color:#fff;
 text-decoration:none;font-weight:600;font-size:15px;padding:13px 22px;border-radius:11px}
 .cta:hover{filter:brightness(1.07)}
+.plan{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-left:4px solid #d97706;border-radius:10px;font-size:14px;line-height:1.6}.plan span{font-size:12px;color:var(--muted)}
 .note{margin-top:34px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
 @media(max-width:560px){h1{font-size:23px}.stats li{padding:8px 11px}}
 """
@@ -157,6 +158,13 @@ def main():
         status = {"open": "운행 중", "construction": "공사 중",
                   "planned": "계획 중", "proposed": "계획 중"}.get(p.get("status"), "운행 중")
         first, last = seq[0]["properties"]["name_ko"], seq[-1]["properties"]["name_ko"]
+        # H3 (2026-11-14): 개통 전 노선은 사업 단계·근거·출처·확인일을 숫자보다 먼저 보여 준다 (data/plan_status.js)
+        plan_html = ""
+        if p.get("status") != "open" and p.get("plan_stage"):
+            plan_html = ('<div class="plan"><b>' + esc(p["plan_stage"]) + '</b> · 개통: ' + esc(p.get("opened") or "미정") +
+                         '<br>근거: ' + esc(p.get("plan_basis") or "") +
+                         (' · <a href="' + esc(p["plan_url"]) + '" rel="noopener" target="_blank">출처</a>' if p.get("plan_url") else "") +
+                         '<br><span>마지막 확인 ' + esc(p.get("plan_checked") or "") + ' · 계획은 바뀔 수 있습니다. 앱의 연도별 순위는 &lsquo;그해까지 개통한다고 가정&rsquo;한 값입니다.</span></div>')
         title = f"{p['name_ko']} 노선도 · 역 {len(seq)}곳 · {km:.1f}km | 한국철도맵"
         desc = (f"{p['name_ko']}은 {first}부터 {last}까지 이어지는 {cat} 노선입니다. "
                 f"정차역 {len(seq)}곳, 노선 연장 {km:.1f}km, {status}. "
@@ -243,7 +251,7 @@ def main():
 <li><b>{esc(cat)}</b>구분</li>
 <li><b>{esc(status)}</b>상태</li>
 </ul>
-{('<p style="font-size:13px;color:var(--muted);margin:6px 0 0">* 노선 연장은 지도에 그린 선을 잰 값입니다. ' + esc(p["length_note"]) + '</p>') if p.get("length_note") else ""}<h2>{esc(p["name_ko"])} 정차역 {len(seq)}곳</h2>
+{('<p style="font-size:13px;color:var(--muted);margin:6px 0 0">* 노선 연장은 지도에 그린 선을 잰 값입니다. ' + esc(p["length_note"]) + '</p>') if p.get("length_note") else ""}{plan_html}<h2>{esc(p["name_ko"])} 정차역 {len(seq)}곳</h2>
 <ol class="st">
 {station_rows}
 </ol>

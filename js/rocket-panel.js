@@ -164,7 +164,7 @@
         '<button type="button" class="rkp-play" aria-label="연도 차례로 보기"><i data-ic="play"></i></button>' +
         '<div class="rkp-chips" id="rkp-chips"></div>' +
       '</div>' +
-      '<p class="rkp-def">연도 = 그해까지 그 노선이 <b>개통한다고 가정</b>한 계산입니다 (확정 일정 아님 · 노선마다 공사·계획 단계가 다름)</p>' +
+      '<p class="rkp-def">연도 = 그해까지 그 노선이 <b>개통한다고 가정</b>한 계산입니다 (확정 일정 아님 · 노선마다 공사·계획 단계가 다름 · <a href="data.html#plans" target="_blank" rel="noopener">노선별 근거·확인일</a>)</p>' +
       '<div id="rkp-hero"></div>' +
       '<h3 class="rkp-sub" id="rkp-list-h"></h3>' +
       '<div class="rkp-tools" hidden>' +

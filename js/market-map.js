@@ -479,7 +479,7 @@
     var box = el.querySelector('.mm-years');
     var ys = ['all'].concat(doc.years || []);
     box.innerHTML = '<button type="button" class="mm-play" aria-label="' + (playT ? '재생 멈추기' : '연도 차례로 보기') + '">' + (global.Icons ? Icons.svg(playT ? 'pause' : 'play') : (playT ? '||' : '>')) + '</button>' +
-      '<span class="mm-def" style="margin:0 4px 0 0">그해까지 개통한다고 가정:</span>' + ys.map(function (y) {
+      '<span class="mm-def" style="margin:0 4px 0 0">그해까지 개통한다고 가정 (<a href="data.html#plans" target="_blank" rel="noopener">노선별 근거</a>):</span>' + ys.map(function (y) {
       return '<button type="button" data-y="' + y + '" aria-pressed="' + (String(st.y) === String(y)) + '">' + (y === 'all' ? '전체(시기 미정 포함)' : y + '년') + '</button>';
     }).join('');
     box.querySelectorAll('button').forEach(function (b) {

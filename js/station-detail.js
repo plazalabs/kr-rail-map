@@ -293,6 +293,8 @@
       '<button id="sd-close" title="닫기" aria-label="닫기"><i data-ic="close"></i></button></div>' +
       '<div id="sd-body"></div>';
     document.body.appendChild(panel);
+    // 닫힌 패널은 화면 밖으로 밀어 둘 뿐이라, inert 가 없으면 화면 낭독기·Tab 이 안의 버튼·입력칸을 그대로 잡는다 (68점 감사 4번, 2026-11-13)
+    setOpen(false);
     panel.querySelector('#sd-close').addEventListener('click', hide);
   }
 
@@ -382,17 +384,17 @@
     // '강남구 역삼동' 처럼 시군구를 같이 적는다. 동 이름만으로는 '중구'
     // 처럼 여러 시도에 있는 곳을 구분할 수 없다.
     var where = [price.sido, price.sgg].filter(Boolean).join(' ');
-    var h = '<div class="sd-sec sd-price-sec"><h3>주변 시세 · ' + esc(price.dong) +
+    var h = '<div class="sd-sec sd-price-sec"><h3>법정동 실거래 · ' + esc(price.dong) +
       ' <span class="sd-price-sub">' + (where ? '· ' + esc(where) + ' · ' : '') +
       '최근 6개월 ' + price.deals + '건</span></h3>';
     h += '<div class="sd-price"><b>' + StationPrice.pp(price.medianPerPyeong) +
-      '</b><span>/평</span></div>';
+      '</b><span>/평 (전용면적)</span></div>';
     if (price.medianPrice) {
       h += '<div class="sd-note">중위 거래금액 ' + StationPrice.won(price.medianPrice) + '</div>';
     }
     h += '<div class="sd-note">※ 아파트 매매 실거래 중위값입니다. ' +
       '실거래가는 좌표를 주지 않아 <b>법정동 단위</b>로 묶었습니다 — ' +
-      '같은 법정동이라도 단지·층·연식에 따라 차이가 큽니다.' +
+      '같은 법정동이라도 단지·층·연식에 따라 차이가 큽니다. 평당가는 <b>전용면적</b> 기준이라 공급면적 기준 시세표보다 높게 보입니다.' +
       (pm.updated ? ' (기준 ' + esc(pm.updated) + ')' : '') + '</div>';
     h += complexBlock(sid);
     return h + '</div>';
@@ -430,7 +432,7 @@
       // 평당가라도 전혀 다른 자산이다. 없으면 그냥 빼고 그린다.
       if (x.h) meta.push(x.h.toLocaleString('ko-KR') + '세대');
       if (!x.ea && x.a) meta.push(Math.round(x.a) + '㎡');
-      meta.push(x.n_deals + '건');
+      meta.push(x.n_deals + '건' + (x.n_deals < 5 ? '(적음)' : ''));   // 작은 표본은 같은 무게로 보이지 않게 (68점 감사 11번)
 
       // 전용·공급 두 면적을 같이 보여줘야 대화가 된다. 사람들이 보는 시세표는
       // 대개 공급면적 기준인데 실거래가는 전용면적만 준다. 전용률은 두 값을
@@ -511,7 +513,8 @@
     var chips = [];
     if (invest && typeof StationPrice !== 'undefined' && StationPrice.isReady()) {
       var pr = StationPrice.of(sid);
-      if (pr && pr.medianPerPyeong != null) chips.push(['평당', StationPrice.pp(pr.medianPerPyeong)]);
+      // 칩만 잘라 봐도 무엇의 값인지 알게 — 법정동·건수·전용면적 (68점 감사 11번)
+      if (pr && pr.medianPerPyeong != null) { chips.push(['평당(전용)', StationPrice.pp(pr.medianPerPyeong)]); var priceScope = pr.dong + ' 아파트 매매 중위 · 최근 6개월 ' + pr.deals + '건'; }
     }
     if (invest && typeof StationJeonse !== 'undefined' && StationJeonse.isReady()) {
       var jn = StationJeonse.of(sid);
@@ -533,6 +536,7 @@
       html += '<div class="sd-glance" role="list" aria-label="한눈에">' + chips.map(function (c) {
         return '<span class="sd-chip" role="listitem"><small>' + esc(c[0]) + '</small><b>' + esc(c[1]) + '</b></span>';
       }).join('') + '</div>';
+      if (typeof priceScope !== 'undefined' && priceScope) glanceNote = '평당 = ' + priceScope + (glanceNote ? ' · ' + glanceNote : '');
       if (glanceNote) html += '<p class="sd-glance-note">' + esc(glanceNote) + '</p>';
     }
 
@@ -678,7 +682,7 @@
           var m = [];
           if (x.y) m.push(x.y + '년');
           if (x.a) m.push(Math.round(x.a) + '㎡');
-          m.push(x.n_deals + '건');
+          m.push(x.n_deals + '건' + (x.n_deals < 5 ? '(적음)' : ''));
           var jr = (typeof StationJeonse !== 'undefined' && StationJeonse.complexOf) ? StationJeonse.complexOf(full.key, x.j) : null;
           if (jr) m.push('전세가율 ' + Math.round(jr[0] * 100) + '%' + (jr[0] >= 0.8 ? ' (주의)' : ''));
           return '<li class="sd-cx"><span class="sd-cx-n">' + esc(x.n) + '</span>' +
@@ -729,11 +733,19 @@
     // 다른 역을 열었는데 이전에 스크롤한 위치가 남아 있으면, 새 역의 이름과
     // 액션 버튼이 화면 밖에서 시작한다. 항상 맨 위부터 보여준다.
     panel.scrollTop = 0;
-    panel.classList.add('sd-open');
+    setOpen(true);
   }
 
+  // 열림/닫힘 한 곳: 클래스(밀어 넣기 애니메이션) + inert(보조기술·키보드에서 빼기) + aria-hidden(inert 모르는 옛 브라우저)
+  // 포커스가 안에 있을 때 닫으면 inert 가 포커스를 body 로 빼고, ui.js 가 연 자리로 돌려준다.
+  function setOpen(v) {
+    if (!panel) return;
+    panel.classList.toggle('sd-open', v);
+    panel.inert = !v;
+    if (v) panel.removeAttribute('aria-hidden'); else panel.setAttribute('aria-hidden', 'true');
+  }
   function hide() {
-    if (panel) panel.classList.remove('sd-open');
+    setOpen(false);
   }
 
   // 시세처럼 '나중에 도착하는' 데이터가 있다. 사용자가 데이터보다 먼저 역을

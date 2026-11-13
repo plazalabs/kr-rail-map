@@ -582,7 +582,7 @@ function hitRow(f, i) {
     lines.appendChild(dot);
   });
   const label = document.createElement('span');
-  label.textContent = ids.map(id => lineMetaOf(id).name).join(' · ');
+  label.textContent = ids.map(id => { const nm = lineMetaOf(id).name; return (typeof lineLabelOf === 'function' && lineNameOf.has(id)) ? lineLabelOf(id) : nm; }).join(' · ');
   lines.appendChild(label);
   row.appendChild(lines);
 
@@ -781,6 +781,12 @@ function routeFromStation(stationName, which, stationId) {
 
 /* ---------- 길찾기 UI ---------- */
 const lineNameOf = new Map();
+// 후보 목록용 노선 이름 — 미개통(공사·계획)이면 '(미개통)' 을 붙인다 (68점 감사 3번, 2026-11-13)
+function lineLabelOf(lid) {
+  const n = lineNameOf.get(lid) || lid;
+  const un = typeof RouteFinder !== 'undefined' && RouteFinder.lineIsUnopened && RouteFinder.lineIsUnopened(lid);
+  return un ? n + '(미개통)' : n;
+}
 function setupRouteFinder() {
   LINES.forEach(f => lineNameOf.set(f.properties.id, f.properties.name_ko));
   const info = RouteFinder.buildGraph(LINES, STATIONS);
@@ -811,12 +817,15 @@ function attachAutocomplete(input) {
     items = [];
     // 이름으로 중복을 지우지 않는다. 동명역(서울·부산·대전 시청 등)은 노선 표기로
     // 구분해 모두 보이고, 고른 항목의 역 ID 를 입력칸에 담는다.
-    for (const s of STATIONS) {
-      const n = s.properties.name_ko;
-      if (!n.includes(q)) continue;
+    // 일반 검색과 같은 엔진(js/search.js)을 쓴다 — 68점 감사 3번(2026-11-13): 길찾기 칸만 '서울역'·초성·별칭·오타를 몰랐다.
+    // 점수: 이름 같음 1000 · 시작 900 · 포함 800 · 별칭 700 · 영문 600 · 초성 500 · 오타 400 (끝의 '역'은 떼고도 본다)
+    const hits = (window.StationSearch && typeof StationSearch.search === 'function')
+      ? StationSearch.search(STATIONS, q, { limit: 60 })
+      : STATIONS.filter(s => s.properties.name_ko.includes(q)).slice(0, 60).map(f => ({ feature: f, score: f.properties.name_ko === q ? 1000 : f.properties.name_ko.startsWith(q) ? 900 : 800 }));
+    for (const h of hits) {
+      const s = h.feature, n = s.properties.name_ko;
       items.push({ id: s.properties.id, name: n, lines: s.properties.lines || [],
-        starts: n.startsWith(q), exact: n === q, coord: s.geometry.coordinates });
-      if (items.length >= 60) break;
+        starts: h.score >= 900, exact: h.score >= 1000, score: h.score, coord: s.geometry.coordinates });
     }
     // 정확히 일치 → 시작 매칭 → 나머지 (동명역이 8개 밖으로 밀리지 않게).
     // 같은 이름끼리는 지금 보는 지도 중심에 가까운 역부터 (서울을 보며 '시청' → 서울 시청이 위).
@@ -827,12 +836,12 @@ function attachAutocomplete(input) {
       if (!firstAt.has(it.name)) firstAt.set(it.name, i);
       it.d = Math.hypot((it.coord[0] - ctr.lng) * kx, it.coord[1] - ctr.lat);
     });
-    items.sort((a, b) => (b.exact - a.exact) || (b.starts - a.starts) ||
+    items.sort((a, b) => (b.exact - a.exact) || (b.starts - a.starts) || (b.score - a.score) ||
       (firstAt.get(a.name) - firstAt.get(b.name)) || (a.d - b.d));
     items = items.slice(0, 8);
     if (!items.length) { hide(); return; }
     list.innerHTML = items.map((it, i) => {
-      const ln = it.lines.map(lid => lineNameOf.get(lid) || lid).slice(0, 3).join('·');
+      const ln = it.lines.map(lineLabelOf).slice(0, 3).join('·');
       return '<div class="ac-item" role="option" aria-selected="false" id="' + listId + '-o' + i +
         '" data-i="' + i + '">' + it.name +
         (regionOf.has(it.id) ? '<span class="ac-region">· ' + regionOf.get(it.id) + '</span>' : '') +
@@ -930,7 +939,20 @@ function stationById(id) {
 }
 function stationsNamed(name) {
   name = (name || '').trim();
-  return name ? STATIONS.filter(s => s.properties.name_ko === name) : [];
+  if (!name) return [];
+  const exact = STATIONS.filter(s => s.properties.name_ko === name);
+  if (exact.length) return exact;
+  // 정확한 이름이 없을 때만 (68점 감사 3번): 끝의 '역' 떼기 → 일반 검색에서 '이름 같음'(1000점) 후보가 한 이름뿐이면 그 이름의 역들
+  if (name.length >= 2 && name.endsWith('역')) {
+    const cut = STATIONS.filter(s => s.properties.name_ko === name.slice(0, -1));
+    if (cut.length) return cut;
+  }
+  if (window.StationSearch && typeof StationSearch.search === 'function') {
+    const top = StationSearch.search(STATIONS, name, { limit: 20 }).filter(h => h.score >= 1000);
+    const names = new Set(top.map(h => h.feature.properties.name_ko));
+    if (names.size === 1) return top.map(h => h.feature);
+  }
+  return [];
 }
 // 입력칸에 역을 넣는다. 역(feature)이면 ID 까지, 이름(문자열)이면 이름만.
 function setRouteStation(input, st) {
@@ -1016,7 +1038,7 @@ document.getElementById('route-save').addEventListener('click', () => {
   if (exists) { setStatus('이미 저장된 경로입니다.'); return; }
   favorites.routes.push(Object.assign({ from, to }, fromId ? { fromId } : {}, toId ? { toId } : {}));
   saveFavorites(); renderFavorites();
-  setStatus(`경로 저장됨: ${from} → ${to}`);
+  setStatus(`경로 저장됨(이 브라우저): ${from} → ${to}`);
 });
 // 개통 예정 노선 포함 (2026-11-09 결정 1) — 기본은 꺼짐(지금 운행 중인 노선만). 켠 사람에게는 다음 방문에도 켜 둔다.
 const UNOPENED_KEY = 'krrail-route-unopened';
@@ -1746,6 +1768,11 @@ function renderFavorites() {
   }
   if (!favorites.stations.length && !favorites.routes.length) {
     box.innerHTML = '<p class="empty">역 팝업의 ' + Icons.svg('star') + ' 버튼으로 즐겨찾기를 추가하세요</p>';
+  } else {
+    // 클라우드 보관으로 오해하지 않게 (68점 감사 17번, 2026-11-13) — localStorage 라 다른 기기·브라우저에선 안 보인다
+    const note = document.createElement('p'); note.className = 'empty fav-where';
+    note.textContent = '이 브라우저에만 저장됩니다 — 다른 기기·브라우저에서는 보이지 않아요';
+    box.appendChild(note);
   }
 }
 

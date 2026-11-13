@@ -84,6 +84,18 @@ const R = recorder('route-extras');
   const e2 = await ev(`({ calls: __rc.length, to: document.getElementById('route-to').dataset.sid || null })`);
   R.check("도착 '잠실' 치고 Enter → 바로 경로 찾기", e2.calls >= 1 && !!e2.to, e2);
 
+  // 8-2. 68점 감사 3번 (2026-11-13): 길찾기 칸도 일반 검색 규칙 — '서울역'·'ㄱㄴ'·'Gangnam' → 맨 위 후보가 서울·강남
+  for (const [q, want] of [['서울역', '서울'], ['ㄱㄴ', '강남'], ['Gangnam', '강남']]) {
+    await ev(`(() => { const t = document.getElementById('route-to'); t.value = ''; delete t.dataset.sid; t.focus(); })()`);
+    await b.type(q); await sleep(350);
+    const top = await ev(`(() => { const el = document.querySelector('#route-to ~ .ac-list .ac-item, #route-to + .ac-list .ac-item'); return el ? el.childNodes[0].textContent.trim() : null; })()`);
+    R.check(`길찾기 도착 칸 '${q}' → 맨 위 후보 '${want}'`, top === want, top);
+  }
+  // 목록을 안 고르고 '서울역' 만 친 채 경로 찾기 → 서울로 해석 (예전: '목록에서 선택해주세요')
+  await ev(`(() => { const t = document.getElementById('route-to'); t.value = '서울역'; delete t.dataset.sid; const f = document.getElementById('route-from'); f.value = '강남'; delete f.dataset.sid; })()`);
+  const typed = await ev(`(() => { const p = resolveRoutePair(document.getElementById('route-from'), document.getElementById('route-to')); return p.to ? p.to.properties.name_ko : null; })()`);
+  R.check("'서울역' 을 치기만 하고 경로 찾기 → 서울역으로 해석", typed === '서울', typed);
+
   // 9. 2차 감사 R6 (2026-11-13): '최적' 보다 빠른 탭이 있으면 그 탭에 '최단' 표시 + 패널 배지 '가장 빠름', '최적' 패널엔 '가장 빠름' 없음
   await b.goto('about:blank', 200);
   await b.goto(BASE + '?from=' + encodeURIComponent('수원') + '&to=' + encodeURIComponent('강남') + '#normal', 800); await ready();

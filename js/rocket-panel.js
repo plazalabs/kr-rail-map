@@ -155,6 +155,7 @@
       '<div class="rkp-head"><p class="rkp-eyebrow">GTX 떡상 랭킹 · 수도권 <span id="rkp-total"></span>역</p>' +
       '<button class="rkp-close" type="button" aria-label="떡상 패널 닫기"><i data-ic="close"></i></button></div>' +
       '<h2 class="rkp-title" id="rkp-title" aria-live="polite"></h2>' +
+      '<p class="rkp-def">업무지구까지 걸리는 시간으로 매긴 <b>상대 순위</b>입니다 · 집값이나 투자수익 예측이 아닙니다</p>' +
       '<div class="rkp-seg" role="group" aria-label="기준">' +
         Object.keys(WEIGHT_LABEL).map(function (k) { return '<button type="button" data-w="' + k + '" aria-pressed="false">' + WEIGHT_LABEL[k] + '</button>'; }).join('') +
       '</div>' +
@@ -162,6 +163,7 @@
         '<button type="button" class="rkp-play" aria-label="연도 차례로 보기"><i data-ic="play"></i></button>' +
         '<div class="rkp-chips" id="rkp-chips"></div>' +
       '</div>' +
+      '<p class="rkp-def">연도 = 그해까지 그 노선이 <b>개통한다고 가정</b>한 계산입니다 (확정 일정 아님 · 노선마다 공사·계획 단계가 다름)</p>' +
       '<div id="rkp-hero"></div>' +
       '<h3 class="rkp-sub" id="rkp-list-h"></h3>' +
       '<div class="rkp-tools" hidden>' +
@@ -174,6 +176,7 @@
       '<div class="rkp-legend" aria-label="지도 점 색">' +
         '<span><i style="background:#0a8f4a"></i>떡상</span><span><i style="background:#3aa76d"></i>상승</span><span><i style="background:#9aa1a8"></i>보합</span><span><i style="background:#d9701a"></i>상대 하락</span><span><i style="background:#7a3fd0"></i>신규</span>' +
       '</div>' +
+      '<p class="rkp-def">상대 하락 = 그 역 시간은 그대로이거나 줄었는데 <b>다른 역이 더 좋아져</b> 순위가 밀린 경우가 많아요</p>' +
       '<div class="rkp-foot">' +
         '<button type="button" class="rkp-wait" aria-pressed="false" title="처음 탈 때·갈아탈 때 출퇴근 시간에 열차를 기다리는 시간을 더합니다"><i data-ic="clock"></i> 배차 포함</button>' +
       '</div>' +

@@ -935,6 +935,7 @@ body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
 .sa-close:hover { background: var(--hover); color: var(--text); }
 .sa-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; color: var(--text-2); }
 .sa-sw { width: 26px; height: 0; border-top: 2px dashed; display: inline-block; }
+.sa-def { margin: 0 0 4px; font-size: var(--fs-xs); line-height: 1.45; color: var(--muted); }
 .sa-note { margin: 6px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--muted); }
 .sa-note b { color: var(--text-2); font-weight: 600; }
 .sa-hint { margin: 6px 0 0; font-size: var(--fs-xs); color: var(--accent); }
@@ -1139,6 +1140,7 @@ body[data-theme="dark"], body[data-theme="eclipse"], body[data-theme="neon"] { -
 .rkp-eyebrow { margin: 0; font-size: var(--fs-sm); font-weight: 700; color: var(--accent); letter-spacing: -.01em; }
 .rkp-close { border: none; background: var(--surface); color: var(--muted); width: 30px; height: 30px; border-radius: 50%; font-size: var(--fs-md); cursor: pointer; flex: none; }
 .rkp-close:hover { background: var(--surface-2); color: var(--text); }
+.rkp-def { margin: 2px 0 0; font-size: var(--fs-xs); line-height: 1.45; color: var(--muted); }
 .rkp-title { margin: -4px 0 0; font-size: var(--fs-xl); line-height: 1.32; font-weight: 800; letter-spacing: -.035em; word-break: keep-all; }
 
 .rkp-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 3px; border-radius: 12px; background: var(--surface); }

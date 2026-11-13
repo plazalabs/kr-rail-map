@@ -328,7 +328,7 @@ const RouteCompare = (() => {
   // (강남→원주: 2호선→경의중앙선→… 로 팔당을 돌아가는 경로).
   // 환승 1회를 1.5km 로 매기면 '요금은 최소' 라는 성격은 유지하면서 그런 경로는 사라진다.
   const TRANSFER_KM = 1.5;
-  function findMinFare(fromId, toId, openOnly) {
+  function findMinFare(fromId, toId, openOnly, metroOnly) {
     // init 전에 호출되면(지도 로드 실패 등) 조용히 '경로 없음' 으로 둔다.
     // 여기서 던지면 경로 패널 전체가 죽는다.
     if (!RF || !RF.hasStation(fromId) || !RF.hasStation(toId)) return null;
@@ -350,6 +350,8 @@ const RouteCompare = (() => {
         if (openOnly && !e.open) continue;
         if (!openOnly && e.nowOnly) continue;   // 개통 후엔 새 역에 선다 (route.js NOW_ONLY_SPANS)
         const nl = e.walk ? null : e.lineId;
+        // metroOnly: 별도 운임(신분당·GTX-A·공항철도)·일반철도·KTX 를 안 타는 '순수 전철' 후보 (pickCheapest 참고)
+        if (metroOnly && !e.walk && (SPECIAL[e.lineId] || ['ktx', 'conventional'].includes(RF.categoryOf(e.lineId)))) continue;
         const transfer = !e.walk && cl !== null && !RF.sameService(cl, nl);
         // KTX 는 km당 요금이 수도권 전철의 6배쯤 된다. 같은 거리라도 훨씬 비싸므로
         // '최소요금' 탐색에서는 KTX 구간을 6배로 세야 무궁화·ITX 경로가 이긴다.
@@ -397,13 +399,26 @@ const RouteCompare = (() => {
     return markUnopened({ ...r, distKm, fare: fd.total, fareDetail: fd });
   }
 
+  // '최소요금' 은 화면에 함께 나오는 어느 후보보다 비싸면 안 된다 (68점 감사 8번, 2026-11-13).
+  // 탐색은 거리로 고르는 근사라서(별도 운임·일반철도 기본요금을 모른다) 수도권 552쌍 중 41쌍에서
+  // 최소요금 탭이 다른 탭보다 비쌌다(예: 동작→서현 신분당선 3,550원 > 9호선·수인분당 1,950원).
+  // 그래서 후보(거리 최소·순수 전철·최적·최소환승)의 실제 계산 요금을 비교해 가장 싼 것을 고른다. 같으면 빠른 쪽.
+  function pickCheapest(cands) {
+    let best = null;
+    for (const r of cands) {
+      if (!r || typeof r.fare !== 'number') continue;
+      if (!best || r.fare < best.fare || (r.fare === best.fare && r.minutes < best.minutes)) best = r;
+    }
+    return best;
+  }
+
   // 운행 중인 노선만 쓰는 3종 (길찾기 기본 — 2026-11-09 결정 1: 미개통은 켠 사람에게만).
   // future 는 '개통 예정 노선까지 쓰면' 의 최단시간 — 결과에 '켜면 몇 분' 한 줄을 붙이는 데만 쓴다.
   function findAllOpen(fromId, toId) {
     if (!RF) return { time: null, transfer: null, fare: null, now: null, future: null, openOnly: true };
     const time = enrich(RF.findRoute(fromId, toId, { openOnly: true }));
     const transfer = enrich(findMinTransfer(fromId, toId, true));
-    const fare = enrich(findMinFare(fromId, toId, true));
+    const fare = pickCheapest([enrich(findMinFare(fromId, toId, true)), enrich(findMinFare(fromId, toId, true, true)), time, transfer]);
     const future = enrich(RF.findRoute(fromId, toId));
     return { time, transfer, fare, now: time, future, openOnly: true };
   }
@@ -417,7 +432,7 @@ const RouteCompare = (() => {
     // (환승 3회로 2분 아끼는 경로가 '최단시간'으로 뽑히던 문제)
     const time = RF ? enrich(RF.findRoute(fromId, toId)) : null;
     const transfer = enrich(findMinTransfer(fromId, toId));
-    const fare = enrich(findMinFare(fromId, toId));
+    const fare = pickCheapest([enrich(findMinFare(fromId, toId)), enrich(findMinFare(fromId, toId, false, true)), time, transfer]);
     // '지금' — 미개통 노선을 한 개도 쓰지 않는 가장 빠른 경로.
     // 부동산에서 이게 핵심이다: 개통 전에 그 집에 살면 실제로 몇 분 걸리는가.
     // 목적지가 미개통 노선에만 있는 역이면 null 이 된다 (지금은 갈 수 없다).
@@ -507,6 +522,7 @@ const RouteCompare = (() => {
       .rc-fast { display: inline-block; margin-left: 3px; padding: 0 4px; border-radius: 4px; font-size: var(--fs-xs); font-weight: bold;
         background: rgba(234, 179, 8, 0.14); color: var(--warn-text, #8a5300); vertical-align: 1px; }
       .rc-tab.active .rc-fast { background: #fff; color: var(--accent, #3388ff); }
+      .rc-def { font-size: var(--fs-xs); color: var(--muted, #666); font-weight: normal; margin-left: 2px; }
       .rc-badge { display: inline-block; font-size: var(--fs-xs); background: var(--accent, #3388ff); color: #fff;
         border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
       .rc-insight { font-size: var(--fs-xs); color: var(--muted, #666); margin: 8px 0; line-height: 1.6; }
@@ -625,8 +641,12 @@ const RouteCompare = (() => {
 
   function variantHtml(r, tabId, badge) {
     const fd = r.fareDetail;
-    const fareTxt = `예상 요금 ${r.fare.toLocaleString()}원${fd && fd.estimated ? ' <span class="rc-est">(일부 추정)</span>' : ''}`;
-    let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분 · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
+    // 미정 운임(개통 전 GTX 등)이 있으면 합계가 확정처럼 보이지 않게 '+ ○○ 요금 미정' 을 합계 옆에 직접 적는다 (68점 감사 7번)
+    const pend = fd && fd.parts ? fd.parts.filter(p => p.kind === 'pending').map(p => p.line) : [];
+    const fareTxt = pend.length
+      ? `예상 요금 ${r.fare.toLocaleString()}원 <span class="rc-est">+ ${escapeHtml(pend.join('·'))} 요금 미정</span>`
+      : `예상 요금 ${r.fare.toLocaleString()}원${fd && fd.estimated ? ' <span class="rc-est">(일부 추정)</span>' : ''}`;
+    let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분<span class="rc-def" title="운행 속도로 어림한 시간 — 갈아탈 때 기다리는 시간은 넣고, 처음 열차를 기다리는 시간은 뺐습니다">(환승 대기 포함)</span> · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
     html += fareBreakdownHtml(fd);
     // 미개통 노선을 지나는 경로는 명시한다.
     // 이 지도는 착공·계획 노선까지 그리므로 '지금 갈 수 있는 길'로 오해하면 안 된다.
@@ -772,6 +792,6 @@ const RouteCompare = (() => {
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
   return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, loadSpecialFares, fareBreakdownHtml,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
-    compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf, fastestTabId,
+    compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf, fastestTabId, pickCheapest,
     _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich } };
 })();

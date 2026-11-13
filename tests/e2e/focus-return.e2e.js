@@ -58,6 +58,16 @@ async function waitOpen(b, id, want = true, ms = 5000) { const t0 = Date.now(); 
   const closed2 = await waitOpen(b, 'sd-panel', false); await sleep(200);
   const a3 = await active(b);
   R.check('Tab 으로 ✕ 에 닿아 Enter → 닫히고 포커스가 검색창으로', reached && closed2 && a3 === 'search', { reached, closed2, a3 });
+  // 68점 감사 4번 (2026-11-13): 닫힌 역 상세는 화면 밖에만 있는 게 아니라 보조기술·Tab 에서도 빠져야 한다
+  const inertSt = await b.evaluate(`(() => { const p = document.getElementById('sd-panel'); return { inert: p.inert, ariaHidden: p.getAttribute('aria-hidden') }; })()`);
+  let leaked = null;
+  for (let i = 0; i < 40 && !leaked; i++) {
+    await b.key('Tab', 'Tab', 9); await sleep(30);
+    leaked = await b.evaluate(`(() => { const a = document.activeElement; return a && a.closest('#sd-panel') ? (a.id || a.tagName) : null; })()`);
+  }
+  R.check('닫힌 역 상세: inert·aria-hidden 이고 Tab 40번 눌러도 안으로 안 들어감', inertSt.inert === true && inertSt.ariaHidden === 'true' && !leaked, { inertSt, leaked });
+  await b.key('Escape', 'Escape', 27); await sleep(100);
+  await b.evaluate(`document.activeElement && document.activeElement.blur(); 0`);
 
   // 3. 툴바 '분석 > 철도망 통계' (키보드: Tab 으로 버튼, Enter)
   const dd = await b.evaluate(`(() => { const e = [...document.querySelectorAll('#toolbar .tb-dropbtn')].find(x => x.textContent.trim().startsWith('분석')); e.focus(); return document.activeElement === e; })()`);

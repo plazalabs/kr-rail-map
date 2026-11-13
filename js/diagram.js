@@ -336,6 +336,36 @@ const DiagramMode = (() => {
     // 마지막은 밀어내기 1번 + 맞춤 4번: 겹침 0쌍·45° 맞춤 약 97% (밀어내기로 끝내면 겹침 0 이지만 맞춤 약 60%)
     repel();
     for (let pass = 0; pass < 4; pass++) snapAll(0.92);
+    // 마지막 안전망 (2026-11-13): 맞춤이 몇 쌍을 다시 포개는 일이 있다 — 이수역을 합쳐 역이 하나 줄자
+    // 한남/마포·당산/문래가 4px 로 겹쳤다. 아주 가까운 쌍(TIGHT px 안)만 정확히 TIGHT 까지 떼어 놓는다.
+    // 대상이 몇 쌍뿐이라 45° 맞춤은 거의 그대로다.
+    const TIGHT = 12;
+    for (let round = 0; round < 6; round++) {
+      let moved = 0;
+      const grid = new Map();
+      for (let i = 0; i < n; i++) {
+        const k = ((nodes[i].x / TIGHT) | 0) + ',' + ((nodes[i].y / TIGHT) | 0);
+        (grid.get(k) || grid.set(k, []).get(k)).push(i);
+      }
+      for (let i = 0; i < n; i++) {
+        const a = nodes[i], cx = (a.x / TIGHT) | 0, cy = (a.y / TIGHT) | 0;
+        for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
+          const b = grid.get((cx + ox) + ',' + (cy + oy));
+          if (!b) continue;
+          for (const j of b) {
+            if (j <= i) continue;
+            const c = nodes[j];
+            let dx = c.x - a.x, dy = c.y - a.y, d = Math.hypot(dx, dy);
+            if (d >= TIGHT) continue;
+            if (d < 1e-6) { dx = 1; dy = 0; d = 1; }
+            const push = (TIGHT - d) / d * 0.5;
+            a.x -= dx * push; a.y -= dy * push; c.x += dx * push; c.y += dy * push;
+            moved++;
+          }
+        }
+      }
+      if (!moved) break;
+    }
   }
 
   /* ---------- SVG ---------- */

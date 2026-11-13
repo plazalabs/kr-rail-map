@@ -120,8 +120,9 @@ const StationDev = (() => {
 
     const where = (r.sgg ? r.sgg + ' ' : '') + r.dong;
     if (!r.hh) {
-      let h = '<div class="dv-none">' + esc(where) + '에는 아직 준공되지 않은 ' +
-        '주택인허가 건이 없습니다.</div>';
+      // '공급 0' 으로 읽히지 않게 — 수록 자료의 범위만 말한다 (68점 감사 11번)
+      let h = '<div class="dv-none">' + esc(where) + ': 수록된 주택인허가 자료에서 아직 준공되지 않은 건이 ' +
+        '확인되지 않습니다 <span class="dv-src">(입주 물량이 0이라는 뜻은 아님)</span></div>';
       if (r.recent && r.recent.hh) {
         h += '<div class="dv-recent">최근 입주 <b>' + num(r.recent.hh) + '세대</b>' +
           recentYears(r.recent) + '</div>';

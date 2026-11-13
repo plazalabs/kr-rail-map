@@ -162,6 +162,29 @@ console.log("\n[R6] '최적' 보다 빠른 탭에 '최단' 표시 (2차 감사, 
   }
 }
 
+console.log("\n[68점 감사 8번] '최소요금' 은 함께 보이는 다른 후보보다 비싸지 않다 (2026-11-13)");
+{
+  // 고치기 전: 수도권 552쌍 중 41쌍에서 최소요금 탭이 더 비쌌다 (동작→서현 3,550 > 1,950, 한양대→망월사 4,350 > 1,850)
+  RC.loadSpecialFares(JSON.parse(fs.readFileSync(path.join(ROOT, 'data/fares-special.json'), 'utf8')));
+  const metro = stations.features.filter(f => { const [x, y] = f.geometry.coordinates; return x > 126.6 && x < 127.4 && y > 37.2 && y < 37.8; });
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  let n = 0; const bad = [];
+  for (let i = 0; i < 160; i++) {
+    const A = metro[Math.floor(rnd() * metro.length)], B = metro[Math.floor(rnd() * metro.length)];
+    if (A === B) continue;
+    for (const opts of [{ openOnly: true }, {}]) {
+      const all = RC.findAll(A.properties.id, B.properties.id, opts);
+      if (!all.fare) continue; n++;
+      const lower = ['time', 'transfer', 'now'].map(k => all[k]).filter(r => r && r.fare < all.fare.fare);
+      if (lower.length) bad.push(`${A.properties.name_ko}→${B.properties.name_ko} ${all.fare.fare} > ${lower.map(r => r.fare).join('/')}`);
+    }
+  }
+  check(`무작위 수도권 ${n}건(운행 중·개통 후 모두): 최소요금이 다른 탭보다 비싼 경우 0`, bad.length === 0, bad.slice(0, 5).join(' | '));
+  const dong = RC.findAll(id('동작'), id('서현'), { openOnly: true });
+  check('동작→서현 최소요금 ≤ 최소환승 요금', dong.fare && dong.transfer && dong.fare.fare <= dong.transfer.fare, dong.fare && dong.fare.fare + ' / ' + (dong.transfer && dong.transfer.fare));
+  check('pickCheapest: 같은 요금이면 빠른 쪽', RC.pickCheapest([{ fare: 1850, minutes: 50 }, { fare: 1850, minutes: 40 }, null]).minutes === 40);
+}
+
 // ── 감사 N1~N3 (2026-11-13): 신분당선·GTX-A·공항철도 별도 운임 — 운영사 공식 요금과 같아야 한다 ──
 // 출처: data/fares-special.json (신분당선 dxline4_1, gtx-a.com/fareIF.do, airportrailroad.com 일반열차 운임)
 {

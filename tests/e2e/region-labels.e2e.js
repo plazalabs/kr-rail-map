@@ -27,7 +27,7 @@ async function typeInto(b, id, text) {
 
   // 기대값: 이름별로 [역 ID, 노선 표기, 지역|null]
   const expect = name => b.evaluate(`STATIONS.filter(s => s.properties.name_ko === ${JSON.stringify(name)}).map(s => ({ id: s.properties.id,
-    lines: (s.properties.lines || []).map(l => lineNameOf.get(l) || l).slice(0, 3).join('·'), region: regionOf.get(s.properties.id) || null }))`);
+    lines: (s.properties.lines || []).map(l => (typeof lineLabelOf === 'function' ? lineLabelOf(l) : (lineNameOf.get(l) || l))).slice(0, 3).join('·'), region: regionOf.get(s.properties.id) || null }))`);
   // 길찾기 자동완성
   await b.evaluate(`document.getElementById('route-panel').hidden = false; 0`);
   for (const name of ['시청', '양평', '교대', '강남']) {

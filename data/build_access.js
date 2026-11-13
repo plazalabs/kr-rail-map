@@ -109,7 +109,12 @@ function openYear(p) {
 }
 const unopened = lines.features.filter(f => f.properties.status && f.properties.status !== 'open');
 const lineYear = {};
-unopened.forEach(f => { lineYear[f.properties.id] = openYear(f.properties); });
+// 연도 단계는 수도권(서울·경기·인천 대략 범위)에 역이 있는 노선만 — 거점이 모두 수도권이라 지방 노선 개통(예: 양산선 2026)은
+// 순위에 영향이 없는데도 빈 연도 단추를 만든다 (2026-11-13). 지방 노선은 '개통 후(전체)' 계산에만 들어간다.
+const inCapital = c => c[0] > 126.3 && c[0] < 127.9 && c[1] > 36.85 && c[1] < 38.3;
+const capitalLines = new Set();
+stations.features.forEach(s => { if (inCapital(s.geometry.coordinates)) (s.properties.lines || []).forEach(l => capitalLines.add(l)); });
+unopened.forEach(f => { if (capitalLines.has(f.properties.id)) lineYear[f.properties.id] = openYear(f.properties); });
 const YEARS = Array.from(new Set(Object.values(lineYear).filter(y => y != null))).sort((a, b) => a - b);
 const allowOf = y => new Set(Object.keys(lineYear).filter(id => lineYear[id] != null && lineYear[id] <= y));
 const CORE_IDX = ['cbd', 'ybd', 'gbd'].map(c => dests.findIndex(d => d.id === c));

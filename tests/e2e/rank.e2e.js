@@ -70,12 +70,12 @@ const layout = b => b.evaluate(`(() => ({
       R.check('연도 2027: 광운대 200위 밖·동북선 개통 표시', y27.rank > 200 && /2027년까지/.test(y27.now) && /동북선/.test(y27.opens), y27);
       R.check('연도 2031: 광운대 10위 안·GTX-B·C 개통 표시', y31.rank <= 10 && /GTX-B/.test(y31.opens) && /GTX-C/.test(y31.opens), y31);
       await b.goto(RANK, 800); await rows(b);
-      await b.evaluate(`(() => { const r = document.getElementById('yr'); r.value = '3'; r.dispatchEvent(new Event('input')); })()`); await sleep(300);
+      await b.evaluate(`(() => { const r = document.getElementById('yr'); r.value = '2'; r.dispatchEvent(new Event('input')); })()`); await sleep(300);
       const sl3 = await b.evaluate(`({ url: location.search, h: document.getElementById('slope-h').textContent })`);
       R.check('슬라이더를 밀면 주소에 y= 와 TOP 10 제목이 그 해로', /y=2031/.test(sl3.url) && /2031년까지/.test(sl3.h), sl3);
       await b.evaluate(`document.getElementById('yr-play').click()`); await sleep(1800);
       const pl = await b.evaluate(`({ btn: document.getElementById('yr-play').getAttribute('aria-label'), stopIc: !!document.querySelector('#yr-play svg.ic-stop'), url: location.search })`);
-      R.check('▶ 누르면 연도가 차례로 넘어간다 (멈춤 버튼 = 정지 아이콘·이름표 멈추기)', pl.btn === '멈추기' && pl.stopIc && /y=20(27|28)/.test(pl.url), pl);
+      R.check('▶ 누르면 연도가 차례로 넘어간다 (멈춤 버튼 = 정지 아이콘·이름표 멈추기)', pl.btn === '멈추기' && pl.stopIc && /y=20(27|30)/.test(pl.url), pl);
       await b.evaluate(`document.getElementById('yr-play').click()`);
       // ?open=역ID (지도 역 상세 '떡상 랭킹에서 보기') — 그 역 카드가 펼쳐져 있다. 수도권 밖(부산 서면)이면 전국으로
       await b.goto(RANK + '?open=st-355172776', 800); await rows(b);

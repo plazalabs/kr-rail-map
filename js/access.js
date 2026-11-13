@@ -187,7 +187,9 @@ const StationAccess = (() => {
       return '<div class="sa-note sa-none">이 역은 선형 데이터가 없어 도심 접근성을 ' +
         '계산하지 못했습니다. (지방 일반철도 일부 구간이 여기 해당합니다.)</div>';
     }
-    let h = '<table class="sa-tbl"><thead><tr>' +
+    // 68점 감사 5번: 길찾기(환승 대기 포함)와 숫자가 다른 이유를 표 바로 위에
+    let h = '<div class="sa-def">열차 기다리는 시간은 뺀 <b>역끼리 비교용</b> 시간 — 길찾기 시간보다 짧을 수 있어요</div>' +
+      '<table class="sa-tbl"><thead><tr>' +
       '<th class="sa-lab"></th>' +
       '<th class="sa-now">지금</th>' +
       '<th class="sa-aft">개통 후</th>' +

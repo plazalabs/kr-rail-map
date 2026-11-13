@@ -99,6 +99,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
 #cm-list li button:hover,#cm-list li button:focus-visible{background:var(--bg,#f5f5f5)}
 #cm-list .cm-min{font-weight:700;white-space:nowrap}
 #cm-list .cm-pp{color:var(--muted,#666);white-space:nowrap;font-size:var(--fs-xs)}
+.cm-def{font-size:var(--fs-xs);color:var(--muted,#5b6470);margin:0 0 8px;line-height:1.5}
 .cm-note{font-size:var(--fs-xs);color:var(--muted,#888);margin-top:8px;line-height:1.5}
 @media(max-width:768px){#cm-panel{top:auto;bottom:calc(70px + env(safe-area-inset-bottom));right:12px;left:12px;width:auto;max-height:55%}}
 `;
@@ -116,6 +117,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     panel.innerHTML = `
 <div id="cm-head">통근권 찾기 <button id="cm-close" aria-label="닫기"><i data-ic="close"></i></button></div>
 <div id="cm-body">
+  <p class="cm-def">역에서 역까지 어림한 시간입니다 — 집·회사까지 걷는 시간과 처음 열차를 기다리는 시간은 빠져 있어요.</p>
   <div class="cm-row">
     <label for="cm-dest">직장(목적지) 역</label>
     <div class="ac-wrap"><input id="cm-dest" placeholder="예: 강남" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"><div class="ac-list" hidden></div></div>
@@ -130,7 +132,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
   <div class="cm-legend" aria-hidden="true">${BANDS.map(b => `<span><i style="background:${b[1]}"></i>${b[2]}</span>`).join('')}</div>
   <div id="cm-summary" role="status" aria-live="polite"></div>
   <ul id="cm-list"></ul>
-  <div class="cm-note">소요 시간은 운행 속도·환승 도보·승강장 접근 시간으로 낸 <b>추정값</b>입니다(시각표·배차 대기 미반영, ±20~30%).
+  <div class="cm-note">소요 시간은 운행 속도·환승 도보·승강장 접근 시간으로 낸 <b>추정값</b>입니다(시각표 미반영 · 갈아탈 때 기다리는 시간은 배차 간격 절반으로 넣고, 처음 열차 대기는 뺌 · ±20~30%).
   길찾기와 같은 계산입니다. 시세는 투자 모드에서 역이 속한 법정동의 아파트 매매 중위 평당가(최근 6개월)이며, 역 바로 옆 값이 아닙니다. 전세가율은 같은 단지·같은 면적의 매매·신규 전세 짝의 중위값(80% 이상 (주의)).</div>
 </div>`;
     document.body.appendChild(panel);

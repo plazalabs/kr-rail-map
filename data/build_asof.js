@@ -22,11 +22,15 @@ function rows() {
   const acc = J('data/access.json'), rank = J('data/rank.json'), reg = J('data/station-region.json');
   const lines = J('data/lines.geojson');
   const add = (what, basis, date, note) => { if (date) out.push({ what, basis, date, note: note || '' }); };
-  if (cx && cx.period) add('주변 시세·단지 정보', per(cx.period), ym(cx.updated) + ' 마감분까지', '실거래는 계약 후 30일 안에 신고 — 최근 1~2개월은 건수가 적음');
-  else if (price) add('주변 시세', '', ym(price.updated) + ' 마감분까지', '');
-  if (tr && tr.halves) add('가격 흐름(반기)', tr.halves[0].slice(0, 4) + '년 상반기~' + tr.halves[tr.halves.length - 1].slice(0, 4) + '년 ' + (tr.halves[tr.halves.length - 1].slice(4) === 'H1' ? '상' : '하') + '반기', ym(tr.lastClosed) + ' 마감분까지', '마감 안 된 반기는 흐리게 표시');
-  if (je && je.period) add('전세가율', per(je.period), ym(je.period[1]) + ' 마감분까지', '같은 단지·같은 면적 매매·전세 짝');
-  if (mk && mk.period) add('실거래 7종(전월세·오피스텔·토지 등)', per(mk.period), ym(mk.updated) + ' 마감분까지', '');
+  // 다음 갱신 예정 (4차 N4, 2026-11-14): 실거래는 계약 후 30일 안에 신고 → 다음 달 거래는 그다음 달 말에야 거의 찬다.
+  // 마감월 M 이면 M+1 월분을 M+3 월 첫 주에 받는다 (예: 9월 마감 → 10월분은 12월 첫 주). 예정이며 늦어질 수 있음.
+  const nextUp = s => { const m = String(s || '').match(/^(\d{4})-?(\d{2})/); if (!m) return ''; const d = new Date(+m[1], +m[2] - 1 + 3, 1), n = new Date(+m[1], +m[2], 1);
+    return ' · 다음 갱신 예정 ' + d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 첫 주(' + (n.getMonth() + 1) + '월분)'; };
+  if (cx && cx.period) add('주변 시세·단지 정보', per(cx.period), ym(cx.updated) + ' 마감분까지', '실거래는 계약 후 30일 안에 신고 — 최근 1~2개월은 건수가 적음' + nextUp(cx.updated));
+  else if (price) add('주변 시세', '', ym(price.updated) + ' 마감분까지', nextUp(price.updated).slice(3));
+  if (tr && tr.halves) add('가격 흐름(반기)', tr.halves[0].slice(0, 4) + '년 상반기~' + tr.halves[tr.halves.length - 1].slice(0, 4) + '년 ' + (tr.halves[tr.halves.length - 1].slice(4) === 'H1' ? '상' : '하') + '반기', ym(tr.lastClosed) + ' 마감분까지', '마감 안 된 반기는 흐리게 표시' + nextUp(tr.lastClosed));
+  if (je && je.period) add('전세가율', per(je.period), ym(je.period[1]) + ' 마감분까지', '같은 단지·같은 면적 매매·전세 짝' + nextUp(je.period[1]));
+  if (mk && mk.period) add('실거래 7종(전월세·오피스텔·토지 등)', per(mk.period), ym(mk.updated) + ' 마감분까지', nextUp(mk.updated).slice(3));
   if (dev && dev.updated) add('앞으로 들어올 세대(주택인허가)', '사용검사 전 인허가 건', dev.updated + ' 받음', '미착공 건은 취소·지연될 수 있음');
   if (acc && acc.updated) add('도심 접근성(역→업무지구 시간)', '공개 시간표·역간 시간 바탕 추정', rank && rank.updated ? rank.updated + ' 계산' : acc.updated + ' 계산', '');
   if (rank && rank.updated) add('떡상 순위(개통 후 순위 변화)', '연도 = 그해까지 개통한다고 가정', rank.updated + ' 계산', '');

@@ -18,6 +18,7 @@ check('data.html 에 #asof 표', /id="asof"/.test(block));
 check('자료 8가지 이상', R.length >= 8, R.length);
 check('표의 기준일이 지금 자료 파일 값과 같음 (node data/build_asof.js 로 다시 만들 것)', R.every(r => block.includes(r.date)), R.filter(r => !block.includes(r.date)).map(r => r.what + ' ' + r.date));
 check('시세·가격 흐름·미래 노선·역간 시간 기준일이 따로 있음', ['주변 시세', '가격 흐름', '미래 노선', '역간 소요시간'].every(k => R.some(r => r.what.includes(k))), R.map(r => r.what));
+check('시세 줄에 다음 갱신 예정일 (4차 N4)', /다음 갱신 예정 \d{4}년 \d+월 첫 주/.test(block));
 check('빈 기준일 없음', R.every(r => r.date && !/undefined|NaN/.test(r.date)), R.map(r => r.date));
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

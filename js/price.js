@@ -90,6 +90,18 @@
     if (!ready || !stationId) return null;
     return byId[String(stationId)] || null;
   }
+  // 같은 법정동(시군구 코드+동) 시세를 쓰는 다른 역 ID 들 (H9) — 그 역들의 숫자는 똑같은 집계다
+  function sameDong(stationId) {
+    var me = of(stationId);
+    if (!me || !me.lawd || !me.dong) return [];
+    var out = [];
+    for (var k in byId) {
+      if (k === String(stationId)) continue;
+      var o = byId[k];
+      if (o && o.lawd === me.lawd && o.dong === me.dong) out.push(k);
+    }
+    return out;
+  }
 
   /* 역이 속한 법정동의 단지 목록. 좌표가 없으므로 '역 근처'라고 말하지 않는다. */
   function complexes(stationId, limit) {
@@ -143,6 +155,7 @@
     load: load,
     loadComplexes: loadComplexes,
     of: of,
+    sameDong: sameDong,
     complexes: complexes,
     isReady: isReady,
     isComplexReady: function () { return cxReady; },

@@ -410,6 +410,14 @@
       '실거래가는 좌표를 주지 않아 <b>법정동 단위</b>로 묶었습니다 — ' +
       '같은 법정동이라도 단지·층·연식에 따라 차이가 큽니다. 평당가는 <b>전용면적</b> 기준이라 공급면적 기준 시세표보다 높게 보입니다.' +
       (pm.updated ? ' (기준 ' + esc(pm.updated) + ')' : '') + '</div>';
+    // H9 (2026-11-14): 같은 법정동에 다른 역이 있으면 — 그 역들의 시세는 같은 집계다(역마다 따로 잰 값이 아님)
+    var same = StationPrice.sameDong ? StationPrice.sameDong(sid) : [];
+    if (same.length) {
+      var nm = same.map(function (id) { var f = STATIONS.filter(function (s) { return s.properties.id === id; })[0]; return f ? f.properties.name_ko : null; })
+        .filter(Boolean).filter(function (n, i, a) { return a.indexOf(n) === i; });
+      if (nm.length) h += '<div class="sd-note sd-samedong">같은 법정동(' + esc(price.dong) + ')에 있는 <b>' + esc(nm.slice(0, 6).join('·')) + (nm.length > 6 ? ' 외 ' + (nm.length - 6) + '곳' : '') +
+        '</b>역도 이 숫자를 똑같이 씁니다 — 역마다 따로 잰 시세가 아닙니다.</div>';
+    }
     h += complexBlock(sid);
     return h + '</div>';
   }

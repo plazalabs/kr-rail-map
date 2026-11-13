@@ -76,6 +76,18 @@ function watch(b) {
   R.check('미리 받은 뒤 열면 시세·단지가 바로 뜸 (1.5초 안)', secMs['시세'] !== null && secMs['시세'] < 1500 && secMs['단지 목록'] !== null && secMs['단지 목록'] < 1500, secMs);
   const cnt = await b.evaluate(`${JSON.stringify(FILES)}.map(f => performance.getEntriesByType('resource').filter(e => e.name.split('?')[0].endsWith('/data/' + f)).length)`);
   R.check('역을 연 뒤에도 4종은 파일마다 1번만 받음 (중복 없음)', cnt.every(n => n === 1), cnt);
+  // H9 (2026-11-14): 같은 법정동 역이 있으면 '같은 집계' 알림 — 창동(창동)은 녹천과 같은 법정동
+  await b.evaluate(`(() => { const s = STATIONS.find(x => x.properties.name_ko === '창동'); StationDetail.show(s); })()`);
+  const sdMs = await waitFor(b, `!!document.querySelector('#sd-panel .sd-samedong')`, 8000);
+  const sd = await b.evaluate(`(document.querySelector('#sd-panel .sd-samedong') || {}).textContent || ''`);
+  R.check("같은 법정동 역(창동↔녹천) '같은 집계' 알림", sdMs !== null && /녹천/.test(sd) && /똑같이/.test(sd), sd.slice(0, 120));
+  const lone = await b.evaluate(`(() => { const ids = Object.keys(StationPrice.meta() ? {} : {}); const all = STATIONS.filter(s => StationPrice.of(s.properties.id) && StationPrice.sameDong(s.properties.id).length === 0); return all.length ? all[0].properties.name_ko : null; })()`);
+  if (lone) {
+    await b.evaluate(`(() => { const s = STATIONS.find(x => x.properties.name_ko === ${JSON.stringify(lone)} && StationPrice.of(x.properties.id) && StationPrice.sameDong(x.properties.id).length === 0); StationDetail.show(s); })()`);
+    await waitFor(b, `!!document.querySelector('#sd-panel .sd-price')`, 5000);
+    const none = await b.evaluate(`!document.querySelector('#sd-panel .sd-samedong')`);
+    R.check('법정동에 혼자인 역은 알림 없음 (' + lone + ')', none, none);
+  }
   await b.shot(path.join(OUT, 'gangnam.png'));
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0 (역 상세)', exc.length === 0, exc.slice(0, 3));

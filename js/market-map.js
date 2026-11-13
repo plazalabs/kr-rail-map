@@ -163,9 +163,10 @@
         var lg = by === 'line' ? g : groupOf(r, 'line', lines);
         if (scope === 'new' && (lg === NONE || lg === NO_NEW)) return;
         if (scope === 'affected' && lg === NONE) return;
-        var sv = opts.size === 'deals' && opts.sizeOf ? opts.sizeOf(r.id) : null;
-        var v = opts.size === 'deals' ? (sv && sv > 0 ? sv : 1) : 1;
-        var t = { row: r, v: v, color: colorOf(r, opts.color, tierOf, opts.valueOf), gain: gainOf(r), sizeMissing: opts.size === 'deals' && !(sv > 0) };
+        var sized = !!opts.size && opts.size !== 'equal';
+        var sv = sized && opts.sizeOf ? opts.sizeOf(r.id) : null;
+        var v = sized ? (sv && sv > 0 ? sv : 1) : 1;
+        var t = { row: r, v: v, color: colorOf(r, opts.color, tierOf, opts.valueOf), gain: gainOf(r), sizeMissing: sized && !(sv > 0) };
         if (!map.has(g)) map.set(g, { name: g, value: 0, tiles: [] });
         var G = map.get(g); G.tiles.push(t); G.value += v;
       });
@@ -289,7 +290,7 @@
       '<div class="mm-ctrl">' +
         '<label>묶기 <select data-k="group"><option value="line">새 노선</option><option value="sgg">시군구</option></select></label>' +
         '<label>색 <select data-k="color"><option value="gain">빨라지는 분</option><option value="tier">순위 변화</option><option value="jeonse">전세가율 (투자 모드)</option><option value="price">평당가 (투자 모드)</option></select></label>' +
-        '<label>크기 <select data-k="size"><option value="equal">모두 같게</option><option value="deals">아파트 거래 건수 (투자 모드)</option></select></label>' +
+        '<label>크기 <select data-k="size"><option value="equal">모두 같게</option><option value="deals">아파트 거래 건수 (투자 모드)</option><option value="supply">입주 예정 세대 (투자 모드)</option></select></label>' +
         '<label>기준 <select data-k="w"><option value="avg">평균</option><option value="cbd">도심</option><option value="ybd">여의도</option><option value="gbd">강남</option></select></label>' +
         '<label>보기 <select data-k="view"><option value="tiles">타일</option><option value="list">목록(순위)</option></select></label>' +
         '<label>역 <select data-k="scope"><option value="new">새 노선이 서는 역</option><option value="affected">빨라지는 역 모두</option><option value="all">수도권 전체</option></select></label>' +
@@ -314,15 +315,15 @@
     el.querySelectorAll('.mm-ctrl select').forEach(function (s) {
       s.addEventListener('change', function () {
         st[s.dataset.k] = s.value;
-        if (s.dataset.k === 'size' && s.value === 'deals' && !invest()) {
+        if (s.dataset.k === 'size' && (s.value === 'deals' || s.value === 'supply') && !invest()) {
           st.size = 'equal'; s.value = 'equal';
-          note('거래 건수 크기는 투자 모드에서만 씁니다 (시세는 투자 모드 자료)');
+          note('거래 건수·입주 세대 크기는 투자 모드에서만 씁니다');
         }
         if (s.dataset.k === 'color' && (s.value === 'jeonse' || s.value === 'price') && !invest()) {
           st.color = 'gain'; s.value = 'gain';
           note('전세가율·평당가 색은 투자 모드에서만 씁니다');
         }
-        if (s.dataset.k === 'size' && st.size === 'deals') ensurePrice();
+        if (s.dataset.k === 'size' && st.size !== 'equal') ensurePrice();
         if (s.dataset.k === 'color' && (st.color === 'jeonse' || st.color === 'price')) ensurePrice();
         track('market_map_filter_change', { 종류: s.dataset.k });
         render();
@@ -360,7 +361,8 @@
   function investReady() {
     var p = typeof StationPrice === 'undefined' || StationPrice.isReady();
     var j = typeof StationJeonse === 'undefined' || !StationJeonse.isReady || StationJeonse.isReady();
-    return p && j;
+    var d = typeof StationDev === 'undefined' || StationDev.isReady();
+    return p && j && d;
   }
   function ensurePrice() {
     if (investReady()) return;
@@ -383,7 +385,10 @@
     if (st.y !== 'all' && (doc.years || []).map(String).indexOf(String(st.y)) < 0) st.y = 'all';
     var out = RT.compute(doc, { weight: st.w, region: 'capital', at: st.y });
     rowsById = new Map(out.rows.map(function (r) { return [r.id, r]; }));
-    var sizeOf = function (id) { if (typeof StationPrice === 'undefined' || !StationPrice.isReady()) return null; var p = StationPrice.of(id); return p ? p.deals : null; };
+    var sizeOf = function (id) {
+      if (st.size === 'supply') { if (typeof StationDev === 'undefined' || !StationDev.isReady()) return null; var d = StationDev.of(id); return d ? d.hh : null; }
+      if (typeof StationPrice === 'undefined' || !StationPrice.isReady()) return null; var p = StationPrice.of(id); return p ? p.deals : null;
+    };
     var valueOf = function (id) {
       if (st.color === 'jeonse') { if (typeof StationJeonse === 'undefined' || !StationJeonse.isReady || !StationJeonse.isReady()) return null; var j = StationJeonse.of(id); return j && j.r != null ? j.r : null; }
       if (st.color === 'price') { if (typeof StationPrice === 'undefined' || !StationPrice.isReady()) return null; var p = StationPrice.of(id); return p && p.medianPerPyeong != null && p.deals >= 5 ? p.medianPerPyeong : null; }
@@ -414,7 +419,8 @@
     } else {
       items = Logic.GAIN_BINS.map(function (b) { return [b.bg, b.label]; }).concat([[Logic.NEW_COLOR.bg, Logic.NEW_COLOR.label], [Logic.NA_COLOR.bg, '자료 없음(빗금)']]);
     }
-    var sz = st.size === 'deals' ? ' · 크기 = 역이 속한 법정동 아파트 매매 건수(최근 6개월), 점선 = 거래 5건 미만·자료 없음' : ' · 크기 = 모두 같음';
+    var sz = st.size === 'deals' ? ' · 크기 = 역이 속한 법정동 아파트 매매 건수(최근 6개월), 점선 = 자료 없음'
+      : st.size === 'supply' ? ' · 크기 = 역이 속한 법정동의 아직 준공 안 된 주택인허가 세대(수록 자료 기준, 입주 물량 그대로는 아님), 점선 = 없음·자료 없음' : ' · 크기 = 모두 같음';
     box.innerHTML = items.map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
       '<span>' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표)' : st.color === 'price' ? '평당가 = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상)' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + sz) + '</span>';
   }
@@ -573,9 +579,9 @@
     opener = document.activeElement;
     ['w', 'group', 'color', 'scope'].forEach(function (k) { if (o[k] && ALLOWED[k].indexOf(String(o[k])) >= 0) st[k] = String(o[k]); });
     if (o.y && /^(all|20[0-9][0-9])$/.test(String(o.y))) st.y = String(o.y);
-    if (o.size === 'deals' || o.size === 'equal') st.size = o.size;
+    if (['deals', 'supply', 'equal'].indexOf(o.size) >= 0) st.size = o.size;
     if (o.view === 'list' || o.view === 'tiles') st.view = o.view;
-    if (st.size === 'deals' && !invest()) st.size = 'equal';
+    if (st.size !== 'equal' && !invest()) st.size = 'equal';
     if ((st.color === 'jeonse' || st.color === 'price') && !invest()) st.color = 'gain';
     if (st.color === 'jeonse' || st.color === 'price' || st.size === 'deals') ensurePrice();
     isOpen = true;

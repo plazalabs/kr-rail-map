@@ -138,6 +138,11 @@ async function until(b, expr, n = 40) {
     return { color: st.color, keys, legend: document.querySelector('#mm-panel .mm-legend').textContent.slice(0, 80) }; })()`);
   const jk = Object.keys(jv.keys).filter(k => /^j\d$/.test(k)).length;
   R.check('투자 모드: 색 = 전세가율 → 전세가율 구간 색 3개 이상 + 범례', jv.color === 'jeonse' && jk >= 3 && /전세가율|50%/.test(jv.legend), jv);
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="size"]'); s.value = 'supply'; s.dispatchEvent(new Event('change')); })()`);
+  await until(b, `typeof StationDev !== 'undefined' && StationDev.isReady()`, 40); await sleep(900);
+  const sv = await b.evaluate(`(() => { const m = MarketMap.model(); const vs = []; m.groups.forEach(G => G.tiles.forEach(t => vs.push(t.v)));
+    return { size: MarketMap.state().size, distinct: new Set(vs).size, max: Math.max(...vs), legend: /입주|인허가/.test(document.querySelector('#mm-panel .mm-legend').textContent) }; })()`);
+  R.check('투자 모드: 크기 = 입주 예정 세대 → 타일 크기가 역마다 다름 + 범례 설명', sv.size === 'supply' && sv.distinct > 10 && sv.max > 100 && sv.legend, sv);
   b.close();
   b = await launch({ port: 9677, w: 1440, h: 900 });
   await b.goto(BASE + '?market=1&c=jeonse#normal', 1500); await ready(b);

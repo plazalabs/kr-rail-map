@@ -987,6 +987,15 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
 }
 /* 휴대폰: 바닥 시트 안에서 결과 칸이 따로 스크롤되지 않게 — 시트 하나만 스크롤, 시트는 조금 더 높게 */
 @media (max-width: 768px) {
+  /* 길찾기 결과 '요약 한 줄' (2026-11-13) — 접히면 머리 + 요약 줄만, 지도·경로가 보인다 */
+  #route-panel.rp-peek > :not(.rp-head):not(.rp-peekbar) { display: none !important; }
+  #route-panel.rp-peek { max-height: none; overflow: visible; gap: 4px; padding: 8px 12px; }
+  #route-panel .rp-peekbar { display: none; }
+  #route-panel.rp-peek .rp-peekbar { display: flex; align-items: center; gap: 8px; }
+  .rp-peek-sum { flex: 1; min-width: 0; font-size: var(--fs-sm); font-weight: 700; line-height: 1.35; cursor: pointer; }
+  .rp-peek-open, .rp-peek-fold { flex: none; border: 1px solid var(--border); background: var(--btn-bg); color: var(--accent); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: var(--fs-xs); font-weight: 700; cursor: pointer; }
+  .rp-peek-fold { display: none; margin-left: auto; margin-right: 6px; padding: 3px 10px; }
+  #route-panel.rp-has-result:not(.rp-peek) .rp-peek-fold { display: inline-block; }
   #route-panel { max-height: 78vh; }
   #route-result { max-height: none; overflow: visible; }
   #route-panel .rc-tabs.four { display: flex; }

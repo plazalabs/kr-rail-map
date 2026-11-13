@@ -32,6 +32,7 @@ const CHECKS = [
   ['theme-switch', 'theme-switch.e2e.js', {}, '테마·배경 전환 후 레이어 복원 (버그 ①)'],
   ['toolbar-menus', 'toolbar-menus.e2e.js', {}, '툴바 메뉴 3개·14항목, 모바일/태블릿/데스크톱 (버그 ②)'],
   ['same-name-stations', 'same-name-stations.e2e.js', {}, '동명역 선택·공유/옛 링크·역 상세 출발 (버그 ③)'],
+  ['route-peek', 'route-peek.e2e.js', {}, '휴대폰 길찾기 결과 요약 한 줄 — 지도·경로가 보이게 (2026-11-13)'],
   ['route-extras', 'route-extras.e2e.js', {}, '길찾기 키보드·⇄·즐겨찾기 ID 유지 (IMPL3)'],
   ['palette', 'palette.e2e.js', {}, '검색 팔레트 — 기능 바로 실행·A에서 B 길찾기 (2026-11-13)'],
   ['share-line', 'share-line.e2e.js', {}, '나만의 노선 링크 공유 — 받기·저장·왕복·HTML 글자로만 (2026-11-13)'],

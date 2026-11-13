@@ -1144,6 +1144,47 @@ if (routeUnopenedEl) {
 }
 function routeIncludeUnopened() { return !!(routeUnopenedEl && routeUnopenedEl.checked); }
 
+/* 휴대폰 길찾기 '요약 한 줄' (2026-11-13, 회장님: 결과가 나와도 창이 지도를 가려 경로가 안 보인다)
+ *   휴대폰(≤768px)에서 경로 찾기를 누르면 결과를 그리기 '전에' 창을 접는다 — 지도 맞춤(fitBounds)이 접힌 창 높이로 여백을 잡게.
+ *   접힌 창: '총 약 N분 · 환승 · 요금' 한 줄 + [자세히 ▲]. 펼친 창 머리에는 [지도 보기 ▼].
+ *   PC 는 바꾸지 않는다(오른쪽 창이라 지도를 덜 가림). */
+function isMobileSheet() { return window.innerWidth <= 768; }
+function routePeekBar() {
+  const rp = document.getElementById('route-panel');
+  let bar = rp.querySelector('.rp-peekbar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'rp-peekbar';
+    bar.innerHTML = '<span class="rp-peek-sum" aria-live="polite"></span><button type="button" class="rp-peek-open" aria-label="길찾기 결과 자세히 보기">자세히 ▲</button>';
+    rp.querySelector('.rp-head').after(bar);
+    bar.querySelector('.rp-peek-open').addEventListener('click', () => setRoutePeek(false));
+    bar.querySelector('.rp-peek-sum').addEventListener('click', () => setRoutePeek(false));
+    const head = rp.querySelector('.rp-head');
+    const fold = document.createElement('button');
+    fold.type = 'button'; fold.id = 'route-peek-btn'; fold.className = 'rp-peek-fold'; fold.textContent = '지도 보기 ▼';
+    fold.setAttribute('aria-label', '길찾기 창 접고 지도 보기');
+    fold.addEventListener('click', () => setRoutePeek(true));
+    head.insertBefore(fold, head.querySelector('.rp-close'));
+  }
+  return bar;
+}
+function routeSummaryText() {
+  const t = document.querySelector('#route-result .rc-panel:not([hidden]) .total') || document.querySelector('#route-result .total');
+  if (!t) return '';
+  const c = t.cloneNode(true);
+  c.querySelectorAll('.rc-badge, .rc-def').forEach(x => x.remove());
+  return c.textContent.replace(/\s+/g, ' ').replace(/^총\s*/, '').trim();
+}
+function setRoutePeek(on, text) {
+  const rp = document.getElementById('route-panel');
+  routePeekBar();
+  rp.classList.toggle('rp-peek', !!on);
+  rp.classList.add('rp-has-result');
+  if (text != null) rp.querySelector('.rp-peek-sum').textContent = text;
+  else if (on) rp.querySelector('.rp-peek-sum').textContent = routeSummaryText() || '경로 결과';
+  if (on && window.KRTrack) { /* 접기는 세지 않는다 — 너무 잦음 */ }
+}
+
 document.getElementById('route-go').addEventListener('click', () => {
   const box = document.getElementById('route-result');
   const pair = resolveRoutePair(document.getElementById('route-from'), document.getElementById('route-to'));
@@ -1161,7 +1202,10 @@ document.getElementById('route-go').addEventListener('click', () => {
   }
   // 3종 비교 모듈이 있으면 사용, 없으면 기존 단일 경로
   if (typeof RouteCompare !== 'undefined') {
+    const peek = isMobileSheet();
+    if (peek) setRoutePeek(true, '경로를 찾는 중…');   // 먼저 접어야 지도 맞춤이 접힌 창 높이로 여백을 잡는다
     RouteCompare.show(from.properties.id, to.properties.id, { includeUnopened: routeIncludeUnopened() });
+    if (peek) setRoutePeek(true);
     if (window.KRTrack) KRTrack('길찾기', { 개통예정포함: routeIncludeUnopened() ? '예' : '아니오' });
     // 아래 상태 줄에 '도착역을 입력하세요' 같은 옛 안내가 남지 않게 — 동명역 해석 안내는 위에서 이미 띄웠으면 그대로 둔다
     if (!pair.guessed.length) setStatus(`${from.properties.name_ko} → ${to.properties.name_ko} 경로를 찾았어요`);

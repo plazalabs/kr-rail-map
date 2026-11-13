@@ -251,6 +251,8 @@ const want = s => !ONLY.length || ONLY.includes(s);
     const chain = [];
     for (const [kind, t] of CHAIN) {
       const sel = kind === 'theme' ? `#theme-row .theme-btn[data-theme=${t}]` : `#toolbar [data-style=${t}]`;
+      // 2026-11-13: 라이트·다크 말고는 '더보기' 안에 접혀 있다 — 사람처럼 먼저 펼친다
+      if (kind === 'theme' && !['light', 'dark'].includes(t) && await b.evaluate(`(() => { const x = document.getElementById('theme-extra'); return !!x && x.hidden; })()`)) await sidePress('#theme-row .theme-more');
       const p = kind === 'theme' ? await sidePress(sel) : await press(sel); let s;
       for (let i = 0; i < 32; i++) { await sleep(250); s = await S(); if (s.rail) break; }
       // 화면 반영(GeoJSON 타일 생성·그리기)은 비동기 — 최대 6초까지 그려진 피처를 기다린다

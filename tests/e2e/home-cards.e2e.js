@@ -41,6 +41,12 @@ async function ready(b) {
   await b.evaluate(`document.getElementById('layer-rocket').click(); 0`); await sleep(600);
   const off1 = await b.evaluate(`(() => { const e = document.getElementById('al-chip'); return !e || e.hidden; })()`);
   R.check("지도 위 '켜진 분석': 떡상 지도 켜면 표시, 끄면 사라짐", off0 && /떡상 지도/.test(on1 || '') && off1, { off0, on1, off1 });
+  // 테마: 처음엔 라이트·다크 + 더보기, 누르면 7개 (회장님 결정 2026-11-13)
+  const vis = () => b.evaluate(`[...document.querySelectorAll('#theme-row .theme-btn')].filter(e => e.offsetParent).map(e => e.dataset.theme)`);
+  const t0 = await vis();
+  await b.evaluate(`document.querySelector('#theme-row .theme-more').click(); 0`); await sleep(200);
+  const t1 = await vis();
+  R.check('테마: 처음 라이트·다크만, 더보기 누르면 7개', t0.join() === 'light,dark' && t1.length === 7, { t0, t1 });
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0', exc.length === 0, exc.slice(0, 3));
   b.close();

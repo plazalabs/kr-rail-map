@@ -152,9 +152,22 @@ document.querySelectorAll('#toolbar [data-style]').forEach(b =>
   b.addEventListener('click', () => { history.replaceState(null, '', '#' + b.dataset.style); applyView(); }));
 window.addEventListener('hashchange', applyView);
 
+// 첫 화면 단순화 (68점 감사 12번 · 회장님 결정 2026-11-13): 라이트·다크만 보이고 나머지 5개는 '더보기' 안에.
+// 지금 쓰는 테마가 그 5개 중 하나면 처음부터 펼친다(고른 게 안 보이면 헷갈림).
+const MAIN_THEMES = ['light', 'dark'];
 function renderThemes() {
   const row = document.getElementById('theme-row');
   row.innerHTML = '';
+  const extra = document.createElement('span');
+  extra.id = 'theme-extra';
+  extra.className = 'theme-extra';
+  const open = !MAIN_THEMES.includes(theme);
+  extra.hidden = !open;
+  const more = document.createElement('button');
+  more.type = 'button'; more.className = 'theme-more';
+  more.setAttribute('aria-expanded', open ? 'true' : 'false'); more.setAttribute('aria-controls', 'theme-extra');
+  more.textContent = open ? '접기' : '더보기 (' + (THEMES.length - MAIN_THEMES.length) + ')';
+  more.addEventListener('click', () => { const o = extra.hidden; extra.hidden = !o; more.setAttribute('aria-expanded', o ? 'true' : 'false'); more.textContent = o ? '접기' : '더보기 (' + (THEMES.length - MAIN_THEMES.length) + ')'; });
   THEMES.forEach(t => {
     const b = document.createElement('button');
     b.className = 'theme-btn' + (t.id === theme ? ' active' : '');
@@ -165,8 +178,10 @@ function renderThemes() {
       localStorage.setItem('krrail-theme', theme);
       applyView();
     });
-    row.appendChild(b);
+    (MAIN_THEMES.includes(t.id) ? row : extra).appendChild(b);
   });
+  row.appendChild(more);
+  row.appendChild(extra);
 }
 
 /* ---------- 스모크 테스트용 임시 데이터 (실제 데이터 도착 전) ---------- */

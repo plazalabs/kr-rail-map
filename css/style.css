@@ -354,6 +354,10 @@ body.sidebar-hidden #sidebar { display: none; }
   transition: .12s;
 }
 .theme-btn:hover { background: var(--hover); }
+/* 테마 더보기 (2026-11-13) — 라이트·다크 뒤 나머지 5개 */
+.theme-more { border: 1px dashed var(--border); background: none; color: var(--accent); border-radius: 7px; padding: 4px 9px; font-size: var(--fs-xs); cursor: pointer; }
+.theme-extra { display: contents; }
+.theme-extra[hidden] { display: none; }
 .theme-btn.active {
   background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600;
 }

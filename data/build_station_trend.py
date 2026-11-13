@@ -52,8 +52,10 @@ def main():
     acc = {}
     months_seen = set()
     for f in sorted(glob.glob(str(RTMS / "*_??????.json"))):
-        name = pathlib.Path(f).stem
-        code, ym = name.split("_")
+        parts = pathlib.Path(f).stem.split("_")
+        if len(parts) != 2:   # 범위 파일(<코드>_<시작>_<끝>)은 건너뛴다 — 달 캐시만
+            continue
+        code, ym = parts
         if not (code.isdigit() and FIRST <= ym <= LAST_CLOSED):
             continue
         months_seen.add(ym)
@@ -69,7 +71,10 @@ def main():
     # 반기마다 모든 시군구의 달 파일이 다 있어야 그 반기를 쓴다 (빠진 달이 있으면 거래가 적게 보여 왜곡)
     by_month_codes = {}
     for f in glob.glob(str(RTMS / "*_??????.json")):
-        code, ym = pathlib.Path(f).stem.split("_")
+        parts = pathlib.Path(f).stem.split("_")
+        if len(parts) != 2:
+            continue
+        code, ym = parts
         if code.isdigit():
             by_month_codes.setdefault(ym, set()).add(code)
     all_codes = set().union(*by_month_codes.values()) if by_month_codes else set()

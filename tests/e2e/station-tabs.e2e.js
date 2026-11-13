@@ -68,6 +68,17 @@ const STATE = `(() => {
   await open(b, '잠실', 'seoul-subway-line-2');
   s = await b.evaluate(STATE);
   R.check('시세 탭을 고른 채 다른 역(잠실)을 열면 시세 탭 유지', s.visible.join() === 'p' && /전세가율|실거래/.test(s.panes.p.text), s.visible);
+
+  // 가격 흐름 (G2): 시세 탭 안, 반기 막대 8개, 마감 전 반기는 흐리게(*), 인과 아님 안내, 막대가 실제로 보임
+  for (let i = 0; i < 30; i++) { if (await b.evaluate(`!!document.querySelector('#sd-pane-p .sd-trend-sec')`)) break; await sleep(250); }
+  const tr = await b.evaluate(`(() => { const sec = document.querySelector('#sd-pane-p .sd-trend-sec'); if (!sec) return null;
+    const cols = [...sec.querySelectorAll('.pt-col')]; const bars = cols.map(c => c.querySelector('.pt-bar i')).filter(Boolean).map(i => i.getBoundingClientRect().height);
+    return { n: cols.length, partial: sec.querySelectorAll('.pt-partial').length, aria: cols.map(c => c.getAttribute('aria-label')).slice(-1)[0], sum: (sec.querySelector('.pt-sum') || {}).textContent || '',
+      note: sec.querySelector('.pt-note').textContent, maxBar: Math.max(0, ...bars), inT: !!document.querySelector('#sd-pane-t .sd-trend-sec') }; })()`);
+  R.check('가격 흐름: 시세 탭에 반기 막대 8개 · 마감 전 반기 1개 흐리게 · 교통 탭엔 없음', !!tr && tr.n === 8 && tr.partial === 1 && !tr.inT && tr.maxBar > 30, tr);
+  const ov = await b.evaluate(`[...document.querySelectorAll('#sd-pane-p .pt-v, #sd-pane-p .pt-h')].filter(e => e.scrollWidth > e.parentElement.clientWidth + 1 || e.getBoundingClientRect().right > document.querySelector('#sd-panel').getBoundingClientRect().right).map(e => e.textContent)`);
+  R.check('가격 흐름: 막대 위 값·반기 글자가 칸 밖으로 안 넘침 (PC)', ov.length === 0, ov);
+  R.check("가격 흐름: 변화율 한 줄 + '7~9월만' · '철도 개통의 효과를 뜻하지 않습니다' 안내 + 막대마다 낭독용 이름", !!tr && /%/.test(tr.sum) && /7~9월만/.test(tr.note) && /효과를 뜻하지 않습니다/.test(tr.note) && /26 하반기\(7~9월만\)/.test(tr.aria), tr);
   const exc1 = b.logs.filter(l => /EXC/.test(l));
   b.close(); await sleep(800);
 
@@ -93,6 +104,10 @@ const STATE = `(() => {
   await m.evaluate(`document.querySelector('#sd-panel .sd-tab[data-tab=d]').click(); true`); await sleep(300);
   s = await m.evaluate(STATE);
   R.check('휴대폰: 개발 탭 누르면 개발만 · 단추는 화면 안', s.visible.join() === 'd' && s.actIn, { v: s.visible, actIn: s.actIn });
+  await m.evaluate(`StationDetail.selectTab('p'); 0`); await sleep(300);
+  for (let i = 0; i < 30; i++) { if (await m.evaluate(`!!document.querySelector('#sd-pane-p .pt-col')`)) break; await sleep(250); }
+  const mov = await m.evaluate(`(() => { const c = [...document.querySelectorAll('#sd-pane-p .pt-v, #sd-pane-p .pt-h')]; return { n: c.length, over: c.filter(e => e.scrollWidth > e.parentElement.clientWidth + 1 || e.getBoundingClientRect().right > innerWidth).map(e => e.textContent) }; })()`);
+  R.check('휴대폰: 가격 흐름 막대 글자가 칸·화면 밖으로 안 넘침', mov.n === 16 && mov.over.length === 0, mov);
   const exc3 = m.logs.filter(l => /EXC/.test(l));
   m.close();
 

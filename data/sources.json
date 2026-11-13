@@ -184,7 +184,8 @@
       "affects": [
         "data/station-price.json",
         "data/station-complex.json",
-        "data/station-jeonse.json"
+        "data/station-jeonse.json",
+        "data/station-trend.json"
       ],
       "intermediate": [
         "data/_gov/addr/",
@@ -238,12 +239,13 @@
       "url": "https://www.data.go.kr/data/15126469/openapi.do",
       "licence": "data-go-kr-open",
       "obtained": "국토교통부 아파트 매매 실거래가",
-      "snapshot": "2026-04 ~ 2026-09",
+      "snapshot": "2023-01 ~ 2026-09 (시세·단지·전세가율은 2026-04~09, 가격 흐름은 2023-01~)",
       "used_for": "역 주변 아파트 매매 시세 (법정동·단지)",
       "feeds": [
         "data/station-price.json",
         "data/station-complex.json",
-        "data/station-jeonse.json"
+        "data/station-jeonse.json",
+        "data/station-trend.json"
       ],
       "affects": [],
       "intermediate": [

@@ -560,6 +560,8 @@
 
     // 시세 탭: 매매 시세·단지 → 전세가율 → 실거래 7종
     if (invest) P += priceSection(sid);
+    // 가격 흐름 (G2, 2026-11-13) — 같은 법정동 반기별 평당 중위 2023~. 시세 바로 아래
+    if (invest && typeof StationTrend !== 'undefined' && StationTrend.isReady()) P += StationTrend.sectionHtml(sid);
 
     // 도심 접근성 — '이 집에서 강남까지 몇 분'. 개통으로 얼마나 줄어드는지까지. 교통 탭 맨 위.
     // 자료(access.json)가 아직 없으면 이 절을 통째로 건너뛴다.

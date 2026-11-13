@@ -278,20 +278,45 @@ const RouteFinder = (() => {
   }
 
   // 점 p를 선형 위에 투영 → {alongKm, distKm}
+  // 성능 (D10, 2026-11-13): 예전엔 역마다 선형의 모든 구간 길이를 hav 로 다시 재고, 모든 구간까지의 거리도 hav 로 쟀다
+  // (역 수 × 구간 수 × 2번 — CPU 프로파일에서 hav 만 510ms). 이제 ① 구간 누적 길이는 선형 조각마다 한 번만(segCache),
+  // ② 거리는 평면 근사로 먼저 거르고 가장 가까운 후보(근사 최솟값의 0.5% 안)만 hav 로 정확히 잰다.
+  // 고르는 규칙(앞 구간부터, 정확한 거리가 '더 작을 때만' 바꿈)은 그대로라 결과 그래프가 같다 — scratch/graph_dump.js 로 전후 대조.
+  const segCache = new WeakMap();
+  function segCum(coords) {
+    let c = segCache.get(coords);
+    if (!c) {
+      c = new Float64Array(coords.length);
+      for (let i = 0; i < coords.length - 1; i++) c[i + 1] = c[i] + hav(coords[i][0], coords[i][1], coords[i + 1][0], coords[i + 1][1]);
+      segCache.set(coords, c);
+    }
+    return c;
+  }
   function project(p, coords) {
-    let best = { alongKm: 0, distKm: Infinity };
-    let acc = 0;
-    for (let i = 0; i < coords.length - 1; i++) {
-      const [ax, ay] = coords[i], [bx, by] = coords[i + 1];
-      const segLen = hav(ax, ay, bx, by);
-      // 간이 투영 (위경도를 평면 근사)
+    const n = coords.length - 1;
+    if (n < 1) return { alongKm: 0, distKm: Infinity };
+    const cum = segCum(coords);
+    const kx = Math.cos(p[1] * Math.PI / 180);   // 경도 1도의 길이 비 (평면 근사)
+    const ts = new Float64Array(n), d2 = new Float64Array(n);
+    let min2 = Infinity;
+    for (let i = 0; i < n; i++) {
+      const ax = coords[i][0], ay = coords[i][1], bx = coords[i + 1][0], by = coords[i + 1][1];
+      // 간이 투영 (위경도를 평면 근사) — 예전과 같은 식
       const dx = bx - ax, dy = by - ay;
       const len2 = dx * dx + dy * dy;
       let t = len2 ? ((p[0] - ax) * dx + (p[1] - ay) * dy) / len2 : 0;
       t = Math.max(0, Math.min(1, t));
-      const d = hav(p[0], p[1], ax + t * dx, ay + t * dy);
-      if (d < best.distKm) best = { alongKm: acc + t * segLen, distKm: d };
-      acc += segLen;
+      const ex = (ax + t * dx - p[0]) * kx, ey = ay + t * dy - p[1];
+      ts[i] = t; d2[i] = ex * ex + ey * ey;
+      if (d2[i] < min2) min2 = d2[i];
+    }
+    const lim = min2 * 1.01 + 1e-14;   // 거리 0.5% 여유 (제곱이라 1.01)
+    let best = { alongKm: 0, distKm: Infinity };
+    for (let i = 0; i < n; i++) {
+      if (d2[i] > lim) continue;
+      const ax = coords[i][0], ay = coords[i][1], t = ts[i];
+      const d = hav(p[0], p[1], ax + t * (coords[i + 1][0] - ax), ay + t * (coords[i + 1][1] - ay));
+      if (d < best.distKm) best = { alongKm: cum[i] + t * (cum[i + 1] - cum[i]), distKm: d };
     }
     return best;
   }

@@ -98,6 +98,20 @@ async function until(b, expr, n = 40) {
   await sleep(8000);
   const p2 = await b.evaluate(`({ playing: MarketMap.playing(), y: MarketMap.state().y })`);
   R.check('재생이 끝나면 멈추고 마지막은 전체', !p2.playing && p2.y === 'all', p2);
+  // H2 묶음 확대 (2026-11-14): 묶음 이름 누르면 그 묶음만 → 다른 보기로 바꿔도 유지 → 링크에 &f= → '전체 보기'로 복귀
+  const g0 = await b.evaluate(`MarketMap.model().groups.length`);
+  const gname = await b.evaluate(`(() => { const g = document.querySelector('#mm-panel .mm-board button.mm-gname'); const n = g.dataset.g; g.click(); return n; })()`); await sleep(500);
+  const fz = await b.evaluate(`(() => { const m = MarketMap.model(), bar = document.querySelector('#mm-panel .mm-focus');
+    return { focus: MarketMap.state().focus, groups: m.groups.length, total: m.total, bar: !bar.hidden && bar.textContent, tiles: document.querySelectorAll('#mm-panel .mm-board .mm-tile').length,
+      act: document.activeElement && document.activeElement.className }; })()`);
+  R.check('묶음 이름 누르면 그 묶음만(묶음 1개·알림 줄·타일 수 = 그 묶음 역 수)·포커스는 전체 보기 단추', fz.focus === gname && fz.groups === 1 && fz.tiles === fz.total && /묶음만 보는 중/.test(fz.bar || '') && /mm-unfocus/.test(fz.act), { g0, ...fz });
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'list'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
+  const fl = await b.evaluate(`({ rows: document.querySelectorAll('#mm-panel .mm-row').length, focus: MarketMap.state().focus })`);
+  R.check('목록 보기로 바꿔도 그 묶음만 유지', fl.focus === gname && fl.rows === fz.total, fl);
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'tiles'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
+  await b.evaluate(`document.querySelector('#mm-panel .mm-unfocus').click(); 0`); await sleep(500);
+  const fb = await b.evaluate(`({ focus: MarketMap.state().focus, groups: MarketMap.model().groups.length, bar: document.querySelector('#mm-panel .mm-focus').hidden })`);
+  R.check("'전체 보기' 누르면 묶음이 다 돌아옴", fb.focus === null && fb.groups === g0 && fb.bar, fb);
   // 표(노선×역)
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'matrix'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
   const mx = await b.evaluate(`(() => { const rows = [...document.querySelectorAll('#mm-panel .mm-mxr')]; return { rows: rows.length, groups: MarketMap.model().groups.length, cells: document.querySelectorAll('#mm-panel .mm-cell').length, total: MarketMap.model().total, first: rows[0] ? rows[0].querySelector('.mm-mxh b').textContent : null }; })()`);

@@ -231,7 +231,7 @@
   /* ---------------- 화면 ---------------- */
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var WLABEL = { avg: '평균', cbd: '도심', ybd: '여의도', gbd: '강남' };
-  var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', view: 'tiles', sel: null, cmp: [], tab: 'tiles' };
+  var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', view: 'tiles', sel: null, cmp: [], tab: 'tiles', focus: null };
   var el = null, isOpen = false, model = null, doc = null, rowsById = new Map(), tileById = new Map(), opener = null;
 
   // rank.js 는 'const RankTable' 로 선언돼 window 에 안 붙는다 — 이름으로 직접 찾는다
@@ -284,6 +284,11 @@
       '.mm-mxc{display:flex;flex-wrap:wrap;gap:2px}' +
       '.mm-tile.mm-cell{position:static;width:34px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;overflow:hidden;white-space:nowrap}' +
       '.mm-list{list-style:none;margin:0;padding:0}' +
+      'button.mm-gname{border:0;background:none;padding:0;margin:0;cursor:pointer;text-align:left;font-family:inherit;z-index:1}button.mm-gname:hover{text-decoration:underline}' +
+      'button.mm-gname:focus-visible{outline:3px solid var(--accent,#1565c0);outline-offset:1px}' +
+      '.mm-gname-mx{position:static;font-size:var(--fs-sm);font-weight:800;color:var(--text,#222)}' +
+      '.mm-focus{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 10px 6px;padding:5px 8px;border-radius:8px;background:var(--surface,#f1f5fb);font-size:var(--fs-sm)}.mm-focus[hidden]{display:none}' +
+      '.mm-unfocus{border:1px solid var(--border,#ccd);background:var(--panel-bg,#fff);color:var(--text,#222);border-radius:999px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:var(--fs-sm);font-weight:700}' +
       '.mm-sc-note{position:relative;z-index:1;font-size:var(--fs-xs);line-height:1.45;color:var(--muted,#5b6470);padding:2px 2px 0}.mm-sc-note b{color:var(--text,#222)}' +
       '.mm-sc-ax{position:absolute;left:0;top:0;pointer-events:none}.mm-sc-ax text{font-size:var(--fs-xs);fill:var(--muted,#5b6470)}.mm-sc-ax .t{font-weight:700;fill:var(--text,#222)}' +
       '.mm-sc-ax .g{stroke:var(--border,#e3e6ea);stroke-width:1}.mm-sc-ax .g.z{stroke:var(--muted,#8a929c)}.mm-sc-ax .m{stroke:var(--text,#222);stroke-width:1.2;stroke-dasharray:5 4}' +
@@ -348,6 +353,7 @@
       '</div>' +
       '<div class="mm-years" role="group" aria-label="이 해까지 개통한다고 가정"></div>' +
       '<div class="mm-legend" aria-label="색 뜻"></div></details>' +
+      '<div class="mm-focus" hidden></div>' +
       '<div class="mm-board" role="grid" aria-label="역 타일"></div>' +
       '<div class="mm-card" aria-live="polite"></div>';
     document.body.appendChild(el);
@@ -389,7 +395,12 @@
     });
     el.querySelector('.mm-tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) setTab(b.dataset.tab); });
     var board = el.querySelector('.mm-board');
-    board.addEventListener('click', function (e) { var t = e.target.closest('.mm-tile'); if (t) pick(t.dataset.id, { fromTile: true }); });
+    board.addEventListener('click', function (e) {
+      var g = e.target.closest('.mm-gname');
+      if (g) { setFocus(st.focus ? null : g.dataset.g); return; }
+      var t = e.target.closest('.mm-tile'); if (t) pick(t.dataset.id, { fromTile: true });
+    });
+    el.querySelector('.mm-focus').addEventListener('click', function (e) { if (e.target.closest('.mm-unfocus')) setFocus(null); });
     board.addEventListener('keydown', function (e) {
       var t = e.target.closest && e.target.closest('.mm-tile'); if (!t) return;
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(t.dataset.id, { fromTile: true }); return; }
@@ -413,7 +424,7 @@
   // 링크: ?market=1&y=&w=&c=&g=&s=&st= — 모르는 값은 무시(기본값)
   var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier', 'jeonse', 'price'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
   function linkQuery() {
-    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
+    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
   }
   function note(msg) { var s = document.getElementById('status'); if (s) s.textContent = msg; }
 
@@ -456,6 +467,11 @@
       return null;
     };
     model = Logic.build(out.rows, doc.lines, { group: st.group, size: st.size, color: st.color, scope: st.scope, sizeOf: sizeOf, valueOf: valueOf }, RT.tierOf);
+    // H2 묶음 확대: 고른 묶음이 이 조건에 없으면(묶기 기준·범위가 바뀜) 풀어 준다
+    if (st.focus) {
+      var FG = model.groups.filter(function (G) { return G.name === st.focus; })[0];
+      if (FG) model = Object.assign({}, model, { groups: [FG], total: FG.tiles.length }); else st.focus = null;
+    }
     el.querySelector('.mm-n').textContent = out.total;
   }
 
@@ -587,7 +603,7 @@
     board.innerHTML = '<div class="mm-mx">' + model.groups.map(function (G) {
       var ts = G.tiles.slice().sort(function (a, b) { return keyOf(b) - keyOf(a); });
       var avg = (function () { var g = ts.filter(function (t) { return t.gain != null; }); return g.length ? Math.round(g.reduce(function (s2, t) { return s2 + t.gain; }, 0) / g.length * 10) / 10 : null; })();
-      return '<div class="mm-mxr"><div class="mm-mxh"><b>' + esc(G.name) + '</b><span>' + ts.length + '역' + (avg != null && st.color === 'gain' ? ' · 평균 −' + avg + '분' : '') + '</span></div><div class="mm-mxc">' +
+      return '<div class="mm-mxr"><div class="mm-mxh"><b><button type="button" class="mm-gname mm-gname-mx" data-g="' + esc(G.name) + '" aria-label="' + esc(G.name) + (st.focus ? ' — 전체 보기로 돌아가기' : ' — 이 묶음만 보기') + '">' + esc(G.name) + '</button></b><span>' + ts.length + '역' + (avg != null && st.color === 'gain' ? ' · 평균 −' + avg + '분' : '') + '</span></div><div class="mm-mxc">' +
         ts.map(function (t) {
           var r = t.row;
           var lab = r.name + ' · ' + (r.isNew ? '지금은 철도로 못 감 → 개통 후 ' + fm(r.aft.min) + '분' : '지금 ' + fm(r.now.min) + '분 → 개통 후 ' + fm(r.aft.min) + '분') + (r.change != null ? ' · 순위 ' + r.now.rank + '→' + r.aft.rank + '위' : '');
@@ -672,7 +688,7 @@
     model.groups.forEach(function (G) {
       var r = G.rect; if (!r || r.w < 2 || r.h < 2) return;
       html += '<div class="mm-group" style="left:' + r.x + 'px;top:' + r.y + 'px;width:' + r.w + 'px;height:' + r.h + 'px">' +
-        '<div class="mm-gname" title="' + esc(G.name) + ' · ' + G.tiles.length + '역">' + esc(G.name) + ' · ' + G.tiles.length + '</div></div>';
+        '<button type="button" class="mm-gname" data-g="' + esc(G.name) + '" title="' + esc(G.name) + ' · ' + G.tiles.length + '역 — ' + (st.focus ? '전체 보기로' : '이 묶음만 크게') + '" aria-label="' + esc(G.name) + ' ' + G.tiles.length + '역 — ' + (st.focus ? '전체 보기로 돌아가기' : '이 묶음만 크게 보기') + '">' + esc(G.name) + ' · ' + G.tiles.length + (st.focus ? '' : ' ›') + '</button></div>';
       G.tiles.forEach(function (t) {
         var q = t.rect; if (!q || q.w < 1 || q.h < 1) return;
         var row = t.row, val = t.gain == null ? (row.isNew ? '신규' : '—') : (t.gain > 0 ? '−' + t.gain + '분' : '0분');
@@ -690,11 +706,29 @@
     if (first) first.tabIndex = 0;
   }
 
+  function setFocus(name) {
+    stopPlay();
+    st.focus = name || null;
+    if (name) track('market_map_filter_change', { 종류: '묶음 확대' });
+    render();
+    var f = st.focus ? el.querySelector('.mm-unfocus') : el.querySelector('.mm-board .mm-gname, .mm-board .mm-tile');
+    if (f) { try { f.focus(); } catch (e) { /* 무시 */ } }
+  }
+  function renderFocus() {
+    var bar = el.querySelector('.mm-focus');
+    if (!bar) return;
+    if (!st.focus) { bar.hidden = true; bar.innerHTML = ''; return; }
+    bar.hidden = false;
+    bar.innerHTML = '<span><b>' + esc(st.focus) + '</b> 묶음만 보는 중 · ' + (model ? model.total : 0) + '역</span>' +
+      '<button type="button" class="mm-unfocus">← 전체 보기</button>';
+  }
+
   function render() {
     if (!el || !doc) return;
     compute();
     renderYears();
     renderLegend();
+    renderFocus();
     el.querySelector('[data-k="group"]').value = st.group;
     el.querySelector('[data-k="color"]').value = st.color;
     el.querySelector('[data-k="size"]').value = st.size;
@@ -873,6 +907,7 @@
     if (o.y && /^(all|20[0-9][0-9])$/.test(String(o.y))) st.y = String(o.y);
     if (['deals', 'supply', 'equal'].indexOf(o.size) >= 0) st.size = o.size;
     if (['list', 'tiles', 'matrix', 'scatter'].indexOf(o.view) >= 0) st.view = o.view;
+    if (o.focus && String(o.focus).length < 40) st.focus = String(o.focus);   // 없는 묶음이면 compute 가 풀어 준다
     if (st.view === 'scatter' && !invest()) st.view = 'tiles';
     if (st.size !== 'equal' && !invest()) st.size = 'equal';
     if ((st.color === 'jeonse' || st.color === 'price') && !invest()) st.color = 'gain';
@@ -933,11 +968,11 @@
       b.addEventListener('click', function () { open({}); });
     });
     var q = new URLSearchParams(location.search);
-    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s'), view: q.get('v') });
+    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s'), view: q.get('v'), focus: q.get('f') });
   }
 
   global.MarketMap = { Logic: Logic, init: init, open: open, close: close, pick: pick,
-    isOpen: function () { return isOpen; }, state: function () { return { w: st.w, y: st.y, group: st.group, size: st.size, color: st.color, sel: st.sel, tab: st.tab }; },
+    isOpen: function () { return isOpen; }, state: function () { return { focus: st.focus, view: st.view, w: st.w, y: st.y, group: st.group, size: st.size, color: st.color, sel: st.sel, tab: st.tab }; },
     model: function () { return model; }, _pngCanvas: function () { return pngCanvas(); }, playing: function () { return !!playT; } };
 })(typeof window !== 'undefined' ? window : globalThis);
 

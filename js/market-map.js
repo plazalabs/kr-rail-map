@@ -495,6 +495,8 @@
       render();
       // 설정 칸(접기)·범례 줄바꿈으로 판 크기가 그린 뒤에 바뀔 수 있다 — 배치가 끝난 다음 프레임에 한 번 더 (2026-11-13)
       if (global.requestAnimationFrame) requestAnimationFrame(function () { requestAnimationFrame(function () { if (isOpen && st.tab !== 'card') draw(); }); });
+      // 고른 역이 지금 보기(기본: 새 노선이 서는 역)에 없으면 '수도권 전체'로 넓혀 그 타일이 보이게
+      if (o.sel && rowsById.has(o.sel) && !model.groups.some(function (G) { return G.tiles.some(function (t) { return t.row.id === o.sel; }); })) { st.scope = 'all'; render(); }
       if (o.sel) pick(o.sel, {});
       var t = el.querySelector('.mm-tile[tabindex="0"]') || el.querySelector('.mm-close');
       try { (t || el).focus({ preventScroll: true }); } catch (e) { /* 무시 */ }
@@ -520,6 +522,18 @@
         return r;
       };
       StationDetail.__mm = true;
+    }
+    // 역 상세의 '타일 지도에서 보기' (js/access.js) — 새로고침 없이 그 역을 고른 채 연다
+    if (!document.__mmSt) {
+      document.__mmSt = true;
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest && e.target.closest('[data-market-st]');
+        if (!a || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        e.preventDefault();
+        if (isMobile() && typeof StationDetail !== 'undefined' && StationDetail.hide) StationDetail.hide();
+        var id = a.getAttribute('data-market-st');
+        if (isOpen && load) { if (!pick(id, {})) open({ sel: id }); } else open({ sel: id });
+      });
     }
     document.querySelectorAll('[data-market-open]').forEach(function (b) {
       b.addEventListener('click', function () { open({}); });

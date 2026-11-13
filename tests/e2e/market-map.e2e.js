@@ -81,6 +81,15 @@ async function until(b, expr, n = 40) {
   await b.key('Escape', 'Escape', 27); await sleep(300);
   const closed = await b.evaluate(`document.getElementById('mm-panel').hidden`);
   R.check('Esc → 패널 닫힘', closed === true);
+  // 역 상세 → '타일 지도에서 보기' (홍대입구 2호선: 새 노선 역이 아니라 기본 보기에 없음 → 전체로 넓혀 고름)
+  await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.name_ko === '홍대입구' && f.properties.lines.includes('seoul-subway-line-2')); StationDetail.show(s); })()`);
+  const hasLink = await until(b, `!!document.querySelector('#sd-panel [data-market-st]')`, 40);
+  const linkId = await b.evaluate(`(() => { const a = document.querySelector('#sd-panel [data-market-st]'); if (!a) return null; a.click(); return a.getAttribute('data-market-st'); })()`);
+  await sleep(1200);
+  const viaSd = await b.evaluate(`(() => { const t = document.querySelector('#mm-panel .mm-tile.sel'); return { open: !document.getElementById('mm-panel').hidden, sel: t ? t.dataset.id : null,
+    scope: document.querySelector('#mm-panel [data-k="scope"]').value }; })()`);
+  R.check("역 상세 '타일 지도에서 보기' → 패널이 열리고 그 역 타일이 골라짐", hasLink && !!linkId && viaSd.open && viaSd.sel === linkId, Object.assign({ linkId }, viaSd));
+  await b.key('Escape', 'Escape', 27); await sleep(200);
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0 (PC)', exc.length === 0, exc.slice(0, 3));
   b.close();

@@ -236,7 +236,9 @@ const StationAccess = (() => {
     if (r2.length) lines.push(r2.join(' · '));
     lines.forEach(t => { h += '<div class="sa-sum">' + t + '</div>'; });
     // 지도 안 떡상 패널에서 이 역 보기 (v109 — 예전엔 rank.html 로 나갔다). 패널이 없는 곳에선 주소로 연다
-    h += '<div class="sa-sum"><a class="sa-rocket" href="./?rocket=1&st=' + encodeURIComponent(stationId) + '" data-rocket-st="' + stationId + '"><i data-ic="trend"></i> 떡상 랭킹에서 보기 →</a></div>';
+    h += '<div class="sa-sum"><a class="sa-rocket" href="./?rocket=1&st=' + encodeURIComponent(stationId) + '" data-rocket-st="' + stationId + '"><i data-ic="trend"></i> 떡상 랭킹에서 보기 →</a>' +
+      // 수도권 역이면 RAIL MARKET MAP(역 타일)에서도 (2026-11-13) — 순위 자료가 수도권만이라 그 밖에선 안 보인다
+      (inCapital(stationId) ? ' · <a class="sa-rocket" href="./?market=1&st=' + encodeURIComponent(stationId) + '" data-market-st="' + stationId + '"><i data-ic="chart"></i> 타일 지도에서 보기 →</a>' : '') + '</div>';
 
     const tot = (a.rank.after ? a.rank.after.total : 0).toLocaleString();
     h += '<div class="sa-note">※ 실제 시각표가 아니라 추정값입니다. 열차를 <b>기다리는 시간은 빼고</b> ' +
@@ -245,6 +247,13 @@ const StationAccess = (() => {
       'GBD 중시는 강남을 두 번 센 평균으로 매긴 것으로, ' +
       '전국 ' + tot + '역 가운데 몇 번째인지입니다.</div>';
     return h;
+  }
+
+  function inCapital(id) {
+    const f = typeof STATIONS !== 'undefined' ? STATIONS.find(x => x.properties.id === id) : null;
+    if (!f) return false;
+    const c = f.geometry.coordinates;
+    return c[0] > 126.3 && c[0] < 127.9 && c[1] > 36.85 && c[1] < 38.3;
   }
 
   return { load, isReady, of, biggestGain, sectionHtml, fmt, setDoc };

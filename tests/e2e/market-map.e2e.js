@@ -176,6 +176,11 @@ async function until(b, expr, n = 40) {
   const sv = await b.evaluate(`(() => { const m = MarketMap.model(); const vs = []; m.groups.forEach(G => G.tiles.forEach(t => vs.push(t.v)));
     return { size: MarketMap.state().size, distinct: new Set(vs).size, max: Math.max(...vs), legend: /입주|인허가/.test(document.querySelector('#mm-panel .mm-legend').textContent) }; })()`);
   R.check('투자 모드: 크기 = 입주 예정 세대 → 타일 크기가 역마다 다름 + 범례 설명', sv.size === 'supply' && sv.distinct > 10 && sv.max > 100 && sv.legend, sv);
+  // 가격 흐름 (G2): 타일 하나 고르면 상세 카드에 반기 막대 8개
+  await until(b, `typeof StationTrend !== 'undefined' && StationTrend.isReady()`, 40);
+  await b.evaluate(`(() => { const id = STATIONS.find(s => s.properties.name_ko === '잠실' && s.properties.lines.includes('seoul-subway-line-2')).properties.id; MarketMap.pick(id, {}); })()`); await sleep(900);
+  const tr = await b.evaluate(`(() => { const s = document.querySelector('#mm-panel .sd-trend-sec'); return s ? { n: s.querySelectorAll('.pt-col').length, note: /효과를 뜻하지 않습니다/.test(s.textContent) } : null; })()`);
+  R.check('투자 모드: 타일 상세 카드에 가격 흐름 반기 막대 8개 + 인과 아님 안내', !!tr && tr.n === 8 && tr.note, tr);
   b.close();
   b = await launch({ port: 9677, w: 1440, h: 900 });
   await b.goto(BASE + '?market=1&c=jeonse#normal', 1500); await ready(b);

@@ -384,7 +384,8 @@
     var p = typeof StationPrice === 'undefined' || StationPrice.isReady();
     var j = typeof StationJeonse === 'undefined' || !StationJeonse.isReady || StationJeonse.isReady();
     var d = typeof StationDev === 'undefined' || StationDev.isReady();
-    return p && j && d;
+    var t = typeof StationTrend === 'undefined' || StationTrend.isReady();   // 가격 흐름 (G2)
+    return p && j && d && t;
   }
   function ensurePrice() {
     if (investReady()) return;
@@ -650,6 +651,8 @@
         var j = StationJeonse.of(row.id);
         if (j && j.r != null) h += '<div>전세가율 ' + Math.round(j.r * 100) + '%' + (j.r >= 0.8 ? ' (주의)' : '') + ' <span class="mm-src">같은 단지·면적 짝 ' + (j.n || 0) + '쌍 중위 · 집계상 주의 지표</span></div>';
       }
+      // 가격 흐름 2023~ 반기 막대 (G2, 2026-11-13) — 역 상세 시세 탭과 같은 그림
+      if (typeof StationTrend !== 'undefined' && StationTrend.isReady()) h += StationTrend.sectionHtml(row.id);
     }
     h += '<p class="mm-src">시간 = 업무지구까지 열차 대기 뺀 비교용 추정 · ' + (st.y === 'all' ? '시기 미정 노선까지 모두 개통 가정' : st.y + '년까지 개통한다고 가정') +
       ' · <a href="data.html" target="_blank" rel="noopener">출처</a>' + (doc.updated ? ' · 기준 ' + esc(doc.updated) : '') + '</p>' +

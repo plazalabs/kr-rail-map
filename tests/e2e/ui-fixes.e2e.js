@@ -237,7 +237,11 @@ const want = s => !ONLY.length || ONLY.includes(s);
     await ev(`map.jumpTo({ center: [126.9706, 37.5547], zoom: 13 }); 0`); await sleep(1500);
     // 노선 그리기: 실제 클릭 3점 + Enter
     let r = await menu('도구', 'draw-btn'); await sleep(400);
-    const cv = await ev(`(() => { const r = map.getCanvas().getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; })()`);
+    // 2026-11-13 F5: PC 사이드바는 지도 위에 뜬 카드 — 사람처럼 카드에 안 가린 지도 자리만 누른다
+    const cv = await ev(`(() => { const r = map.getCanvas().getBoundingClientRect(); let x = r.x, w = r.width;
+      const sb = document.getElementById('sidebar'); const s = sb && getComputedStyle(sb).display !== 'none' && getComputedStyle(sb).position === 'absolute' ? sb.getBoundingClientRect() : null;
+      if (s && s.right > x && s.width > 0) { const nx = s.right + 8; w = r.x + r.width - nx; x = nx; }
+      return [x, r.y, w, r.height]; })()`);
     const pts = [[0.42, 0.35], [0.55, 0.42], [0.62, 0.55]].map(([fx, fy]) => [cv[0] + cv[2] * fx, cv[1] + cv[3] * fy]);
     for (const [x, y] of pts) { await b.click(x, y); await sleep(350); }
     await b.key('Enter', 'Enter', 13); await sleep(600);

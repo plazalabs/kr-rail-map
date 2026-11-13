@@ -1450,3 +1450,21 @@ body.map-ready #map-skeleton .sk { animation: none; }
 @media (max-width: 980px) {
   body:has(#sd-panel.sd-open) #route-panel { display: none !important; }
 }
+
+/* ---------- F5 떠 있는 사이드바 (PC 981px 이상) ----------
+   지도는 레일 오른쪽 화면 전체를 쓰고, 사이드바는 그 위에 뜬 카드. 숨기면 지도가 그대로 넓게 보인다.
+   지도 왼쪽 컨트롤·툴바는 카드에 가리지 않게 비켜 선다. */
+@media (min-width: 981px) {
+  #app { position: relative; }
+  #map-wrap { position: absolute; top: 0; right: 0; bottom: 0; left: 68px; }
+  #sidebar {
+    position: absolute; top: 0; bottom: 0; left: 80px; height: auto; max-height: none;
+    border: 1px solid var(--border); box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,.18));
+  }
+  body:not(.sidebar-hidden) .maplibregl-ctrl-bottom-left,
+  body:not(.sidebar-hidden) .maplibregl-ctrl-top-left { left: 344px; }
+  body:not(.sidebar-hidden) #toolbar { max-width: calc(100% - 370px); }
+  body:not(.sidebar-hidden) #status,
+  body:not(.sidebar-hidden) .route-legend,
+  body:not(.sidebar-hidden) #guide-card { left: 344px; }
+}

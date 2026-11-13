@@ -62,6 +62,8 @@ const map = new maplibregl.Map({
   attributionControl: { compact: true },
   preserveDrawingBuffer: true // 이미지 저장용
 });
+// F5: PC 떠 있는 사이드바 카드만큼 지도 왼쪽 여백 (ui.js 가 지도보다 먼저 실행되므로 여기서 연결)
+if (window.KR_syncSidePad) { window.KR_syncSidePad(); map.on('resize', window.KR_syncSidePad); }
 map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
 // 배경 지도 '설계도(스타일 JSON)'가 적용되는 순간 — 철도 노선은 이때부터 그릴 수 있다.
 // map 'load' 는 배경 지도의 글꼴·그림·첫 타일까지 다 받아야 오는데, 무료 지도 서버가 느리면 6~9초 걸렸다

@@ -226,9 +226,24 @@ const UI = (() => {
         btn.setAttribute('aria-expanded', hidden ? 'false' : 'true');
         btn.setAttribute('aria-label', hidden ? '패널 펼치기' : '패널 접기');
         btn.title = hidden ? '패널 펼치기' : '패널 접기';
-        setTimeout(() => { try { map.resize(); } catch (e) {} }, 60);
+        setTimeout(() => { try { map.resize(); } catch (e) {} syncSidePad(); }, 60);
       });
     }
+    // F5: PC 사이드바는 지도 위에 뜬 카드 — 지도 가운데를 카드에 안 가린 곳으로 (setPadding)
+    function syncSidePad() {
+      try {
+        if (typeof map === 'undefined' || !map || !map.setPadding) return;
+        const sb = document.getElementById('sidebar'), cv = map.getCanvas();
+        let left = 0;
+        if (!isMobile() && sb && !document.body.classList.contains('sidebar-hidden') && getComputedStyle(sb).position === 'absolute') {
+          left = Math.max(0, Math.round(sb.getBoundingClientRect().right - cv.getBoundingClientRect().left));
+        }
+        const p = map.getPadding();
+        if (p.left !== left) map.setPadding({ top: p.top, right: p.right, bottom: p.bottom, left: left });
+      } catch (e) {}
+    }
+    window.KR_syncSidePad = syncSidePad;
+    // 지도는 app.js 에서 만든 뒤 KR_syncSidePad 를 부르고 resize 에 연결한다
     const cls = document.getElementById('sidebar-close');
     if (cls) cls.addEventListener('click', closeDrawer);
     const bd = document.getElementById('sidebar-backdrop');

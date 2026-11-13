@@ -94,6 +94,30 @@ async function until(b, expr, n = 40) {
   R.check('예외 0 (PC)', exc.length === 0, exc.slice(0, 3));
   b.close();
 
+  // ── 링크 복사 → 같은 조건으로 다시 열림 ──
+  b = await launch({ port: 9673, w: 1440, h: 900 });
+  await b.goto(BASE + '?market=1&y=2031&w=gbd&c=tier&g=line&s=affected#normal', 1500); await ready(b);
+  await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 30`, 60); await sleep(500);
+  await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.name_ko === '광운대'); MarketMap.pick(s.properties.id, {}); window.__copied = null;
+    if (navigator.clipboard) navigator.clipboard.writeText = t => { window.__copied = t; return Promise.resolve(); }; document.querySelector('#mm-panel .mm-link').click(); })()`);
+  await sleep(300);
+  const copied = await b.evaluate(`window.__copied`);
+  const st1 = await b.evaluate(`MarketMap.state()`);
+  R.check('주소의 조건대로 열림 (2031·강남·순위 변화·빨라지는 역 모두)', st1.y === '2031' && st1.w === 'gbd' && st1.color === 'tier', st1);
+  b.close();
+  b = await launch({ port: 9674, w: 1440, h: 900 });
+  await b.goto(copied ? copied.replace(/^https?:\/\/[^/]+\/[^?]*/, BASE) : BASE, 1500); await ready(b);
+  await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 30`, 60); await sleep(500);
+  const st2 = await b.evaluate(`({ s: MarketMap.state(), scope: document.querySelector('#mm-panel [data-k="scope"]').value, sel: (document.querySelector('#mm-panel .mm-tile.sel') || {}).dataset })`);
+  R.check('링크 복사한 주소로 열면 같은 조건 + 같은 역 골라짐', !!copied && st2.s.y === '2031' && st2.s.w === 'gbd' && st2.s.color === 'tier' && st2.scope === 'affected' && st2.s.sel === st1.sel && !!st1.sel, { copied, st2: st2.s, scope: st2.scope });
+  b.close();
+  b = await launch({ port: 9675, w: 1440, h: 900 });
+  await b.goto(BASE + '?market=1&y=1999&w=evil&c=%3Cimg%3E&g=x#normal', 1500); await ready(b);
+  await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 30`, 60);
+  const st4 = await b.evaluate(`MarketMap.state()`);
+  R.check('엉뚱한 주소 값은 무시하고 기본값 (연도 전체·평균·빨라지는 분·새 노선)', st4.y === 'all' && st4.w === 'avg' && st4.color === 'gain' && st4.group === 'line', st4);
+  b.close();
+
   // ── 휴대폰 ──
   b = await launch({ port: 9672, w: 390, h: 844, mobile: true });
   await b.goto(BASE + '?market=1#normal', 1500); await ready(b);

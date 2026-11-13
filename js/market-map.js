@@ -201,7 +201,8 @@
       '.mm-head h2{margin:0;font-size:var(--fs-lg);font-weight:800;letter-spacing:-.02em}' +
       '.mm-eyebrow{margin:0;font-size:var(--fs-xs);font-weight:700;color:var(--accent,#1565c0)}' +
       '.mm-def{margin:2px 0 0;font-size:var(--fs-xs);color:var(--muted,#5b6470);line-height:1.45}' +
-      '.mm-close{margin-left:auto;border:0;background:none;color:var(--muted,#5b6470);font-size:var(--fs-xl);cursor:pointer;padding:2px 6px;border-radius:6px}' +
+      '.mm-link{margin-left:auto;border:0;background:none;color:var(--muted,#5b6470);cursor:pointer;padding:4px 6px;border-radius:6px}' +
+      '.mm-close{border:0;background:none;color:var(--muted,#5b6470);font-size:var(--fs-xl);cursor:pointer;padding:2px 6px;border-radius:6px}' +
       '.mm-ctrl{display:flex;flex-wrap:wrap;gap:6px 10px;padding:4px 14px 6px;font-size:var(--fs-xs);align-items:center}' +
       '.mm-ctrl label{display:inline-flex;gap:4px;align-items:center;color:var(--muted,#5b6470)}' +
       '.mm-ctrl select{font:inherit;font-size:var(--fs-xs);padding:3px 4px;border:1px solid var(--border,#ccd);border-radius:6px;background:var(--panel-bg,#fff);color:var(--text,#222)}' +
@@ -253,6 +254,7 @@
       '<div class="mm-head"><div><p class="mm-eyebrow">RAIL MARKET MAP · 수도권 <span class="mm-n"></span>역</p>' +
       '<h2>개통하면 어느 역이 얼마나 빨라지나</h2>' +
       '<p class="mm-def">업무지구까지 걸리는 시간(열차 대기 뺌)으로 본 <b>교통 접근성</b>입니다 · 집값이나 투자수익 예측이 아닙니다</p></div>' +
+      '<button class="mm-link" type="button" aria-label="지금 보는 조건으로 링크 복사" title="지금 보는 조건(연도·기준·색·묶기·고른 역)으로 링크 복사"><i data-ic="link"></i></button>' +
       '<button class="mm-close" type="button" aria-label="타일 지도 닫기"><i data-ic="close"></i></button></div>' +
       '<div class="mm-tabs" role="tablist" aria-label="보기"><button type="button" role="tab" data-tab="map">지도</button>' +
       '<button type="button" role="tab" data-tab="tiles">타일</button><button type="button" role="tab" data-tab="card">분석</button></div>' +
@@ -275,6 +277,11 @@
     document.body.appendChild(back);
 
     el.querySelector('.mm-close').addEventListener('click', close);
+    el.querySelector('.mm-link').addEventListener('click', function () {
+      var url = location.origin + location.pathname + linkQuery() + location.hash;
+      var done = function () { note('타일 지도 링크를 복사했습니다 — 같은 조건으로 열립니다'); track('market_map_share'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { note('주소: ' + url); }); else note('주소: ' + url);
+    });
     el.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } });
     el.querySelectorAll('.mm-ctrl select').forEach(function (s) {
       s.addEventListener('change', function () {
@@ -309,6 +316,11 @@
     if (global.ResizeObserver) new ResizeObserver(function () { if (isOpen && st.tab !== 'card') draw(); }).observe(board);
   }
 
+  // 링크: ?market=1&y=&w=&c=&g=&s=&st= — 모르는 값은 무시(기본값)
+  var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
+  function linkQuery() {
+    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
+  }
   function note(msg) { var s = document.getElementById('status'); if (s) s.textContent = msg; }
 
   function ensurePrice() {
@@ -329,6 +341,7 @@
 
   function compute() {
     var RT = RTab();
+    if (st.y !== 'all' && (doc.years || []).map(String).indexOf(String(st.y)) < 0) st.y = 'all';
     var out = RT.compute(doc, { weight: st.w, region: 'capital', at: st.y });
     rowsById = new Map(out.rows.map(function (r) { return [r.id, r]; }));
     var sizeOf = function (id) { if (typeof StationPrice === 'undefined' || !StationPrice.isReady()) return null; var p = StationPrice.of(id); return p ? p.deals : null; };
@@ -482,7 +495,9 @@
     o = o || {};
     build();
     opener = document.activeElement;
-    ['w', 'y', 'group', 'size', 'color'].forEach(function (k) { if (o[k]) st[k] = String(o[k]); });
+    ['w', 'group', 'color', 'scope'].forEach(function (k) { if (o[k] && ALLOWED[k].indexOf(String(o[k])) >= 0) st[k] = String(o[k]); });
+    if (o.y && /^(all|20[0-9][0-9])$/.test(String(o.y))) st.y = String(o.y);
+    if (o.size === 'deals' || o.size === 'equal') st.size = o.size;
     if (st.size === 'deals' && !invest()) st.size = 'equal';
     isOpen = true;
     el.hidden = false;
@@ -539,7 +554,7 @@
       b.addEventListener('click', function () { open({}); });
     });
     var q = new URLSearchParams(location.search);
-    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g') });
+    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s') });
   }
 
   global.MarketMap = { Logic: Logic, init: init, open: open, close: close, pick: pick,

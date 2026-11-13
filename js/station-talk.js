@@ -1,4 +1,4 @@
-/* StationTalk — 역 상세 안 '💬 이 역 이야기' (커뮤니티, 2026-11-12)
+/* StationTalk — 역 상세 안 '이 역 이야기' (커뮤니티, 2026-11-12)
  *
  * 게시판(js/board.js · supabase/board.sql)의 글 중 kind='station' 이고 station 이 '역이름·역ID' 인 것만 보여 주고 쓴다.
  *   - 역 ID 로 묶어서 이름이 같은 다른 역(서울·대전·부산 시청)과 섞이지 않는다

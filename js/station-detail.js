@@ -585,7 +585,7 @@
     html += lineIds.length ? lineIds.map(lineRow).join('') : '<div class="sd-note">노선 정보 없음</div>';
     html += '</div>';
 
-    // 💬 이 역 이야기 (커뮤니티, js/station-talk.js) — 게시판 설정이 없으면 '준비 중' 한 줄
+    // 이 역 이야기 (커뮤니티, js/station-talk.js) — 게시판 설정이 없으면 '준비 중' 한 줄
     if (typeof StationTalk !== 'undefined') html += StationTalk.sectionHtml(sid, nameKo);
 
     // 인접역 (노선별) — 접어 둔다. 역 하나 열 때마다 노선 수만큼 줄이 늘어나서

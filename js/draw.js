@@ -63,7 +63,7 @@ const DrawTools = (() => {
       paint: { 'circle-radius': 5, 'circle-color': '#fff', 'circle-stroke-color': color, 'circle-stroke-width': 2 } });
     ensureMemos();
   }
-  // 메모 핀 레이어 — 이모지(📌)를 심볼 텍스트로 쓰면 배경지도 글꼴 서버에
+  // 메모 핀 레이어 — 이모지(압정 그림)를 심볼 텍스트로 쓰면 배경지도 글꼴 서버에
   // 그 글리프가 없어 아무것도 안 그려진다. 글꼴이 필요 없는 원으로 찍는다.
   function ensureMemos() {
     if (map.getSource('memos')) return;

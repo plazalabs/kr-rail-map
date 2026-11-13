@@ -80,7 +80,7 @@ const RouteFinder = (() => {
     if (stationId && isPlatformTransfer(stationId, line, nl, fromId, toId)) return 0;
     return waitMin(nl);
   }
-  // 출퇴근 배차 (data/headways.json, 2026-11-12) — 떡상 랭킹 '⏱ 배차 포함' 스위치용. 기다리는 시간 = 배차 ÷ 2.
+  // 출퇴근 배차 (data/headways.json, 2026-11-12) — 떡상 랭킹 '배차 포함' 스위치용. 기다리는 시간 = 배차 ÷ 2.
   // 처음 탈 때와 갈아탈 때 붙인다 (같은 열차로 이어 가기·같은 승강장 맞은편 환승은 0).
   let headwayDoc = null;
   function loadHeadways(doc) { headwayDoc = (doc && doc.lines) ? doc : null; return !!headwayDoc; }

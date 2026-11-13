@@ -1682,10 +1682,10 @@ Promise.all([styleReadyP, dataPromise]).then(() => {
   if (typeof CoverageMap !== 'undefined') CoverageMap.init(map, STATIONS, LINES);
   if (typeof CommuteMap !== 'undefined') CommuteMap.init(map, STATIONS);
   if (typeof StationJeonse !== 'undefined' && StationJeonse.initLayer) StationJeonse.initLayer(map, STATIONS);   // 전세가율 색칠 레이어
-  if (typeof StationRocket !== 'undefined') StationRocket.init(map, STATIONS);   // 🚀 떡상 지도 레이어 (rank.json, 켤 때 받음)
+  if (typeof StationRocket !== 'undefined') StationRocket.init(map, STATIONS);   // 떡상 지도 레이어 (rank.json, 켤 때 받음)
   if (typeof RocketPanel !== 'undefined' && RocketPanel.init) RocketPanel.init(map, STATIONS);
   if (typeof MarketMap !== 'undefined' && MarketMap.init) MarketMap.init();
-  if (typeof StationQuiz !== 'undefined' && StationQuiz.init) StationQuiz.init();   // 나에게 맞는 역 찾기 (질문 4개, ?quiz=1 결과 주소)   // RAIL MARKET MAP 역 타일 (?market=1 이면 바로 연다, 2026-11-13)   // 🚀 지도 안 떡상 패널 (?rocket=1 이면 바로 연다)
+  if (typeof StationQuiz !== 'undefined' && StationQuiz.init) StationQuiz.init();   // 나에게 맞는 역 찾기 (질문 4개, ?quiz=1 결과 주소)   // RAIL MARKET MAP 역 타일 (?market=1 이면 바로 연다, 2026-11-13)   // 지도 안 떡상 패널 (?rocket=1 이면 바로 연다)
   if (typeof StationArea !== 'undefined') { StationArea.init(map, STATIONS); StationArea.setLines([...visibleLines]); }
   if (!focusLineFromUrl()) restoreFromUrl();
 }).catch(e => { console.error('첫 화면 준비 실패', e); setStatus('지도 자료를 불러오지 못했습니다. 새로고침해 주세요.'); });
@@ -1975,7 +1975,7 @@ document.getElementById('invest-btn').addEventListener('click', () => {
   document.getElementById('invest-btn').classList.toggle('active', on);
   if (on) setStatus('투자분석: 분석할 지점을 클릭하세요 (Esc 취소)');
 });
-// 투자 모드 스위치 — 툴바 '🏠 투자' 와 역 상세 맨 아래 안내 줄이 같은 KR_MODE 를 바꾼다.
+// 투자 모드 스위치 — 툴바 '투자' 와 역 상세 맨 아래 안내 줄이 같은 KR_MODE 를 바꾼다.
 if (typeof KR_MODE !== 'undefined') {
   document.getElementById('mode-btn').addEventListener('click', () => KR_MODE.toggle());
   KR_MODE.onChange(mode => {

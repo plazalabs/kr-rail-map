@@ -235,7 +235,7 @@ const StationAccess = (() => {
     }
     if (r2.length) lines.push(r2.join(' · '));
     lines.forEach(t => { h += '<div class="sa-sum">' + t + '</div>'; });
-    // 🚀 지도 안 떡상 패널에서 이 역 보기 (v109 — 예전엔 rank.html 로 나갔다). 패널이 없는 곳에선 주소로 연다
+    // 지도 안 떡상 패널에서 이 역 보기 (v109 — 예전엔 rank.html 로 나갔다). 패널이 없는 곳에선 주소로 연다
     h += '<div class="sa-sum"><a class="sa-rocket" href="./?rocket=1&st=' + encodeURIComponent(stationId) + '" data-rocket-st="' + stationId + '"><i data-ic="trend"></i> 떡상 랭킹에서 보기 →</a></div>';
 
     const tot = (a.rank.after ? a.rank.after.total : 0).toLocaleString();

@@ -63,7 +63,7 @@ const RankTable = (() => {
     const region = (opts && opts.region) || 'capital';
     // at: 연도(2031 등) — 그 해까지 개통한 노선만 탄 '개통 후'. 없거나 'all' 이면 전체(시기 미정 노선까지)
     const at = opts && opts.at && opts.at !== 'all' ? String(opts.at) : null;
-    // wait: ⏱ 출퇴근 배차 포함 — 처음 탈 때·갈아탈 때 배차 ÷ 2 (rank.json now_w / aft_w / y_w). 자료가 없으면 빼고 계산
+    // wait: 출퇴근 배차 포함 — 처음 탈 때·갈아탈 때 배차 ÷ 2 (rank.json now_w / aft_w / y_w). 자료가 없으면 빼고 계산
     const wait = !!(opts && opts.wait);
     const nowOf = r => (wait && r.now_w) ? r.now_w : r.now;
     const aftOf = r => wait
@@ -110,12 +110,12 @@ const RankTable = (() => {
   }
 
   /* 떡상 등급 — 지금 순위에서 개통 후 순위로 몇 계단 오르나 (같은 기준·같은 지역 안에서)
-   *   rocket 🚀 떡상 : 100계단 이상
-   *   up     📈 상승 : 10~99계단
-   *   flat   ➖ 보합 : 9계단 오름 ~ 49계단 밀림
-   *   down   📉 상대 하락 : 50계단 이상 밀림 — 내 역 시간도 줄지만 다른 역(GTX)이 더 많이 좋아져서.
+   *   rocket 떡상 : 100계단 이상
+   *   up     상승 : 10~99계단
+   *   flat   보합 : 9계단 오름 ~ 49계단 밀림
+   *   down   상대 하락 : 50계단 이상 밀림 — 내 역 시간도 줄지만 다른 역(GTX)이 더 많이 좋아져서.
    *          (수도권은 절반 넘는 역이 개통 후 9분 넘게 빨라진다 — 순위만 보고 '밀림'이라 부르면 오해를 산다, 2026-11-12)
-   *   new    ✨ 신규 : 지금은 철도로 못 가는 역 (새 노선이 생겨야 생기는 역) */
+   *   new    신규 : 지금은 철도로 못 가는 역 (새 노선이 생겨야 생기는 역) */
   const TIERS = {
     rocket: { label: '떡상', ic: 'trend', hint: '100계단 이상 오름' },
     up: { label: '상승', ic: 'up', hint: '10~99계단 오름' },

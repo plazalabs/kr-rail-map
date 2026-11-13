@@ -291,7 +291,7 @@ h1{font-size:20px}
     q: qs.get('q') || '',
     open: qs.get('open') || '',
     y: qs.get('y') || 'all',
-    wait: qs.get('wait') === '1',   // ⏱ 출퇴근 배차 포함 (기본 꺼짐)   // 개통 연도 슬라이더 — 'all' = 전체(시기 미정 노선 포함)
+    wait: qs.get('wait') === '1',   // 출퇴근 배차 포함 (기본 꺼짐)   // 개통 연도 슬라이더 — 'all' = 전체(시기 미정 노선 포함)
     shown: PAGE,
   };
   let doc = null, lineInfo = {};
@@ -613,7 +613,7 @@ h1{font-size:20px}
   }
   window.RankShare = { canvas: id => { const r = RankTable.compute(doc, { weight: st.w, region: st.r, at: st.t === 'aft' ? st.y : 'all', wait: st.wait }).rows.find(x => x.id === id); return r ? shareCanvas(r) : null; } };
   $('list').addEventListener('click', e => { const b = e.target.closest('[data-share]'); if (!b) return; e.stopPropagation(); shareStation(b.getAttribute('data-share'), b.parentNode.querySelector('.share-msg')); }, true);
-  // 🔗 링크 복사 — 이 역 카드가 펼쳐진 순위표 주소 (지금 기준·지역·연도 그대로). 카톡에 붙여 넣으면 바로 그 역
+  // 링크 복사 — 이 역 카드가 펼쳐진 순위표 주소 (지금 기준·지역·연도 그대로). 카톡에 붙여 넣으면 바로 그 역
   function cardUrl(id) {
     const u = new URL(location.href);
     u.searchParams.set('open', id); u.searchParams.delete('q'); u.searchParams.delete('tier');

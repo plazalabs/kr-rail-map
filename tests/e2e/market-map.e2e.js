@@ -129,6 +129,23 @@ async function until(b, expr, n = 40) {
   R.check('엉뚱한 주소 값은 무시하고 기본값 (연도 전체·평균·빨라지는 분·새 노선)', st4.y === 'all' && st4.w === 'avg' && st4.color === 'gain' && st4.group === 'line', st4);
   b.close();
 
+  // ── 투자 색: 투자 모드에서만 ──
+  b = await launch({ port: 9676, w: 1440, h: 900, invest: true });
+  await b.goto(BASE + '?market=1&c=jeonse&s=all#invest', 1500); await ready(b);
+  await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 100`, 60);
+  await until(b, `typeof StationJeonse !== 'undefined' && StationJeonse.isReady && StationJeonse.isReady()`, 60); await sleep(800);
+  const jv = await b.evaluate(`(() => { const st = MarketMap.state(); const m = MarketMap.model(); const keys = {}; m.groups.forEach(G => G.tiles.forEach(t => { keys[t.color.key] = (keys[t.color.key] || 0) + 1; }));
+    return { color: st.color, keys, legend: document.querySelector('#mm-panel .mm-legend').textContent.slice(0, 80) }; })()`);
+  const jk = Object.keys(jv.keys).filter(k => /^j\d$/.test(k)).length;
+  R.check('투자 모드: 색 = 전세가율 → 전세가율 구간 색 3개 이상 + 범례', jv.color === 'jeonse' && jk >= 3 && /전세가율|50%/.test(jv.legend), jv);
+  b.close();
+  b = await launch({ port: 9677, w: 1440, h: 900 });
+  await b.goto(BASE + '?market=1&c=jeonse#normal', 1500); await ready(b);
+  await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 30`, 60);
+  const nv = await b.evaluate(`MarketMap.state().color`);
+  R.check('투자 모드가 아니면 전세가율 색은 막히고 기본(빨라지는 분)', nv === 'gain', nv);
+  b.close();
+
   // ── 휴대폰 ──
   b = await launch({ port: 9672, w: 390, h: 844, mobile: true });
   await b.goto(BASE + '?market=1#normal', 1500); await ready(b);

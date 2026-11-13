@@ -61,10 +61,32 @@
       rocket: { bg: '#0a8f4a', fg: '#04140a' }, up: { bg: '#3aa76d', fg: '#04140a' },
       flat: { bg: '#9aa1a8', fg: '#14181c' }, down: { bg: '#d9701a', fg: '#14181c' }, new: { bg: '#7a3fd0', fg: '#ffffff' },
     };
+    // 투자 색 (고정 구간 — 같은 값은 언제나 같은 색). 전세가율 80% 이상은 '주의'(따뜻한 색)
+    var JEONSE_BINS = [
+      { max: 0.4999, key: 'j0', label: '50% 미만', bg: '#dbe8f6', fg: '#13263b' },
+      { max: 0.5999, key: 'j1', label: '50~60%', bg: '#a9c8ea', fg: '#13263b' },
+      { max: 0.6999, key: 'j2', label: '60~70%', bg: '#6f9fd6', fg: '#0b1a2b' },
+      { max: 0.7999, key: 'j3', label: '70~80%', bg: '#f3d9a4', fg: '#3a2600' },
+      { max: Infinity, key: 'j4', label: '80% 이상(주의)', bg: '#c2410c', fg: '#ffffff' },
+    ];
+    var PRICE_BINS = [   // 만원/평 (전용면적)
+      { max: 1999, key: 'p0', label: '2천만 미만', bg: '#dbe8f6', fg: '#13263b' },
+      { max: 2999, key: 'p1', label: '2~3천만', bg: '#a9c8ea', fg: '#13263b' },
+      { max: 4499, key: 'p2', label: '3~4.5천만', bg: '#6f9fd6', fg: '#0b1a2b' },
+      { max: 5999, key: 'p3', label: '4.5~6천만', bg: '#2f6db5', fg: '#ffffff' },
+      { max: Infinity, key: 'p4', label: '6천만 이상', bg: '#17457a', fg: '#ffffff' },
+    ];
     var NEW_COLOR = { key: 'new', label: '신규(지금은 못 감)', bg: '#7a3fd0', fg: '#ffffff' };
     var NA_COLOR = { key: 'na', label: '자료 없음', bg: '#eceef1', fg: '#5b6470', hatch: true };
 
-    function colorOf(row, mode, tierOf) {
+    function colorOf(row, mode, tierOf, valueOf) {
+      if (mode === 'jeonse' || mode === 'price') {
+        var v = valueOf ? valueOf(row.id) : null;
+        if (v == null) return NA_COLOR;
+        var bins = mode === 'jeonse' ? JEONSE_BINS : PRICE_BINS;
+        for (var k = 0; k < bins.length; k++) if (v <= bins[k].max) return bins[k];
+        return bins[bins.length - 1];
+      }
       if (mode === 'tier') {
         var t = tierOf ? tierOf(row) : (row.isNew ? 'new' : 'flat');
         var c = TIER_COLORS[t] || TIER_COLORS.flat;
@@ -143,7 +165,7 @@
         if (scope === 'affected' && lg === NONE) return;
         var sv = opts.size === 'deals' && opts.sizeOf ? opts.sizeOf(r.id) : null;
         var v = opts.size === 'deals' ? (sv && sv > 0 ? sv : 1) : 1;
-        var t = { row: r, v: v, color: colorOf(r, opts.color, tierOf), gain: gainOf(r), sizeMissing: opts.size === 'deals' && !(sv > 0) };
+        var t = { row: r, v: v, color: colorOf(r, opts.color, tierOf, opts.valueOf), gain: gainOf(r), sizeMissing: opts.size === 'deals' && !(sv > 0) };
         if (!map.has(g)) map.set(g, { name: g, value: 0, tiles: [] });
         var G = map.get(g); G.tiles.push(t); G.value += v;
       });
@@ -171,7 +193,7 @@
       return model;
     }
 
-    return { FAMILY: FAMILY, GAIN_BINS: GAIN_BINS, TIER_COLORS: TIER_COLORS, NEW_COLOR: NEW_COLOR, NA_COLOR: NA_COLOR,
+    return { FAMILY: FAMILY, GAIN_BINS: GAIN_BINS, TIER_COLORS: TIER_COLORS, JEONSE_BINS: JEONSE_BINS, PRICE_BINS: PRICE_BINS, NEW_COLOR: NEW_COLOR, NA_COLOR: NA_COLOR,
       OTHER_NEW: OTHER_NEW, NO_NEW: NO_NEW, NONE: NONE,
       familyOf: familyOf, isNewLine: isNewLine, gainOf: gainOf, colorOf: colorOf, groupOf: groupOf, squarify: squarify, build: build, layout: layout };
   })();
@@ -266,7 +288,7 @@
       '<details class="mm-opts" open><summary>보기 설정 <span class="mm-sum"></span></summary>' +
       '<div class="mm-ctrl">' +
         '<label>묶기 <select data-k="group"><option value="line">새 노선</option><option value="sgg">시군구</option></select></label>' +
-        '<label>색 <select data-k="color"><option value="gain">빨라지는 분</option><option value="tier">순위 변화</option></select></label>' +
+        '<label>색 <select data-k="color"><option value="gain">빨라지는 분</option><option value="tier">순위 변화</option><option value="jeonse">전세가율 (투자 모드)</option><option value="price">평당가 (투자 모드)</option></select></label>' +
         '<label>크기 <select data-k="size"><option value="equal">모두 같게</option><option value="deals">아파트 거래 건수 (투자 모드)</option></select></label>' +
         '<label>기준 <select data-k="w"><option value="avg">평균</option><option value="cbd">도심</option><option value="ybd">여의도</option><option value="gbd">강남</option></select></label>' +
         '<label>보기 <select data-k="view"><option value="tiles">타일</option><option value="list">목록(순위)</option></select></label>' +
@@ -296,7 +318,12 @@
           st.size = 'equal'; s.value = 'equal';
           note('거래 건수 크기는 투자 모드에서만 씁니다 (시세는 투자 모드 자료)');
         }
+        if (s.dataset.k === 'color' && (s.value === 'jeonse' || s.value === 'price') && !invest()) {
+          st.color = 'gain'; s.value = 'gain';
+          note('전세가율·평당가 색은 투자 모드에서만 씁니다');
+        }
         if (s.dataset.k === 'size' && st.size === 'deals') ensurePrice();
+        if (s.dataset.k === 'color' && (st.color === 'jeonse' || st.color === 'price')) ensurePrice();
         track('market_map_filter_change', { 종류: s.dataset.k });
         render();
       });
@@ -323,16 +350,22 @@
   }
 
   // 링크: ?market=1&y=&w=&c=&g=&s=&st= — 모르는 값은 무시(기본값)
-  var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
+  var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier', 'jeonse', 'price'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
   function linkQuery() {
     return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view === 'list' ? '&v=list' : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
   }
   function note(msg) { var s = document.getElementById('status'); if (s) s.textContent = msg; }
 
+  // 시세·전세가율 자료 받기 (투자 모드) — 둘 다 오면 다시 그린다
+  function investReady() {
+    var p = typeof StationPrice === 'undefined' || StationPrice.isReady();
+    var j = typeof StationJeonse === 'undefined' || !StationJeonse.isReady || StationJeonse.isReady();
+    return p && j;
+  }
   function ensurePrice() {
-    if (typeof StationPrice === 'undefined' || StationPrice.isReady()) return;
+    if (investReady()) return;
     if (typeof global.loadDetailData === 'function') { try { global.loadDetailData(); } catch (e) { /* 무시 */ } }
-    var tries = 0, iv = setInterval(function () { tries++; if (StationPrice.isReady() || tries > 40) { clearInterval(iv); if (isOpen) render(); } }, 250);
+    var tries = 0, iv = setInterval(function () { tries++; if (investReady() || tries > 40) { clearInterval(iv); if (isOpen) render(); } }, 250);
   }
 
   function setTab(tab) {
@@ -351,7 +384,12 @@
     var out = RT.compute(doc, { weight: st.w, region: 'capital', at: st.y });
     rowsById = new Map(out.rows.map(function (r) { return [r.id, r]; }));
     var sizeOf = function (id) { if (typeof StationPrice === 'undefined' || !StationPrice.isReady()) return null; var p = StationPrice.of(id); return p ? p.deals : null; };
-    model = Logic.build(out.rows, doc.lines, { group: st.group, size: st.size, color: st.color, scope: st.scope, sizeOf: sizeOf }, RT.tierOf);
+    var valueOf = function (id) {
+      if (st.color === 'jeonse') { if (typeof StationJeonse === 'undefined' || !StationJeonse.isReady || !StationJeonse.isReady()) return null; var j = StationJeonse.of(id); return j && j.r != null ? j.r : null; }
+      if (st.color === 'price') { if (typeof StationPrice === 'undefined' || !StationPrice.isReady()) return null; var p = StationPrice.of(id); return p && p.medianPerPyeong != null && p.deals >= 5 ? p.medianPerPyeong : null; }
+      return null;
+    };
+    model = Logic.build(out.rows, doc.lines, { group: st.group, size: st.size, color: st.color, scope: st.scope, sizeOf: sizeOf, valueOf: valueOf }, RT.tierOf);
     el.querySelector('.mm-n').textContent = out.total;
   }
 
@@ -368,7 +406,9 @@
 
   function renderLegend() {
     var box = el.querySelector('.mm-legend'), items;
-    if (st.color === 'tier') {
+    if (st.color === 'jeonse' || st.color === 'price') {
+      items = (st.color === 'jeonse' ? Logic.JEONSE_BINS : Logic.PRICE_BINS).map(function (b) { return [b.bg, b.label]; }).concat([[Logic.NA_COLOR.bg, '자료 없음·거래 적음(빗금)']]);
+    } else if (st.color === 'tier') {
       var T = RTab().TIERS;
       items = ['rocket', 'up', 'flat', 'down', 'new'].map(function (k) { return [Logic.TIER_COLORS[k].bg, T[k].label + ' (' + T[k].hint + ')']; });
     } else {
@@ -376,7 +416,7 @@
     }
     var sz = st.size === 'deals' ? ' · 크기 = 역이 속한 법정동 아파트 매매 건수(최근 6개월), 점선 = 거래 5건 미만·자료 없음' : ' · 크기 = 모두 같음';
     box.innerHTML = items.map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
-      '<span>' + esc((st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + sz) + '</span>';
+      '<span>' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표)' : st.color === 'price' ? '평당가 = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상)' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + sz) + '</span>';
   }
 
   // 목록 보기 — 묶음과 상관없이 한 줄로. 색 기준이 '빨라지는 분'이면 분 큰 순(신규는 맨 앞), '순위 변화'면 오른 계단 큰 순
@@ -536,6 +576,8 @@
     if (o.size === 'deals' || o.size === 'equal') st.size = o.size;
     if (o.view === 'list' || o.view === 'tiles') st.view = o.view;
     if (st.size === 'deals' && !invest()) st.size = 'equal';
+    if ((st.color === 'jeonse' || st.color === 'price') && !invest()) st.color = 'gain';
+    if (st.color === 'jeonse' || st.color === 'price' || st.size === 'deals') ensurePrice();
     isOpen = true;
     el.hidden = false;
     setTab('tiles');

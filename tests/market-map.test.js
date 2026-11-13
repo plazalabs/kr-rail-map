@@ -80,9 +80,18 @@ console.log('\n[색 대비] 타일 글자');
 {
   const lum = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
   const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
-  const pairs = L.GAIN_BINS.map(b => [b.key, b.bg, b.fg]).concat(Object.entries(L.TIER_COLORS).map(([k, c]) => [k, c.bg, c.fg]), [['new', L.NEW_COLOR.bg, L.NEW_COLOR.fg], ['na', L.NA_COLOR.bg, L.NA_COLOR.fg]]);
+  const pairs = L.GAIN_BINS.concat(L.JEONSE_BINS, L.PRICE_BINS).map(b => [b.key, b.bg, b.fg]).concat(Object.entries(L.TIER_COLORS).map(([k, c]) => [k, c.bg, c.fg]), [['new', L.NEW_COLOR.bg, L.NEW_COLOR.fg], ['na', L.NA_COLOR.bg, L.NA_COLOR.fg]]);
   const low = pairs.map(p => [p[0], Math.round(ratio(p[1], p[2]) * 100) / 100]).filter(p => p[1] < 4.5);
   check('타일 바탕·글자 대비 모두 4.5 이상', low.length === 0, low);
+}
+
+console.log('\n[투자 색] 전세가율·평당가 — 고정 구간, 자료 없음은 빗금');
+{
+  const row = { id: 'x', isNew: false, now: { min: 30 }, aft: { min: 20 } };
+  check('전세가율 82% → 주의 색(j4)', L.colorOf(row, 'jeonse', null, () => 0.82).key === 'j4');
+  check('전세가율 55% → j1', L.colorOf(row, 'jeonse', null, () => 0.55).key === 'j1');
+  check('평당가 5,000만 → p3', L.colorOf(row, 'price', null, () => 5000).key === 'p3');
+  check('값 없음 → 빗금(자료 없음)', L.colorOf(row, 'price', null, () => null).hatch === true);
 }
 
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);

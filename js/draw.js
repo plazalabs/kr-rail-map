@@ -19,8 +19,60 @@ const DrawTools = (() => {
 
   function setStatus(msg) { if (onUpdate) onUpdate(msg); }
 
+  /* 링크 공유 — ?ml=1.<색><선>.<점들>&mn=<이름>
+   *   점들: 경도·위도를 1e5 정수(약 1m)로, 앞 점과의 차이를 zigzag + varint 로 줄여 base64url 로 적는다 (30점 ≈ 250자).
+   *   색은 팔레트 번호(0~6), 선은 실선0·파선1·점선2. 이름은 40자까지. 주소 전체가 MAX_URL 을 넘으면 만들지 않는다.
+   *   받은 쪽: 색·선은 목록 밖 값이면 기본값, 좌표는 한국 범위 밖이면 거절. 이름은 화면에 글자로만 넣는다(textContent). */
+  const SHARE_MAX_URL = 2000;
+  const DASH_KEYS = Object.keys(DASHES);
+  const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  function encodePts(coords) {
+    const bytes = [];
+    let px = 0, py = 0;
+    const put = v => { let z = v < 0 ? (-v * 2 - 1) : v * 2; do { let b = z & 0x7f; z = Math.floor(z / 128); if (z) b |= 0x80; bytes.push(b); } while (z); };
+    coords.forEach(c => { const x = Math.round(c[0] * 1e5), y = Math.round(c[1] * 1e5); put(x - px); put(y - py); px = x; py = y; });
+    let out = '';
+    for (let i = 0; i < bytes.length; i += 3) {
+      const n = (bytes[i] << 16) | ((bytes[i + 1] || 0) << 8) | (bytes[i + 2] || 0);
+      const k = Math.min(4, Math.ceil((bytes.length - i) * 4 / 3));
+      for (let j = 0; j < k; j++) out += B64[(n >> (18 - 6 * j)) & 63];
+    }
+    return out;
+  }
+  function decodePts(str) {
+    const bytes = [];
+    for (let i = 0; i < str.length; i += 4) {
+      const chunk = str.slice(i, i + 4);
+      let n = 0;
+      for (let j = 0; j < 4; j++) { const v = j < chunk.length ? B64.indexOf(chunk[j]) : 0; if (v < 0) return null; n = (n << 6) | v; }
+      const k = Math.floor(chunk.length * 3 / 4);
+      for (let j = 0; j < k; j++) bytes.push((n >> (16 - 8 * j)) & 255);
+    }
+    const vals = [];
+    let z = 0, mul = 1;
+    for (const b of bytes) { z += (b & 0x7f) * mul; if (b & 0x80) { mul *= 128; if (mul > 2 ** 35) return null; } else { vals.push(z % 2 ? -(z + 1) / 2 : z / 2); z = 0; mul = 1; } }
+    if (vals.length % 2) return null;
+    const out = []; let x = 0, y = 0;
+    for (let i = 0; i < vals.length; i += 2) { x += vals[i]; y += vals[i + 1]; out.push([x / 1e5, y / 1e5]); }
+    return out;
+  }
+  function shareQuery(line) {
+    const ci = Math.max(0, PALETTE.indexOf(line.color)), di = Math.max(0, DASH_KEYS.indexOf(line.dashKey));
+    return '?ml=1.' + ci + di + '.' + encodePts(line.coords) + '&mn=' + encodeURIComponent(String(line.name || '').slice(0, 40));
+  }
+  function parseShare(search) {
+    const q = new URLSearchParams(search || '');
+    const ml = q.get('ml'); if (!ml) return null;
+    const m = /^1\.(\d)(\d)\.([A-Za-z0-9_-]+)$/.exec(ml); if (!m) return null;
+    const coords = decodePts(m[3]);
+    if (!coords || coords.length < 2 || coords.length > 500) return null;
+    if (!coords.every(c => c[0] > 124 && c[0] < 132 && c[1] > 33 && c[1] < 39)) return null;   // 한국 밖 좌표는 거절
+    const name = (q.get('mn') || '').slice(0, 40).trim() || '받은 노선';
+    return { name, color: PALETTE[+m[1]] || PALETTE[0], dashKey: DASH_KEYS[+m[2]] || DASH_KEYS[0], coords };
+  }
+
   function saveMyLines() {
-    try { localStorage.setItem(LS_KEY, JSON.stringify({ seq, myLines })); } catch (_) {}
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ seq, myLines: myLines.filter(l => !l.shared) })); } catch (_) {}
   }
   function loadMyLines() {
     try {
@@ -355,7 +407,24 @@ const DrawTools = (() => {
         saveMyLines();
         refreshMyLines(); renderMyLineList();
       });
-      row.append(sw, document.createTextNode(l.name), del);
+      // 링크 공유 — 받은 노선(아직 저장 안 함)이면 '저장', 아니면 '링크'
+      const act = document.createElement('button');
+      act.className = 'mini-del mini-share';
+      if (l.shared) {
+        act.textContent = '저장'; act.title = '내 노선에 저장'; act.setAttribute('aria-label', '받은 노선을 내 노선에 저장');
+        act.addEventListener('click', () => { delete l.shared; l.id = 'my-' + (seq++); saveMyLines(); renderMyLineList(); setStatus('"' + l.name + '" 을 내 노선에 저장했습니다'); });
+      } else {
+        act.innerHTML = Icons.svg('link'); act.title = '링크로 보내기'; act.setAttribute('aria-label', l.name + ' 링크 복사');
+        act.addEventListener('click', () => {
+          const url = location.origin + location.pathname + shareQuery(l) + location.hash;
+          if (url.length > SHARE_MAX_URL) { setStatus('점이 너무 많아 링크로 보낼 수 없습니다 (' + url.length + '자) — GeoJSON 내보내기를 쓰세요'); return; }
+          const done = () => { setStatus('"' + l.name + '" 링크를 복사했습니다 (' + url.length + '자)'); if (window.KRTrack) KRTrack('노선 공유'); };
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, () => { setStatus('복사하지 못했습니다 — 주소: ' + url); });
+          else setStatus('주소: ' + url);
+        });
+      }
+      const nm = document.createElement('span'); nm.className = 'myline-name'; nm.textContent = l.name + (l.shared ? ' (받은 노선)' : '');
+      row.append(sw, nm, act, del);
       box.appendChild(row);
     });
     document.getElementById('myline-count').textContent = myLines.length ? `(${myLines.length})` : '';
@@ -376,6 +445,15 @@ const DrawTools = (() => {
     map = m; onUpdate = statusCb;
     loadMyLines();
     loadMemos();
+    // 받은 노선 링크 (?ml=) — 저장하기 전까지는 이 화면에만. 지도는 노선에 맞춘다
+    const got = typeof location !== 'undefined' ? parseShare(location.search) : null;
+    if (got) {
+      myLines.push(Object.assign({ id: 'shared-1', shared: true, stations: [] }, got));
+      const xs = got.coords.map(c => c[0]), ys = got.coords.map(c => c[1]);
+      const fit = () => { try { map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: 80, duration: 0, maxZoom: 14 }); } catch (e) { /* 무시 */ } };
+      if (map.loaded && map.loaded()) fit(); else map.once('load', fit);
+      setTimeout(() => setStatus('받은 노선 "' + got.name + '" — 사이드바 나의 노선에서 [저장]을 누르면 내 노선이 됩니다'), 1500);
+    }
     map.on('click', e => onClick(e.lngLat));
     document.addEventListener('keydown', onKey);
     // 그리기 패널 ✕ 는 패널만 숨기는 게 아니라 그리기 자체를 끝낸다 (Esc 와 같게). 안 그러면 지도 클릭이 계속 점을 찍는다
@@ -462,5 +540,7 @@ const DrawTools = (() => {
   }
 
   return { init, renderMyLineList, restyle, refreshMyLines, refreshMemos,
+    Share: { encodePts, decodePts, shareQuery, parseShare, MAX: SHARE_MAX_URL },
+    myLines: () => myLines.slice(),
     setStations: sts => { allStations = sts || []; } };
 })();

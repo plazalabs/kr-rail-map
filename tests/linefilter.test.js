@@ -59,7 +59,8 @@ console.log('\n[필터] 환승역');
 const multi = ST.filter(s => (s.properties.lines || []).length >= 2);
 // 2026-11-10: 강경이 KTX 호남선에서 빠져(고속선은 강경을 지나지 않음) 274 → 273
 // 2026-11-13: 이수(4·7호선)를 총신대입구(이수)로 합침, 대구 1호선 청천 소속 정리 → 환승역 272
-check(`환승역 수 ${multi.length}개 (lines 2개 이상)`, multi.length >= 272);
+// 2026-11-13: 경부선(일반) 정차역 바로잡음 — 잘못 붙어 환승역으로 세던 1호선 역 8곳 빠지고 오산·서정리 더해짐 → 266
+check(`환승역 수 ${multi.length}개 (lines 2개 이상)`, multi.length >= 266);
 let lost = [];
 for (const s of multi) {
   const p = props(s);

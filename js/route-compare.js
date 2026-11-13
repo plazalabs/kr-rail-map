@@ -72,11 +72,13 @@ const RouteCompare = (() => {
   // 일반철도(무궁화·ITX-새마을)도 수도권 요금제가 아니다.
   // 서울→부산 무궁화는 441.7km 에 28,600원인데, 수도권 공식으로는 7,200원이 나왔다.
   // 기본 2,600원 + 10km 초과분 60원/km 로 맞춘다 → 2,600 + 60×431.7 ≈ 28,500원.
+  // 2026-11-13 바로잡음: 공식 운임 두 점(서울→수원 41.5km 2,700원 · 서울→부산 441.7km 28,600원)이 모두
+  // '1km 64.8원, 최저 2,600원' 에 맞는다. 예전 '2,600 + 10km 넘는 1km 60원' 은 수원을 4,500원으로 냈다.
   const CONV_BASE = 2600;
-  const CONV_PER_KM = 60;
+  const CONV_PER_KM = 64.8;
   function calcConvFare(distKm) {
     if (distKm <= 0) return 0;
-    return CONV_BASE + Math.round(CONV_PER_KM * Math.max(0, distKm - 10) / 100) * 100;
+    return Math.max(CONV_BASE, Math.round(CONV_PER_KM * distKm / 100) * 100);
   }
 
   // KTX 공식 운임 (2026-09-01 KTX·SRT 통합 운임표, data/ktx-fares.json — build_ktx_fares.py).

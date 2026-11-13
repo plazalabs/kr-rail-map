@@ -6,8 +6,8 @@
  "summary": {
   "lines": 83,
   "open_lines": 67,
-  "open_pairs": 1470,
-  "open_confirmed": 1461,
+  "open_pairs": 1465,
+  "open_confirmed": 1456,
   "open_confirmed_pct": 99.4,
   "open_lines_all_confirmed": 63
  },
@@ -547,8 +547,8 @@
   "gyeongbu-line": {
    "name": "경부선",
    "status": "open",
-   "stations": 45,
-   "confirmed": 45,
+   "stations": 40,
+   "confirmed": 40,
    "sources": [
     "osm-geometry",
     "osm-relation"
@@ -556,7 +556,8 @@
    "unconfirmed": [],
    "provisional": false,
    "partial": false,
-   "gap_reason": ""
+   "gap_reason": "",
+   "note_20261113": "수도권 정차역 바로잡음(1호선 전철역 11곳 뺌, 영등포·수원·오산·서정리·평택·천안 넣음)"
   },
   "gyeongbu-line-ktx": {
    "name": "KTX 경부선",

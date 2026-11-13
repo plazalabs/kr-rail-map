@@ -594,6 +594,10 @@ body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
   color: var(--muted); cursor: pointer; font-size: var(--fs-xs); padding: 2px 4px;
 }
 .mini-del:hover { color: var(--rk-up); }
+/* 나의 노선 줄의 링크·저장 단추 (2026-11-13) — 삭제 단추와 같은 모양, 오른쪽 끝은 링크·삭제 두 개가 나란히 */
+.mini-share { margin-left: auto; border: none; background: none; color: var(--muted); cursor: pointer; font-size: var(--fs-xs); padding: 2px 4px; }
+.mini-share:hover { color: var(--accent); }
+.mini-share + .mini-del { margin-left: 0; }
 
 /* ---------- 6. 역 팝업 ---------- */
 .maplibregl-popup-content {
@@ -1095,6 +1099,14 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
   --on-color: #ffffff; --hero-flat-1: #5b6573; --hero-flat-2: #3b4350; --hero-new-1: #7c3aed; --hero-new-2: #5b21b6;
   --tip-bg: #191f28; --tip-up: #ff6b6f; --tip-down: #ffb067; --tip-new: #c4a5ff; }
 body[data-theme="dark"], body[data-theme="eclipse"], body[data-theme="neon"] { --rk-up: #ff6b6f; --rk-down: #ffb067; --rk-green: #5fe39a; --rk-new: #c4a5ff; }
+/* 어두운 테마의 지도 컨트롤 (뮤즈 6-④, 2026-11-13): 기본 흰 상자가 튀지 않게 패널 색, 아이콘(배경 그림)은 반전, 출처는 흐린 글자 */
+body[data-theme="dark"] .maplibregl-ctrl-group, body[data-theme="eclipse"] .maplibregl-ctrl-group, body[data-theme="neon"] .maplibregl-ctrl-group { background: var(--panel); box-shadow: 0 0 0 1px var(--border); }
+body[data-theme="dark"] .maplibregl-ctrl-group button + button, body[data-theme="eclipse"] .maplibregl-ctrl-group button + button, body[data-theme="neon"] .maplibregl-ctrl-group button + button { border-top-color: var(--border); }
+body[data-theme="dark"] .maplibregl-ctrl-group button:hover, body[data-theme="eclipse"] .maplibregl-ctrl-group button:hover, body[data-theme="neon"] .maplibregl-ctrl-group button:hover { background-color: var(--hover); }
+body[data-theme="dark"] .maplibregl-ctrl-icon, body[data-theme="eclipse"] .maplibregl-ctrl-icon, body[data-theme="neon"] .maplibregl-ctrl-icon { filter: invert(1) hue-rotate(180deg); }
+body[data-theme="dark"] .maplibregl-ctrl-attrib, body[data-theme="eclipse"] .maplibregl-ctrl-attrib, body[data-theme="neon"] .maplibregl-ctrl-attrib { background: color-mix(in srgb, var(--panel) 85%, transparent); color: var(--muted); }
+body[data-theme="dark"] .maplibregl-ctrl-attrib a, body[data-theme="eclipse"] .maplibregl-ctrl-attrib a, body[data-theme="neon"] .maplibregl-ctrl-attrib a { color: var(--text); }
+body[data-theme="dark"] .maplibregl-ctrl-attrib-button, body[data-theme="eclipse"] .maplibregl-ctrl-attrib-button, body[data-theme="neon"] .maplibregl-ctrl-attrib-button { filter: invert(1) hue-rotate(180deg); }
 
 /* 툴바: 알약 버튼 */
 @media (min-width: 981px) {

@@ -157,3 +157,21 @@ rows.forEach(r => { bySido[r.r || '?'] = (bySido[r.r || '?'] || 0) + 1; });
 console.log(`rank.json: ${rows.length}줄 (역 ID ${ids.length}개 묶음), 지역 추정 ${guessed}역, 노선 ${usedLines.size}개`);
 console.log('지역별', JSON.stringify(bySido));
 console.log('크기', (fs.statSync(path.join(ROOT, 'data/rank.json')).size / 1024).toFixed(0) + 'KB');
+
+// 첫 화면 사이드바 'TOP 3' 용 작은 파일 (뮤즈 5-② 시안 C, 2026-11-13) — rank.json(약 470KB)을 첫 화면마다 받지 않으려고
+// 떡상 패널과 같은 기준: 평균 기준 · 수도권 · 기본 연도(떡상 역의 80% 가 나오는 첫 해) · 많이 오르는 순(신규 역 제외)
+{
+  global.RankTable = require(path.join(ROOT, 'js/rank.js'));
+  const RP = require(path.join(ROOT, 'js/rocket-panel.js'));
+  const year = RP.Logic.defaultYear(doc);
+  const res = global.RankTable.compute(doc, { weight: 'avg', region: 'capital', at: year });
+  const top = global.RankTable.sortRows(res.rows.filter(r => !r.isNew && r.change > 0), 'rise').slice(0, 3).map(r => {
+    const nl = (r.lines || []).filter(l => doc.lines[l] && doc.lines[l].s !== 'open');
+    const meta = nl.length ? doc.lines[nl[0]] : null;
+    const yr = meta && /(20\d\d)/.exec(meta.o || '');
+    return { id: r.id, n: r.name, ch: r.change, now: r.now.rank, aft: r.aft.rank, line: meta ? meta.n : '', c: meta ? meta.c : '', y: yr ? +yr[1] : null };
+  });
+  const out = { updated: doc.updated, year, total: res.total, basis: '평균(도심·여의도·강남) 기준 수도권 순위가 개통 후 가장 많이 오르는 역 — 교통 접근성 순위이며 집값 예측이 아님', top };
+  fs.writeFileSync(path.join(ROOT, 'data/rank-top.json'), JSON.stringify(out));
+  console.log('rank-top.json:', year, top.map(t => t.n + '▲' + t.ch).join(' '));
+}

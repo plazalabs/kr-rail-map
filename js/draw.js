@@ -409,7 +409,7 @@ const DrawTools = (() => {
       });
       // 링크 공유 — 받은 노선(아직 저장 안 함)이면 '저장', 아니면 '링크'
       const act = document.createElement('button');
-      act.className = 'mini-del mini-share';
+      act.className = 'mini-share';   // 'mini-del' 을 같이 붙이면 삭제 단추로 잘못 잡힌다 (2026-11-13 ui-fixes e2e)
       if (l.shared) {
         act.textContent = '저장'; act.title = '내 노선에 저장'; act.setAttribute('aria-label', '받은 노선을 내 노선에 저장');
         act.addEventListener('click', () => { delete l.shared; l.id = 'my-' + (seq++); saveMyLines(); renderMyLineList(); setStatus('"' + l.name + '" 을 내 노선에 저장했습니다'); });

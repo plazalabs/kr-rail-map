@@ -32,6 +32,8 @@ const RouteFinder = (() => {
     'seoul-metropolitan-subway-seohae-line': 51,
     'daegyeong-line': 55,
     'gangneung-line-ktx': 113,
+    // 경부선 일반철도(무궁화) 서울↔수원 41.5km 33~40분 (2026-11 시간표) → 68 (예전 일반철도 기본 55 는 45분)
+    'gyeongbu-line': 68,
   };
   // <official-runtimes> — data/build_official_runtimes.py 가 만든다. 손으로 고치지 말 것.
   // 출처: 서울교통공사 역간거리 및 소요시간(2024.3.25. 기준), 서울열린데이터광장 OA-12034, 공공누리 제1유형
@@ -586,7 +588,10 @@ const RouteFinder = (() => {
   // route-compare.js 가 같은 값을 쓰도록 노출한다 (두 탭의 소요시간이 갈라지면 안 된다).
   function accessMinutes(lineId) {
     if (lineId && EXPRESS[lineId]) return EXPRESS[lineId].accessMin;
-    return lineId && lineCat.get(lineId) === 'ktx' ? RAIL_ACCESS_MIN : 0;
+    // 일반철도(무궁화·ITX)도 같은 성격 — 지정석·개찰·드문 배차(경부선 서울↔수원 무궁화 약 1시간에 1대, 2026-11 시간표).
+    // 2026-11-13: 경부선 정차역을 바로잡자(영등포·수원 등) 이 값 없이 '의정부→수원 = 서울에서 무궁화 갈아타기' 가 뽑혔다.
+    const cat = lineId && lineCat.get(lineId);
+    return (cat === 'ktx' || cat === 'conventional') ? RAIL_ACCESS_MIN : 0;
   }
 
   // 최소 힙 (다익스트라용)

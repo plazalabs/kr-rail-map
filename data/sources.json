@@ -548,7 +548,8 @@
       "feeds": [],
       "affects": [
         "data/headways.json",
-        "data/rank.json"
+        "data/rank.json",
+        "data/rank-top.json"
       ],
       "commercial": "allowed"
     },
@@ -567,7 +568,8 @@
         "js/route.js",
         "data/access.json",
         "data/headways.json",
-        "data/rank.json"
+        "data/rank.json",
+        "data/rank-top.json"
       ],
       "commercial": "allowed"
     },
@@ -585,7 +587,8 @@
       "affects": [
         "data/lines.geojson",
         "data/access.json",
-        "data/rank.json"
+        "data/rank.json",
+        "data/rank-top.json"
       ],
       "commercial": "allowed",
       "caveat": "추정값이다. 개통 전 노선은 발표 기준이다."

@@ -219,10 +219,20 @@ console.log("\n[68점 감사 8번] '최소요금' 은 함께 보이는 다른 �
   const gm = nowFare('서울', '검암', 'arex', 'arex');
   check('서울→검암(통합구간만)은 별도 운임 없음', gm && !gm.parts.some(p => p.kind === 'extra'), gm && gm.total + '원');
   // 기존에 맞던 일반 전철 요금은 그대로
-  [['잠실', '홍대입구', 1850], ['김포공항', '여의도', 1650], ['청량리', '인천', 2350], ['의정부', '수원', 2650]].forEach(([a, b, want]) => {
+  [['잠실', '홍대입구', 1850], ['김포공항', '여의도', 1650], ['청량리', '인천', 2350]].forEach(([a, b, want]) => {
     const fd = nowFare(a, b);
     check(`일반 전철 ${a}→${b} = ${want.toLocaleString()}원 (그대로)`, fd && fd.total === want, fd && fd.total + '원');
   });
+  // 의정부→수원: 2026-11-13 경부선 정차역(서울·수원)을 바로잡은 뒤 가장 빠른 길이 '1호선 → 서울에서 무궁화' 가 될 수 있다.
+  // 1호선만 타는 길(최소환승)은 예전 그대로 2,650원이어야 한다.
+  {
+    const A = onLine('의정부', 'seoul-metropolitan-subway-line-1'), B = onLine('수원', 'seoul-metropolitan-subway-line-1');
+    const all = RC.findAll(A.id, B.id, { openOnly: true });
+    const tr = all.transfer, onlyL1 = tr && tr.legs.every(l => l.walk || l.lineId === 'seoul-metropolitan-subway-line-1');
+    check('일반 전철 의정부→수원 1호선만 = 2,650원 (그대로)', onlyL1 && tr.fare === 2650, tr && tr.fare + '원');
+    const usesConv = all.time && all.time.legs.some(l => l.lineId === 'gyeongbu-line');
+    check('무궁화를 타는 길이면 요금에 일반철도 몫이 붙는다 (1호선만보다 비쌈)', !usesConv || all.time.fare > 2650, all.time && all.time.fare);
+  }
   // 개통 전 GTX(B·C 등)를 쓰는 경로는 '추정' 표시
   const fut = RC.calcFareDetail({ legs: [{ lineId: 'gtx-c', distKm: 20, from: 'x', to: 'y' }] }, 20);
   check('개통 전 GTX 구간은 공식 요금 없음 → 추정 표시', fut.estimated && fut.parts.some(p => p.kind === 'pending'), JSON.stringify(fut.parts));

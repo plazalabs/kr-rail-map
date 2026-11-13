@@ -142,6 +142,26 @@ console.log("\n[탭 요약] '최적' 보다 빠른 길이 있으면 대가(환�
     hr.time && hr.fare && `최적 ${hr.time.minutes}분·환승 ${hr.time.transfers} / 요금 ${hr.fare.minutes}분·환승 ${hr.fare.transfers} — ${msg}`);
 }
 
+console.log("\n[R6] '최적' 보다 빠른 탭에 '최단' 표시 (2차 감사, 2026-11-13)");
+{
+  const T = { minutes: 61, transfers: 1, fare: 3750 };
+  check('최소요금이 더 빠르면 fare', RC.fastestTabId({ time: T, transfer: null, fare: { minutes: 55, transfers: 2, fare: 2050 } }) === 'fare');
+  check('최소환승이 더 빠르면 transfer', RC.fastestTabId({ time: T, transfer: { minutes: 58, transfers: 0 }, fare: null }) === 'transfer');
+  check('둘 다 빠르면 더 빠른 쪽', RC.fastestTabId({ time: T, transfer: { minutes: 58, transfers: 0 }, fare: { minutes: 55, transfers: 2 } }) === 'fare');
+  check('동점이면 최적 우선 → null', RC.fastestTabId({ time: T, transfer: null, fare: { minutes: 61, transfers: 2 } }) === null);
+  check('최적이 제일 빠르면 null', RC.fastestTabId({ time: T, transfer: { minutes: 70 }, fare: { minutes: 65 } }) === null);
+  check('경로 없으면 null', RC.fastestTabId({ time: null }) === null);
+  // 실제 자료: 감사가 짚은 수원→강남 — 다른 탭이 더 빠르면 반드시 그 탭이 표시돼야 한다
+  for (const [a, b] of [['수원', '강남'], ['홍대입구', '강남']]) {
+    const all = RC.findAll(id(a), id(b), { openOnly: true });
+    const mins = ['transfer', 'fare'].map(k => all[k] && all[k].minutes).filter(x => x != null);
+    const faster = all.time && mins.some(m => m < all.time.minutes);
+    const fid = RC.fastestTabId(all);
+    check(`실제 ${a}→${b}: 더 빠른 탭이 있으면 표시, 없으면 표시 없음`, faster ? (fid && all[fid].minutes === Math.min(...mins)) : fid === null,
+      `최적 ${all.time && all.time.minutes}분 / 환승 ${all.transfer && all.transfer.minutes} / 요금 ${all.fare && all.fare.minutes} → ${fid}`);
+  }
+}
+
 // ── 감사 N1~N3 (2026-11-13): 신분당선·GTX-A·공항철도 별도 운임 — 운영사 공식 요금과 같아야 한다 ──
 // 출처: data/fares-special.json (신분당선 dxline4_1, gtx-a.com/fareIF.do, airportrailroad.com 일반열차 운임)
 {

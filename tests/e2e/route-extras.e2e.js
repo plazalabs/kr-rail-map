@@ -84,6 +84,20 @@ const R = recorder('route-extras');
   const e2 = await ev(`({ calls: __rc.length, to: document.getElementById('route-to').dataset.sid || null })`);
   R.check("도착 '잠실' 치고 Enter → 바로 경로 찾기", e2.calls >= 1 && !!e2.to, e2);
 
+  // 9. 2차 감사 R6 (2026-11-13): '최적' 보다 빠른 탭이 있으면 그 탭에 '최단' 표시 + 패널 배지 '가장 빠름', '최적' 패널엔 '가장 빠름' 없음
+  await b.goto('about:blank', 200);
+  await b.goto(BASE + '?from=' + encodeURIComponent('수원') + '&to=' + encodeURIComponent('강남') + '#normal', 800); await ready();
+  for (let i = 0; i < 75; i++) { if (await ev(`!!document.querySelector('#route-result .rc-tab')`).catch(() => false)) break; await sleep(200); }
+  const r6 = await ev(`(() => { const tabs = [...document.querySelectorAll('#route-result .rc-tab')];
+    const fast = tabs.filter(t => t.querySelector('.rc-fast')).map(t => t.dataset.tab);
+    const badge = id => { const p = document.getElementById('rc-panel-' + id); return p ? (p.querySelector('.rc-badge') || {}).textContent || '' : null; };
+    const mins = id => { const p = document.getElementById('rc-panel-' + id); const m = p && /약 (\\d+)분/.exec(p.textContent); return m ? +m[1] : null; };
+    return { tabs: tabs.map(t => t.dataset.tab), fast, timeBadge: badge('time'), fastBadge: fast[0] ? badge(fast[0]) : null,
+      mins: Object.fromEntries(tabs.map(t => [t.dataset.tab, mins(t.dataset.tab)])) }; })()`);
+  const faster = r6.mins.time != null && Object.entries(r6.mins).some(([k, m]) => k !== 'time' && m != null && m < r6.mins.time);
+  R.check("수원→강남: 더 빠른 탭이 있으면 그 탭에만 '최단', 그 패널 배지 '가장 빠름', '최적' 패널엔 없음",
+    faster ? (r6.fast.length === 1 && /가장 빠름/.test(r6.fastBadge) && !/가장 빠름/.test(r6.timeBadge)) : (r6.fast.length === 0 && /가장 빠름/.test(r6.timeBadge)), r6);
+
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0', exc.length === 0, exc.slice(0, 3));
   b.close();

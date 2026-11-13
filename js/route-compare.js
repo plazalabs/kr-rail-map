@@ -448,6 +448,20 @@ const RouteCompare = (() => {
     return out.join('<br>');
   }
 
+  // 표시 시간이 가장 짧은 탭 — '최적'(시간+환승 벌점)보다 다른 탭이 더 빠르면 그 탭 id, 아니면 null.
+  // (2차 감사 R6, 2026-11-13: 수원→강남 최소요금 55분 < 최적 61분 인데 '최적' 만 보면 더 빠른 줄 안다)
+  // 동점이면 '최적' 우선 → null. 탭 이름 옆 '가장 빠름' 표시와 패널 배지가 이 값 하나를 쓴다.
+  function fastestTabId(all) {
+    const t = all && all.time;
+    if (!t) return null;
+    let best = null, bm = t.minutes;
+    for (const id of ['transfer', 'fare']) {
+      const r = all[id];
+      if (r && r.minutes < bm) { best = id; bm = r.minutes; }
+    }
+    return best;
+  }
+
   // '지금 vs 개통 후' 요약. 화면과 테스트가 같은 판단을 쓰도록 여기 한 곳에 모은다.
   //   status: 'same'      — 개통 예정 노선이 도움 안 됨 (지금 경로가 이미 최선)
   //           'better'    — 개통 후 더 빨라짐
@@ -489,6 +503,10 @@ const RouteCompare = (() => {
         cursor: pointer; font-size: var(--fs-xs); line-height: 1.25; letter-spacing: -.01em;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .rc-tab.active { background: var(--accent, #3388ff); color: #fff; border-color: var(--accent, #3388ff); font-weight: bold; }
+      /* 2차 감사 R6: '최적' 보다 빠른 탭에 붙는 짧은 표시 (탭이 좁아 두 글자) */
+      .rc-fast { display: inline-block; margin-left: 3px; padding: 0 4px; border-radius: 4px; font-size: var(--fs-xs); font-weight: bold;
+        background: rgba(234, 179, 8, 0.14); color: var(--warn-text, #8a5300); vertical-align: 1px; }
+      .rc-tab.active .rc-fast { background: #fff; color: var(--accent, #3388ff); }
       .rc-badge { display: inline-block; font-size: var(--fs-xs); background: var(--accent, #3388ff); color: #fff;
         border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
       .rc-insight { font-size: var(--fs-xs); color: var(--muted, #666); margin: 8px 0; line-height: 1.6; }
@@ -685,15 +703,17 @@ const RouteCompare = (() => {
 
     // 인사이트: 각 기준의 장점 요약 (insightOf — 시험용으로 따로)
     const insight = insightOf(all);
+    const fastId = fastestTabId(all);
 
     let html = include ? nowFutureHtml(cmp) : openOnlyHintHtml(all);
     html += `<div class="rc-tabs${tabs.length > 3 ? ' four' : ''}">` + tabs.map((t, i) =>
-      `<button class="rc-tab${i === 0 ? ' active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('') + `</div>`;
+      `<button class="rc-tab${i === 0 ? ' active' : ''}" data-tab="${t.id}">${t.label}${t.id === fastId ? '<span class="rc-fast" title="표시 시간이 가장 짧은 길">최단</span>' : ''}</button>`).join('') + `</div>`;
     if (insight) html += `<div class="rc-insight">${insight}</div>`;
     html += tabs.map((t, i) => {
       const isBest =
         (t.id === 'now') ? '지금 이용 가능' :
-        (t.id === 'time' && all.time && (!all.transfer || all.time.minutes <= all.transfer.minutes) && (!all.fare || all.time.minutes <= all.fare.minutes)) ? '가장 빠름' :
+        (t.id === 'time' && !fastId) ? '가장 빠름' :
+        (t.id === fastId) ? '가장 빠름' :
         (t.id === 'transfer' && all.transfer && (!all.time || all.transfer.transfers < all.time.transfers)) ? '환승 최소' :
         (t.id === 'fare' && all.fare && all.time && all.fare.fare < all.time.fare) ? '요금 최소' : '';
       return `<div class="rc-panel" id="rc-panel-${t.id}"${i === 0 ? '' : ' hidden'}>${variantHtml(t.r, t.id, isBest)}</div>`;
@@ -752,6 +772,6 @@ const RouteCompare = (() => {
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
   return { init, findAll, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, loadSpecialFares, fareBreakdownHtml,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
-    compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf,
+    compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf, fastestTabId,
     _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich } };
 })();

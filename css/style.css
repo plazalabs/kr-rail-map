@@ -1468,3 +1468,18 @@ body.map-ready #map-skeleton .sk { animation: none; }
   body:not(.sidebar-hidden) .route-legend,
   body:not(.sidebar-hidden) #guide-card { left: 344px; }
 }
+
+/* 자료 일부 실패 알림 (H4, 2026-11-14) */
+#data-alert {
+  position: fixed; z-index: 2000; top: 12px; left: 50%; transform: translateX(-50%);
+  width: min(560px, calc(100vw - 24px)); box-sizing: border-box;
+  display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px;
+  background: var(--panel-bg, #fff); color: var(--text, #222);
+  border: 1px solid #d97706; border-left: 5px solid #d97706; border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18); font-size: var(--fs-sm); line-height: 1.5;
+}
+#data-alert .da-msg { flex: 1 1 auto; }
+#data-alert .da-msg span { color: var(--muted, #5b6470); font-size: var(--fs-xs); }
+#data-alert button { flex: none; font-family: inherit; font-size: var(--fs-sm); cursor: pointer; border-radius: 999px; }
+#data-alert .da-retry { border: 1px solid #d97706; background: #d97706; color: #fff; font-weight: 700; padding: 4px 12px; }
+#data-alert .da-close { border: 0; background: none; color: var(--muted, #5b6470); padding: 4px 6px; min-width: 32px; min-height: 32px; }

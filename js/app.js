@@ -93,7 +93,7 @@ function useFallbackStyle(why) {
   usedFallback = true;
   console.warn('배경 지도 서버 응답 없음 → 비상 배경으로 (' + why + ')');
   try { map.setStyle(FALLBACK_STYLE); } catch (e) { /* 무시 */ }
-  setTimeout(() => setStatus('배경 지도 서버가 응답하지 않아 바탕 없이 노선만 보여 줍니다. 잠시 뒤 새로고침해 보세요.'), 0);
+  setTimeout(() => { setStatus('배경 지도 서버가 응답하지 않아 바탕 없이 노선만 보여 줍니다. 잠시 뒤 새로고침해 보세요.'); if (window.KR_dataFail) KR_dataFail('배경 지도', '노선·역은 보임'); }, 0);
 }
 const fallbackTimer = setTimeout(() => useFallbackStyle('8초'), 8000);
 map.once('style.load', () => clearTimeout(fallbackTimer));
@@ -113,8 +113,8 @@ let dataReady = false;
 const regionOf = new Map();
 fetch('data/station-region.json')
   .then(r => (r.ok ? r.json() : null))
-  .then(d => { if (d && d.stations) for (const id in d.stations) regionOf.set(id, d.stations[id].label); })
-  .catch(() => null);
+  .then(d => { if (d && d.stations) for (const id in d.stations) regionOf.set(id, d.stations[id].label); else throw new Error('x'); })
+  .catch(() => setTimeout(() => window.KR_dataFail && KR_dataFail('같은 이름 역의 지역 표시'), 0));
 const visibleLines = new Set();
 
 /* ---------- 지도 모드 + 테마 + 해시 ---------- */
@@ -205,6 +205,41 @@ const SMOKE_STATIONS = { type: 'FeatureCollection', features:
 const statusEl = document.getElementById('status');
 function setStatus(msg) { statusEl.textContent = msg; }
 
+/* 자료 일부 실패 알림 (H4, 2026-11-14 · 68점 평가 16번) — 자료 하나라도 못 받으면 무엇이 안 됐는지와 '다시 시도'를 화면 위에 띄운다.
+ * 예전엔 대부분 조용히 건너뛰어, 일부만 실패해도 전부 성공한 것처럼 보였다. 닫으면(✕) 이번 방문 동안 다시 안 띄운다. */
+const dataFails = [];
+let dataAlertClosed = false;
+function dataFail(name, detail) {
+  if (dataFails.some(x => x.name === name)) return;
+  dataFails.push({ name, detail: detail || '' });
+  console.warn('자료 받기 실패:', name, detail || '');
+  renderDataAlert();
+}
+function renderDataAlert() {
+  if (dataAlertClosed || !dataFails.length) return;
+  let box = document.getElementById('data-alert');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'data-alert';
+    box.setAttribute('role', 'alert');
+    document.body.appendChild(box);
+    box.addEventListener('click', e => {
+      if (e.target.closest('.da-retry')) { location.reload(); return; }
+      if (e.target.closest('.da-close')) { dataAlertClosed = true; box.remove(); }
+    });
+  }
+  box.innerHTML = '<div class="da-msg"><b>일부 자료를 받지 못했습니다</b> — ' +
+    dataFails.map(x => x.name + (x.detail ? ' (' + x.detail + ')' : '')).join(' · ') +
+    '<br><span>나머지 기능은 그대로 씁니다. 네트워크를 확인하고 다시 시도해 보세요.</span></div>' +
+    '<button type="button" class="da-retry">다시 시도</button><button type="button" class="da-close" aria-label="알림 닫기">' + (window.Icons && Icons.svg ? Icons.svg('close') : '닫기') + '</button>';
+}
+// 자료 받기 약속(promise)을 지켜본다 — 실패(거절 또는 false)면 알림에 이름을 올린다. 결과는 그대로 넘긴다.
+function watchData(name, p) {
+  return Promise.resolve(p).then(ok => { if (ok === false) dataFail(name); return ok; }, () => { dataFail(name); return false; });
+}
+window.KR_dataFail = dataFail;
+window.KR_dataFails = () => dataFails.slice();
+
 async function loadData() {
   // 단일파일 빌드용 인라인 데이터 우선
   if (window.KRRAIL_INLINE) {
@@ -225,7 +260,8 @@ async function loadData() {
     setStatus(`노선 ${LINES.length}개 · 역 ${STATIONS.length}개 로드됨`);
   } catch (e) {
     LINES = SMOKE_LINES.features; STATIONS = SMOKE_STATIONS.features;
-    setStatus('실제 데이터 준비 중 — 스모크 테스트 데이터 표시');
+    setStatus('노선·역 자료를 받지 못해 예시 자료(일부 노선)만 보여 줍니다');
+    dataFail('노선·역', '예시 자료만 표시 중 — 길찾기·순위가 맞지 않음');
   }
   LINES.forEach(f => visibleLines.add(f.properties.id));
   annotateStations();
@@ -1648,7 +1684,8 @@ const EXITS_PRELOAD_ZOOM = 15.5;   // 줌 16(출구 표시 시작) 직전에 받
 function loadExits() {
   if (exitsRequested || typeof StationExits === 'undefined') return;
   exitsRequested = true;
-  StationExits.load('data/exits.geojson').then(() => {
+  watchData('출구 위치', StationExits.load('data/exits.geojson')).then(ok => {
+    if (ok === false) return;
     addExitLayers();
     if (typeof StationArea !== 'undefined' && StationArea.isOn && StationArea.isOn()) StationArea.refresh();
     if (typeof StationDetail !== 'undefined') StationDetail.refresh();
@@ -1672,13 +1709,13 @@ function loadInvestData() {
   if (investDataRequested || !investOn()) return;
   investDataRequested = true;
   if (typeof StationPrice !== 'undefined') {
-    StationPrice.load('data/station-price.json').then(detailRedraw).catch(() => null);
-    StationPrice.loadComplexes('data/station-complex.json').then(detailRedraw);
+    watchData('주변 시세', StationPrice.load('data/station-price.json')).then(detailRedraw);
+    watchData('단지 정보', StationPrice.loadComplexes('data/station-complex.json')).then(detailRedraw);
   }
-  if (typeof StationDev !== 'undefined') StationDev.load('data/station-dev.json').then(detailRedraw);
-  if (typeof StationMarket !== 'undefined') StationMarket.load('data/station-market.json').then(detailRedraw);   // 실거래 7종 (2026-11-09)
-  if (typeof StationJeonse !== 'undefined') StationJeonse.load('data/station-jeonse.json').then(detailRedraw);   // 전세가율 — 같은 집끼리 짝 (2026-11-11)
-  if (typeof StationTrend !== 'undefined') StationTrend.load('data/station-trend.json').then(detailRedraw);   // 가격 흐름 2023~ 반기 (G2, 2026-11-13)
+  if (typeof StationDev !== 'undefined') watchData('입주 예정 세대', StationDev.load('data/station-dev.json')).then(detailRedraw);
+  if (typeof StationMarket !== 'undefined') watchData('실거래 7종', StationMarket.load('data/station-market.json')).then(detailRedraw);   // 실거래 7종 (2026-11-09)
+  if (typeof StationJeonse !== 'undefined') watchData('전세가율', StationJeonse.load('data/station-jeonse.json')).then(detailRedraw);   // 전세가율 — 같은 집끼리 짝 (2026-11-11)
+  if (typeof StationTrend !== 'undefined') watchData('가격 흐름', StationTrend.load('data/station-trend.json')).then(detailRedraw);   // 가격 흐름 2023~ 반기 (G2, 2026-11-13)
 }
 function loadDetailData(opts) {
   // 쉬는 동안 미리 받기(prefetch)에서는 출구까지 받지 않는다 — 역을 열거나 분석을 켤 때만
@@ -1686,7 +1723,7 @@ function loadDetailData(opts) {
   loadInvestData();   // 투자 모드일 때만, 한 번만
   if (detailDataRequested) return;
   detailDataRequested = true;
-  if (typeof StationAccess !== 'undefined') StationAccess.load('data/access.json').then(detailRedraw);
+  if (typeof StationAccess !== 'undefined') watchData('도심 접근성', StationAccess.load('data/access.json')).then(detailRedraw);
 }
 // 역 상세 패널이 처음 열릴 때 (지도 load 전에 검색으로 여는 경우도 포함)
 if (typeof StationDetail !== 'undefined') StationDetail.beforeShow = loadDetailData;

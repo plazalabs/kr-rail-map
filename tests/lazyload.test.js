@@ -21,7 +21,7 @@ check('loadExits() 가 한 번만 받음 (exitsRequested)', /function loadExits\
 check('출구 표시 줌(16) 직전(15.5)에 받기 시작', /EXITS_PRELOAD_ZOOM = 15\.5/.test(app) && /map\.on\('zoomend', exitsByZoom\)/.test(app));
 check('역 상세·투자분석(loadDetailData)에서 받음, 쉬는 동안 미리 받기(prefetch)는 제외',
   /if \(!\(opts && opts\.prefetch\)\) loadExits\(\);\s*loadInvestData\(\);[^\n]*\n\s*if \(detailDataRequested\) return;/.test(app) && /loadDetailData\(\{ prefetch: true \}\)/.test(app));
-check('도착하면 출구 레이어 추가 + 열린 패널·결과 다시 그림', /then\(\(\) => \{\s*addExitLayers\(\);/.test(app) && /StationDetail\.refresh\(\)/.test(app));
+check('도착하면 출구 레이어 추가 + 열린 패널·결과 다시 그림', /then\((\(\)|ok) => \{\s*(if \(ok === false\) return;\s*)?addExitLayers\(\);/.test(app) && /StationDetail\.refresh\(\)/.test(app));
 check('역세권을 켜면 출구를 받음 (KR_loadExits)', /window\.KR_loadExits = loadExits/.test(app) && /window\.KR_loadExits\(\)/.test(sa));
 
 console.log('\n[상세 JSON] 압축 저장');

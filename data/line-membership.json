@@ -4,10 +4,10 @@
  "note": "노선·역 목록이 어디서 확인되는지의 증빙. 배포 데이터가 아니다. 확인 원천은 공공데이터포털 역위치 CSV(이용허락 제한 없음), OSM 노선 relation 정차점, OSM 역 노드의 선형 근접도(ODbL) 셋이다.",
  "near_km": 0.3,
  "summary": {
-  "lines": 82,
-  "open_lines": 66,
-  "open_pairs": 1468,
-  "open_confirmed": 1459,
+  "lines": 83,
+  "open_lines": 67,
+  "open_pairs": 1470,
+  "open_confirmed": 1461,
   "open_confirmed_pct": 99.4,
   "open_lines_all_confirmed": 63
  },
@@ -617,11 +617,25 @@
   "gyeongui-jungang-line": {
    "name": "경의·중앙선",
    "status": "open",
-   "stations": 57,
-   "confirmed": 57,
+   "stations": 56,
+   "confirmed": 56,
    "sources": [
     "osm-geometry",
     "osm-relation"
+   ],
+   "unconfirmed": [],
+   "provisional": false,
+   "partial": false,
+   "gap_reason": "",
+   "note_20261113": "신촌(경의선)을 2호선 신촌과 나눠 지선 노선(gyeongui-line-seoul)으로 옮김"
+  },
+  "gyeongui-line-seoul": {
+   "name": "경의선 (서울역 방면)",
+   "status": "open",
+   "stations": 3,
+   "confirmed": 3,
+   "sources": [
+    "osm-geometry"
    ],
    "unconfirmed": [],
    "provisional": false,

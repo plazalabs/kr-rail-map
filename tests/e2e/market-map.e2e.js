@@ -28,7 +28,7 @@ async function until(b, expr, n = 40) {
   let b = await launch({ port: 9671, w: 1440, h: 900 });
   await b.goto(BASE + '#normal', 1500); await ready(b);
   const opened = await b.evaluate(`(() => { const btn = document.getElementById('market-btn'); if (!btn) return 'no-btn'; btn.click(); return 'ok'; })()`);
-  const tilesUp = await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 50`, 60);
+  const tilesUp = await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 50`, 60); await sleep(500);
   const head = await b.evaluate(`(() => { const p = document.getElementById('mm-panel'); return { hidden: p.hidden, groups: [...p.querySelectorAll('.mm-gname')].map(g => g.textContent.split(' · ')[0]),
     def: (p.querySelector('.mm-def') || {}).textContent || '', n: p.querySelectorAll('.mm-tile').length }; })()`);
   R.check("분석 메뉴 'RAIL MARKET MAP' → 패널·타일", opened === 'ok' && tilesUp && !head.hidden, { opened, tilesUp, n: head.n });

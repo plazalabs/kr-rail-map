@@ -56,6 +56,7 @@ const RouteFinder = (() => {
   const WAIT_MIN = {
     'seoul-metropolitan-subway-line-1': 4,                // 코레일 구간 섞임, 약 6~10분
     'gyeongui-jungang-line': 6,                           // 약 10~15분
+    'gyeongui-line-seoul': 10,                            // 서울역 방면 출근 20분 간격 (레일포털 2026-05-31 신촌) ÷ 2
     'seoul-metropolitan-subway-gyeongchun-line': 8,       // 약 15~20분
     'suin-bundang-line': 4,                               // 약 8~10분
     'seoul-metropolitan-subway-seohae-line': 6,
@@ -165,6 +166,7 @@ const RouteFinder = (() => {
     'gtx-a-changneung': 'great-train-express-line-a',   // 창릉 정차 (2030 예정) — 같은 GTX-A 열차
     'gtx-c-sangnoksu': 'gtx-c',   // 상록수 갈래 — GTX-C 열차가 금정에서 갈라져 간다 (수원행↔상록수행 갈아타기 1분은 무시)
     'gtx-a-pyeongtaek': 'great-train-express-line-a',
+    'gyeongui-line-seoul': 'gyeongui-jungang-line',   // 경의선 서울역 방면 — 가좌에서 문산 방면으로 이어 달린다 (2026-11-13)
   };
   function serviceOf(lineId) { return THROUGH[lineId] || lineId; }
   function sameService(a, b) { return a === b || (a != null && b != null && serviceOf(a) === serviceOf(b)); }

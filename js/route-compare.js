@@ -432,11 +432,11 @@ const RouteCompare = (() => {
     // (환승 3회로 2분 아끼는 경로가 '최단시간'으로 뽑히던 문제)
     const time = RF ? enrich(RF.findRoute(fromId, toId)) : null;
     const transfer = enrich(findMinTransfer(fromId, toId));
-    const fare = pickCheapest([enrich(findMinFare(fromId, toId)), enrich(findMinFare(fromId, toId, false, true)), time, transfer]);
+    const now = RF ? enrich(RF.findRoute(fromId, toId, { openOnly: true })) : null;
+    const fare = pickCheapest([enrich(findMinFare(fromId, toId)), enrich(findMinFare(fromId, toId, false, true)), time, transfer, now]);   // '지금 바로' 길도 후보 (2026-11-13)
     // '지금' — 미개통 노선을 한 개도 쓰지 않는 가장 빠른 경로.
     // 부동산에서 이게 핵심이다: 개통 전에 그 집에 살면 실제로 몇 분 걸리는가.
     // 목적지가 미개통 노선에만 있는 역이면 null 이 된다 (지금은 갈 수 없다).
-    const now = RF ? enrich(RF.findRoute(fromId, toId, { openOnly: true })) : null;
     return { time, transfer, fare, now };
   }
 

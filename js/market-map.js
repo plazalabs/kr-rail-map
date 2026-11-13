@@ -493,6 +493,8 @@
     return load().then(function (ok) {
       if (!ok) { el.querySelector('.mm-board').innerHTML = '<div class="mm-empty">순위 자료를 받지 못했습니다. 잠시 뒤 다시 열어 주세요.</div>'; return; }
       render();
+      // 설정 칸(접기)·범례 줄바꿈으로 판 크기가 그린 뒤에 바뀔 수 있다 — 배치가 끝난 다음 프레임에 한 번 더 (2026-11-13)
+      if (global.requestAnimationFrame) requestAnimationFrame(function () { requestAnimationFrame(function () { if (isOpen && st.tab !== 'card') draw(); }); });
       if (o.sel) pick(o.sel, {});
       var t = el.querySelector('.mm-tile[tabindex="0"]') || el.querySelector('.mm-close');
       try { (t || el).focus({ preventScroll: true }); } catch (e) { /* 무시 */ }

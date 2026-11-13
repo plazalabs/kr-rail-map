@@ -3,9 +3,9 @@
  "source": "korail-addr — 국가철도공단 역 주소데이터 (data/_station_dong.json 경유) · 빈 곳은 osm — OpenStreetMap 행정경계 역지오코딩 (data/_region_osm.json)",
  "basis": "이름이 겹치는 역에 한해, 1) 이름+노선 표기로 그 역 하나에만 맞는 주소 행의 시도·시군구, 2) 없으면 역 좌표가 속한 OSM 행정구역. 둘 다 없으면 넣지 않는다. 1)로 붙인 역은 2)와 대조해 summary.check_vs_osm 에 남긴다.",
  "summary": {
-  "dup_names": 37,
-  "dup_stations": 76,
-  "labeled": 76,
+  "dup_names": 38,
+  "dup_stations": 78,
+  "labeled": 78,
   "unlabeled": 0,
   "unlabeled_by_reason": {},
   "rows": {
@@ -553,6 +553,22 @@
    "sgg": "종로구",
    "label": "서울 종로구",
    "src": "osm"
+  },
+  "st-2346858838": {
+   "name": "신촌",
+   "sido": "서울특별시",
+   "sgg": "서대문구",
+   "label": "서울 서대문구",
+   "src": "osm",
+   "note": "경의선 신촌역(코레일) — OSM 역 노드 위치"
+  },
+  "st-l2-sinchon": {
+   "name": "신촌",
+   "sido": "서울특별시",
+   "sgg": "서대문구",
+   "label": "서울 서대문구",
+   "src": "osm",
+   "note": "2호선 신촌역 — OSM 역 노드 위치"
   }
  },
  "unlabeled": {}

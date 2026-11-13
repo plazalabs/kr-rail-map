@@ -93,7 +93,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     <div class="msg" id="msg" role="status" aria-live="polite"></div>
     <button class="send" id="send" type="submit">올리기</button>
   </form>
-  <p class="rules">개인 정보(전화번호·주소)는 쓰지 마세요. 글은 고치거나 지울 수 없어요. 신고가 3번 쌓이면 자동으로 숨겨집니다.</p>
+  <p class="rules">개인 정보(전화번호·주소)는 쓰지 마세요. 글은 쓴 사람도 직접 고치거나 지울 수 없어요(익명이라 본인 확인이 안 됨). 신고가 3번 쌓이면 자동으로 숨겨집니다.<br><b>내 글을 지워야 하거나 개인 정보가 드러난 글</b>은 <a id="del-link" href="#" target="_blank" rel="noopener">삭제 요청</a>으로 알려 주세요 — 글을 쓴 시각·닉네임·첫 문장을 적어 주시면 운영자가 확인해 지웁니다.</p>
 
   <div class="tabs" role="group" aria-label="종류로 거르기">
     <button data-k="" aria-pressed="true">전체</button><button data-k="free" aria-pressed="false">자유</button>
@@ -114,6 +114,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   const $ = id => document.getElementById(id);
   const C = KrBoard.cfg();
   if (/^https:\/\//.test(C.feedbackUrl || '')) $('fb-link').href = C.feedbackUrl; else $('fb-link').hidden = true;
+  // 삭제 요청 (H6) — 같은 의견 양식. 양식이 없으면 '오류 제보' 링크와 같이 숨기지 않고 글로만 남긴다
+  if (/^https:\/\//.test(C.feedbackUrl || '')) $('del-link').href = C.feedbackUrl; else $('del-link').removeAttribute('href');
   if (/^https:\/\//.test(C.coffeeUrl || '')) { $('coffee-link').href = C.coffeeUrl; $('coffee-link').hidden = false; }
   if (!KrBoard.ready()) { $('not-ready').hidden = false; return; }
   $('board').hidden = false;

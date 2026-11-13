@@ -29,7 +29,7 @@
         '<input class="sd-talk-hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">' +
         '<div class="sd-talk-row"><span class="sd-talk-msg" role="status"></span><button type="submit" class="sd-talk-go">등록</button></div>' +
       '</form>' +
-      '<div class="sd-note">욕설·광고·개인정보는 신고 3번이면 숨겨져요 · <a href="board.html">게시판 전체</a></div></div>';
+      '<div class="sd-note">욕설·광고·개인정보는 신고 3번이면 숨겨져요 · 내 글 삭제는 <a href="board.html#del-link">삭제 요청</a> · <a href="board.html">게시판 전체</a></div></div>';
   }
 
   function renderList(ul, rows) {

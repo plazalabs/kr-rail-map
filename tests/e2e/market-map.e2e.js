@@ -65,6 +65,17 @@ async function until(b, expr, n = 40) {
   const back = await b.evaluate(`(() => { const t = document.querySelector('#mm-panel .mm-tile.sel'); return { sel: t ? t.dataset.id : null, card: /청량리/.test(document.querySelector('#mm-panel .mm-card').textContent) }; })()`);
   R.check('지도·검색에서 청량리 열기 → 청량리 타일이 골라짐', !!cr && back.sel === cr && back.card, { cr, back });
 
+  // 목록(순위) 보기: 빨라지는 분 큰 순(신규 먼저), 줄 누르면 역 상세 → 다시 타일로
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'list'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
+  const lst = await b.evaluate(`(() => { const rows = [...document.querySelectorAll('#mm-panel .mm-row')]; const m = MarketMap.model();
+    const g = id => { for (const G of m.groups) for (const t of G.tiles) if (t.row.id === id) return t.row.isNew ? 1e6 : (t.gain == null ? -1e6 : t.gain); return null; };
+    const ks = rows.map(r => g(r.dataset.id)); const sorted = ks.every((k, i) => i === 0 || ks[i - 1] >= k);
+    return { n: rows.length, total: m.total, sorted, first: rows[0] ? rows[0].textContent.slice(0, 40) : null }; })()`);
+  R.check('목록 보기: 타일과 같은 역 수, 빨라지는 분 큰 순', lst.n === lst.total && lst.n > 50 && lst.sorted, lst);
+  await b.evaluate(`(() => { const r = [...document.querySelectorAll('#mm-panel .mm-row')][3]; r.click(); })()`); await sleep(900);
+  const lsd = await b.evaluate(`({ sd: document.getElementById('sd-panel').classList.contains('sd-open'), sel: !!document.querySelector('#mm-panel .mm-row.sel') })`);
+  R.check('목록 줄 누르면 역 상세 열림 + 그 줄 골라짐', lsd.sd && lsd.sel, lsd);
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'tiles'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
   // 색·연도
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="color"]'); s.value = 'tier'; s.dispatchEvent(new Event('change')); })()`);
   await sleep(300);

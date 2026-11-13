@@ -181,7 +181,7 @@
   /* ---------------- 화면 ---------------- */
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var WLABEL = { avg: '평균', cbd: '도심', ybd: '여의도', gbd: '강남' };
-  var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', sel: null, tab: 'tiles' };
+  var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', view: 'tiles', sel: null, tab: 'tiles' };
   var el = null, isOpen = false, model = null, doc = null, rowsById = new Map(), tileById = new Map(), opener = null;
 
   // rank.js 는 'const RankTable' 로 선언돼 window 에 안 붙는다 — 이름으로 직접 찾는다
@@ -222,6 +222,11 @@
       '.mm-tile.sel{box-shadow:inset 0 0 0 3px #111;z-index:3}' +
       '.mm-tile b{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.mm-tile span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92}' +
+      '.mm-list{list-style:none;margin:0;padding:0}' +
+      '.mm-tile.mm-row{position:static;display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:0;border-bottom:1px solid var(--border,#e3e6ea);border-radius:0;background:none;color:var(--text,#222);font-size:var(--fs-sm);height:auto}' +
+      '.mm-tile.mm-row.sel{box-shadow:inset 3px 0 0 var(--accent,#1565c0);background:var(--surface,#f6f7f9)}' +
+      '.mm-row i{flex:none;width:12px;height:12px;border-radius:3px}.mm-row b{display:inline;flex:0 1 auto}.mm-rk{flex:none;width:26px;color:var(--muted,#5b6470);font-size:var(--fs-xs);text-align:right}' +
+      '.mm-row .mm-g{flex:none;font-size:var(--fs-xs);color:var(--muted,#5b6470)}.mm-row .mm-v{margin-left:auto;flex:none;font-size:var(--fs-xs);font-weight:700}' +
       '.mm-card{border-top:1px solid var(--border,#e3e6ea);padding:8px 14px 10px;font-size:var(--fs-sm);line-height:1.5;max-height:42%;overflow:auto}' +
       '.mm-card h3{margin:0 0 2px;font-size:var(--fs-md)}' +
       '.mm-card .mm-src{font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
@@ -264,6 +269,7 @@
         '<label>색 <select data-k="color"><option value="gain">빨라지는 분</option><option value="tier">순위 변화</option></select></label>' +
         '<label>크기 <select data-k="size"><option value="equal">모두 같게</option><option value="deals">아파트 거래 건수 (투자 모드)</option></select></label>' +
         '<label>기준 <select data-k="w"><option value="avg">평균</option><option value="cbd">도심</option><option value="ybd">여의도</option><option value="gbd">강남</option></select></label>' +
+        '<label>보기 <select data-k="view"><option value="tiles">타일</option><option value="list">목록(순위)</option></select></label>' +
         '<label>역 <select data-k="scope"><option value="new">새 노선이 서는 역</option><option value="affected">빨라지는 역 모두</option><option value="all">수도권 전체</option></select></label>' +
       '</div>' +
       '<div class="mm-years" role="group" aria-label="이 해까지 개통한다고 가정"></div>' +
@@ -319,7 +325,7 @@
   // 링크: ?market=1&y=&w=&c=&g=&s=&st= — 모르는 값은 무시(기본값)
   var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
   function linkQuery() {
-    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
+    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view === 'list' ? '&v=list' : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
   }
   function note(msg) { var s = document.getElementById('status'); if (s) s.textContent = msg; }
 
@@ -373,9 +379,38 @@
       '<span>' + esc((st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + sz) + '</span>';
   }
 
+  // 목록 보기 — 묶음과 상관없이 한 줄로. 색 기준이 '빨라지는 분'이면 분 큰 순(신규는 맨 앞), '순위 변화'면 오른 계단 큰 순
+  // 기준 시간은 업무지구 가중 평균이라 소수가 길다 — 소수 첫째 자리까지만 보인다
+  function fm(v) { return v == null ? null : Math.round(v * 10) / 10; }
+  function listRows() {
+    var all = [];
+    model.groups.forEach(function (G) { G.tiles.forEach(function (t) { all.push({ t: t, g: G.name }); }); });
+    var key = st.color === 'tier'
+      ? function (x) { return x.t.row.isNew ? 1e6 : (x.t.row.change == null ? -1e6 : x.t.row.change); }
+      : function (x) { return x.t.row.isNew ? 1e6 : (x.t.gain == null ? -1e6 : x.t.gain); };
+    all.sort(function (a, b) { return key(b) - key(a) || (a.t.row.aft.rank - b.t.row.aft.rank); });
+    return all;
+  }
+  function drawList(board) {
+    var rows = listRows();
+    tileById = new Map();
+    board.style.overflow = 'auto';
+    board.innerHTML = '<ol class="mm-list">' + rows.map(function (x, i) {
+      var r = x.t.row, c = x.t.color;
+      var val = st.color === 'tier'
+        ? (r.isNew ? '신규' : (r.change > 0 ? '▲' + r.change : r.change < 0 ? '▼' + (-r.change) : '그대로') + ' · ' + r.now.rank + '→' + r.aft.rank + '위')
+        : (r.isNew ? '신규 · 개통 후 ' + fm(r.aft.min) + '분' : (x.t.gain > 0 ? '−' + x.t.gain + '분' : '0분') + ' · ' + fm(r.now.min) + '→' + fm(r.aft.min) + '분');
+      return '<li><button type="button" class="mm-tile mm-row' + (st.sel === r.id ? ' sel' : '') + '" data-id="' + esc(r.id) + '" tabindex="' + (i === 0 ? 0 : -1) + '">' +
+        '<span class="mm-rk">' + (i + 1) + '</span><i style="background:' + c.bg + '"></i><b>' + esc(r.name) + '</b><span class="mm-g">' + esc(x.g) + '</span><span class="mm-v">' + esc(val) + '</span></button></li>';
+    }).join('') + '</ol>';
+    board.querySelectorAll('.mm-row').forEach(function (b) { tileById.set(b.dataset.id, b); });
+  }
+
   function draw() {
     if (!model) return;
     var board = el.querySelector('.mm-board');
+    if (st.view === 'list') { if (!model.total) { board.innerHTML = '<div class="mm-empty">이 조건에 맞는 역이 없습니다</div>'; return; } drawList(board); return; }
+    board.style.overflow = 'hidden';
     var W = board.clientWidth, H = board.clientHeight;
     if (W < 40 || H < 40) return;
     if (!model.total) { board.innerHTML = '<div class="mm-empty">이 조건에 맞는 역이 없습니다</div>'; return; }
@@ -389,7 +424,7 @@
       G.tiles.forEach(function (t) {
         var q = t.rect; if (!q || q.w < 1 || q.h < 1) return;
         var row = t.row, val = t.gain == null ? (row.isNew ? '신규' : '—') : (t.gain > 0 ? '−' + t.gain + '분' : '0분');
-        var lab = row.name + ' · ' + (row.isNew ? '지금은 철도로 못 감' : '지금 ' + row.now.min + '분 → 개통 후 ' + row.aft.min + '분') +
+        var lab = row.name + ' · ' + (row.isNew ? '지금은 철도로 못 감' : '지금 ' + fm(row.now.min) + '분 → 개통 후 ' + fm(row.aft.min) + '분') +
           (row.change != null ? ' · 순위 ' + row.now.rank + '→' + row.aft.rank + '위' : '');
         var cls = 'mm-tile' + (t.color.hatch ? ' na' : '') + (t.sizeMissing ? ' few' : '') + (st.sel === row.id ? ' sel' : '');
         var inner = (q.w > 27 && q.h > 15) ? '<b>' + esc(row.name) + '</b>' + ((q.w > 44 && q.h > 30) ? '<span>' + esc(val) + '</span>' : '') : '';
@@ -413,6 +448,7 @@
     el.querySelector('[data-k="size"]').value = st.size;
     el.querySelector('[data-k="w"]').value = st.w;
     el.querySelector('[data-k="scope"]').value = st.scope;
+    el.querySelector('[data-k="view"]').value = st.view;
     var sum = el.querySelector('.mm-sum');
     if (sum) sum.textContent = '· ' + (st.y === 'all' ? '전체 개통 가정' : st.y + '년까지') + ' · ' + (st.color === 'tier' ? '순위 변화' : '빨라지는 분') + ' · ' + WLABEL[st.w] + ' 기준';
     if (st.tab !== 'card') draw();
@@ -426,12 +462,12 @@
     var row = st.sel && rowsById.get(st.sel);
     if (!row) { box.innerHTML = '<p class="mm-src">타일을 누르면 여기에 그 역의 지금 → 개통 후 시간과 순위가 나옵니다. 지도에서 역을 눌러도 타일이 골라집니다.</p>'; return; }
     var tn = row.now.times || [], ta = row.aft.times || [];
-    var cell = function (a, b) { return a == null ? (b == null ? '—' : '지금 못 감 → ' + b + '분') : (b == null ? a + '분' : a + '분 → ' + b + '분' + (a - b > 0 ? ' (−' + (a - b) + ')' : '')); };
+    var cell = function (a, b) { return a == null ? (b == null ? '—' : '지금 못 감 → ' + b + '분') : (b == null ? a + '분' : a + '분 → ' + b + '분' + (a - b > 0 ? ' (−' + Math.round((a - b) * 10) / 10 + ')' : '')); };
     var tier = RTab().tierOf(row), T = RTab().TIERS[tier];
     var h = '<h3>' + esc(row.name) + ' <span class="mm-src">' + esc(row.sgg || row.region || '') + '</span></h3>' +
       '<div>' + esc(T.label) + ' · ' + (row.change == null ? '새로 갈 수 있게 되는 역' : '순위 ' + row.now.rank + '위 → ' + row.aft.rank + '위 (' + (row.change > 0 ? '▲' + row.change : row.change < 0 ? '▼' + (-row.change) : '그대로') + ')') + '</div>' +
       '<table><tr><th>도심</th><td>' + cell(tn[0], ta[0]) + '</td></tr><tr><th>여의도</th><td>' + cell(tn[1], ta[1]) + '</td></tr><tr><th>강남</th><td>' + cell(tn[2], ta[2]) + '</td></tr>' +
-      '<tr><th>' + WLABEL[st.w] + ' 기준</th><td>' + cell(row.now.min, row.aft.min) + '</td></tr></table>';
+      '<tr><th>' + WLABEL[st.w] + ' 기준</th><td>' + cell(fm(row.now.min), fm(row.aft.min)) + '</td></tr></table>';
     if (invest() && typeof StationPrice !== 'undefined' && StationPrice.isReady()) {
       var p = StationPrice.of(row.id);
       if (p && p.medianPerPyeong != null) h += '<div>평당(전용) ' + esc(StationPrice.pp(p.medianPerPyeong)) + ' <span class="mm-src">' + esc(p.dong) + ' 아파트 매매 중위 · 최근 6개월 ' + p.deals + '건' + (p.deals < 5 ? ' (거래 적음)' : '') + '</span></div>';
@@ -498,6 +534,7 @@
     ['w', 'group', 'color', 'scope'].forEach(function (k) { if (o[k] && ALLOWED[k].indexOf(String(o[k])) >= 0) st[k] = String(o[k]); });
     if (o.y && /^(all|20[0-9][0-9])$/.test(String(o.y))) st.y = String(o.y);
     if (o.size === 'deals' || o.size === 'equal') st.size = o.size;
+    if (o.view === 'list' || o.view === 'tiles') st.view = o.view;
     if (st.size === 'deals' && !invest()) st.size = 'equal';
     isOpen = true;
     el.hidden = false;
@@ -554,7 +591,7 @@
       b.addEventListener('click', function () { open({}); });
     });
     var q = new URLSearchParams(location.search);
-    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s') });
+    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s'), view: q.get('v') });
   }
 
   global.MarketMap = { Logic: Logic, init: init, open: open, close: close, pick: pick,

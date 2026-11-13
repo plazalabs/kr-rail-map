@@ -89,6 +89,26 @@ async function until(b, expr, n = 40) {
   const lsd = await b.evaluate(`({ sd: document.getElementById('sd-panel').classList.contains('sd-open'), sel: !!document.querySelector('#mm-panel .mm-row.sel') })`);
   R.check('목록 줄 누르면 역 상세 열림 + 그 줄 골라짐', lsd.sd && lsd.sel, lsd);
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'tiles'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
+  // ▶ 재생 (전후 비교): 타일을 다시 그리지 않고 색만, 연도 배지, 끝나면 전체·멈춤
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="color"]'); s.value = 'gain'; s.dispatchEvent(new Event('change')); const y = document.querySelector('#mm-panel .mm-years button[data-y="all"]'); y && y.click(); })()`); await sleep(400);
+  await b.evaluate(`(() => { const t = document.querySelector('#mm-panel .mm-tile'); t.dataset.keep = '1'; document.querySelector('#mm-panel .mm-play').click(); })()`);
+  await sleep(1600);
+  const p1 = await b.evaluate(`({ playing: MarketMap.playing(), y: MarketMap.state().y, badge: (document.querySelector('#mm-panel .mm-yb') || {}).textContent || '', kept: !!document.querySelector('#mm-panel .mm-tile[data-keep="1"]') })`);
+  R.check('▶ 재생: 연도가 넘어가고 큰 연도 글씨, 타일은 다시 그리지 않음(색만 바뀜)', p1.playing && p1.y !== 'all' && /년까지 개통하면/.test(p1.badge) && p1.kept, p1);
+  await sleep(8000);
+  const p2 = await b.evaluate(`({ playing: MarketMap.playing(), y: MarketMap.state().y })`);
+  R.check('재생이 끝나면 멈추고 마지막은 전체', !p2.playing && p2.y === 'all', p2);
+  // 표(노선×역)
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'matrix'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
+  const mx = await b.evaluate(`(() => { const rows = [...document.querySelectorAll('#mm-panel .mm-mxr')]; return { rows: rows.length, groups: MarketMap.model().groups.length, cells: document.querySelectorAll('#mm-panel .mm-cell').length, total: MarketMap.model().total, first: rows[0] ? rows[0].querySelector('.mm-mxh b').textContent : null }; })()`);
+  R.check('표(노선×역): 줄 = 묶음 수, 칸 = 역 수', mx.rows === mx.groups && mx.cells === mx.total && mx.cells > 50, mx);
+  await b.evaluate(`document.querySelectorAll('#mm-panel .mm-cell')[2].click(); 0`); await sleep(700);
+  const mxs = await b.evaluate(`({ sel: !!document.querySelector('#mm-panel .mm-cell.sel'), sd: document.getElementById('sd-panel').classList.contains('sd-open') })`);
+  R.check('표 칸 누르면 골라지고 역 상세 열림', mxs.sel && mxs.sd, mxs);
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'tiles'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
+  // 이미지 저장 캔버스
+  const png = await b.evaluate(`(() => { const c = MarketMap._pngCanvas(); if (!c) return null; const g = c.getContext('2d'); const px = g.getImageData(300, 300, 1, 1).data; return { w: c.width, h: c.height, url: c.toDataURL('image/png').length, painted: !(px[0] === 255 && px[1] === 255 && px[2] === 255) }; })()`);
+  R.check('이미지 저장: 1200px 캔버스에 타일이 그려짐', !!png && png.w === 1200 && png.h > 800 && png.url > 20000 && png.painted, png);
   // 색·연도
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="color"]'); s.value = 'tier'; s.dispatchEvent(new Event('change')); })()`);
   await sleep(300);

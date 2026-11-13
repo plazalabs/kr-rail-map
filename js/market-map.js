@@ -224,7 +224,8 @@
       '.mm-head h2{margin:0;font-size:var(--fs-lg);font-weight:800;letter-spacing:-.02em}' +
       '.mm-eyebrow{margin:0;font-size:var(--fs-xs);font-weight:700;color:var(--accent,#1565c0)}' +
       '.mm-def{margin:2px 0 0;font-size:var(--fs-xs);color:var(--muted,#5b6470);line-height:1.45}' +
-      '.mm-link{margin-left:auto;border:0;background:none;color:var(--muted,#5b6470);cursor:pointer;padding:4px 6px;border-radius:6px}' +
+      '.mm-png{margin-left:auto;border:0;background:none;color:var(--muted,#5b6470);cursor:pointer;padding:4px 6px;border-radius:6px}' +
+      '.mm-link{border:0;background:none;color:var(--muted,#5b6470);cursor:pointer;padding:4px 6px;border-radius:6px}' +
       '.mm-close{border:0;background:none;color:var(--muted,#5b6470);font-size:var(--fs-xl);cursor:pointer;padding:2px 6px;border-radius:6px}' +
       '.mm-ctrl{display:flex;flex-wrap:wrap;gap:6px 10px;padding:4px 14px 6px;font-size:var(--fs-xs);align-items:center}' +
       '.mm-ctrl label{display:inline-flex;gap:4px;align-items:center;color:var(--muted,#5b6470)}' +
@@ -239,18 +240,28 @@
       '.mm-gname{position:absolute;left:4px;top:1px;right:4px;font-size:var(--fs-xs);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text,#222)}' +
       '.mm-tile{position:absolute;box-sizing:border-box;border:1px solid rgba(255,255,255,.75);border-radius:2px;overflow:hidden;cursor:pointer;padding:2px 3px;' +
       'font-size:var(--fs-xs);line-height:1.2;text-align:left;font-family:inherit}' +
+      '.mm-tile{transition:background-color .6s ease,color .6s ease}' +
+      '.mm-yb{position:absolute;right:10px;bottom:10px;z-index:5;padding:8px 14px;border-radius:12px;background:rgba(17,24,39,.82);color:#fff;font-size:var(--fs-xl);font-weight:800;letter-spacing:-.02em;pointer-events:none}' +
+      '.mm-yb[hidden]{display:none}' +
+      '.mm-play{border:1px solid var(--border,#ccd);background:var(--panel-bg,#fff);color:var(--text,#222);border-radius:999px;width:30px;height:28px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-right:4px}' +
+      '@media (prefers-reduced-motion: reduce){.mm-tile{transition:none}}' +
       '.mm-tile:focus-visible{outline:3px solid var(--accent,#1565c0);outline-offset:-3px;z-index:2}' +
       '.mm-tile.na{background-image:repeating-linear-gradient(45deg,transparent 0 4px,rgba(0,0,0,.06) 4px 8px)}' +
       '.mm-tile.few{border-style:dashed;border-color:rgba(0,0,0,.45)}' +
       '.mm-tile.sel{box-shadow:inset 0 0 0 3px #111;z-index:3}' +
       '.mm-tile b{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.mm-tile span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92}' +
+      '.mm-mx{display:flex;flex-direction:column;gap:6px;padding:2px}' +
+      '.mm-mxr{display:flex;gap:8px;align-items:flex-start}' +
+      '.mm-mxh{flex:none;width:92px;font-size:var(--fs-xs);line-height:1.3}.mm-mxh b{display:block;font-size:var(--fs-sm)}.mm-mxh span{color:var(--muted,#5b6470)}' +
+      '.mm-mxc{display:flex;flex-wrap:wrap;gap:2px}' +
+      '.mm-tile.mm-cell{position:static;width:34px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;overflow:hidden;white-space:nowrap}' +
       '.mm-list{list-style:none;margin:0;padding:0}' +
       '.mm-tile.mm-row{position:static;display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:0;border-bottom:1px solid var(--border,#e3e6ea);border-radius:0;background:none;color:var(--text,#222);font-size:var(--fs-sm);height:auto}' +
       '.mm-tile.mm-row.sel{box-shadow:inset 3px 0 0 var(--accent,#1565c0);background:var(--surface,#f6f7f9)}' +
       '.mm-row i{flex:none;width:12px;height:12px;border-radius:3px}.mm-row b{display:inline;flex:0 1 auto}.mm-rk{flex:none;width:26px;color:var(--muted,#5b6470);font-size:var(--fs-xs);text-align:right}' +
       '.mm-row .mm-g{flex:none;font-size:var(--fs-xs);color:var(--muted,#5b6470)}.mm-row .mm-v{margin-left:auto;flex:none;font-size:var(--fs-xs);font-weight:700}' +
-      '.mm-card{border-top:1px solid var(--border,#e3e6ea);padding:8px 14px 10px;font-size:var(--fs-sm);line-height:1.5;max-height:42%;overflow:auto}' +
+      '.mm-card{border-top:1px solid var(--border,#e3e6ea);padding:8px 14px 10px;font-size:var(--fs-sm);line-height:1.5;flex:0 0 auto;overflow:auto}.mm-card.on{flex:0 0 32%;min-height:140px}' +   // 높이 고정 — 카드 내용이 바뀔 때 타일 판이 다시 그려지지 않게
       '.mm-cmp{margin:0 0 8px;padding:6px 8px;border:1px solid var(--border,#e3e6ea);border-radius:10px;overflow-x:auto}' +
       '.mm-cmp table{width:100%}.mm-cmp th{font-weight:700;white-space:nowrap}.mm-cmp td{white-space:nowrap}' +
       '.mm-cx{border:0;background:none;color:var(--muted,#5b6470);cursor:pointer;padding:0 2px;font:inherit}' +
@@ -286,6 +297,7 @@
       '<div class="mm-head"><div><p class="mm-eyebrow">RAIL MARKET MAP · 수도권 <span class="mm-n"></span>역</p>' +
       '<h2>개통하면 어느 역이 얼마나 빨라지나</h2>' +
       '<p class="mm-def">업무지구까지 걸리는 시간(열차 대기 뺌)으로 본 <b>교통 접근성</b>입니다 · 집값이나 투자수익 예측이 아닙니다</p></div>' +
+      '<button class="mm-png" type="button" aria-label="이미지로 저장" title="지금 타일을 이미지로 저장 (제목·조건·범례·출처 포함)"><i data-ic="camera"></i></button>' +
       '<button class="mm-link" type="button" aria-label="지금 보는 조건으로 링크 복사" title="지금 보는 조건(연도·기준·색·묶기·고른 역)으로 링크 복사"><i data-ic="link"></i></button>' +
       '<button class="mm-close" type="button" aria-label="타일 지도 닫기"><i data-ic="close"></i></button></div>' +
       '<div class="mm-tabs" role="tablist" aria-label="보기"><button type="button" role="tab" data-tab="map">지도</button>' +
@@ -296,7 +308,7 @@
         '<label>색 <select data-k="color"><option value="gain">빨라지는 분</option><option value="tier">순위 변화</option><option value="jeonse">전세가율 (투자 모드)</option><option value="price">평당가 (투자 모드)</option></select></label>' +
         '<label>크기 <select data-k="size"><option value="equal">모두 같게</option><option value="deals">아파트 거래 건수 (투자 모드)</option><option value="supply">입주 예정 세대 (투자 모드)</option></select></label>' +
         '<label>기준 <select data-k="w"><option value="avg">평균</option><option value="cbd">도심</option><option value="ybd">여의도</option><option value="gbd">강남</option></select></label>' +
-        '<label>보기 <select data-k="view"><option value="tiles">타일</option><option value="list">목록(순위)</option></select></label>' +
+        '<label>보기 <select data-k="view"><option value="tiles">타일</option><option value="list">목록(순위)</option><option value="matrix">표(노선×역)</option></select></label>' +
         '<label>역 <select data-k="scope"><option value="new">새 노선이 서는 역</option><option value="affected">빨라지는 역 모두</option><option value="all">수도권 전체</option></select></label>' +
       '</div>' +
       '<div class="mm-years" role="group" aria-label="이 해까지 개통한다고 가정"></div>' +
@@ -310,6 +322,7 @@
     document.body.appendChild(back);
 
     el.querySelector('.mm-close').addEventListener('click', close);
+    el.querySelector('.mm-png').addEventListener('click', function () { savePng(); });
     el.querySelector('.mm-link').addEventListener('click', function () {
       var url = location.origin + location.pathname + linkQuery() + location.hash;
       var done = function () { note('타일 지도 링크를 복사했습니다 — 같은 조건으로 열립니다'); track('market_map_share'); };
@@ -351,13 +364,15 @@
       });
       if (best) best.o.focus();
     });
-    if (global.ResizeObserver) new ResizeObserver(function () { if (isOpen && st.tab !== 'card') draw(); }).observe(board);
+    // 판 크기가 실제로 바뀔 때만 다시 그린다 (재생 중엔 안 그림 — 색만 바뀌는 중)
+    var lastWH = '';
+    if (global.ResizeObserver) new ResizeObserver(function () { var wh = board.clientWidth + 'x' + board.clientHeight; if (wh === lastWH) return; lastWH = wh; if (isOpen && st.tab !== 'card' && !playT) draw(); }).observe(board);
   }
 
   // 링크: ?market=1&y=&w=&c=&g=&s=&st= — 모르는 값은 무시(기본값)
   var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier', 'jeonse', 'price'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
   function linkQuery() {
-    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view === 'list' ? '&v=list' : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
+    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
   }
   function note(msg) { var s = document.getElementById('status'); if (s) s.textContent = msg; }
 
@@ -405,13 +420,79 @@
   function renderYears() {
     var box = el.querySelector('.mm-years');
     var ys = ['all'].concat(doc.years || []);
-    box.innerHTML = '<span class="mm-def" style="margin:0 4px 0 0">그해까지 개통한다고 가정:</span>' + ys.map(function (y) {
+    box.innerHTML = '<button type="button" class="mm-play" aria-label="' + (playT ? '재생 멈추기' : '연도 차례로 보기') + '">' + (global.Icons ? Icons.svg(playT ? 'pause' : 'play') : (playT ? '||' : '>')) + '</button>' +
+      '<span class="mm-def" style="margin:0 4px 0 0">그해까지 개통한다고 가정:</span>' + ys.map(function (y) {
       return '<button type="button" data-y="' + y + '" aria-pressed="' + (String(st.y) === String(y)) + '">' + (y === 'all' ? '전체(시기 미정 포함)' : y + '년') + '</button>';
     }).join('');
     box.querySelectorAll('button').forEach(function (b) {
-      b.addEventListener('click', function () { st.y = b.dataset.y; track('market_map_filter_change', { 종류: '연도' }); render(); });
+      if (b.classList.contains('mm-play')) { b.addEventListener('click', function () { playT ? stopPlay() : play(); }); return; }
+      b.addEventListener('click', function () { stopPlay(); st.y = b.dataset.y; track('market_map_filter_change', { 종류: '연도' }); render(); });
     });
   }
+
+  // ▶ 재생 — 2027 → … → 2035 → 전체. 타일 모양은 그대로 두고 색·값만 바꿔 부드럽게 (영상용)
+  var playT = null;
+  function play() {
+    if (!doc) return;
+    var seq = (doc.years || []).map(String).concat(['all']);
+    var i = 0;
+    track('market_map_play');
+    var step = function () {
+      st.y = seq[i];
+      if (!recolor()) render();
+      showYearBadge(seq[i]);
+      renderYears(); renderCard();
+      i++;
+      if (i >= seq.length) { stopPlay(true); }
+    };
+    playT = setInterval(step, 1300);
+    step();
+  }
+  function stopPlay(keepBadge) {
+    if (playT) { clearInterval(playT); playT = null; }
+    if (!keepBadge) hideYearBadge(); else setTimeout(hideYearBadge, 1400);
+    if (el) renderYears();
+  }
+  function showYearBadge(y) {
+    var board = el.querySelector('.mm-board'), b = board.querySelector('.mm-yb');
+    if (!b) { b = document.createElement('div'); b.className = 'mm-yb'; b.setAttribute('aria-live', 'polite'); board.appendChild(b); }
+    b.textContent = y === 'all' ? '모든 계획 노선 개통하면' : y + '년까지 개통하면';
+    b.hidden = false;
+  }
+  function hideYearBadge() { var b = el && el.querySelector('.mm-board .mm-yb'); if (b) b.hidden = true; }
+  // 같은 타일 묶음이면 색·값만 바꾼다. 다르면 false (다시 그리기)
+  function recolor() {
+    if (st.view !== 'tiles' || !model || st.size !== 'equal') return false;
+    var prev = model;
+    compute();
+    var byId = new Map(); model.groups.forEach(function (G) { G.tiles.forEach(function (t) { byId.set(t.row.id, t); }); });
+    var n = 0; prev.groups.forEach(function (G) { n += G.tiles.length; });
+    // 새 해에 새로 생긴 역이 있으면 다시 그린다. 빠진 역(그해엔 아직 개통 전)은 자리를 두고 회색 빗금 '아직'
+    var prevIds = new Set(); prev.groups.forEach(function (G) { G.tiles.forEach(function (t) { prevIds.add(t.row.id); }); });
+    var extra = false; byId.forEach(function (v, k) { if (!prevIds.has(k)) extra = true; });
+    if (extra) { draw(); return true; }
+    // 같은 역들 — 자리(prev 배치)는 그대로, 값·색만 새 해로 (전후 비교 영상에서 같은 자리의 색이 바뀌어 보이게)
+    prev.groups.forEach(function (G) {
+      G.tiles.forEach(function (t) {
+        var nt = byId.get(t.row.id);
+        var b = tileById.get(t.row.id);
+        if (!nt) {   // 그해엔 아직 갈 수 없는 역
+          if (b) { b.style.backgroundColor = '#e5e7eb'; b.style.color = '#374151'; b.classList.add('na'); var s0 = b.querySelector('span'); if (s0) s0.textContent = '아직'; }
+          return;
+        }
+        t.row = nt.row; t.color = nt.color; t.gain = nt.gain;
+        if (!b) return;
+        b.style.backgroundColor = t.color.bg; b.style.color = t.color.fg;
+        b.classList.toggle('na', !!t.color.hatch);
+        var sp = b.querySelector('span');
+        if (sp) sp.textContent = t.gain == null ? (t.row.isNew ? '신규' : '—') : (t.gain > 0 ? '−' + t.gain + '분' : '0분');
+      });
+    });
+    model = prev;
+    renderLegend();
+    return true;
+  }
+
 
   function renderLegend() {
     var box = el.querySelector('.mm-legend'), items;
@@ -456,9 +537,29 @@
     board.querySelectorAll('.mm-row').forEach(function (b) { tileById.set(b.dataset.id, b); });
   }
 
+  function drawMatrix(board) {
+    tileById = new Map();
+    board.style.overflow = 'auto';
+    var keyOf = function (t) { return t.row.isNew ? 1e6 : (st.color === 'tier' ? (t.row.change == null ? -1e6 : t.row.change) : (t.gain == null ? -1e6 : t.gain)); };
+    var first = true;
+    board.innerHTML = '<div class="mm-mx">' + model.groups.map(function (G) {
+      var ts = G.tiles.slice().sort(function (a, b) { return keyOf(b) - keyOf(a); });
+      var avg = (function () { var g = ts.filter(function (t) { return t.gain != null; }); return g.length ? Math.round(g.reduce(function (s2, t) { return s2 + t.gain; }, 0) / g.length * 10) / 10 : null; })();
+      return '<div class="mm-mxr"><div class="mm-mxh"><b>' + esc(G.name) + '</b><span>' + ts.length + '역' + (avg != null && st.color === 'gain' ? ' · 평균 −' + avg + '분' : '') + '</span></div><div class="mm-mxc">' +
+        ts.map(function (t) {
+          var r = t.row;
+          var lab = r.name + ' · ' + (r.isNew ? '지금은 철도로 못 감 → 개통 후 ' + fm(r.aft.min) + '분' : '지금 ' + fm(r.now.min) + '분 → 개통 후 ' + fm(r.aft.min) + '분') + (r.change != null ? ' · 순위 ' + r.now.rank + '→' + r.aft.rank + '위' : '');
+          var h = '<button type="button" class="mm-tile mm-cell' + (t.color.hatch ? ' na' : '') + (st.sel === r.id ? ' sel' : '') + '" data-id="' + esc(r.id) + '" tabindex="' + (first ? 0 : -1) + '" aria-label="' + esc(lab) + '" title="' + esc(lab) + '" style="background-color:' + t.color.bg + ';color:' + t.color.fg + '">' + esc(r.name.slice(0, 2)) + '</button>';
+          first = false; return h;
+        }).join('') + '</div></div>';
+    }).join('') + '</div>';
+    board.querySelectorAll('.mm-cell').forEach(function (b) { tileById.set(b.dataset.id, b); });
+  }
+
   function draw() {
     if (!model) return;
     var board = el.querySelector('.mm-board');
+    if (st.view === 'matrix') { if (!model.total) { board.innerHTML = '<div class="mm-empty">이 조건에 맞는 역이 없습니다</div>'; return; } drawMatrix(board); return; }
     if (st.view === 'list') { if (!model.total) { board.innerHTML = '<div class="mm-empty">이 조건에 맞는 역이 없습니다</div>'; return; } drawList(board); return; }
     board.style.overflow = 'hidden';
     var W = board.clientWidth, H = board.clientHeight;
@@ -529,6 +630,7 @@
     var box = el.querySelector('.mm-card');
     var row = st.sel && rowsById.get(st.sel);
     var cmp = compareHtml();
+    box.classList.toggle('on', !!row || st.cmp.length > 0);   // 고른 역·비교가 있을 때만 카드를 키운다 (재생 중엔 높이 그대로)
     if (!row) { box.innerHTML = cmp + '<p class="mm-src">타일을 누르면 여기에 그 역의 지금 → 개통 후 시간과 순위가 나옵니다. 지도에서 역을 눌러도 타일이 골라집니다.</p>'; bindCmp(box); return; }
     var tn = row.now.times || [], ta = row.aft.times || [];
     var cell = function (a, b) { return a == null ? (b == null ? '—' : '지금 못 감 → ' + b + '분') : (b == null ? a + '분' : a + '분 → ' + b + '분' + (a - b > 0 ? ' (−' + Math.round((a - b) * 10) / 10 + ')' : '')); };
@@ -555,6 +657,61 @@
     if (cb && !cb.disabled) cb.addEventListener('click', function () { if (st.cmp.length < CMP_MAX && st.cmp.indexOf(row.id) < 0) { st.cmp.push(row.id); track('market_map_compare_add'); renderCard(); } });
     box.querySelector('[data-a="map"]').addEventListener('click', function () { flyTo(row.id); if (isMobile()) setTab('map'); });
     box.querySelector('[data-a="detail"]').addEventListener('click', function () { openDetail(row.id); });
+  }
+
+  // 이미지 저장 — 타일 배치를 1200×(조건) 캔버스에 다시 그린다 (DOM 캡처 라이브러리 없이)
+  function pngCanvas() {
+    if (!model) return null;
+    var W = 1200, HEAD = 120, FOOT = 70, H = 760;
+    var c = document.createElement('canvas'); c.width = W; c.height = HEAD + H + FOOT;
+    var g = c.getContext('2d');
+    var font = function (px, w) { return (w || 'normal') + ' ' + px + 'px "Pretendard Variable", Pretendard, "Noto Sans KR", sans-serif'; };
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height);
+    g.fillStyle = '#1565c0'; g.font = font(18, '700'); g.fillText('RAIL MARKET MAP · 한국철도맵', 24, 34);
+    g.fillStyle = '#111827'; g.font = font(30, '800'); g.fillText('개통하면 어느 역이 얼마나 빨라지나', 24, 72);
+    g.fillStyle = '#5b6470'; g.font = font(16);
+    var cond = (st.y === 'all' ? '모든 계획 노선 개통 가정' : st.y + '년까지 개통 가정') + ' · ' + WLABEL[st.w] + ' 기준 · ' +
+      (st.color === 'tier' ? '색 = 순위 변화' : st.color === 'jeonse' ? '색 = 전세가율' : st.color === 'price' ? '색 = 평당가(전용)' : '색 = 빨라지는 분') + ' · ' + model.total + '역';
+    g.fillText(cond, 24, 102);
+    var m2 = { groups: model.groups.map(function (G) { return { name: G.name, value: G.value, tiles: G.tiles.map(function (t) { return { v: t.v, row: t.row, color: t.color, gain: t.gain }; }) }; }), total: model.total };
+    Logic.layout(m2, W - 48, H, 22);
+    m2.groups.forEach(function (G) {
+      var r = G.rect; if (!r) return;
+      g.fillStyle = '#f3f4f6'; g.fillRect(24 + r.x, HEAD + r.y, r.w, r.h);
+      g.fillStyle = '#111827'; g.font = font(14, '800'); g.fillText((G.name + ' · ' + G.tiles.length).slice(0, Math.max(3, Math.floor(r.w / 9))), 24 + r.x + 5, HEAD + r.y + 16);
+      G.tiles.forEach(function (t) {
+        var q = t.rect; if (!q || q.w < 1) return;
+        var x = 24 + q.x, y = HEAD + q.y;
+        g.fillStyle = t.color.bg; g.fillRect(x + 0.5, y + 0.5, q.w - 1, q.h - 1);
+        if (q.w > 40 && q.h > 18) {
+          g.fillStyle = t.color.fg; g.font = font(13, '700');
+          var nm = t.row.name; while (nm.length > 1 && g.measureText(nm).width > q.w - 6) nm = nm.slice(0, -1);
+          g.fillText(nm, x + 3, y + 15);
+          if (q.h > 34 && st.color === 'gain') { g.font = font(12); g.fillText(t.gain == null ? (t.row.isNew ? '신규' : '—') : (t.gain > 0 ? '−' + t.gain + '분' : '0분'), x + 3, y + 31); }
+        }
+      });
+    });
+    // 범례 + 출처 + 한계
+    var leg = st.color === 'tier' ? ['rocket', 'up', 'flat', 'down', 'new'].map(function (k) { return [Logic.TIER_COLORS[k].bg, RTab().TIERS[k].label]; })
+      : st.color === 'jeonse' ? Logic.JEONSE_BINS.map(function (b) { return [b.bg, b.label]; })
+      : st.color === 'price' ? Logic.PRICE_BINS.map(function (b) { return [b.bg, b.label]; })
+      : Logic.GAIN_BINS.map(function (b) { return [b.bg, b.label]; }).concat([[Logic.NEW_COLOR.bg, '신규']]);
+    var lx = 24, ly = HEAD + H + 26;
+    g.font = font(13);
+    leg.forEach(function (L) { g.fillStyle = L[0]; g.fillRect(lx, ly - 11, 14, 14); g.fillStyle = '#374151'; g.fillText(L[1], lx + 18, ly); lx += 18 + g.measureText(L[1]).width + 16; });
+    g.fillStyle = '#5b6470'; g.font = font(12);
+    g.fillText('업무지구까지 열차 대기 뺀 추정 시간으로 본 교통 접근성 · 집값이나 투자수익 예측이 아닙니다 · 출처 plazalabs.github.io/kr-rail-map/data.html' + (doc && doc.updated ? ' · 기준 ' + doc.updated : ''), 24, ly + 28);
+    return c;
+  }
+  function savePng() {
+    var c = pngCanvas(); if (!c) return;
+    track('market_map_share', { 종류: '이미지' });
+    c.toBlob(function (blob) {
+      if (!blob) { note('이미지를 만들지 못했습니다'); return; }
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '한국철도맵_타일지도_' + (st.y === 'all' ? '전체' : st.y) + '.png'; a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+      note('타일 지도 이미지를 저장했습니다');
+    }, 'image/png');
   }
 
   function bindCmp(box) {
@@ -611,7 +768,7 @@
     ['w', 'group', 'color', 'scope'].forEach(function (k) { if (o[k] && ALLOWED[k].indexOf(String(o[k])) >= 0) st[k] = String(o[k]); });
     if (o.y && /^(all|20[0-9][0-9])$/.test(String(o.y))) st.y = String(o.y);
     if (['deals', 'supply', 'equal'].indexOf(o.size) >= 0) st.size = o.size;
-    if (o.view === 'list' || o.view === 'tiles') st.view = o.view;
+    if (['list', 'tiles', 'matrix'].indexOf(o.view) >= 0) st.view = o.view;
     if (st.size !== 'equal' && !invest()) st.size = 'equal';
     if ((st.color === 'jeonse' || st.color === 'price') && !invest()) st.color = 'gain';
     if (st.color === 'jeonse' || st.color === 'price' || st.size === 'deals') ensurePrice();
@@ -636,6 +793,7 @@
 
   function close() {
     if (!el) return;
+    stopPlay();
     isOpen = false;
     el.hidden = true;
     var back = document.getElementById('mm-return'); if (back) back.hidden = true;
@@ -675,7 +833,7 @@
 
   global.MarketMap = { Logic: Logic, init: init, open: open, close: close, pick: pick,
     isOpen: function () { return isOpen; }, state: function () { return { w: st.w, y: st.y, group: st.group, size: st.size, color: st.color, sel: st.sel, tab: st.tab }; },
-    model: function () { return model; } };
+    model: function () { return model; }, _pngCanvas: function () { return pngCanvas(); }, playing: function () { return !!playT; } };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 if (typeof module !== 'undefined' && module.exports) module.exports = (typeof window !== 'undefined' ? window : globalThis).MarketMap;

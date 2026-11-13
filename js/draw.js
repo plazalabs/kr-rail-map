@@ -451,7 +451,10 @@ const DrawTools = (() => {
       myLines.push(Object.assign({ id: 'shared-1', shared: true, stations: [] }, got));
       const xs = got.coords.map(c => c[0]), ys = got.coords.map(c => c[1]);
       const fit = () => { try { map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: 80, duration: 0, maxZoom: 14 }); } catch (e) { /* 무시 */ } };
-      if (map.loaded && map.loaded()) fit(); else map.once('load', fit);
+      // 바로 맞추고, 아직 로드 전이면 로드 뒤 한 번 더. (map.loaded() 는 타일을 받는 중에도 false 라
+      // 'load' 가 이미 지난 뒤에 once('load') 만 걸면 영영 안 맞춰졌다 — v153 전체 e2e share-line 실패, 2026-11-13)
+      fit();
+      if (!(map.loaded && map.loaded())) { map.once('load', fit); map.once('idle', fit); }
       setTimeout(() => setStatus('받은 노선 "' + got.name + '" — 사이드바 나의 노선에서 [저장]을 누르면 내 노선이 됩니다'), 1500);
     }
     map.on('click', e => onClick(e.lngLat));

@@ -66,7 +66,8 @@ check('툴바 맨 끝에 스위치 버튼 (#mode-btn, aria-pressed) — 드롭�
   /<button id="mode-btn"[^>]*aria-pressed="false"/.test(html) &&
   html.indexOf('id="mode-btn"') > html.indexOf('id="report-btn"'));
 check('서비스워커가 mode.js 를 캐시', sw.includes("'./js/mode.js'"));
-check('역 상세: 시세·공급은 투자 모드일 때만', /if \(invest\) html \+= priceSection\(sid\)/.test(sd) && /if \(invest && typeof StationDev/.test(sd));
+check('역 상세: 시세·공급은 투자 모드일 때만', /if \(invest\) P \+= priceSection\(sid\)/.test(sd) && /if \(invest && typeof StationDev/.test(sd));
+check('역 상세 탭(F3): 시세·개발 탭은 투자 모드일 때만', /if \(invest\) tabs\.push\(\['p', '시세'[\s\S]{0,30}\['d', '개발'/.test(sd));
 check('역 상세: 철도 모드에서 맨 아래 "투자 모드 켜기" 안내 줄', /if \(!invest\) \{[\s\S]{0,200}sd-mode-on[\s\S]{0,200}투자 모드 켜기/.test(sd));
 check('안내 줄을 누르면 투자 모드로', /\.sd-mode-on'\);[\s\S]{0,200}KR_MODE\.set\('invest'\)/.test(sd));
 check('도심 접근성은 모드와 상관없이 그림 (철도 정보)', !/invest && typeof StationAccess/.test(sd));

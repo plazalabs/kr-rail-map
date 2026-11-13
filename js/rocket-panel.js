@@ -127,7 +127,8 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var mapRef = null, stationsRef = null, el = null, doc = null;
   // full: 패널 안 전체 순위(예전엔 rank.html 로 넘어갔다 — 회장님: 화면 바뀌지 말고 한 화면에, 2026-11-12)
-  var st = { w: 'avg', y: null, wait: false, sel: null, full: false, q: '', sort: 'rise', n: 50 };
+  // wait: 공통 설정 KR_WAIT(js/wait-setting.js)를 따른다 — 역 타일 지도·통근권과 같은 값 (D9, 2026-11-13)
+  var st = { w: 'avg', y: null, wait: !!(global.KR_WAIT && KR_WAIT.isPeak()), sel: null, full: false, q: '', sort: 'rise', n: 50 };
   var isOpen = false, turnedLayerOn = false, selfToggle = false, playT = null, tip = null, cache = {};
   var mobile = function () { return global.matchMedia && global.matchMedia('(max-width: 980px)').matches; };
 
@@ -197,7 +198,8 @@
       stopPlay(); st.y = b.getAttribute('data-y'); render(true);
     });
     el.querySelector('.rkp-play').addEventListener('click', function () { playT ? stopPlay() : play(); });
-    el.querySelector('.rkp-wait').addEventListener('click', function () { st.wait = !st.wait; render(true); });
+    el.querySelector('.rkp-wait').addEventListener('click', function () { st.wait = !st.wait; if (global.KR_WAIT) KR_WAIT.set(st.wait ? 'peak' : 'none'); render(true); });
+    if (global.KR_WAIT) KR_WAIT.onChange(function () { var w = KR_WAIT.isPeak(); if (w !== st.wait) { st.wait = w; if (isOpen) render(true); } });
     el.querySelector('.rkp-allbtn').addEventListener('click', function () {
       st.full = !st.full; st.n = 50;
       renderList();
@@ -431,6 +433,8 @@
       if (!st.y) st.y = defaultYear(doc);
       if (o.y && (o.y === 'all' || (doc.years || []).map(String).indexOf(String(o.y)) >= 0)) st.y = String(o.y);
       if (o.w && WEIGHT_LABEL[o.w]) st.w = o.w;
+      // 열 때마다 공통 '출퇴근 배차' 설정을 다시 읽는다 — 패널을 만들기 전에(역 타일 지도에서) 바뀐 값도 따라가게 (D9)
+      if (global.KR_WAIT) st.wait = KR_WAIT.isPeak();
       var R = res();
       // 처음엔 아무 역도 고르지 않고 순위부터 (특정 역을 앞세우지 않는다 — 회장님 지시 2026-11-12). 주소에 st= 가 있을 때만 그 역
       st.sel = (o.st && R.byId[o.st]) ? o.st : null;

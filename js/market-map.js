@@ -309,6 +309,7 @@
         '<label>크기 <select data-k="size"><option value="equal">모두 같게</option><option value="deals">아파트 거래 건수 (투자 모드)</option><option value="supply">입주 예정 세대 (투자 모드)</option></select></label>' +
         '<label>기준 <select data-k="w"><option value="avg">평균</option><option value="cbd">도심</option><option value="ybd">여의도</option><option value="gbd">강남</option></select></label>' +
         '<label>보기 <select data-k="view"><option value="tiles">타일</option><option value="list">목록(순위)</option><option value="matrix">표(노선×역)</option></select></label>' +
+        '<label><input type="checkbox" class="mm-wait"> 출퇴근 배차 넣기</label>' +
         '<label>역 <select data-k="scope"><option value="new">새 노선이 서는 역</option><option value="affected">빨라지는 역 모두</option><option value="all">수도권 전체</option></select></label>' +
       '</div>' +
       '<div class="mm-years" role="group" aria-label="이 해까지 개통한다고 가정"></div>' +
@@ -322,6 +323,8 @@
     document.body.appendChild(back);
 
     el.querySelector('.mm-close').addEventListener('click', close);
+    el.querySelector('.mm-wait').addEventListener('change', function (e) { if (global.KR_WAIT) KR_WAIT.set(e.target.checked ? 'peak' : 'none'); });
+    if (global.KR_WAIT) KR_WAIT.onChange(function () { if (isOpen) render(); });
     el.querySelector('.mm-png').addEventListener('click', function () { savePng(); });
     el.querySelector('.mm-link').addEventListener('click', function () {
       var url = location.origin + location.pathname + linkQuery() + location.hash;
@@ -402,7 +405,7 @@
   function compute() {
     var RT = RTab();
     if (st.y !== 'all' && (doc.years || []).map(String).indexOf(String(st.y)) < 0) st.y = 'all';
-    var out = RT.compute(doc, { weight: st.w, region: 'capital', at: st.y });
+    var out = RT.compute(doc, { weight: st.w, region: 'capital', at: st.y, wait: (global.KR_WAIT && KR_WAIT.isPeak()) });   // 공통 '출퇴근 배차 넣기' (D9)
     rowsById = new Map(out.rows.map(function (r) { return [r.id, r]; }));
     var sizeOf = function (id) {
       if (st.size === 'supply') { if (typeof StationDev === 'undefined' || !StationDev.isReady()) return null; var d = StationDev.of(id); return d ? d.hh : null; }
@@ -507,7 +510,7 @@
     var sz = st.size === 'deals' ? ' · 크기 = 역이 속한 법정동 아파트 매매 건수(최근 6개월), 점선 = 자료 없음'
       : st.size === 'supply' ? ' · 크기 = 역이 속한 법정동의 아직 준공 안 된 주택인허가 세대(수록 자료 기준, 입주 물량 그대로는 아님), 점선 = 없음·자료 없음' : ' · 크기 = 모두 같음';
     box.innerHTML = items.map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
-      '<span>' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표)' : st.color === 'price' ? '평당가 = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상)' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + sz) + '</span>';
+      '<span>' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표)' : st.color === 'price' ? '평당가 = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상)' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + ((global.KR_WAIT && KR_WAIT.isPeak()) ? ' · 출퇴근 배차 넣음' : ' · 열차 대기 뺌') + sz) + '</span>';
   }
 
   // 목록 보기 — 묶음과 상관없이 한 줄로. 색 기준이 '빨라지는 분'이면 분 큰 순(신규는 맨 앞), '순위 변화'면 오른 계단 큰 순
@@ -600,6 +603,7 @@
     el.querySelector('[data-k="w"]').value = st.w;
     el.querySelector('[data-k="scope"]').value = st.scope;
     el.querySelector('[data-k="view"]').value = st.view;
+    el.querySelector('.mm-wait').checked = (global.KR_WAIT && KR_WAIT.isPeak());
     var sum = el.querySelector('.mm-sum');
     if (sum) sum.textContent = '· ' + (st.y === 'all' ? '전체 개통 가정' : st.y + '년까지') + ' · ' + (st.color === 'tier' ? '순위 변화' : '빨라지는 분') + ' · ' + WLABEL[st.w] + ' 기준';
     if (st.tab !== 'card') draw();

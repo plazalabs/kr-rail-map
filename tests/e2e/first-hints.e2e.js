@@ -107,7 +107,10 @@ const TIP = `(() => { const e = document.getElementById('invest-tip'); if (!e) r
       const t = STATIONS.find(s => s.properties.name_ko === '강남' && s.properties.lines.includes('seoul-subway-line-2'));
       routeFromStation(f.properties.name_ko, 'from', f.properties.id); routeFromStation(t.properties.name_ko, 'to', t.properties.id); 0 })()`);
     await sleep(500);
-    const go = await press(g, '#route-go'); await sleep(2500);
+    // 휴대폰은 출발·도착이 다 차면 바로 찾고 결과 창을 한 줄로 접는다(v153 route-peek) — 접혔으면 [자세히 ▲]로 편다
+    const peek0 = await g.evaluate(`!!document.querySelector('#route-panel.rp-peek')`);
+    const go = peek0 ? await press(g, '#route-panel .rp-peek-open') : await press(g, '#route-go'); await sleep(2500);
+    if (await g.evaluate(`!!document.querySelector('#route-panel.rp-peek')`)) { await press(g, '#route-panel .rp-peek-open'); await sleep(600); }
     const links = await g.evaluate(`[...document.querySelectorAll('#route-result .rc-panel:not([hidden]) .leg > .rc-st')].map(b => b.textContent)`);
     R.check(`${w}px G. 길찾기 결과의 역 이름이 누를 수 있는 버튼`, go.ok && links.includes('홍대입구') && links.includes('강남'), { go, links });
     const tgt = await g.evaluate(`(() => { const bs = [...document.querySelectorAll('#route-result .rc-panel:not([hidden]) .leg > .rc-st')].filter(b => b.textContent === '강남'); const b = bs[bs.length - 1]; if (!b) return null; b.setAttribute('data-e2e', '1'); return b.dataset.sid; })()`);

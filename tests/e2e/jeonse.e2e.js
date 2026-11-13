@@ -15,6 +15,7 @@ async function ready(b) {
 async function open(b, name, line) {
   await b.evaluate(`showStation(STATIONS.find(s => s.properties.name_ko === ${JSON.stringify(name)} && s.properties.lines.includes(${JSON.stringify(line)})), null); true`);
   for (let i = 0; i < 40; i++) { await sleep(250); if (await b.evaluate(`!!document.querySelector('#sd-panel .sd-jeonse-sec .jn-pct')`)) break; }
+  await b.evaluate(`StationDetail.selectTab && StationDetail.selectTab('p'); true`);   // 전세가율은 '시세' 탭 (F3)
   return b.evaluate(`(() => { const e = document.querySelector('#sd-panel .sd-jeonse-sec'); return e ? e.innerText : null; })()`);
 }
 

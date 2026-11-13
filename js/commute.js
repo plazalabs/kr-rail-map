@@ -61,7 +61,9 @@
   /* 계산 — 지도 없이도 돈다 (테스트용) */
   function compute(destStationId, limitMin, opts) {
     if (typeof RouteFinder === 'undefined' || !RouteFinder.allTimesFrom) return [];
-    const times = RouteFinder.allTimesFrom(destStationId, { openOnly: !(opts && opts.withUnopened) });
+    // 공통 '출퇴근 배차 넣기'(D9): 켜면 처음 탈 때·갈아탈 때 출퇴근 배차의 절반, 끄면 예전처럼 갈아탈 때만
+    const peak = !!(opts && opts.peakWait) || (opts && opts.peakWait === undefined && typeof window !== 'undefined' && window.KR_WAIT && window.KR_WAIT.isPeak());
+    const times = RouteFinder.allTimesFrom(destStationId, { openOnly: !(opts && opts.withUnopened), peakWait: peak });
     const rows = [];
     times.forEach((min, id) => {
       if (id === destStationId || min > limitMin) return;
@@ -126,6 +128,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     <label for="cm-limit">최대 소요 시간</label>
     <select id="cm-limit">${LIMITS.map(m => `<option value="${m}"${m === maxMin ? ' selected' : ''}>${m}분 안</option>`).join('')}</select>
   </div>
+  <div class="cm-row cm-check"><input type="checkbox" id="cm-wait"><label for="cm-wait" style="margin:0;color:inherit">출퇴근 배차 넣기 (처음 탈 때·갈아탈 때 배차의 절반)</label></div>
   <div class="cm-row cm-check"><input type="checkbox" id="cm-unopened"><label for="cm-unopened" style="margin:0;color:inherit">개통 예정 노선 포함 (개통 후 기준)</label></div>
   <div class="cm-row"><label for="cm-sort">정렬</label>
     <select id="cm-sort"><option value="time">가까운 순 (분)</option><option value="price">시세 낮은 순 (투자 모드)</option><option value="jr-low">전세가율 낮은 순 (투자 모드)</option><option value="jr-high">전세가율 높은 순 (투자 모드)</option></select></div>
@@ -146,6 +149,10 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     dest.addEventListener('keydown', e => { if (e.key === 'Enter' && !dest.dataset.sid) { const s = findByLabel(dest.value); if (s) { destId = s.properties.id; render(true); } } });
     panel.querySelector('#cm-limit').addEventListener('change', e => { maxMin = +e.target.value; render(true); });
     panel.querySelector('#cm-unopened').addEventListener('change', e => { withUnopened = e.target.checked; render(false); });
+    const cw = panel.querySelector('#cm-wait');
+    cw.checked = !!(window.KR_WAIT && window.KR_WAIT.isPeak());
+    cw.addEventListener('change', e => { if (window.KR_WAIT) window.KR_WAIT.set(e.target.checked ? 'peak' : 'none'); });
+    if (window.KR_WAIT) window.KR_WAIT.onChange(() => { cw.checked = window.KR_WAIT.isPeak(); if (active) render(false); });
     panel.querySelector('#cm-sort').addEventListener('change', e => { sortBy = e.target.value; renderList(); });
     panel.querySelector('#cm-list').addEventListener('click', e => {
       // 결과 0역 안내의 버튼 — 시간 늘리기 / 개통 예정 포함 켜기

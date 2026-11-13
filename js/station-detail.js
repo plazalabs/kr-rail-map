@@ -18,6 +18,7 @@
   var LINES = [];
   var STATIONS = [];
   var panel = null;
+  var lastTab = 't';     // 역 상세 탭 기억 (F3): t 교통 · p 시세 · d 개발 · k 이야기
   var orderCache = {};   // lineId -> { chains: [[역명...], ...] }
 
   // 앱 전체 표기와 맞춘다 (compare/stats/timeline 과 같은 낱말).
@@ -133,6 +134,19 @@
     '.sd-det>summary::before{content:"\\25B8";font-size:var(--fs-xs);transition:transform .15s;display:inline-block}' +
     '.sd-det[open]>summary::before{transform:rotate(90deg)}' +
     '.sd-det>summary:hover{color:var(--text,#222)}' +
+    // 탭 4개 (F3, 시안 C — 2026-11-13): 교통 | 시세 | 개발 | 이야기. 절이 길게 이어지던 패널을 주제별로 나눈다.
+    // 탭 줄은 스크롤해도 머리 밑에 붙어 있고, 출발·도착 단추는 맨 아래에 붙는다.
+    '.sd-tabs{display:flex;gap:2px;margin:14px -16px 0;padding:0 12px;border-bottom:1px solid var(--border,#e5e7eb);' +
+      'position:sticky;top:var(--sd-head-h,57px);background:var(--panel-bg,#fff);z-index:1}' +
+    '.sd-tab{flex:1;padding:9px 4px 8px;border:0;border-bottom:2px solid transparent;background:none;cursor:pointer;' +
+      'font:inherit;font-size:var(--fs-sm);font-weight:600;color:var(--muted,#5b6470);margin-bottom:-1px}' +
+    '.sd-tab:hover{color:var(--text,#222)}' +
+    '.sd-tab[aria-selected="true"]{color:var(--accent,#1a73e8);border-bottom-color:var(--accent,#1a73e8)}' +
+    '.sd-tab:focus-visible{outline:2px solid var(--accent,#1a73e8);outline-offset:-2px;border-radius:4px}' +
+    '.sd-pane>.sd-sec:first-child,.sd-pane>.sd-det:first-child,.sd-pane>div:first-child{margin-top:12px}' +
+    '.sd-empty{margin-top:14px;color:var(--muted,#5b6470);font-size:var(--fs-sm)}' +
+    '#sd-body .sd-actions.sd-foot{position:sticky;bottom:0;margin:16px -16px -14px;padding:10px 16px 12px;' +
+      'background:var(--panel-bg,#fff);border-top:1px solid var(--border,#e5e7eb);z-index:1}' +
     '@media (max-width:768px){' +
     '#sd-panel{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;height:auto;' +
     'max-height:62vh;border-radius:14px 14px 0 0;box-shadow:var(--shadow-lg,0 -2px 12px rgba(0,0,0,.18));' +
@@ -494,8 +508,9 @@
     var html = '<div><b style="font-size:var(--fs-lg)">' + esc(nameKo) + '</b>' +
       (nameEn ? '<div class="sd-en">' + esc(nameEn) + '</div>' : '') + '</div>';
 
-    // 액션은 이름 바로 아래. 패널을 열자마자 스크롤 없이 보여야 한다.
-    html += '<div class="sd-actions">' +
+    // 액션은 패널 맨 아래에 붙는다(sticky, F3) — 어느 탭에서 얼마나 내려도 스크롤 없이 보인다.
+    // (예전엔 맨 아래 '흐르는' 자리라 안 보였고, 그다음엔 이름 바로 아래였다.)
+    var actionsHtml = '<div class="sd-actions sd-foot">' +
       '<button class="sd-primary" data-act="from" title="' + esc(nameKo) + '에서 출발하는 경로 찾기">' +
       '<span class="sd-ico"><i data-ic="depart"></i></span>여기서 출발</button>' +
       '<button data-act="to" title="' + esc(nameKo) + '으로 가는 경로 찾기">' +
@@ -540,14 +555,16 @@
       if (glanceNote) html += '<p class="sd-glance-note">' + esc(glanceNote) + '</p>';
     }
 
-    // 시세를 먼저. 없으면 빈 문자열이라 자연스럽게 노선부터 시작한다.
-    if (invest) html += priceSection(sid);
+    // ---- 탭 4개 (F3) ---- 교통(T) · 시세(P) · 개발(D) · 이야기(K). 탭 패널은 모두 DOM 에 두고 고르지 않은 것은 hidden.
+    var T = '', P = '', D = '', K = '';
 
-    // 도심 접근성 — 시세 다음으로 중요한 값. '이 집에서 강남까지 몇 분'은
-    // 부동산에서 실제로 비교하는 축이고, 개통으로 얼마나 줄어드는지까지 보여준다.
+    // 시세 탭: 매매 시세·단지 → 전세가율 → 실거래 7종
+    if (invest) P += priceSection(sid);
+
+    // 도심 접근성 — '이 집에서 강남까지 몇 분'. 개통으로 얼마나 줄어드는지까지. 교통 탭 맨 위.
     // 자료(access.json)가 아직 없으면 이 절을 통째로 건너뛴다.
     if (typeof StationAccess !== 'undefined' && StationAccess.isReady()) {
-      html += '<div class="sd-sec"><h3>도심 접근성</h3>' +
+      T += '<div class="sd-sec"><h3>도심 접근성</h3>' +
         StationAccess.sectionHtml(sid) +
         // 통근권 찾기(js/commute.js)로 — '이 역이 직장이면 어디서 다닐 수 있나'
         (typeof CommuteMap !== 'undefined'
@@ -560,40 +577,40 @@
     if (invest && typeof StationDev !== 'undefined' && StationDev.isReady()) {
       var dv = StationDev.of(sid);
       if (dv) {
-        html += '<div class="sd-sec"><h3>앞으로 들어올 세대</h3>' +
+        D += '<div class="sd-sec"><h3>앞으로 들어올 세대</h3>' +
           StationDev.sectionHtml(sid) + '</div>';
       }
     }
 
     // 전세가율 (2026-11-11) — 같은 단지·같은 면적 매매·신규 전세 짝의 중위값. 투자 모드에서만.
     if (invest && typeof StationJeonse !== 'undefined' && StationJeonse.isReady()) {
-      html += '<div class="sd-sec sd-jeonse-sec"><h3>전세가율 (전세 ÷ 매매)</h3>' + StationJeonse.sectionHtml(sid) + '</div>';
+      P += '<div class="sd-sec sd-jeonse-sec"><h3>전세가율 (전세 ÷ 매매)</h3>' + StationJeonse.sectionHtml(sid) + '</div>';
     }
 
     // 실거래 7종 (1단계, 2026-11-09) — 투자 모드에서만. 자료 없는 종류는 '자료 없음', 5건 미만은 '거래 적음'.
     if (invest && typeof StationMarket !== 'undefined' && StationMarket.isReady()) {
-      html += '<div class="sd-sec sd-market-sec"><h3>실거래 (7종)</h3>' + StationMarket.sectionHtml(sid) + '</div>';
+      P += '<div class="sd-sec sd-market-sec"><h3>실거래 (7종)</h3>' + StationMarket.sectionHtml(sid) + '</div>';
     }
 
     // 역세권 범위(근사) — 1차 250m 안 출구·다른 역 수. 모듈이 없으면 건너뛴다.
     if (typeof StationArea !== 'undefined' && StationArea.panelHtml) {
-      html += StationArea.panelHtml(sid);
+      T += StationArea.panelHtml(sid);
     }
 
     // 경유 노선
-    html += '<div class="sd-sec"><h3>경유 노선 ' + lineIds.length + '개</h3>';
-    html += lineIds.length ? lineIds.map(lineRow).join('') : '<div class="sd-note">노선 정보 없음</div>';
-    html += '</div>';
+    T += '<div class="sd-sec"><h3>경유 노선 ' + lineIds.length + '개</h3>';
+    T += lineIds.length ? lineIds.map(lineRow).join('') : '<div class="sd-note">노선 정보 없음</div>';
+    T += '</div>';
 
     // 이 역 이야기 (커뮤니티, js/station-talk.js) — 게시판 설정이 없으면 '준비 중' 한 줄
-    if (typeof StationTalk !== 'undefined') html += StationTalk.sectionHtml(sid, nameKo);
+    if (typeof StationTalk !== 'undefined') K += StationTalk.sectionHtml(sid, nameKo);
 
     // 인접역 (노선별) — 접어 둔다. 역 하나 열 때마다 노선 수만큼 줄이 늘어나서
     // 패널이 길어지는 주범이었다. 필요할 때만 펴 본다.
-    html += '<details class="sd-det"><summary>인접역 (노선별)</summary>';
-    html += lineIds.length ? lineIds.map(function (lid) { return adjRow(lid, sid); }).join('')
+    T += '<details class="sd-det"><summary>인접역 (노선별)</summary>';
+    T += lineIds.length ? lineIds.map(function (lid) { return adjRow(lid, sid); }).join('')
       : '<div class="sd-note">노선 정보 없음</div>';
-    html += '<div class="sd-note">※ 인접역 순서는 역 좌표 간 거리로 추론한 것으로, 실제 운행 순서와 다를 수 있습니다.</div></details>';
+    T += '<div class="sd-note">※ 인접역 순서는 역 좌표 간 거리로 추론한 것으로, 실제 운행 순서와 다를 수 있습니다.</div></details>';
 
     // 출구 — 부동산에서 '역까지 몇 분'은 중심점이 아니라 출구까지의 거리다.
     // 출구 좌표가 없는 역(주로 KTX·일반철도)은 없다고 밝히고 중심점으로 물러난다.
@@ -611,42 +628,91 @@
       exTitle += ' · ' + exits.length + '개';
       if (sm.spreadKm > 0.05) exTitle += ' (최대 ' + Math.round(sm.spreadKm * 1000) + 'm 떨어짐)';
     }
-    html += '<details class="sd-det"><summary>' + esc(exTitle) + '</summary>';
+    T += '<details class="sd-det"><summary>' + esc(exTitle) + '</summary>';
     if (exits.length) {
-      html += '<div class="sd-exits">';
-      html += exits.slice().sort(function (a, b) {
+      T += '<div class="sd-exits">';
+      T += exits.slice().sort(function (a, b) {
         return (parseInt(a.no, 10) || 999) - (parseInt(b.no, 10) || 999);
       }).map(function (e) {
         return '<button class="sd-exit" data-lng="' + e.c[0] + '" data-lat="' + e.c[1] +
           '" title="' + esc(nameKo) + ' ' + esc(e.no || '') + '번 출구로 이동">' +
           esc(e.no || '·') + '</button>';
       }).join('');
-      html += '</div>';
+      T += '</div>';
       // 번호가 중간에 비면(공사·폐쇄) 그 사실을 적어 둔다. 조용히 넘기면
       // '출구가 12개인데 왜 8번이 없지' 로 오해받는다.
       if (maxNo && exits.length < maxNo) {
-        html += '<div class="sd-note">1~' + maxNo + '번 중 ' + exits.length +
+        T += '<div class="sd-note">1~' + maxNo + '번 중 ' + exits.length +
           '개만 확인됨 (나머지는 미개설·미등록)</div>';
       }
-      html += '<div class="sd-note">출구를 누르면 지도가 그 출구로 이동합니다. ' +
+      T += '<div class="sd-note">출구를 누르면 지도가 그 출구로 이동합니다. ' +
         '출구 좌표 © OpenStreetMap (ODbL)</div>';
     } else {
-      html += '<div class="sd-note">이 역은 출구 좌표가 없어 역 중심점으로 거리를 잽니다.</div>';
+      T += '<div class="sd-note">이 역은 출구 좌표가 없어 역 중심점으로 거리를 잽니다.</div>';
     }
-    html += '</details>';
+    T += '</details>';
 
     // 철도 모드에서는 맨 아래에 투자 모드 안내 한 줄 (2026-11-09 회장님 결정).
     // 철도만 보는 사람은 지나치면 되고, 집값을 찾는 사람은 여기서 바로 켠다.
+    // 탭이 생긴 뒤(F3)엔 시세·개발 탭이 숨으므로 교통 탭 맨 아래에 둔다.
     if (!invest) {
-      html += '<div class="sd-mode-hint"><button type="button" class="sd-mode-on" ' +
+      T += '<div class="sd-mode-hint"><button type="button" class="sd-mode-on" ' +
         'title="역 상세에 시세·단지·공급을 보여 줍니다"><i data-ic="home"></i> 이 역의 집값·공급 보기 → 투자 모드 켜기</button></div>';
     }
 
     // '첫차 / 막차' 칸은 없앴다. 자료가 없어서 '시간표 데이터 없음' 한 줄만
     // 남는 빈 칸이었고, 그 빈 칸이 액션 버튼을 화면 밖으로 밀어내고 있었다.
 
+    // 빈 탭은 '왜 비었는지' 한 줄 — 조용히 빈 화면이면 고장으로 읽힌다.
+    if (invest && !P) P = '<p class="sd-empty">이 역 주변 아파트 실거래 자료가 아직 없습니다.</p>';
+    if (invest && !D) D = '<p class="sd-empty">이 역 주변에 잡힌 공급(입주·정비) 자료가 없습니다.</p>';
+    if (!K) K = '<p class="sd-empty">이야기 기능을 불러오지 못했습니다.</p>';
+
+    var tabs = [['t', '교통', T]];
+    if (invest) tabs.push(['p', '시세', P], ['d', '개발', D]);
+    tabs.push(['k', '이야기', K]);
+    // 마지막으로 고른 탭을 기억한다 — 역을 옮겨 다니며 시세만 비교하는 사람이 매번 탭을 다시 누르지 않게.
+    // 투자 모드가 꺼져 시세·개발 탭이 없어지면 교통으로.
+    var sel = tabs.some(function (t) { return t[0] === lastTab; }) ? lastTab : 't';
+    html += '<div class="sd-tabs" role="tablist" aria-label="역 정보 분류">' + tabs.map(function (t) {
+      var on = t[0] === sel;
+      return '<button type="button" role="tab" class="sd-tab" id="sd-tab-' + t[0] + '" data-tab="' + t[0] + '"' +
+        ' aria-controls="sd-pane-' + t[0] + '" aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + t[1] + '</button>';
+    }).join('') + '</div>';
+    html += tabs.map(function (t) {
+      return '<div class="sd-pane" role="tabpanel" id="sd-pane-' + t[0] + '" data-pane="' + t[0] + '"' +
+        ' aria-labelledby="sd-tab-' + t[0] + '"' + (t[0] === sel ? '' : ' hidden') + '>' + t[2] + '</div>';
+    }).join('');
+    html += actionsHtml;
+
     var body = panel.querySelector('#sd-body');
     body.innerHTML = html;
+
+    // 탭 전환: 누르기 + ←/→/Home/End (WAI-ARIA 탭 패턴, 자동 활성화)
+    var tabBtns = Array.prototype.slice.call(body.querySelectorAll('.sd-tab'));
+    function pick(key, focus) {
+      lastTab = key;
+      tabBtns.forEach(function (b) {
+        var on = b.getAttribute('data-tab') === key;
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.tabIndex = on ? 0 : -1;
+        if (on && focus) b.focus();
+      });
+      body.querySelectorAll('.sd-pane').forEach(function (pn) { pn.hidden = pn.getAttribute('data-pane') !== key; });
+      // 탭을 바꾸면 내용 맨 위부터 (탭 줄은 붙어 있으므로 탭 줄 바로 아래로)
+      var tl = body.querySelector('.sd-tabs');
+      if (tl && panel.scrollTop > tl.offsetTop) panel.scrollTop = tl.offsetTop;
+    }
+    tabBtns.forEach(function (b, i) {
+      b.addEventListener('click', function () { pick(b.getAttribute('data-tab'), false); });
+      b.addEventListener('keydown', function (e) {
+        var j = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabBtns.length - 1 : null;
+        if (j == null) return;
+        e.preventDefault();
+        j = (j + tabBtns.length) % tabBtns.length;
+        pick(tabBtns[j].getAttribute('data-tab'), true);
+      });
+    });
     if (typeof StationTalk !== 'undefined') StationTalk.mount(body, sid, nameKo);
 
     // 인접역 클릭 → 해당 역 상세로 이동
@@ -774,6 +840,8 @@
   var api = {
     init: init,
     show: show,
+    // 탭 고르기 (F3) — t 교통 · p 시세 · d 개발 · k 이야기. 없는 탭이면 false
+    selectTab: function (k) { var b = panel && panel.querySelector('.sd-tab[data-tab="' + k + '"]'); if (!b) return false; b.click(); return true; },
     hide: hide,
     refresh: refresh,
     onAction: null,   // (action, stationName, stationId) => void — 호스트가 주입 가능

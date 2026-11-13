@@ -529,6 +529,7 @@ const RouteCompare = (() => {
         border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
       .rc-insight { font-size: var(--fs-xs); color: var(--muted, #666); margin: 8px 0; line-height: 1.6; }
       /* 기본(운행 중인 노선만) 결과 위의 '개통 예정 노선 포함' 안내 한 줄 */
+      .rc-noroute { padding: 8px 2px; line-height: 1.6; } .rc-noroute .rc-nr-why { margin: 4px 0 8px; font-size: var(--fs-sm); color: var(--muted, #5b6470); }
       .rc-oo-hint { font-size: var(--fs-xs); line-height: 1.6; margin: 0 0 8px; padding: 6px 10px; border-radius: 8px;
         border: 1px dashed var(--border, #c9ced6); color: var(--text, #222); background: var(--surface, #f6f7f9); }
       .rc-oo-how { display: block; color: var(--muted, #666); }
@@ -706,9 +707,12 @@ const RouteCompare = (() => {
     const include = !!(opts && opts.includeUnopened);
     const all = include ? findAll(fromId, toId) : findAllOpen(fromId, toId);
     if (!all.time && !all.transfer && !all.fare) {
-      box.innerHTML = include ? '경로를 찾을 수 없습니다.'
-        : '지금 운행 중인 노선으로는 갈 수 없습니다.' + openOnlyHintHtml(all);
-      return;
+      // H10 (2026-11-14): 왜 못 가는지까지 — 이 지도에 그린 철도망 안에서 두 역이 이어지지 않는다(버스·배·지도에 없는 노선은 안 셈)
+      const why = '<p class="rc-nr-why">이 지도에 그린 철도 노선만으로는 두 역이 이어지지 않습니다. ' +
+        '버스·배·지도에 없는 노선은 계산하지 않습니다. 다른 역(예: 큰 환승역·KTX역)으로 바꿔 보세요.</p>';
+      box.innerHTML = '<div class="rc-noroute"><b>' + (include ? '경로를 찾을 수 없습니다.' : '지금 운행 중인 노선으로는 갈 수 없습니다.') + '</b>' +
+        why + (include ? '' : openOnlyHintHtml(all)) + '</div>';
+      return false;
     }
     // 기본(운행 중만)에서는 '지금 vs 개통 후' 상자를 그리지 않는다 — 대신 한 줄 안내.
     const cmp = include ? compareNowFuture(fromId, toId, all) : { status: 'none' };

@@ -1253,7 +1253,9 @@ document.getElementById('route-go').addEventListener('click', () => {
     if (peek) setRoutePeek(true);
     if (window.KRTrack) KRTrack('길찾기', { 개통예정포함: routeIncludeUnopened() ? '예' : '아니오' });
     // 아래 상태 줄에 '도착역을 입력하세요' 같은 옛 안내가 남지 않게 — 동명역 해석 안내는 위에서 이미 띄웠으면 그대로 둔다
-    if (!pair.guessed.length) setStatus(`${from.properties.name_ko} → ${to.properties.name_ko} 경로를 찾았어요`);
+    const found = !document.querySelector('#route-result .rc-noroute');   // H10: 결과가 없으면 '찾았어요'라고 하지 않는다
+    if (!found) setStatus(`${from.properties.name_ko} → ${to.properties.name_ko}: 이어지는 철도 경로가 없어요`);
+    else if (!pair.guessed.length) setStatus(`${from.properties.name_ko} → ${to.properties.name_ko} 경로를 찾았어요`);
     return;
   }
   const r = RouteFinder.findRoute(from.properties.id, to.properties.id,

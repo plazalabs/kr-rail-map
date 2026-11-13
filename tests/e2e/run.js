@@ -69,6 +69,7 @@ const CHECKS = [
   ['station-talk', 'station-talk.e2e.js', {}, '역 상세 💬 이 역 이야기: 설정 없으면 준비 중·역 ID 로 거른 목록·XSS 막힘·글쓰기·신고·다른 역 (커뮤니티, 2026-11-12)'],
   ['basemap-down', 'basemap-down.e2e.js', {}, '배경 지도 서버가 죽어도 노선·역·길찾기는 된다 (비상 배경, 2026-11-12)'],
   ['data-fail', 'data-fail.e2e.js', {}, '자료 일부 실패 알림 — 무엇을 못 받았는지·다시 시도 (H4, 2026-11-14)'],
+  ['route-edge', 'route-edge.e2e.js', {}, '길찾기 경계 — 출발=도착·못 가는 역 안내·상태 줄 (H10, 2026-11-14)'],
   ['board', 'board.e2e.js', {}, '게시판: 설정 없으면 준비 중, 있으면 목록·글쓰기·도배 막기·신고·XSS 막힘 (Supabase 흉내, 2026-11-12)'],
   ['ui-fixes', 'ui-fixes.e2e.js', {}, '노선 비교·노선도 카드·노선도 툴바·영향권·style=local·그린 노선/위치 (IMPL7, 데스크톱)'],
   ['ui-fixes-mobile', 'ui-fixes.e2e.js', { MOBILE: '1' }, '같은 항목, 모바일 390×844'],

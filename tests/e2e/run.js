@@ -37,6 +37,7 @@ const CHECKS = [
   ['share-line', 'share-line.e2e.js', {}, '나만의 노선 링크 공유 — 받기·저장·왕복·HTML 글자로만 (2026-11-13)'],
   ['quiz', 'quiz.e2e.js', {}, '나에게 맞는 역 찾기 — 질문 4개·TOP 3·결과 주소 (2026-11-13)'],
   ['draw-export', 'draw-export.e2e.js', {}, '그리기 → 저장 → GeoJSON 내보내기 · Esc 취소 (2차 감사 V1)'],
+  ['home-cards', 'home-cards.e2e.js', {}, '사이드바 TOP 3·커뮤니티 · 지도 위 켜진 분석 (시안 C, 68점 12번)'],
   ['market-map', 'market-map.e2e.js', {}, 'RAIL MARKET MAP 역 타일 — 타일↔지도 양방향·휴대폰 탭 (2026-11-13)'],
   ['satellite-labels', 'satellite-labels.e2e.js', {}, '위성 등 배경별 역 이름·출구 번호 글자 (버그 ⑦)'],
   ['station-area', 'station-area.e2e.js', {}, '역세권 범위 근사 레이어 (IMPL5B)'],

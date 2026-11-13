@@ -1685,7 +1685,9 @@ Promise.all([styleReadyP, dataPromise]).then(() => {
   if (typeof StationRocket !== 'undefined') StationRocket.init(map, STATIONS);   // 떡상 지도 레이어 (rank.json, 켤 때 받음)
   if (typeof RocketPanel !== 'undefined' && RocketPanel.init) RocketPanel.init(map, STATIONS);
   if (typeof MarketMap !== 'undefined' && MarketMap.init) MarketMap.init();
-  if (typeof StationQuiz !== 'undefined' && StationQuiz.init) StationQuiz.init();   // 나에게 맞는 역 찾기 (질문 4개, ?quiz=1 결과 주소)   // RAIL MARKET MAP 역 타일 (?market=1 이면 바로 연다, 2026-11-13)   // 지도 안 떡상 패널 (?rocket=1 이면 바로 연다)
+  if (typeof StationQuiz !== 'undefined' && StationQuiz.init) StationQuiz.init();
+  if (typeof HomeCards !== 'undefined' && HomeCards.init) HomeCards.init();   
+  if (typeof ActiveLayers !== 'undefined' && ActiveLayers.init) ActiveLayers.init();   // 지도 위 '켜진 분석' 표시 (68점 감사 12번)   // 사이드바 TOP 3·커뮤니티 (한가할 때 받음)   // 나에게 맞는 역 찾기 (질문 4개, ?quiz=1 결과 주소)   // RAIL MARKET MAP 역 타일 (?market=1 이면 바로 연다, 2026-11-13)   // 지도 안 떡상 패널 (?rocket=1 이면 바로 연다)
   if (typeof StationArea !== 'undefined') { StationArea.init(map, STATIONS); StationArea.setLines([...visibleLines]); }
   if (!focusLineFromUrl()) restoreFromUrl();
 }).catch(e => { console.error('첫 화면 준비 실패', e); setStatus('지도 자료를 불러오지 못했습니다. 새로고침해 주세요.'); });

@@ -264,6 +264,7 @@ const DrawTools = (() => {
     ensurePreview();
     refreshPreview();
     map.getCanvas().style.cursor = 'crosshair';
+    document.body.classList.add('drawing');   // 그리는 중엔 역 클릭으로 역 창이 안 열리게 (app.js 지도 클릭)
     if (m === 'measure' || m === 'radius' || m === 'memo') map.doubleClickZoom.disable();
     setStatus(hint());
     document.getElementById('draw-panel').hidden = (m !== 'draw');
@@ -277,6 +278,7 @@ const DrawTools = (() => {
     mode = null; pts = [];
     clearPreview();
     map.getCanvas().style.cursor = '';
+    document.body.classList.remove('drawing');
     if (map.doubleClickZoom) map.doubleClickZoom.enable();
     document.getElementById('draw-panel').hidden = true;
     document.getElementById('draw-btn').classList.remove('active');
@@ -320,6 +322,7 @@ const DrawTools = (() => {
         setStatus(`반경 ${rM} · 원 면적 ${(Math.PI*rKm*rKm).toFixed(2)}km² · 반경 안 역 ${n}개`);
         mode = null; pts = [];
         map.getCanvas().style.cursor = '';
+        document.body.classList.remove('drawing');
         map.doubleClickZoom.enable();
         document.getElementById('radius-btn').classList.remove('active');
       }
@@ -370,6 +373,7 @@ const DrawTools = (() => {
       // 측정선은 미리보기에 남겨둠 (다음 측정/취소 시 지워짐)
       mode = null;
       map.getCanvas().style.cursor = '';
+      document.body.classList.remove('drawing');
       map.doubleClickZoom.enable();
       document.getElementById('measure-btn').classList.remove('active');
       return;
@@ -387,6 +391,7 @@ const DrawTools = (() => {
     mode = null; pts = [];
     clearPreview();
     map.getCanvas().style.cursor = '';
+    document.body.classList.remove('drawing');
     document.getElementById('draw-panel').hidden = true;
     document.getElementById('draw-btn').classList.remove('active');
     setStatus(`"${line.name}" 저장됨 (사이드바 나의 노선 목록에서 삭제 가능)`);

@@ -525,6 +525,8 @@ const PALETTE = [
   { id: 'rocket', label: 'GTX 떡상 랭킹', hint: '개통하면 우리 역은 몇 등?', keys: ['떡상', '랭킹', '순위', 'gtx', '개통 후'], ic: 'trend', run: clickId('rocket-menu-btn') },
   { id: 'market', label: 'RAIL MARKET MAP (역 타일)', hint: '노선별로 얼마나 빨라지나 한눈에', keys: ['타일', '마켓', 'market', '히트맵', '한눈에'], ic: 'chart',
     run: () => { if (typeof MarketMap !== 'undefined') MarketMap.open({}); } },
+  { id: 'quiz', label: '나에게 맞는 역 찾기', hint: '질문 4개로 직장·예산에 맞는 역 TOP 3', keys: ['추천', '나에게', '맞는 역', '어디 살', '이사', '유형', '테스트', '질문'], ic: 'help',
+    run: () => { if (typeof StationQuiz !== 'undefined') StationQuiz.open(null); } },
   { id: 'commute', label: '통근권 찾기', hint: '직장 역까지 N분 안의 역', keys: ['통근', '출퇴근', '직장', '회사'], ic: 'clock', run: clickId('commute-btn') },
   { id: 'diagram', label: '45도 노선도', hint: '지하철 노선도 모양으로 보기', keys: ['노선도', '다이어그램', '도식'], ic: 'map', run: clickId('diagram-btn') },
   { id: 'stats', label: '철도망 통계', hint: '노선·역·연장 합계', keys: ['통계'], ic: 'chart', run: clickId('stats-btn') },
@@ -532,7 +534,7 @@ const PALETTE = [
   { id: 'compare', label: '노선 비교', hint: '두 노선 길이·역 수', keys: ['비교'], ic: 'repeat', run: clickId('compare-btn') },
   { id: 'invest', label: '투자 모드 켜기·끄기', hint: '시세·전세가율·공급 보기', keys: ['투자', '시세', '전세', '집값', '아파트'], ic: 'home', run: clickId('mode-btn') },
 ];
-const PALETTE_QUICK = ['route', 'rocket', 'market', 'commute'];
+const PALETTE_QUICK = ['route', 'rocket', 'market', 'quiz', 'commute'];
 function paletteMatches(raw) {
   const q = raw.replace(/\s+/g, '').toLowerCase();
   if (q.length < 2) return [];
@@ -1682,7 +1684,8 @@ Promise.all([styleReadyP, dataPromise]).then(() => {
   if (typeof StationJeonse !== 'undefined' && StationJeonse.initLayer) StationJeonse.initLayer(map, STATIONS);   // 전세가율 색칠 레이어
   if (typeof StationRocket !== 'undefined') StationRocket.init(map, STATIONS);   // 🚀 떡상 지도 레이어 (rank.json, 켤 때 받음)
   if (typeof RocketPanel !== 'undefined' && RocketPanel.init) RocketPanel.init(map, STATIONS);
-  if (typeof MarketMap !== 'undefined' && MarketMap.init) MarketMap.init();   // RAIL MARKET MAP 역 타일 (?market=1 이면 바로 연다, 2026-11-13)   // 🚀 지도 안 떡상 패널 (?rocket=1 이면 바로 연다)
+  if (typeof MarketMap !== 'undefined' && MarketMap.init) MarketMap.init();
+  if (typeof StationQuiz !== 'undefined' && StationQuiz.init) StationQuiz.init();   // 나에게 맞는 역 찾기 (질문 4개, ?quiz=1 결과 주소)   // RAIL MARKET MAP 역 타일 (?market=1 이면 바로 연다, 2026-11-13)   // 🚀 지도 안 떡상 패널 (?rocket=1 이면 바로 연다)
   if (typeof StationArea !== 'undefined') { StationArea.init(map, STATIONS); StationArea.setLines([...visibleLines]); }
   if (!focusLineFromUrl()) restoreFromUrl();
 }).catch(e => { console.error('첫 화면 준비 실패', e); setStatus('지도 자료를 불러오지 못했습니다. 새로고침해 주세요.'); });

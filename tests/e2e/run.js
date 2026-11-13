@@ -34,6 +34,7 @@ const CHECKS = [
   ['same-name-stations', 'same-name-stations.e2e.js', {}, '동명역 선택·공유/옛 링크·역 상세 출발 (버그 ③)'],
   ['route-extras', 'route-extras.e2e.js', {}, '길찾기 키보드·⇄·즐겨찾기 ID 유지 (IMPL3)'],
   ['palette', 'palette.e2e.js', {}, '검색 팔레트 — 기능 바로 실행·A에서 B 길찾기 (2026-11-13)'],
+  ['quiz', 'quiz.e2e.js', {}, '나에게 맞는 역 찾기 — 질문 4개·TOP 3·결과 주소 (2026-11-13)'],
   ['market-map', 'market-map.e2e.js', {}, 'RAIL MARKET MAP 역 타일 — 타일↔지도 양방향·휴대폰 탭 (2026-11-13)'],
   ['satellite-labels', 'satellite-labels.e2e.js', {}, '위성 등 배경별 역 이름·출구 번호 글자 (버그 ⑦)'],
   ['station-area', 'station-area.e2e.js', {}, '역세권 범위 근사 레이어 (IMPL5B)'],

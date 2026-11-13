@@ -100,7 +100,7 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
   await d.evaluate(`document.getElementById('search').value = ''; document.getElementById('search').blur(); true`);
   const sp = await d.evaluate(center('#search'));
   await d.click(sp.x, sp.y); await sleep(400);
-  const rec = await d.evaluate(`({ head: !!document.querySelector('#search-results .hit-head'), first: (document.querySelector('#search-results .hit .hit-name') || {}).textContent || null })`);
+  const rec = await d.evaluate(`({ head: !!document.querySelector('#search-results .hit-head'), first: (document.querySelector('#search-results .hit:not(.hit-action) .hit-name') || {}).textContent || null })   // 2026-11-13: 맨 위는 '빠른 실행'(검색 팔레트), 그 아래 최근 본 역`);
   R.check('빈 검색창 → 최근 본 역 (방금 연 역이 맨 위)', rec.head && rec.first === '서울', rec);
   // 작업 7: 직접 고른 테마가 없으면 기기 '어둡게' 설정을 따른다, 직접 고른 게 있으면 그게 우선
   await d.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] });

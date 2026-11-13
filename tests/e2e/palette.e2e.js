@@ -30,7 +30,7 @@ const enter = async b => { await b.key('Enter', 'Enter', 13); await sleep(900); 
   await b.click(sp[0], sp[1]); await sleep(400);
   const quick = await b.evaluate(`({ head: [...document.querySelectorAll('#search-results .hit-head')].map(h => h.textContent).join('|'),
     acts: [...document.querySelectorAll('#search-results .hit-action .hit-name')].map(h => h.textContent.trim()) })`);
-  R.check("빈 검색창 → '빠른 실행' 4개", /빠른 실행/.test(quick.head) && quick.acts.length === 4 && /길찾기/.test(quick.acts[0]), quick);
+  R.check("빈 검색창 → '빠른 실행' 5개", /빠른 실행/.test(quick.head) && quick.acts.length === 5 && /길찾기/.test(quick.acts[0]), quick);
 
   let top = await typeSearch(b, '떡상');
   R.check("'떡상' → 맨 위 'GTX 떡상 랭킹'", top[0] && top[0].action && /떡상 랭킹/.test(top[0].name), top);

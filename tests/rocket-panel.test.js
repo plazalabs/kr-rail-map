@@ -68,5 +68,17 @@ if (kw) {
   check('운행 중 노선은 빠진다', nl.every(x => doc.lines[x.id].s !== 'open'));
 }
 
+console.log('\n[I4 감사3] 연도를 고르면 그 시나리오에 들어간 노선만 배지로');
+{
+  const row = (doc.rows || []).find(r => r.n === '삼성') || (doc.rows || []).find(r => (r.l || r.lines || []).length > 2);
+  if (row) {
+    const R = { lines: row.l || row.lines };
+    const all = L.newLinesOf(doc, R, 'all'), y27 = L.newLinesOf(doc, R, '2027');
+    check('삼성: 전체 개통이면 2027 뒤 노선(GTX-C 2031 등)도', all.some(x => x.y && +x.y > 2027), all.map(x => x.n + ':' + x.y));
+    check('삼성: 2027년까지면 2027 이하 노선만 (GTX-C·D 빠짐)', y27.every(x => x.y != null && +x.y <= 2027), y27.map(x => x.n + ':' + x.y));
+    check('이른 연도 순으로 (첫 배지 = 가장 먼저 개통)', all.every((x, i) => i === 0 || (all[i - 1].y == null ? 9999 : +all[i - 1].y) <= (x.y == null ? 9999 : +x.y)), all.map(x => x.y));
+  }
+}
+
 console.log(`\n결과: ${pass} 통과, ${fail} 실패`);
 process.exit(fail ? 1 : 0);

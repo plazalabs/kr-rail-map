@@ -21,7 +21,7 @@ const all = RC.findAll(id('강남', 'seoul-subway-line-2'), id('서울', 'seoul-
 const ins = RC.insightOf(all);
 check('최적 경로에 요금 미정 부분이 있음 (시험 전제)', RC.hasPending(all.time), all.time && all.time.fareDetail && all.time.fareDetail.parts.map(p => p.kind));
 check("요금 미정이 끼면 '○원 절약'이라고 하지 않음", !/원 절약/.test(ins), ins);
-check("대신 '요금 차이는 비교하지 않음'", all.fare === all.time || /비교하지 않음/.test(ins), ins);
+check("요금 비교 문장 자체를 안 냄 (금액 없음)", !/원/.test(ins), ins);
 check('최소요금 탭은 요금이 다 정해진 길에서 고름 (정해진 후보가 있을 때)', !RC.hasPending(all.fare), all.fare && all.fare.fareDetail && all.fare.fareDetail.parts.map(p => p.kind));
 
 console.log('\n[운행 중 노선만 — 미정 없음, 예전 동작 그대로]');

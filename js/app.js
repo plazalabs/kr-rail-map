@@ -1248,6 +1248,19 @@ function routeSummaryText() {
   c.querySelectorAll('.rc-badge, .rc-def').forEach(x => x.remove());
   return c.textContent.replace(/\s+/g, ' ').replace(/^총\s*/, '').trim();
 }
+// 휴대폰에서 경로를 찾으면 지도를 가리는 것들을 닫는다 (2026-11-14 회장님 지적)
+function clearMobileOverlays() {
+  try { const a = document.activeElement; if (a && /^(INPUT|TEXTAREA)$/.test(a.tagName)) a.blur(); } catch (e) { /* 무시 */ }   // 키보드 내리기
+  document.querySelectorAll('.ac-list').forEach(l => { l.hidden = true; });
+  try { if (window.UI && UI.closeDrawer && document.body.classList.contains('drawer-open')) UI.closeDrawer(); } catch (e) { /* 무시 */ }
+  try { if (typeof StationDetail !== 'undefined' && StationDetail.hide) StationDetail.hide(); } catch (e) { /* 무시 */ }
+  try { if (window.TabBar && TabBar.setMore) TabBar.setMore(false); } catch (e) { /* 무시 */ }
+  try { closeSearch(); } catch (e) { /* 무시 */ }
+}
+// 키보드가 내려가면 화면 높이가 바뀐다 — 그 뒤 마지막 경로에 다시 맞춘다
+let lastRouteFit = null;
+function refitLastRoute() { if (lastRouteFit) { try { map.fitBounds(lastRouteFit.bounds, { padding: lastRouteFit.pad(), maxZoom: 12.2, duration: 300 }); } catch (e) { /* 무시 */ } } }
+
 function setRoutePeek(on, text) {
   const rp = document.getElementById('route-panel');
   routePeekBar();
@@ -1276,9 +1289,11 @@ document.getElementById('route-go').addEventListener('click', () => {
   // 3종 비교 모듈이 있으면 사용, 없으면 기존 단일 경로
   if (typeof RouteCompare !== 'undefined') {
     const peek = isMobileSheet();
+    if (peek) clearMobileOverlays();   // 키보드·서랍·역 상세·더보기·검색 목록 닫기 (지도가 보이게)
     if (peek) setRoutePeek(true, '경로를 찾는 중…');   // 먼저 접어야 지도 맞춤이 접힌 창 높이로 여백을 잡는다
     RouteCompare.show(from.properties.id, to.properties.id, { includeUnopened: routeIncludeUnopened() });
     if (peek) setRoutePeek(true);
+    if (peek) { setTimeout(refitLastRoute, 450); setTimeout(refitLastRoute, 1000); }   // 키보드가 내려간 뒤 화면 높이로 다시 맞춤
     if (window.KRTrack) KRTrack('길찾기', { 개통예정포함: routeIncludeUnopened() ? '예' : '아니오' });
     // 아래 상태 줄에 '도착역을 입력하세요' 같은 옛 안내가 남지 않게 — 동명역 해석 안내는 위에서 이미 띄웠으면 그대로 둔다
     const found = !document.querySelector('#route-result .rc-noroute');   // H10: 결과가 없으면 '찾았어요'라고 하지 않는다
@@ -1615,6 +1630,12 @@ function highlightRoute(path, legs) {
   const pad = mobile
     ? { top: 70, bottom: Math.max(85, sheet + 70), left: 30, right: 30 }
     : { top: 115, bottom: 85, left: 70, right: 440 };
+  // 나중에 다시 맞출 수 있게 남긴다 (휴대폰 키보드가 내려간 뒤 — refitLastRoute)
+  lastRouteFit = { bounds, pad: () => {
+    const m = window.innerWidth <= 768, el = document.getElementById('route-panel');
+    const sh = m && el && !el.hidden ? Math.min(el.getBoundingClientRect().height, window.innerHeight * 0.6) : 0;
+    return m ? { top: 70, bottom: Math.max(85, sh + 70), left: 30, right: 30 } : { top: 115, bottom: 85, left: 70, right: 440 };
+  } };
   try { map.fitBounds(bounds, { padding: pad, maxZoom: 12.2 }); }
   catch (e) { map.fitBounds(bounds, { padding: 40, maxZoom: 12.2 }); }   // 화면이 너무 작아 여백이 안 들어가면
 }
@@ -1622,6 +1643,7 @@ function highlightRoute(path, legs) {
 // 하이라이트 제거 (원래대로)
 function clearRouteHighlight() {
   if (!map) return;
+  lastRouteFit = null;
   ['route-highlight-labels', 'route-highlight-walk', 'route-highlight-stations', 'route-highlight-line', 'route-casing'].forEach(id => {
     if (map.getLayer(id)) map.removeLayer(id);
   });

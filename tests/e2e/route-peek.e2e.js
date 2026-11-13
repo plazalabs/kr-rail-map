@@ -40,6 +40,18 @@ const go = b => b.evaluate(`(() => { const S = n => STATIONS.find(s => s.propert
   const m3 = await b.evaluate(`document.getElementById('route-panel').classList.contains('rp-peek')`);
   R.check('[지도 보기 ▼] → 다시 접힘', m3 === true);
   const exc = b.logs.filter(l => /EXC/.test(l));
+  // 2026-11-14 회장님: 실제 휴대폰에서 '찾기'를 눌러도 창·키보드·서랍·역 상세가 지도를 가림 → 결과가 나오면 다 닫고 지도
+  //  사이드 서랍 열고 + 역 상세 열고 + 도착 칸에 초점(키보드) 둔 채로 '찾기'
+  await b.evaluate(`(() => { if (window.UI && UI.openDrawer) UI.openDrawer(); StationDetail.show(STATIONS.find(s => s.properties.name_ko === '광화문'));
+    const S = n => STATIONS.find(s => s.properties.name_ko === n);
+    document.getElementById('route-panel').hidden = false;
+    setRouteStation(document.getElementById('route-from'), S('광화문')); setRouteStation(document.getElementById('route-to'), S('잠실'));
+    document.getElementById('route-to').focus(); })()`); await sleep(600);
+  await b.evaluate(`document.getElementById('route-go').click(); 0`); await sleep(1800);
+  const m4 = await b.evaluate(`(() => { const a = document.activeElement; const rp = document.getElementById('route-panel'), r = rp.getBoundingClientRect();
+    return { focusInput: !!(a && /INPUT|TEXTAREA/.test(a.tagName)), drawer: document.body.classList.contains('drawer-open'), sd: document.getElementById('sd-panel').classList.contains('sd-open'),
+      acOpen: [...document.querySelectorAll('.ac-list')].some(l => !l.hidden), peek: rp.classList.contains('rp-peek'), h: r.height, vh: innerHeight }; })()`);
+  R.check('찾기 → 키보드(입력칸 초점)·서랍·역 상세·자동완성 목록이 다 닫히고 창은 한 줄로', !m4.focusInput && !m4.drawer && !m4.sd && !m4.acOpen && m4.peek && m4.h <= m4.vh * 0.25, m4);
   R.check('예외 0 (휴대폰)', exc.length === 0, exc.slice(0, 3));
   b.close();
 

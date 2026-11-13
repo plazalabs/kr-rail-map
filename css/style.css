@@ -971,7 +971,7 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
  * 데스크톱에서는 창을 넓히고(288 → 400px) 출발·도착 이름표를 칸 왼쪽에 붙이고, 경로 종류 4개를 한 줄로 놓고,
  * 결과 칸 높이 제한을 없앤다. 그래도 화면보다 길면(아주 긴 경로) 창 전체가 한 번에 스크롤된다. */
 @media (min-width: 769px) {
-  #route-panel { width: 400px; gap: 7px; padding: 12px 14px; max-height: calc(100vh - 72px); overflow-y: auto; }
+  #route-panel { width: 400px; gap: 6px; padding: 11px 14px; max-height: calc(100vh - 68px); overflow-y: auto; }   /* 1366×720 넘침(4차 N1): 간격·위 여백 조금 줄임 */
   #route-panel .ac-wrap { display: grid; grid-template-columns: 34px 1fr; align-items: center; column-gap: 6px; }
   #route-panel .ac-label { margin: 0; font-size: var(--fs-xs); text-transform: none; letter-spacing: 0; }
   #route-panel .ac-list { grid-column: 2; }
@@ -1483,3 +1483,12 @@ body.map-ready #map-skeleton .sk { animation: none; }
 #data-alert button { flex: none; font-family: inherit; font-size: var(--fs-sm); cursor: pointer; border-radius: 999px; }
 #data-alert .da-retry { border: 1px solid #d97706; background: #d97706; color: #fff; font-weight: 700; padding: 4px 12px; }
 #data-alert .da-close { border: 0; background: none; color: var(--muted, #5b6470); padding: 4px 6px; min-width: 32px; min-height: 32px; }
+
+/* 새 버전 알림 (2026-11-14) — 올린 직후 옛 화면이 뜬 사람에게 새로고침 단추 */
+#update-toast {
+  position: fixed; z-index: 2100; left: 50%; transform: translateX(-50%);
+  bottom: calc(70px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px 8px 14px; border-radius: 999px; background: #111827; color: #fff;
+  font-size: var(--fs-sm); box-shadow: 0 8px 24px rgba(0,0,0,.25);
+}
+#update-toast button { border: 0; border-radius: 999px; padding: 6px 12px; background: #fff; color: #111827; font: inherit; font-weight: 700; cursor: pointer; }

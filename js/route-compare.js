@@ -467,7 +467,7 @@ const RouteCompare = (() => {
     }
     if (t && all.fare && (hasPending(t) || hasPending(all.fare)) && all.fare !== t) {
       // 한쪽이라도 요금 미정이 끼면 '몇 원 절약'을 말하지 않는다 — 미정 부분이 얼마일지 모른다
-      out.push(`최소요금 길은 ${trade(all.fare)} · 요금 미정 노선이 있어 요금 차이는 비교하지 않음`);
+      // 요금 비교 문장은 생략 — 미정 운임이 얼마일지 몰라 '얼마 아낌'을 말할 수 없다 (탭에서 직접 비교)
     } else if (t && all.fare && all.fare.fare < t.fare) {
       out.push(`최소요금은 ${(t.fare - all.fare.fare).toLocaleString()}원 절약 · ${trade(all.fare)}`);
     } else if (t && all.fare && all.fare.minutes < t.minutes) {

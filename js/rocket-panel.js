@@ -107,15 +107,19 @@
   }
 
   // 그 역을 오르게 하는 새 노선 (개통 전 노선) + 개통 연도
-  function newLinesOf(doc, row) {
+  // at(연도)를 주면 그 시나리오에 들어간 노선만 — '2027년까지'를 골랐는데 GTX-D 2033 배지가 붙지 않게 (감사3, 2026-11-14).
+  // at = 'all' 이거나 없으면 개통 전 노선 전부(시기 미정 포함). 이른 연도 순(시기 미정은 맨 뒤).
+  function newLinesOf(doc, row, at) {
     var out = [];
     (row.lines || []).forEach(function (lid) {
       var ln = doc.lines && doc.lines[lid];
       if (!ln || ln.s === 'open') return;
       var y = null;
       Object.keys(doc.year_lines || {}).forEach(function (k) { if (doc.year_lines[k].indexOf(lid) >= 0) y = k; });
+      if (at && at !== 'all' && (y == null || +y > +at)) return;   // 이 시나리오(그해까지 개통)에 안 들어간 노선
       out.push({ id: lid, n: ln.n, c: ln.c, y: y });
     });
+    out.sort(function (a, b) { return (a.y == null ? 9999 : +a.y) - (b.y == null ? 9999 : +b.y); });
     return out;
   }
 
@@ -286,7 +290,7 @@
   function listHtml(rows, numOf) {
     if (!rows.length) return '<li class="rkp-empty">' + (st.full ? '찾는 역이 없어요.' : '이 해까지는 크게 오르는 역이 없어요.') + '</li>';
     return rows.map(function (r, i) {
-      var nl = newLinesOf(doc, r)[0];
+      var nl = newLinesOf(doc, r, st.y)[0];
       var sub = nl ? '<i style="background:' + esc(nl.c) + '"></i>' + esc(nl.n) + (nl.y ? ' · ' + nl.y : '') : esc(r.region);
       var chg = r.isNew ? '<b class="rkp-chg is-new">신규</b>'
         : (r.change > 0 ? '<b class="rkp-chg up">▲' + r.change + '</b>' : (r.change < 0 ? '<b class="rkp-chg down">▼' + (-r.change) + '</b>' : '<b class="rkp-chg">–</b>'));

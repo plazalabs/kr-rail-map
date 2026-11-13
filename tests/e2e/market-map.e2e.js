@@ -181,12 +181,28 @@ async function until(b, expr, n = 40) {
   await b.evaluate(`(() => { const id = STATIONS.find(s => s.properties.name_ko === '잠실' && s.properties.lines.includes('seoul-subway-line-2')).properties.id; MarketMap.pick(id, {}); })()`); await sleep(900);
   const tr = await b.evaluate(`(() => { const s = document.querySelector('#mm-panel .sd-trend-sec'); return s ? { n: s.querySelectorAll('.pt-col').length, note: /효과를 뜻하지 않습니다/.test(s.textContent) } : null; })()`);
   R.check('투자 모드: 타일 상세 카드에 가격 흐름 반기 막대 8개 + 인과 아님 안내', !!tr && tr.n === 8 && tr.note, tr);
+  // H1 산점도 (2026-11-14): 보기 '산점도' → 점 수백 개·사분면 4칸·관찰 지표 안내·'저평가' 말 없음 · 점 누르면 역 상세
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'scatter'; s.dispatchEvent(new Event('change')); })()`);
+  await until(b, `document.querySelectorAll('#mm-panel .mm-dot').length > 100`, 40); await sleep(300);
+  const sc = await b.evaluate(`(() => { const bd = document.querySelector('#mm-panel .mm-board'), r = bd.getBoundingClientRect();
+    const dots = [...bd.querySelectorAll('.mm-dot')]; const out = dots.filter(d => { const q = d.getBoundingClientRect(); return q.left < r.left - 7 || q.right > r.right + 7 || q.top < r.top - 7 || q.bottom > r.bottom + 7; }).length;
+    return { view: MarketMap.state().tab, n: dots.length, out, q: bd.querySelectorAll('.mm-sc-q').length, note: (bd.querySelector('.mm-sc-note') || {}).textContent || '',
+      bad: [...bd.querySelectorAll('.mm-sc-q')].some(q => /저평가|매수|추천/.test(q.textContent)), lab: dots[0] && dots[0].getAttribute('aria-label') }; })()`);
+  R.check('산점도: 점 100개 이상 · 사분면 4칸 · 점이 판 안', sc.n > 100 && sc.q === 4 && sc.out === 0, { n: sc.n, q: sc.q, out: sc.out });
+  R.check("산점도: '관찰 지표·인과 아님' 안내와 기간·5건 기준, '저평가·매수' 말 없음", /관찰 지표/.test(sc.note) && /인과/.test(sc.note) && /5건/.test(sc.note) && !sc.bad, sc.note.slice(0, 120));
+  R.check('산점도: 점 낭독 이름에 빨라지는 분·가격 변화·법정동·건수', /분 빨라짐/.test(sc.lab) && /%/.test(sc.lab) && /거래 \d+→\d+건/.test(sc.lab), sc.lab);
+  await b.evaluate(`document.querySelectorAll('#mm-panel .mm-dot')[5].click(); 0`); await sleep(800);
+  const scs = await b.evaluate(`({ sel: !!document.querySelector('#mm-panel .mm-dot.sel'), lab: !!document.querySelector('#mm-panel .mm-sc-lab'), sd: document.getElementById('sd-panel').classList.contains('sd-open') })`);
+  R.check('산점도: 점 누르면 골라지고(이름 표시) 역 상세 열림', scs.sel && scs.lab && scs.sd, scs);
   b.close();
   b = await launch({ port: 9677, w: 1440, h: 900 });
   await b.goto(BASE + '?market=1&c=jeonse#normal', 1500); await ready(b);
   await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 30`, 60);
   const nv = await b.evaluate(`MarketMap.state().color`);
   R.check('투자 모드가 아니면 전세가율 색은 막히고 기본(빨라지는 분)', nv === 'gain', nv);
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'scatter'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
+  const nsc = await b.evaluate(`({ dots: document.querySelectorAll('#mm-panel .mm-dot').length, view: document.querySelector('#mm-panel [data-k="view"]').value })`);
+  R.check('투자 모드가 아니면 산점도(가격)는 막히고 타일로', nsc.dots === 0 && nsc.view === 'tiles', nsc);
   b.close();
 
   // ── 휴대폰 ──

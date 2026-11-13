@@ -48,6 +48,33 @@
       return Math.round((row.now.min - row.aft.min) * 10) / 10;
     }
 
+    // H1 산점도 (2026-11-14): X = 개통 후 빨라지는 분, Y = 같은 두 반기 사이 법정동 아파트 매매 중위 평당가 변화율(%).
+    // 기간은 모든 역에 같게 고정(SC_FROM→SC_TO, 둘 다 마감된 반기) — 역마다 기간이 다르면 비교가 안 된다.
+    // 두 반기 중 하나라도 거래 5건 미만(값 null)이면 넣지 않는다(값을 지어내지 않음). 신규 역(지금은 못 감)도 X 가 없어 뺀다.
+    var SC_FROM = '2024H1', SC_TO = '2026H1', SC_GAIN_SPLIT = 5;
+    function scatterPoints(tiles, trendOf) {
+      var pts = [], noPrice = 0, isNew = 0;
+      tiles.forEach(function (t) {
+        var r = t.row;
+        if (r.isNew || t.gain == null) { isNew++; return; }
+        var tr = trendOf(r.id), a = null, b = null;
+        (tr && tr.s || []).forEach(function (x) { if (x[0] === SC_FROM) a = x; if (x[0] === SC_TO) b = x; });
+        if (!a || !b || a[1] == null || b[1] == null || !(a[1] > 0)) { noPrice++; return; }
+        pts.push({ t: t, id: r.id, name: r.name, x: t.gain, y: Math.round((b[1] / a[1] - 1) * 1000) / 10, n0: a[2], n1: b[2], dong: tr.dong });
+      });
+      var ys = pts.map(function (p) { return p.y; }).sort(function (a, b) { return a - b; });
+      var med = ys.length ? (ys.length % 2 ? ys[(ys.length - 1) / 2] : (ys[ys.length / 2 - 1] + ys[ys.length / 2]) / 2) : 0;
+      med = Math.round(med * 10) / 10;
+      var q = { hiLo: 0, hiHi: 0, loHi: 0, loLo: 0 };
+      pts.forEach(function (p) { p.q = (p.x >= SC_GAIN_SPLIT ? 'hi' : 'lo') + (p.y > med ? 'Hi' : 'Lo'); q[p.q]++; });
+      return { pts: pts, med: med, split: SC_GAIN_SPLIT, from: SC_FROM, to: SC_TO, noPrice: noPrice, isNew: isNew, q: q };
+    }
+    // 사분면 이름 — 기획서 4.5 그대로. '저평가'·'매수' 같은 단정 말은 쓰지 않는다.
+    var QUAD_LABEL = {
+      hiLo: '접근성 개선 대비 가격 반응 제한', hiHi: '접근성과 시장 반응 동반',
+      loHi: '교통 외 요인 점검', loLo: '두 지표 변화 제한'
+    };
+
     // 고정 구간 (분위수 아님 — 화면이 바뀌어도 같은 값은 같은 색)
     var GAIN_BINS = [
       { max: 0, key: 'g0', label: '0분', bg: '#d5d9de', fg: '#2b3036' },
@@ -194,7 +221,7 @@
       return model;
     }
 
-    return { FAMILY: FAMILY, GAIN_BINS: GAIN_BINS, TIER_COLORS: TIER_COLORS, JEONSE_BINS: JEONSE_BINS, PRICE_BINS: PRICE_BINS, NEW_COLOR: NEW_COLOR, NA_COLOR: NA_COLOR,
+    return { scatterPoints: scatterPoints, QUAD_LABEL: QUAD_LABEL, FAMILY: FAMILY, GAIN_BINS: GAIN_BINS, TIER_COLORS: TIER_COLORS, JEONSE_BINS: JEONSE_BINS, PRICE_BINS: PRICE_BINS, NEW_COLOR: NEW_COLOR, NA_COLOR: NA_COLOR,
       OTHER_NEW: OTHER_NEW, NO_NEW: NO_NEW, NONE: NONE,
       familyOf: familyOf, isNewLine: isNewLine, gainOf: gainOf, colorOf: colorOf, groupOf: groupOf, squarify: squarify, build: build, layout: layout };
   })();
@@ -257,6 +284,13 @@
       '.mm-mxc{display:flex;flex-wrap:wrap;gap:2px}' +
       '.mm-tile.mm-cell{position:static;width:34px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;overflow:hidden;white-space:nowrap}' +
       '.mm-list{list-style:none;margin:0;padding:0}' +
+      '.mm-sc-note{position:relative;z-index:1;font-size:var(--fs-xs);line-height:1.45;color:var(--muted,#5b6470);padding:2px 2px 0}.mm-sc-note b{color:var(--text,#222)}' +
+      '.mm-sc-ax{position:absolute;left:0;top:0;pointer-events:none}.mm-sc-ax text{font-size:var(--fs-xs);fill:var(--muted,#5b6470)}.mm-sc-ax .t{font-weight:700;fill:var(--text,#222)}' +
+      '.mm-sc-ax .g{stroke:var(--border,#e3e6ea);stroke-width:1}.mm-sc-ax .g.z{stroke:var(--muted,#8a929c)}.mm-sc-ax .m{stroke:var(--text,#222);stroke-width:1.2;stroke-dasharray:5 4}' +
+      '.mm-sc-q{position:absolute;z-index:5;font-size:var(--fs-xs);font-weight:700;color:var(--text,#222);background:var(--panel-bg,#fff);opacity:.9;padding:1px 5px;border-radius:6px;pointer-events:none;white-space:nowrap}' +
+      '.mm-tile.mm-dot{width:12px;height:12px;padding:0;border-radius:50%;border:1px solid rgba(0,0,0,.45);transition:none}' +
+      '.mm-tile.mm-dot.clip{border-style:dashed}.mm-tile.mm-dot.sel{box-shadow:0 0 0 3px #111;z-index:4}' +
+      '.mm-sc-lab{position:absolute;z-index:4;font-size:var(--fs-xs);font-weight:800;background:var(--panel-bg,#fff);color:var(--text,#222);padding:0 4px;border-radius:4px;pointer-events:none}' +
       '.mm-tile.mm-row{position:static;display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:0;border-bottom:1px solid var(--border,#e3e6ea);border-radius:0;background:none;color:var(--text,#222);font-size:var(--fs-sm);height:auto}' +
       '.mm-tile.mm-row.sel{box-shadow:inset 3px 0 0 var(--accent,#1565c0);background:var(--surface,#f6f7f9)}' +
       '.mm-row i{flex:none;width:12px;height:12px;border-radius:3px}.mm-row b{display:inline;flex:0 1 auto}.mm-rk{flex:none;width:26px;color:var(--muted,#5b6470);font-size:var(--fs-xs);text-align:right}' +
@@ -308,7 +342,7 @@
         '<label>색 <select data-k="color"><option value="gain">빨라지는 분</option><option value="tier">순위 변화</option><option value="jeonse">전세가율 (투자 모드)</option><option value="price">평당가 (투자 모드)</option></select></label>' +
         '<label>크기 <select data-k="size"><option value="equal">모두 같게</option><option value="deals">아파트 거래 건수 (투자 모드)</option><option value="supply">입주 예정 세대 (투자 모드)</option></select></label>' +
         '<label>기준 <select data-k="w"><option value="avg">평균</option><option value="cbd">도심</option><option value="ybd">여의도</option><option value="gbd">강남</option></select></label>' +
-        '<label>보기 <select data-k="view"><option value="tiles">타일</option><option value="list">목록(순위)</option><option value="matrix">표(노선×역)</option></select></label>' +
+        '<label>보기 <select data-k="view"><option value="tiles">타일</option><option value="list">목록(순위)</option><option value="matrix">표(노선×역)</option><option value="scatter">산점도(빨라짐×가격)</option></select></label>' +
         '<label><input type="checkbox" class="mm-wait"> 출퇴근 배차 넣기</label>' +
         '<label>역 <select data-k="scope"><option value="new">새 노선이 서는 역</option><option value="affected">빨라지는 역 모두</option><option value="all">수도권 전체</option></select></label>' +
       '</div>' +
@@ -342,6 +376,10 @@
         if (s.dataset.k === 'color' && (s.value === 'jeonse' || s.value === 'price') && !invest()) {
           st.color = 'gain'; s.value = 'gain';
           note('전세가율·평당가 색은 투자 모드에서만 씁니다');
+        }
+        if (s.dataset.k === 'view' && s.value === 'scatter' && !invest()) {
+          st.view = 'tiles'; s.value = 'tiles';
+          note('산점도(빨라짐×가격)는 투자 모드에서만 씁니다');
         }
         if (s.dataset.k === 'size' && st.size !== 'equal') ensurePrice();
         if (s.dataset.k === 'color' && (st.color === 'jeonse' || st.color === 'price')) ensurePrice();
@@ -560,10 +598,69 @@
     board.querySelectorAll('.mm-cell').forEach(function (b) { tileById.set(b.dataset.id, b); });
   }
 
+  // H1 산점도 (2026-11-14) — X 개통 후 빨라지는 분 · Y 같은 두 반기 가격 변화. 점 = 역(누르면 지도·상세), 색 = 지금 고른 색 기준.
+  function drawScatter(board) {
+    tileById = new Map();
+    board.style.overflow = 'hidden';
+    var TR = global.StationTrend;
+    if (!TR || !TR.meta || !TR.meta()) {
+      board.innerHTML = '<div class="mm-empty">가격 흐름 자료를 받는 중…</div>';
+      if (TR && TR.load) TR.load('data/station-trend.json').then(function (ok) {
+        if (!isOpen || st.view !== 'scatter') return;
+        if (ok) draw(); else board.innerHTML = '<div class="mm-empty">가격 흐름 자료를 받지 못했습니다. 잠시 뒤 다시 열어 주세요.</div>';
+      });
+      return;
+    }
+    var tiles = []; model.groups.forEach(function (G) { G.tiles.forEach(function (t) { tiles.push(t); }); });
+    var sc = Logic.scatterPoints(tiles, TR.of), P = sc.pts;
+    var hl = function (h) { return h.slice(2, 4) + '년 ' + (h.slice(4) === 'H1' ? '상' : '하') + '반기'; };
+    var head = '<div class="mm-sc-note">' +
+      '<b>관찰 지표</b> — 철도 효과(인과)나 저평가·매수 신호가 아닙니다. ' +
+      '가로: 개통 후 빨라지는 분(' + esc(WLABEL[st.w]) + ' 기준, ' + (st.y === 'all' ? '전체 개통 가정' : esc(st.y) + '년까지 개통 가정') + ') · ' +
+      '세로: ' + hl(sc.from) + '→' + hl(sc.to) + ' 역이 속한 법정동 아파트 매매 중위 평당가 변화(두 반기 모두 5건 이상). ' +
+      P.length + '역' + (sc.noPrice ? ' · 가격 자료 부족 ' + sc.noPrice + '역 제외' : '') + (sc.isNew ? ' · 지금은 못 가는 신규 ' + sc.isNew + '역 제외' : '') + '</div>';
+    var W = board.clientWidth, H = board.clientHeight;
+    if (W < 120 || H < 160) { board.innerHTML = head; return; }
+    if (!P.length) { board.innerHTML = head + '<div class="mm-empty">이 조건에서 가격 자료가 있는 역이 없습니다</div>'; return; }
+    board.innerHTML = head;
+    var top = board.querySelector('.mm-sc-note').offsetHeight + 6;
+    var mL = 44, mR = 12, mT = top + 4, mB = 34;
+    var xs = P.map(function (p) { return p.x; }), ysS = P.map(function (p) { return p.y; }).sort(function (a, b) { return a - b; });
+    var x0 = 0, x1 = Math.max(10, Math.ceil(Math.max.apply(null, xs) / 5) * 5);
+    var pct = function (q) { return ysS[Math.min(ysS.length - 1, Math.max(0, Math.round(q * (ysS.length - 1))))]; };
+    var y0 = Math.floor(Math.min(pct(0.02), sc.med - 5) / 10) * 10, y1 = Math.ceil(Math.max(pct(0.98), sc.med + 5) / 10) * 10;
+    var X = function (v) { return mL + (v - x0) / (x1 - x0) * (W - mL - mR); };
+    var Y = function (v) { return mT + (y1 - Math.max(y0, Math.min(y1, v))) / (y1 - y0) * (H - mT - mB); };
+    var svg = '<svg class="mm-sc-ax" width="' + W + '" height="' + H + '" aria-hidden="true">';
+    for (var gx = x0; gx <= x1; gx += (x1 > 40 ? 10 : 5)) svg += '<line x1="' + X(gx) + '" x2="' + X(gx) + '" y1="' + mT + '" y2="' + (H - mB) + '" class="g"/><text x="' + X(gx) + '" y="' + (H - mB + 14) + '" text-anchor="middle">' + gx + '</text>';
+    var stepY = (y1 - y0) > 80 ? 20 : 10;
+    for (var gy = y0; gy <= y1; gy += stepY) svg += '<line x1="' + mL + '" x2="' + (W - mR) + '" y1="' + Y(gy) + '" y2="' + Y(gy) + '" class="g' + (gy === 0 ? ' z' : '') + '"/><text x="' + (mL - 4) + '" y="' + (Y(gy) + 4) + '" text-anchor="end">' + (gy > 0 ? '+' : '') + gy + '%</text>';
+    svg += '<line x1="' + X(sc.split) + '" x2="' + X(sc.split) + '" y1="' + mT + '" y2="' + (H - mB) + '" class="m"/>';
+    svg += '<line x1="' + mL + '" x2="' + (W - mR) + '" y1="' + Y(sc.med) + '" y2="' + Y(sc.med) + '" class="m"/>';
+    svg += '<text x="' + (W - mR) + '" y="' + (H - 4) + '" text-anchor="end" class="t">개통 후 빨라지는 분 →</text>';
+    svg += '<text x="' + (mL + 2) + '" y="' + (mT - 4) + '" class="t">↑ 가격 변화 (가운데 선 = 전체 중앙값 ' + (sc.med > 0 ? '+' : '') + sc.med + '%)</text>';
+    svg += '</svg>';
+    var qbox = function (k, x, y, anchor) {
+      return '<div class="mm-sc-q" style="' + (anchor === 'r' ? 'right:' + (W - x) + 'px' : 'left:' + x + 'px') + ';top:' + y + 'px">' + esc(Logic.QUAD_LABEL[k]) + ' · ' + sc.q[k] + '역</div>';
+    };
+    var qs = qbox('hiHi', W - mR - 4, mT + 14, 'r') + qbox('hiLo', W - mR - 4, H - mB - 20, 'r') + qbox('loHi', mL + 4, mT + 14, 'l') + qbox('loLo', mL + 4, H - mB - 20, 'l');
+    var dots = P.slice().sort(function (a, b) { return (a.id === st.sel) - (b.id === st.sel); }).map(function (p, i) {
+      var c = p.t.color, clip = p.y < y0 || p.y > y1;
+      var lab = p.name + ' · 개통 후 ' + p.x + '분 빨라짐 · ' + hl(sc.from) + '→' + hl(sc.to) + ' ' + (p.y > 0 ? '+' : '') + p.y + '% (' + p.dong + ', 거래 ' + p.n0 + '→' + p.n1 + '건) · ' + Logic.QUAD_LABEL[p.q];
+      return '<button type="button" class="mm-tile mm-dot' + (clip ? ' clip' : '') + (st.sel === p.id ? ' sel' : '') + '" data-id="' + esc(p.id) + '" tabindex="' + (i === 0 ? 0 : -1) + '" aria-label="' + esc(lab) + '" title="' + esc(lab) + '" ' +
+        'style="left:' + (X(p.x) - 6) + 'px;top:' + (Y(p.y) - 6) + 'px;background-color:' + c.bg + '"></button>' +
+        (st.sel === p.id ? '<div class="mm-sc-lab" style="left:' + (X(p.x) + 8) + 'px;top:' + (Y(p.y) - 9) + 'px">' + esc(p.name) + '</div>' : '');
+    }).join('');
+    board.insertAdjacentHTML('beforeend', svg + qs + dots);
+    board.querySelectorAll('.mm-dot').forEach(function (b2) { tileById.set(b2.dataset.id, b2); });
+    var f = (st.sel && tileById.get(st.sel)); if (f) { board.querySelectorAll('.mm-dot').forEach(function (o) { o.tabIndex = -1; }); f.tabIndex = 0; }
+  }
+
   function draw() {
     if (!model) return;
     var board = el.querySelector('.mm-board');
     if (st.view === 'matrix') { if (!model.total) { board.innerHTML = '<div class="mm-empty">이 조건에 맞는 역이 없습니다</div>'; return; } drawMatrix(board); return; }
+    if (st.view === 'scatter') { drawScatter(board); return; }
     if (st.view === 'list') { if (!model.total) { board.innerHTML = '<div class="mm-empty">이 조건에 맞는 역이 없습니다</div>'; return; } drawList(board); return; }
     board.style.overflow = 'hidden';
     var W = board.clientWidth, H = board.clientHeight;
@@ -775,7 +872,8 @@
     ['w', 'group', 'color', 'scope'].forEach(function (k) { if (o[k] && ALLOWED[k].indexOf(String(o[k])) >= 0) st[k] = String(o[k]); });
     if (o.y && /^(all|20[0-9][0-9])$/.test(String(o.y))) st.y = String(o.y);
     if (['deals', 'supply', 'equal'].indexOf(o.size) >= 0) st.size = o.size;
-    if (['list', 'tiles', 'matrix'].indexOf(o.view) >= 0) st.view = o.view;
+    if (['list', 'tiles', 'matrix', 'scatter'].indexOf(o.view) >= 0) st.view = o.view;
+    if (st.view === 'scatter' && !invest()) st.view = 'tiles';
     if (st.size !== 'equal' && !invest()) st.size = 'equal';
     if ((st.color === 'jeonse' || st.color === 'price') && !invest()) st.color = 'gain';
     if (st.color === 'jeonse' || st.color === 'price' || st.size === 'deals') ensurePrice();

@@ -94,5 +94,29 @@ console.log('\n[투자 색] 전세가율·평당가 — 고정 구간, 자료 �
   check('값 없음 → 빗금(자료 없음)', L.colorOf(row, 'price', null, () => null).hatch === true);
 }
 
+console.log('\n[산점도 H1] 고정 기간·5건 미만 제외·신규 제외·사분면');
+{
+  const mk = (id, gain, isNew) => ({ row: { id, name: id, isNew: !!isNew }, gain, color: {} });
+  const tr = { a: { dong: 'x', s: [['2024H1', 1000, 10], ['2026H1', 1200, 12]] },
+    b: { dong: 'y', s: [['2024H1', 1000, 10], ['2026H1', null, 3]] },      // 끝 반기 5건 미만 → 제외
+    c: { dong: 'z', s: [['2023H1', 500, 9], ['2026H1', 900, 9]] },           // 시작 반기 없음 → 제외(기간 고정)
+    d: { dong: 'w', s: [['2024H1', 2000, 8], ['2026H1', 1900, 8]] } };
+  const sc = L.scatterPoints([mk('a', 12), mk('b', 3), mk('c', 7), mk('d', 2), mk('n', null, true)], id => tr[id] || null);
+  check('점 2개(a·d)', sc.pts.length === 2 && sc.pts.map(p => p.id).join() === 'a,d', sc.pts.map(p => p.id));
+  check('가격 부족 2 · 신규 1 제외 수', sc.noPrice === 2 && sc.isNew === 1, sc);
+  check('a 변화 +20%, d −5%', sc.pts[0].y === 20 && sc.pts[1].y === -5, sc.pts.map(p => p.y));
+  check('중앙값 7.5 · 기간 2024H1→2026H1', sc.med === 7.5 && sc.from === '2024H1' && sc.to === '2026H1', sc.med);
+  check('a = 개선 큼+가격 큼, d = 개선 작음+가격 작음', sc.pts[0].q === 'hiHi' && sc.pts[1].q === 'loLo');
+  check("사분면 이름에 '저평가'·'매수' 없음", Object.values(L.QUAD_LABEL).every(s => !/저평가|매수|추천|떡상 확률/.test(s)));
+  // 실자료: 수도권 행이 가격 흐름과 이어져 수백 역이 찍힌다
+  const T = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/station-trend.json'), 'utf8'));
+  const out = RT.compute(doc, { weight: 'avg', region: 'capital' });
+  const m = L.build(out.rows, doc.lines, { group: 'line', size: 'equal', color: 'gain', scope: 'all' }, RT.tierOf);
+  const tiles = []; m.groups.forEach(G => G.tiles.forEach(t => tiles.push(t)));
+  const real = L.scatterPoints(tiles, id => T.stations[id] || null);
+  check('실자료 점 300개 이상', real.pts.length >= 300, real.pts.length);
+  check('실자료 사분면 합 = 점 수', Object.values(real.q).reduce((a, b) => a + b, 0) === real.pts.length, real.q);
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

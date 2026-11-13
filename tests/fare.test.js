@@ -175,11 +175,12 @@ console.log("\n[68점 감사 8번] '최소요금' 은 함께 보이는 다른 �
     for (const opts of [{ openOnly: true }, {}]) {
       const all = RC.findAll(A.properties.id, B.properties.id, opts);
       if (!all.fare) continue; n++;
-      const lower = ['time', 'transfer', 'now'].map(k => all[k]).filter(r => r && r.fare < all.fare.fare);
+      // 요금 미정(개통 전 GTX, 0원으로 합산된 부분 합)인 탭은 확정 요금과 견줄 수 없어 뺀다 (I3, 감사2, 2026-11-14)
+      const lower = ['time', 'transfer', 'now'].map(k => all[k]).filter(r => r && !RC.hasPending(r) && r.fare < all.fare.fare);
       if (lower.length) bad.push(`${A.properties.name_ko}→${B.properties.name_ko} ${all.fare.fare} > ${lower.map(r => r.fare).join('/')}`);
     }
   }
-  check(`무작위 수도권 ${n}건(운행 중·개통 후 모두): 최소요금이 다른 탭보다 비싼 경우 0`, bad.length === 0, bad.slice(0, 5).join(' | '));
+  check(`무작위 수도권 ${n}건(운행 중·개통 후 모두): 최소요금이 다른 탭(요금 확정)보다 비싼 경우 0`, bad.length === 0, bad.slice(0, 5).join(' | '));
   const dong = RC.findAll(id('동작'), id('서현'), { openOnly: true });
   check('동작→서현 최소요금 ≤ 최소환승 요금', dong.fare && dong.transfer && dong.fare.fare <= dong.transfer.fare, dong.fare && dong.fare.fare + ' / ' + (dong.transfer && dong.transfer.fare));
   check('pickCheapest: 같은 요금이면 빠른 쪽', RC.pickCheapest([{ fare: 1850, minutes: 50 }, { fare: 1850, minutes: 40 }, null]).minutes === 40);

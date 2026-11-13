@@ -607,11 +607,21 @@ function paletteMatches(raw) {
 function parseRouteQuery(raw) {
   const m = /^(.+?)\s*(?:→|->|에서|부터|~)\s*(.+)$/.exec(raw.trim());
   if (!m) return null;
-  const one = t => { t = t.trim(); if (!t) return null; const c = stationsNamed(t); if (c.length) return c[0]; const h = window.StationSearch ? StationSearch.search(STATIONS, t, { limit: 1 }) : []; return h.length && h[0].score >= 900 ? h[0].feature : null; };
+  // 후보 목록 (동명역이면 여럿) — 감사6 (2026-11-14): 예전엔 첫 번째(데이터 순서상 부산 시청)를 바로 골랐다
+  const cands = t => { t = t.trim(); if (!t) return []; const c = stationsNamed(t); if (c.length) return c; const h = window.StationSearch ? StationSearch.search(STATIONS, t, { limit: 1 }) : []; return h.length && h[0].score >= 900 ? [h[0].feature] : []; };
   // '서울역까지' '판교로' — 끝말을 뗀 것도 본다. 다만 '을지로' 처럼 원래 이름이 '로' 로 끝나면 그대로가 먼저
-  const pick = t => one(t) || one(t.replace(/(까지|으로|로|가는\s*길)$/, ''));
-  const a = pick(m[1]), b = pick(m[2]);
-  return a && b && a !== b ? { from: a, to: b } : null;
+  const pickAll = t => { const c = cands(t); return c.length ? c : cands(t.replace(/(까지|으로|로|가는\s*길)$/, '')); };
+  const A = pickAll(m[1]), B = pickAll(m[2]);
+  if (!A.length || !B.length) return null;
+  const d2 = (p, q) => { const dx = p[0] - q[0], dy = p[1] - q[1]; return dx * dx + dy * dy; };
+  const c = map.getCenter(), ctr = [c.lng, c.lat];
+  const nearest = (list, to) => list.slice().sort((x, y) => d2(x.geometry.coordinates, to) - d2(y.geometry.coordinates, to))[0];
+  // 한쪽만 모호하면 다른 쪽(확정된 역)에 가까운 것, 둘 다 모호하면 지도 중심에 가까운 쌍
+  let a, b;
+  if (A.length === 1) { a = A[0]; b = nearest(B, a.geometry.coordinates); }
+  else if (B.length === 1) { b = B[0]; a = nearest(A, b.geometry.coordinates); }
+  else { a = nearest(A, ctr); b = nearest(B, a.geometry.coordinates); }
+  return a && b && a !== b ? { from: a, to: b, ambiguous: A.length > 1 || B.length > 1 } : null;
 }
 function actionRow(a, i) {
   const row = document.createElement('div');
@@ -767,7 +777,9 @@ function renderSearch(raw) {
   // 팔레트 줄을 역 앞에 (68점 감사·뮤즈 TASK 1). 기능은 최대 3개.
   const acts = paletteMatches(raw).slice(0, 3).map(a => Object.assign({ __palette: true }, a));
   const rq = parseRouteQuery(raw);
-  if (rq) acts.unshift({ __palette: true, id: 'route-query', label: rq.from.properties.name_ko + ' → ' + rq.to.properties.name_ko + ' 길찾기', hint: '바로 경로 찾기', ic: 'route', run: () => runRoute(rq.from, rq.to) });
+  // 동명역이 끼면 지역을 붙여 어느 역인지 보이게 (시청(서울 중구) → 강남)
+  const rqName = s => s.properties.name_ko + (rq && rq.ambiguous && regionOf.get(s.properties.id) ? '(' + regionOf.get(s.properties.id) + ')' : '');
+  if (rq) acts.unshift({ __palette: true, id: 'route-query', label: rqName(rq.from) + ' → ' + rqName(rq.to) + ' 길찾기', hint: rq.ambiguous ? '이름이 같은 역 중 가까운 역 — 다르면 길찾기 칸에서 고르세요' : '바로 경로 찾기', ic: 'route', run: () => runRoute(rq.from, rq.to) });
   found.unshift(...acts);
 
   if (!found.length) {

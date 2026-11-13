@@ -799,7 +799,7 @@
     el.querySelector('[data-k="view"]').value = st.view;
     el.querySelector('.mm-wait').checked = (global.KR_WAIT && KR_WAIT.isPeak());
     var sum = el.querySelector('.mm-sum');
-    if (sum) sum.textContent = '· ' + (st.y === 'all' ? '전체 개통 가정' : st.y + '년까지') + ' · ' + (st.color === 'tier' ? '순위 변화' : '빨라지는 분') + ' · ' + WLABEL[st.w] + ' 기준';
+    if (sum) sum.textContent = '· ' + (st.y === 'all' ? '전체 개통 가정' : st.y + '년까지') + ' · ' + ({ gain: '빨라지는 분', tier: '순위 변화', jeonse: '전세가율', price: '평당가' }[st.color] || '빨라지는 분') + ' · ' + WLABEL[st.w] + ' 기준';   // 색 기준마다 이름 (감사4)
     if (st.tab !== 'card') draw();
     renderCard();
   }

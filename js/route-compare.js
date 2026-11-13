@@ -408,10 +408,15 @@ const RouteCompare = (() => {
   // 탐색은 거리로 고르는 근사라서(별도 운임·일반철도 기본요금을 모른다) 수도권 552쌍 중 41쌍에서
   // 최소요금 탭이 다른 탭보다 비쌌다(예: 동작→서현 신분당선 3,550원 > 9호선·수인분당 1,950원).
   // 그래서 후보(거리 최소·순수 전철·최적·최소환승)의 실제 계산 요금을 비교해 가장 싼 것을 고른다. 같으면 빠른 쪽.
+  // 요금 미정(개통 전 GTX 등) 부분이 있는 경로 — 그 부분을 0원으로 더한 '부분 합'이라 확정 총액과 견줄 수 없다 (감사2, 2026-11-14)
+  function hasPending(r) { return !!(r && r.fareDetail && (r.fareDetail.parts || []).some(p => p.kind === 'pending')); }
   function pickCheapest(cands) {
+    // 요금이 다 정해진 후보가 하나라도 있으면 그 안에서만 고른다 — 미정 0원을 끼고 '최소요금'이 되지 않게
+    const ok = cands.filter(r => r && typeof r.fare === 'number');
+    const full = ok.filter(r => !hasPending(r));
+    const pool = full.length ? full : ok;
     let best = null;
-    for (const r of cands) {
-      if (!r || typeof r.fare !== 'number') continue;
+    for (const r of pool) {
       if (!best || r.fare < best.fare || (r.fare === best.fare && r.minutes < best.minutes)) best = r;
     }
     return best;
@@ -460,7 +465,10 @@ const RouteCompare = (() => {
       const dm = all.transfer.minutes - t.minutes;
       out.push(`최소환승은 ${dm > 0 ? dm + '분 더 걸리지만' : '시간도 비슷하고'} 환승 ${t.transfers - all.transfer.transfers}회 절약`);
     }
-    if (t && all.fare && all.fare.fare < t.fare) {
+    if (t && all.fare && (hasPending(t) || hasPending(all.fare)) && all.fare !== t) {
+      // 한쪽이라도 요금 미정이 끼면 '몇 원 절약'을 말하지 않는다 — 미정 부분이 얼마일지 모른다
+      out.push(`최소요금 길은 ${trade(all.fare)} · 요금 미정 노선이 있어 요금 차이는 비교하지 않음`);
+    } else if (t && all.fare && all.fare.fare < t.fare) {
       out.push(`최소요금은 ${(t.fare - all.fare.fare).toLocaleString()}원 절약 · ${trade(all.fare)}`);
     } else if (t && all.fare && all.fare.minutes < t.minutes) {
       out.push(`최소요금 길은 ${trade(all.fare)}`);
@@ -801,6 +809,6 @@ const RouteCompare = (() => {
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
   return { init, findAll, findAllOpen, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, loadSpecialFares, fareBreakdownHtml,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
-    compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf, fastestTabId, pickCheapest,
+    compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf, fastestTabId, pickCheapest, hasPending,
     _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich } };
 })();

@@ -47,7 +47,7 @@
     var all = el('button', null, '전체 →'); all.type = 'button'; all.setAttribute('data-rocket-open', '');
     all.addEventListener('click', function () { if (global.RocketPanel && RocketPanel.open) RocketPanel.open({}); });
     head.appendChild(all); sec.appendChild(head);
-    sec.appendChild(el('p', 'hc-sub', (d.year === 'all' ? '모든 계획 노선' : d.year + '년까지') + ' 개통 가정 · 수도권 ' + (d.total || '') + '역 교통 접근성 순위 · 집값 예측 아님'));
+    sec.appendChild(el('p', 'hc-sub', (d.year === 'all' ? '모든 계획 노선' : d.year + '년까지') + ' 개통 가정 · 수도권 ' + (d.total || '') + '역 교통 접근성 순위 · ▲ = 오르는 순위 칸 수 · 집값 예측 아님'));
     var ol = el('ol', 'hc-top');
     d.top.forEach(function (t, i) {
       var li = el('li'), b = el('button'); b.type = 'button';
@@ -56,7 +56,7 @@
       var mid = el('span'); mid.appendChild(el('span', 'hc-nm', t.n));
       var ln = el('span', 'hc-ln'); var dot = el('i'); dot.style.background = /^#[0-9a-f]{6}$/i.test(t.c || '') ? t.c : '#888'; ln.appendChild(dot);
       ln.appendChild(document.createTextNode((t.line || '') + (t.y ? ' · ' + t.y : ''))); mid.appendChild(ln); b.appendChild(mid);
-      b.appendChild(el('span', 'hc-up', '▲' + t.ch));
+      b.appendChild(el('span', 'hc-up', '▲' + t.ch + '위'));   // 단위 — 오르는 순위 칸 수 (4차 N6)
       b.addEventListener('click', function () { if (global.RocketPanel && RocketPanel.open) RocketPanel.open({ st: t.id, focus: true }); });
       li.appendChild(b); ol.appendChild(li);
     });

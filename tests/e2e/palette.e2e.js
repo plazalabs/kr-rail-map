@@ -56,6 +56,12 @@ const enter = async b => { await b.key('Enter', 'Enter', 13); await sleep(900); 
     res: /총 약 \\d+분/.test(document.getElementById('route-result').textContent) })`);
   R.check('Enter → 길찾기 칸이 채워지고 결과가 나옴', rt.open && rt.from === '강남' && rt.to === '서울' && rt.res, rt);
 
+  // I6 (2026-11-14, 감사6): '시청→강남' — 동명역이면 반대편(강남)에 가까운 서울 시청, 줄에 지역 표시
+  top = await typeSearch(b, '시청→강남');
+  R.check("'시청→강남' → 서울 시청(지역 표시), 부산 시청 아님", top[0] && top[0].action && /시청\(서울/.test(top[0].name) && !/부산/.test(top[0].name), top[0]);
+  await enter(b); await sleep(800);
+  const sc = await b.evaluate(`(() => { const s = STATIONS.find(x => x.properties.id === document.getElementById('route-from').dataset.sid); return s ? { lines: s.properties.lines, lat: s.geometry.coordinates[1] } : null; })()`);
+  R.check('Enter → 출발역이 서울 시청(위도 37.5 근처)', !!sc && sc.lat > 37.4 && sc.lat < 37.7, sc);
   top = await typeSearch(b, '강남');
   R.check("'강남' → 역이 맨 위 (기능 줄 없음)", top[0] && !top[0].action && top[0].name === '강남', top);
   const exc = b.logs.filter(l => /EXC/.test(l));

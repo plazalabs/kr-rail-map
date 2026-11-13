@@ -23,7 +23,7 @@ async function ready(b) {
   for (let i = 0; i < 30; i++) { if (await b.evaluate(`document.querySelectorAll('#home-cards .hc-top button').length === 3`)) break; await sleep(300); }
   const c = await b.evaluate(`(() => { const box = document.getElementById('home-cards'); return { names: [...box.querySelectorAll('.hc-nm')].map(x => x.textContent), ups: [...box.querySelectorAll('.hc-up')].map(x => x.textContent), sub: (box.querySelector('.hc-sub') || {}).textContent || '',
     rankJson: performance.getEntriesByType('resource').some(e => /data\\/rank\\.json/.test(e.name)), topJson: performance.getEntriesByType('resource').some(e => /rank-top\\.json/.test(e.name)) }; })()`);
-  R.check('TOP 3 = rank-top.json 그대로 (이름·▲계단)', c.names.join() === TOP.top.map(t => t.n).join() && c.ups.join() === TOP.top.map(t => '▲' + t.ch).join(), c);
+  R.check('TOP 3 = rank-top.json 그대로 (이름·▲계단)', c.names.join() === TOP.top.map(t => t.n).join() && c.ups.join() === TOP.top.map(t => '▲' + t.ch + '위').join(), c);
   R.check("부제에 '집값 예측 아님'", /집값 예측 아님/.test(c.sub), c.sub);
   R.check('첫 화면에서 큰 rank.json 은 안 받고 작은 rank-top.json 만', c.topJson && !c.rankJson, { topJson: c.topJson, rankJson: c.rankJson });
   await b.evaluate(`document.querySelector('#home-cards .hc-top button').click(); 0`);

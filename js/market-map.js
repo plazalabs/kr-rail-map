@@ -456,7 +456,7 @@
   // 링크: ?market=1&y=&w=&c=&g=&s=&st= — 모르는 값은 무시(기본값)
   var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier', 'jeonse', 'price'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
   function linkQuery() {
-    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.band ? '&b=' + st.band : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
+    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.band ? '&b=' + st.band : '') + (global.KR_WAIT && KR_WAIT.isPeak() ? '&wait=1' : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
   }
   function note(msg) { var s = document.getElementById('status'); if (s) s.textContent = msg; }
 

@@ -851,6 +851,9 @@ document.getElementById('share-btn').addEventListener('click', async () => {
     // 지도 중심/줌 포함
     const c = map.getCenter(), z = map.getZoom();
     url.searchParams.set('c', `${c.lng.toFixed(5)},${c.lat.toFixed(5)},${z.toFixed(1)}`);
+    // 비교 조건 (H7, 2026-11-14): 배차 포함·개통 예정 노선 포함 — 받은 사람도 같은 조건으로 본다
+    if (window.KR_WAIT && KR_WAIT.isPeak()) url.searchParams.set('wait', '1'); else url.searchParams.delete('wait');
+    if (from && to && routeIncludeUnopened()) url.searchParams.set('unopened', '1'); else url.searchParams.delete('unopened');
     await navigator.clipboard.writeText(url.toString());
     setStatus('링크 복사됨' + (from && to ? ` (${from}→${to} 포함)` : ''));
   } catch { setStatus('링크 복사에 실패했습니다'); }
@@ -1180,6 +1183,9 @@ const UNOPENED_KEY = 'krrail-route-unopened';
 const routeUnopenedEl = document.getElementById('route-unopened');
 if (routeUnopenedEl) {
   try { routeUnopenedEl.checked = localStorage.getItem(UNOPENED_KEY) === '1'; } catch (e) { /* 저장소 없음 → 기본(꺼짐) */ }
+  // 공유 링크의 조건 (H7): ?unopened=1/0 — 이번 방문에만 (저장값은 그대로)
+  const qu = new URLSearchParams(location.search).get('unopened');
+  if (qu === '1' || qu === '0') routeUnopenedEl.checked = qu === '1';
   routeUnopenedEl.addEventListener('change', () => {
     try { localStorage.setItem(UNOPENED_KEY, routeUnopenedEl.checked ? '1' : '0'); } catch (e) {}
     // 이미 결과가 떠 있으면 바뀐 기준으로 다시 찾는다

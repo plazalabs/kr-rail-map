@@ -414,6 +414,7 @@
     if (st.sel) u.searchParams.set('st', st.sel);
     if (st.y) u.searchParams.set('y', st.y);
     if (st.w !== 'avg') u.searchParams.set('w', st.w);
+    if (global.KR_WAIT && KR_WAIT.isPeak()) u.searchParams.set('wait', '1');   // 비교 조건도 같이 (H7)
     var done = function (ok) { var t = btn.textContent; btn.textContent = ok ? '복사됨' : '복사 실패'; setTimeout(function () { btn.textContent = t; }, 1500); };
     try { navigator.clipboard.writeText(u.toString()).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
   }

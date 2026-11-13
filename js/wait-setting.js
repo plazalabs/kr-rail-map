@@ -9,6 +9,8 @@
   var KEY = 'krrail-wait';
   var cur = 'none';
   try { var v = localStorage.getItem(KEY); if (v === 'peak' || v === 'none') cur = v; } catch (e) { /* 저장소 없음 */ }
+  // 공유 링크의 조건 (H7, 2026-11-14): ?wait=1 이면 배차 넣음, ?wait=0 이면 뺌 — 이번 방문에만, 저장값은 그대로
+  try { var qw = new URLSearchParams(global.location ? global.location.search : '').get('wait'); if (qw === '1') cur = 'peak'; else if (qw === '0') cur = 'none'; } catch (e) { /* 무시 */ }
   var fns = [];
   function get() { return cur; }
   function isPeak() { return cur === 'peak'; }

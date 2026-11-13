@@ -272,7 +272,15 @@ const UI = (() => {
   function initKeys() {
     document.addEventListener('keydown', e => {
       if (e.key !== 'Escape') return;
+      if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;   // 안쪽에서 이미 처리 · 한글 조합 중
       if (window.DiagramMode && DiagramMode.isActive()) { DiagramMode.exit(); return; }
+      // 위에 떠 있는 창부터 (K1, 2026-11-13) — 포커스가 창 밖(지도 등)에 있어도 Esc 로 닫힌다
+      if (window.StationQuiz && StationQuiz.isOpen && StationQuiz.isOpen()) { StationQuiz.close(); return; }
+      // 역 상세는 떡상 패널·타일 지도 위에 뜬다(z 1000) — 그것부터
+      const sdm = MODALS.find(x => x.panel === 'sd-panel');
+      if (sdm && panelOpen(sdm)) { const b = document.getElementById(sdm.close); if (b) b.click(); return; }
+      if (window.MarketMap && MarketMap.isOpen && MarketMap.isOpen()) { MarketMap.close(); return; }
+      if (window.RocketPanel && RocketPanel.isOpen && RocketPanel.isOpen()) { RocketPanel.close(); return; }
       const m = visibleModal();
       if (m) {
         const btn = document.getElementById(m.close);
@@ -286,8 +294,15 @@ const UI = (() => {
       }
       const open = document.querySelector('#route-panel:not([hidden]), #draw-panel:not([hidden])');
       if (open) { open.hidden = true; return; }
+      const ddOpen = !!document.querySelector('.tb-dropdown.open');
       closeDropdowns();
-      if (document.body.classList.contains('drawer-open')) closeDrawer();
+      if (document.body.classList.contains('drawer-open')) { closeDrawer(); return; }
+      if (ddOpen) return;
+      // 닫을 것이 없으면: 입력칸에서 빠져나와 지도로 (K1) — 지도에서는 화살표·+/− 로 움직인다(map-keyboard)
+      const a = document.activeElement;
+      if (a && a !== document.body && a.blur) a.blur();
+      const cv = (typeof map !== 'undefined' && map && map.getCanvas) ? map.getCanvas() : null;
+      if (cv) { try { cv.focus({ preventScroll: true }); } catch (err) { /* 무시 */ } }
     });
     document.querySelectorAll('[data-close]').forEach(b => {
       b.addEventListener('click', () => {

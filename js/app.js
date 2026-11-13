@@ -738,6 +738,11 @@ function renderSearch(raw) {
 }
 
 searchInput.addEventListener('input', () => renderSearch(searchInput.value.trim()));
+// 게시판·자료·랭킹 페이지에서 '/'·Ctrl+K 로 왔으면(./?find=1) 검색창에 바로 (K1). 주소에서는 지운다
+if (/[?&]find=1(&|$)/.test(location.search)) {
+  try { const u = new URL(location.href); u.searchParams.delete('find'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (e) { /* 무시 */ }
+  setTimeout(() => { try { searchInput.focus(); } catch (e) { /* 무시 */ } }, 0);
+}
 // 검색창을 다시 눌렀을 때, 글자가 남아 있으면 결과를 다시 띄운다
 searchInput.addEventListener('focus', () => {
   if (!searchInput.value.trim()) { renderRecent(); return; }
@@ -764,6 +769,8 @@ document.addEventListener('click', e => {
 });
 
 document.addEventListener('keydown', e => {
+  // Ctrl/⌘+K = 검색 (K1, 흔한 단축키) — 입력 중이어도 된다
+  if ((e.key === 'k' || e.key === 'K') && (e.ctrlKey || e.metaKey) && !e.altKey) { e.preventDefault(); searchInput.focus(); searchInput.select(); return; }
   if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
   // 다른 입력창에 커서가 있으면 '/' 는 글자다. 가로채면 안 된다.
   const el = document.activeElement;

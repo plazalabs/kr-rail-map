@@ -4,7 +4,7 @@
  "note": "노선·역 목록이 어디서 확인되는지의 증빙. 배포 데이터가 아니다. 확인 원천은 공공데이터포털 역위치 CSV(이용허락 제한 없음), OSM 노선 relation 정차점, OSM 역 노드의 선형 근접도(ODbL) 셋이다.",
  "near_km": 0.3,
  "summary": {
-  "lines": 83,
+  "lines": 85,
   "open_lines": 67,
   "open_pairs": 1465,
   "open_confirmed": 1456,
@@ -66,6 +66,32 @@
    ],
    "unconfirmed": [],
    "provisional": false,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "busan-metro-line-2-yangsan-ext": {
+   "name": "부산 2호선 양산중앙 연장",
+   "status": "construction",
+   "stations": 2,
+   "confirmed": 2,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": true,
+   "partial": false,
+   "gap_reason": ""
+  },
+  "yangsan-line": {
+   "name": "양산선",
+   "status": "construction",
+   "stations": 7,
+   "confirmed": 7,
+   "sources": [
+    "osm-geometry"
+   ],
+   "unconfirmed": [],
+   "provisional": true,
    "partial": false,
    "gap_reason": ""
   },

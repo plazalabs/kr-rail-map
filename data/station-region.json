@@ -4,8 +4,8 @@
  "basis": "이름이 겹치는 역에 한해, 1) 이름+노선 표기로 그 역 하나에만 맞는 주소 행의 시도·시군구, 2) 없으면 역 좌표가 속한 OSM 행정구역. 둘 다 없으면 넣지 않는다. 1)로 붙인 역은 2)와 대조해 summary.check_vs_osm 에 남긴다.",
  "summary": {
   "dup_names": 38,
-  "dup_stations": 78,
-  "labeled": 78,
+  "dup_stations": 79,
+  "labeled": 79,
   "unlabeled": 0,
   "unlabeled_by_reason": {},
   "rows": {
@@ -13,7 +13,7 @@
    "두 역 이상에 맞음(모호)": 6
   },
   "unknown_line_codes": [],
-  "from_osm": 36,
+  "from_osm": 37,
   "check_vs_osm": {
    "agree": 39,
    "disagree": [
@@ -569,6 +569,14 @@
    "label": "서울 서대문구",
    "src": "osm",
    "note": "2호선 신촌역 — OSM 역 노드 위치"
+  },
+  "st-ys-4": {
+   "name": "신기",
+   "sido": "경상남도",
+   "sgg": "양산시",
+   "label": "경남 양산시",
+   "src": "osm",
+   "note": "양산선 신기역(공사 중) — OSM 역 노드 위치 기준"
   }
  },
  "unlabeled": {}

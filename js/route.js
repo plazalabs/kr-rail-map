@@ -32,6 +32,8 @@ const RouteFinder = (() => {
     'seoul-metropolitan-subway-seohae-line': 51,
     'daegyeong-line': 55,
     'gangneung-line-ktx': 113,
+    // 양산선 노포~북정 11.43km / 약 25분 = 27 (양산시 발표 인용 보도 2026-03, 공사 중 · 2026-12 개통 예정)
+    'yangsan-line': 27,
     // 경부선 일반철도(무궁화) 서울↔수원 41.5km 33~40분 (2026-11 시간표) → 68 (예전 일반철도 기본 55 는 45분)
     'gyeongbu-line': 68,
   };

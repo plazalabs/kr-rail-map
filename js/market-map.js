@@ -204,7 +204,7 @@
   /* ---------------- 화면 ---------------- */
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var WLABEL = { avg: '평균', cbd: '도심', ybd: '여의도', gbd: '강남' };
-  var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', view: 'tiles', sel: null, tab: 'tiles' };
+  var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', view: 'tiles', sel: null, cmp: [], tab: 'tiles' };
   var el = null, isOpen = false, model = null, doc = null, rowsById = new Map(), tileById = new Map(), opener = null;
 
   // rank.js 는 'const RankTable' 로 선언돼 window 에 안 붙는다 — 이름으로 직접 찾는다
@@ -251,6 +251,10 @@
       '.mm-row i{flex:none;width:12px;height:12px;border-radius:3px}.mm-row b{display:inline;flex:0 1 auto}.mm-rk{flex:none;width:26px;color:var(--muted,#5b6470);font-size:var(--fs-xs);text-align:right}' +
       '.mm-row .mm-g{flex:none;font-size:var(--fs-xs);color:var(--muted,#5b6470)}.mm-row .mm-v{margin-left:auto;flex:none;font-size:var(--fs-xs);font-weight:700}' +
       '.mm-card{border-top:1px solid var(--border,#e3e6ea);padding:8px 14px 10px;font-size:var(--fs-sm);line-height:1.5;max-height:42%;overflow:auto}' +
+      '.mm-cmp{margin:0 0 8px;padding:6px 8px;border:1px solid var(--border,#e3e6ea);border-radius:10px;overflow-x:auto}' +
+      '.mm-cmp table{width:100%}.mm-cmp th{font-weight:700;white-space:nowrap}.mm-cmp td{white-space:nowrap}' +
+      '.mm-cx{border:0;background:none;color:var(--muted,#5b6470);cursor:pointer;padding:0 2px;font:inherit}' +
+      '.mm-card .mm-acts button:disabled{opacity:.5;cursor:default}' +
       '.mm-card h3{margin:0 0 2px;font-size:var(--fs-md)}' +
       '.mm-card .mm-src{font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
       '.mm-card table{border-collapse:collapse;font-size:var(--fs-xs);margin:4px 0}' +
@@ -503,10 +507,29 @@
 
   function stationById(id) { return typeof STATIONS !== 'undefined' ? STATIONS.find(function (s) { return s.properties.id === id; }) : null; }
 
+  var CMP_MAX = 4;
+  function compareHtml() {
+    var rows = st.cmp.map(function (id) { return rowsById.get(id); }).filter(Boolean);
+    if (!rows.length) return '';
+    var inv = invest() && typeof StationPrice !== 'undefined' && StationPrice.isReady();
+    var td = function (x) { return '<td>' + x + '</td>'; };
+    var h = '<div class="mm-cmp"><b>비교 (' + rows.length + '/' + CMP_MAX + ')</b> <span class="mm-src">' + WLABEL[st.w] + ' 기준 · ' + (st.y === 'all' ? '전체 개통 가정' : st.y + '년까지') + '</span>' +
+      '<table><tr><th></th>' + rows.map(function (r) { return '<th>' + esc(r.name) + ' <button type="button" class="mm-cx" data-id="' + esc(r.id) + '" aria-label="' + esc(r.name) + ' 비교에서 빼기">×</button></th>'; }).join('') + '</tr>' +
+      '<tr><th>지금</th>' + rows.map(function (r) { return td(r.isNew ? '못 감' : fm(r.now.min) + '분'); }).join('') + '</tr>' +
+      '<tr><th>개통 후</th>' + rows.map(function (r) { return td(fm(r.aft.min) + '분'); }).join('') + '</tr>' +
+      '<tr><th>줄어듦</th>' + rows.map(function (r) { var g = Logic.gainOf(r); return td(r.isNew ? '신규' : g > 0 ? '−' + g + '분' : '0분'); }).join('') + '</tr>' +
+      '<tr><th>순위</th>' + rows.map(function (r) { return td(r.change == null ? '→ ' + r.aft.rank + '위' : r.now.rank + '→' + r.aft.rank + '위'); }).join('') + '</tr>';
+    if (inv) {
+      h += '<tr><th>평당(전용)</th>' + rows.map(function (r) { var p = StationPrice.of(r.id); return td(p && p.medianPerPyeong != null ? esc(StationPrice.pp(p.medianPerPyeong)) + (p.deals < 5 ? '(적음)' : '') : '—'); }).join('') + '</tr>';
+      if (typeof StationJeonse !== 'undefined' && StationJeonse.isReady && StationJeonse.isReady()) h += '<tr><th>전세가율</th>' + rows.map(function (r) { var j = StationJeonse.of(r.id); return td(j && j.r != null ? Math.round(j.r * 100) + '%' : '—'); }).join('') + '</tr>';
+    }
+    return h + '</table></div>';
+  }
   function renderCard() {
     var box = el.querySelector('.mm-card');
     var row = st.sel && rowsById.get(st.sel);
-    if (!row) { box.innerHTML = '<p class="mm-src">타일을 누르면 여기에 그 역의 지금 → 개통 후 시간과 순위가 나옵니다. 지도에서 역을 눌러도 타일이 골라집니다.</p>'; return; }
+    var cmp = compareHtml();
+    if (!row) { box.innerHTML = cmp + '<p class="mm-src">타일을 누르면 여기에 그 역의 지금 → 개통 후 시간과 순위가 나옵니다. 지도에서 역을 눌러도 타일이 골라집니다.</p>'; bindCmp(box); return; }
     var tn = row.now.times || [], ta = row.aft.times || [];
     var cell = function (a, b) { return a == null ? (b == null ? '—' : '지금 못 감 → ' + b + '분') : (b == null ? a + '분' : a + '분 → ' + b + '분' + (a - b > 0 ? ' (−' + Math.round((a - b) * 10) / 10 + ')' : '')); };
     var tier = RTab().tierOf(row), T = RTab().TIERS[tier];
@@ -524,10 +547,18 @@
     }
     h += '<p class="mm-src">시간 = 업무지구까지 열차 대기 뺀 비교용 추정 · ' + (st.y === 'all' ? '시기 미정 노선까지 모두 개통 가정' : st.y + '년까지 개통한다고 가정') +
       ' · <a href="data.html" target="_blank" rel="noopener">출처</a>' + (doc.updated ? ' · 기준 ' + esc(doc.updated) : '') + '</p>' +
-      '<div class="mm-acts"><button type="button" data-a="map">지도에서 보기</button><button type="button" data-a="detail">역 상세 열기</button></div>';
-    box.innerHTML = h;
+      '<div class="mm-acts"><button type="button" data-a="map">지도에서 보기</button><button type="button" data-a="detail">역 상세 열기</button>' +
+      (st.cmp.indexOf(row.id) >= 0 ? '<button type="button" data-a="cmp" disabled>비교에 있음</button>' : '<button type="button" data-a="cmp"' + (st.cmp.length >= CMP_MAX ? ' disabled title="최대 4역"' : '') + '>비교에 추가</button>') + '</div>';
+    box.innerHTML = cmp + h;
+    bindCmp(box);
+    var cb = box.querySelector('[data-a="cmp"]');
+    if (cb && !cb.disabled) cb.addEventListener('click', function () { if (st.cmp.length < CMP_MAX && st.cmp.indexOf(row.id) < 0) { st.cmp.push(row.id); track('market_map_compare_add'); renderCard(); } });
     box.querySelector('[data-a="map"]').addEventListener('click', function () { flyTo(row.id); if (isMobile()) setTab('map'); });
     box.querySelector('[data-a="detail"]').addEventListener('click', function () { openDetail(row.id); });
+  }
+
+  function bindCmp(box) {
+    box.querySelectorAll('.mm-cx').forEach(function (b) { b.addEventListener('click', function () { st.cmp = st.cmp.filter(function (x) { return x !== b.dataset.id; }); renderCard(); }); });
   }
 
   function flyTo(id) {

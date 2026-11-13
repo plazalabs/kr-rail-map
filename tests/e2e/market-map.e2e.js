@@ -65,6 +65,19 @@ async function until(b, expr, n = 40) {
   const back = await b.evaluate(`(() => { const t = document.querySelector('#mm-panel .mm-tile.sel'); return { sel: t ? t.dataset.id : null, card: /청량리/.test(document.querySelector('#mm-panel .mm-card').textContent) }; })()`);
   R.check('지도·검색에서 청량리 열기 → 청량리 타일이 골라짐', !!cr && back.sel === cr && back.card, { cr, back });
 
+  // 비교에 추가 (최대 4역): 청량리(지금 골라짐) + 광운대 → 표 2칸, × 로 빼기
+  const cmp = await b.evaluate(`(() => {
+    const add = () => { const x = document.querySelector('#mm-panel .mm-card [data-a="cmp"]'); if (x && !x.disabled) x.click(); };
+    add();
+    const kw = STATIONS.find(f => f.properties.name_ko === '광운대'); MarketMap.pick(kw.properties.id, {}); add();
+    const heads = [...document.querySelectorAll('#mm-panel .mm-cmp th .mm-cx')].map(b => b.parentElement.textContent.replace('×', '').trim());
+    const rows = [...document.querySelectorAll('#mm-panel .mm-cmp tr')].map(tr => tr.firstChild.textContent);
+    const btn = document.querySelector('#mm-panel .mm-card [data-a="cmp"]');
+    const r = { heads, rows, btn: btn ? btn.textContent : null };
+    document.querySelector('#mm-panel .mm-cmp .mm-cx').click();
+    r.after = document.querySelectorAll('#mm-panel .mm-cmp .mm-cx').length;
+    return r; })()`);
+  R.check("'비교에 추가' → 표에 청량리·광운대 (지금·개통 후·줄어듦·순위), × 로 빼면 1칸", cmp.heads.join() === '청량리,광운대' && ['지금', '개통 후', '줄어듦', '순위'].every(k => cmp.rows.includes(k)) && cmp.btn === '비교에 있음' && cmp.after === 1, cmp);
   // 목록(순위) 보기: 빨라지는 분 큰 순(신규 먼저), 줄 누르면 역 상세 → 다시 타일로
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'list'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
   const lst = await b.evaluate(`(() => { const rows = [...document.querySelectorAll('#mm-panel .mm-row')]; const m = MarketMap.model();

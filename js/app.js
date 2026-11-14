@@ -682,6 +682,8 @@ function renderLineList() {
         const info = document.createElement('span');
         info.className = 'line-meta';
         info.textContent = `${st.km.toFixed(1)}km · ${st.stations}역`;
+        // B5 (11-15): km 는 지도 선로를 잰 길이 — 공식 영업거리와 다를 수 있다(예: 대전1 지도 20.7 · 자료마다 22.6~22.74, 끝 역 너머 선로·재는 방식 차이)
+        info.title = '지도에 그린 선로 길이(끝 역에서 끝 역까지) — 운영사 공식 영업거리와 조금 다를 수 있어요';
         label.append(cb, sw, document.createTextNode(p.name_ko || p.id), info);
         if (p.note) label.title = p.note;
         if (p.status !== 'open') label.title = (label.title ? label.title + ' / ' : '') +

@@ -234,6 +234,18 @@
     }
 
     // 묶음 배치 + 타일 배치를 한 번에. head: 묶음 이름 줄 높이(px)
+    // K2 라벨 단계 — 글자 크기는 12px 고정(7단계 하한)이라 줄이지 않고, 칸 크기에 맞춰 보여 줄 것을 단계적으로 줄인다.
+    // 한글·한자·▲▼ 12px, 그 밖(숫자·기호·영문) 7px로 폭을 어림. 안쪽 여백 좌우 3px·위아래 2px + 테두리 1px.
+    function textW(str) { var w = 0; str = String(str || ''); for (var i = 0; i < str.length; i++) { var c = str.charCodeAt(i); w += (c > 0x2e80 || c === 0x25b2 || c === 0x25bc) ? 12 : 7; } return w; }   // ▲▼는 한글 폭
+    var LINE = 15, PADX = 8, PADY = 6, MIN_NAME = 20;   // 이름은 최소 한 글자+말줄임(…)이 들어가야 보임 — 예전 기준(폭 27px 넘으면 이름)과 같은 수준
+    function labelPlan(name, val, w, h) {
+      var cw = w - PADX, ch = h - PADY, nw = textW(name), vw = textW(val);
+      var nameFits = cw >= Math.min(nw, MIN_NAME);
+      if (!nameFits || ch < 10) return { mode: 'none' };   // 높이 16px부터(예전 기준 15px 초과와 같음)
+      if (val && ch >= 2 * LINE - 1 && cw >= vw) return { mode: 'two' };          // 이름 / 값 두 줄
+      if (val && cw >= nw + 4 + vw) return { mode: 'inline' };                   // 한 줄에 '이름 값'
+      return { mode: 'name' };                                                    // 이름만 (넘치면 말줄임)
+    }
     function layout(model, W, H, head) {
       head = head == null ? 18 : head;
       var gr = squarify(model.groups.map(function (G) { return G.value; }), 0, 0, W, H);
@@ -248,7 +260,7 @@
 
     return { BANDS: BANDS, bandOf: bandOf, bandMatrix: bandMatrix, scatterPoints: scatterPoints, QUAD_LABEL: QUAD_LABEL, FAMILY: FAMILY, GAIN_BINS: GAIN_BINS, TIER_COLORS: TIER_COLORS, JEONSE_BINS: JEONSE_BINS, PRICE_BINS: PRICE_BINS, NEW_COLOR: NEW_COLOR, NA_COLOR: NA_COLOR,
       OTHER_NEW: OTHER_NEW, NO_NEW: NO_NEW, NONE: NONE,
-      familyOf: familyOf, isNewLine: isNewLine, gainOf: gainOf, colorOf: colorOf, groupOf: groupOf, squarify: squarify, build: build, layout: layout };
+      familyOf: familyOf, isNewLine: isNewLine, gainOf: gainOf, colorOf: colorOf, groupOf: groupOf, squarify: squarify, build: build, layout: layout, textW: textW, labelPlan: labelPlan };
   })();
 
   if (typeof document === 'undefined') { global.MarketMap = { Logic: Logic }; return; }
@@ -303,6 +315,9 @@
       '.mm-tile.sel{box-shadow:inset 0 0 0 3px #111;z-index:3}' +
       '.mm-tile b{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.mm-tile span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92}' +
+      '.mm-tile.inl{display:flex;align-items:baseline;gap:4px}.mm-tile.inl b,.mm-tile.inl span{display:inline}.mm-tile.inl span{flex:none}' +
+      '.mm-crowd{position:absolute;left:8px;bottom:8px;z-index:4;display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:calc(100% - 16px);padding:6px 8px 6px 10px;border-radius:10px;background:var(--panel-bg,#fff);color:var(--text,#222);box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:var(--fs-sm)}' +
+      '.mm-tolist{border:1px solid var(--accent,#1565c0);background:var(--accent,#1565c0);color:#fff;border-radius:999px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:var(--fs-sm);font-weight:700}.mm-tolist:focus-visible{outline:3px solid var(--text,#222);outline-offset:2px}' +
       '.mm-mx{display:flex;flex-direction:column;gap:6px;padding:2px}' +
       '.mm-mxr{display:flex;gap:8px;align-items:flex-start}' +
       '.mm-mxh{flex:none;width:92px;font-size:var(--fs-xs);line-height:1.3}.mm-mxh b{display:block;font-size:var(--fs-sm)}.mm-mxh span{color:var(--muted,#5b6470)}' +
@@ -428,6 +443,7 @@
     board.addEventListener('click', function (e) {
       var bc = e.target.closest('.mm-bcell');
       if (bc) { stopPlay(); st.focus = bc.dataset.g; st.band = bc.dataset.b; st.view = 'list'; track('market_map_filter_change', { 종류: '표 칸' }); render(); var u = el.querySelector('.mm-unfocus'); if (u) u.focus(); return; }
+      if (e.target.closest('.mm-tolist')) { stopPlay(); st.view = 'list'; track('market_map_filter_change', { 종류: '목록 권장' }); render(); var r0 = el.querySelector('.mm-board .mm-row'); if (r0) { try { r0.focus(); } catch (er) { /* 무시 */ } } return; }
       var g = e.target.closest('.mm-gname');
       if (g) { setFocus(st.focus ? null : g.dataset.g); return; }
       var t = e.target.closest('.mm-tile'); if (t) pick(t.dataset.id, { fromTile: true });
@@ -767,21 +783,28 @@
     if (W < 40 || H < 40) return;
     if (!model.total) { board.innerHTML = '<div class="mm-empty">이 조건에 맞는 역이 없습니다</div>'; return; }
     Logic.layout(model, W, H, 18);
-    var html = '';
+    var html = '', shown = 0, drawn = 0;
     tileById = new Map();
     model.groups.forEach(function (G) {
       var r = G.rect; if (!r || r.w < 2 || r.h < 2) return;
+      drawn += G.tiles.length;
       html += '<div class="mm-group" style="left:' + r.x + 'px;top:' + r.y + 'px;width:' + r.w + 'px;height:' + r.h + 'px">' +
         '<button type="button" class="mm-gname" data-g="' + esc(G.name) + '" title="' + esc(G.name) + ' · ' + G.tiles.length + '역 — ' + (st.focus ? '전체 보기로' : '이 묶음만 크게') + '" aria-label="' + esc(G.name) + ' ' + G.tiles.length + '역 — ' + (st.focus ? '전체 보기로 돌아가기' : '이 묶음만 크게 보기') + '">' + esc(G.name) + ' · ' + G.tiles.length + (st.focus ? '' : ' ›') + '</button></div>';
       G.tiles.forEach(function (t) {
         var q = t.rect; if (!q || q.w < 1 || q.h < 1) return;
         var row = t.row, val = metricOf(t).main, lab = tileLabel(t);
         var cls = 'mm-tile' + (t.color.hatch ? ' na' : '') + (t.sizeMissing ? ' few' : '') + (st.sel === row.id ? ' sel' : '');
-        var inner = (q.w > 27 && q.h > 15) ? '<b>' + esc(row.name) + '</b>' + ((q.w > 44 && q.h > 30) ? '<span>' + esc(val) + '</span>' : '') : '';
+        var plan = Logic.labelPlan(row.name, val, q.w, q.h), inner = '';
+        if (plan.mode !== 'none') { shown++; inner = '<b>' + esc(row.name) + '</b>'; }
+        if (plan.mode === 'two') inner += '<span>' + esc(val) + '</span>';
+        else if (plan.mode === 'inline') { cls += ' inl'; inner += '<span>' + esc(val) + '</span>'; }
         html += '<button type="button" class="' + cls + '" data-id="' + esc(row.id) + '" tabindex="-1" role="gridcell" aria-label="' + esc(lab) + '" title="' + esc(lab) + '" ' +
           'style="left:' + q.x + 'px;top:' + q.y + 'px;width:' + q.w + 'px;height:' + q.h + 'px;background-color:' + t.color.bg + ';color:' + t.color.fg + '">' + inner + '</button>';
       });
     });
+    // 이름이 보이는 타일이 절반도 안 되면(수도권 전체 등) 목록·묶음 확대를 권한다
+    if (drawn && shown / drawn < 0.5) html += '<div class="mm-crowd" role="note"><span>역이 많아 이름이 ' + (shown ? '일부만' : '안') + ' 보여요 · 묶음 이름을 누르면 크게</span>' +
+      '<button type="button" class="mm-tolist">목록으로 보기</button></div>';
     board.innerHTML = html;
     board.querySelectorAll('.mm-tile').forEach(function (b) { tileById.set(b.dataset.id, b); });
     var first = (st.sel && tileById.get(st.sel)) || board.querySelector('.mm-tile');

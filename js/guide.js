@@ -91,6 +91,7 @@
     el.innerHTML =
       '<div class="gd-head"><b>처음 오셨나요?</b> 이런 걸 할 수 있어요' +
       '<button type="button" class="gd-close" aria-label="안내 닫기"><i data-ic="close"></i></button></div>' +
+      '<div class="gd-slogan">축을 읽으면, 도시의 미래가 보인다</div>' +
       '<div class="gd-list">' + ITEMS.map(function (it, i) { return itemHtml(it, i, 'gd-item'); }).join('') + '</div>' +
       '<div class="gd-foot">이 버튼들은 왼쪽 메뉴 맨 위 <b>빠른 시작</b>에 늘 있어요</div>';
     el.querySelector('.gd-close').addEventListener('click', close);

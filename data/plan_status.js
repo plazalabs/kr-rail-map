@@ -59,7 +59,8 @@ const DP = path.join(__dirname, '..', 'data.html');
 const page = fs.readFileSync(DP, 'utf8');
 const rows = doc.features.filter(f => f.properties.status !== 'open' && f.properties.plan_stage)
   .sort((a, b) => a.properties.name_ko.localeCompare(b.properties.name_ko, 'ko', { numeric: true }))
-  .map(f => { const p = f.properties; return '<tr><td><a href="line/' + esc(p.id) + '.html">' + esc(p.name_ko) + '</a></td><td>' + esc(p.plan_stage) + '</td><td>' + esc(p.opened || '미정') + '</td><td>' + esc(p.plan_basis) + ' · <a href="' + esc(p.plan_url) + '" rel="noopener" target="_blank">출처</a></td><td>' + esc(p.plan_checked) + '</td></tr>'; });
+  // 노선 페이지는 역 3곳 이상인 노선만 만든다(build_pages.py) — 페이지가 없는 노선(연장·정차 1~2역)은 링크 없이 이름만 (11-15 링크 점검: 깨진 링크 4개)
+  .map(f => { const p = f.properties; const has = fs.existsSync(path.join(__dirname, '..', 'line', p.id + '.html')); return '<tr><td>' + (has ? '<a href="line/' + esc(p.id) + '.html">' + esc(p.name_ko) + '</a>' : esc(p.name_ko)) + '</td><td>' + esc(p.plan_stage) + '</td><td>' + esc(p.opened || '미정') + '</td><td>' + esc(p.plan_basis) + ' · <a href="' + esc(p.plan_url) + '" rel="noopener" target="_blank">출처</a></td><td>' + esc(p.plan_checked) + '</td></tr>'; });
 const block = '<!-- plans:start -->\n<h2 id="plans">미래 노선 근거 — 사업 단계·출처·확인일</h2>\n' +
   '<p>떡상 순위·타일 지도의 연도 버튼은 <b>그해까지 그 노선이 개통한다고 가정</b>한 계산입니다. 개통 시기는 아래 발표 기준이며 바뀔 수 있습니다. ' +
   '단계는 확인할 수 있는 상태(공사 중·설계 중·신설 승인·정부 계획(구상)·지자체 제안·검토 중)만 적고, 개통 확률 같은 숫자는 붙이지 않습니다. ' +

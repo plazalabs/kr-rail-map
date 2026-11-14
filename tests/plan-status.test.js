@@ -33,6 +33,9 @@ check('표 줄 수 = 개통 전 노선 수', (block.match(/<tr><td>/g) || []).le
 check("표 위에 '그해까지 개통한다고 가정' 설명", /개통한다고 가정/.test(block));
 const gtxc = read('line/gtx-c.html');
 check('노선 페이지(GTX-C)에 단계·근거·출처·확인일', /class="plan"/.test(gtxc) && /공사 중/.test(gtxc) && /출처/.test(gtxc) && /마지막 확인/.test(gtxc));
+// 11-15 링크 점검: 역 1~2곳짜리 연장·정차 노선은 페이지가 없는데 링크가 걸려 깨졌었다
+const deadLinks = [...data.matchAll(/href="(line\/[^"#?]+)"/g)].map(m => m[1]).filter(u => !fs.existsSync(path.join(__dirname, '..', u)));
+check('data.html 의 노선 페이지 링크가 모두 실제 파일', deadLinks.length === 0, deadLinks.join(', '));
 check('운행 중 노선 페이지(공항철도)에는 상자 없음', !/<div class="plan">/.test(read('line/arex.html')));
 check('순위표(rank.html) 연도 옆 근거 링크', /href="data\.html#plans"/.test(read('rank.html')));
 check('타일 지도 연도 옆 근거 링크', /data\.html#plans/.test(read('js/market-map.js')));

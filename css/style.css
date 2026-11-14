@@ -1501,6 +1501,20 @@ body.map-ready #map-skeleton .sk { animation: none; }
   body:not(.sidebar-hidden) #status,
   body:not(.sidebar-hidden) .route-legend,
   body:not(.sidebar-hidden) #guide-card { left: 344px; }
+  /* 패널 접기 손잡이 (회장님 피드백 11-14: 카드 뒤에 가려 안 보였음) — 카드 오른쪽 가장자리에 붙은 탭, ‹ 접기 / › 펼치기.
+     map-wrap 은 left 68px, 카드는 #app 기준 left 80 + 너비 320 + margin 12 → map-wrap 기준 카드 오른쪽 끝 344px */
+  #sidebar-toggle {
+    top: 50%; left: 344px; transform: translateY(-50%);
+    width: 22px; height: 56px; padding: 0; border-left: 0;
+    border-radius: 0 10px 10px 0; z-index: 47;
+  }
+  body.sidebar-hidden #sidebar-toggle { left: 0; }
+  #sidebar-toggle .burger { display: none; }
+  #sidebar-toggle::after {
+    content: ""; width: 8px; height: 8px; border: solid currentColor; border-width: 0 0 2.2px 2.2px;
+    transform: translateX(2px) rotate(45deg);
+  }
+  body.sidebar-hidden #sidebar-toggle::after { transform: translateX(-2px) rotate(-135deg); }
 }
 
 /* 자료 일부 실패 알림 (H4, 2026-11-14) */

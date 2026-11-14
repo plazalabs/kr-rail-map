@@ -955,7 +955,7 @@
     var inv = invest() && typeof StationPrice !== 'undefined' && StationPrice.isReady();
     var td = function (x) { return '<td>' + x + '</td>'; };
     var h = '<div class="mm-cmp"><b>비교 (' + rows.length + '/' + CMP_MAX + ')</b> <span class="mm-src">' + WLABEL[st.w] + ' 기준 · ' + (st.y === 'all' ? '전체 개통 가정' : st.y + '년까지') + '</span>' +
-      '<table><tr><th></th>' + rows.map(function (r) { return '<th>' + esc(r.name) + ' <button type="button" class="mm-cx" data-id="' + esc(r.id) + '" aria-label="' + esc(r.name) + ' 비교에서 빼기">×</button></th>'; }).join('') + '</tr>' +
+      '<table><tr><th><span class="sr-only">항목</span></th>' + rows.map(function (r) { return '<th>' + esc(r.name) + ' <button type="button" class="mm-cx" data-id="' + esc(r.id) + '" aria-label="' + esc(r.name) + ' 비교에서 빼기">×</button></th>'; }).join('') + '</tr>' +
       '<tr><th>지금</th>' + rows.map(function (r) { return td(r.isNew ? '못 감' : fm(r.now.min) + '분'); }).join('') + '</tr>' +
       '<tr><th>개통 후</th>' + rows.map(function (r) { return td(fm(r.aft.min) + '분'); }).join('') + '</tr>' +
       '<tr><th>줄어듦</th>' + rows.map(function (r) { var g = Logic.gainOf(r); return td(r.isNew ? '신규' : g > 0 ? '−' + g + '분' : '0분'); }).join('') + '</tr>' +

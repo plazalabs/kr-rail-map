@@ -1493,6 +1493,29 @@ function clearMobileOverlays() {
 let lastRouteFit = null;
 function refitLastRoute() { if (lastRouteFit) { try { map.fitBounds(lastRouteFit.bounds, { padding: lastRouteFit.pad(), maxZoom: 12.2, duration: 300 }); } catch (e) { /* 무시 */ } } }
 
+// 휴대폰: 길찾기 시트가 떠 있으면 오른쪽 아래 지도 단추(나침반·확대)가 시트에 가려 눌리지 않는다
+// (WCAG 2.2 target-size) — 시트 높이만큼 단추 묶음을 위로 올린다. 값이 바뀔 때만 쓴다.
+(function liftCtrlsOverSheet() {
+  const rp = document.getElementById('route-panel'), dp = document.getElementById('draw-panel');
+  if (!rp || !window.ResizeObserver) return;
+  const mq = window.matchMedia('(max-width: 980px)');   /* style.css 하단 시트 구간과 같게 */
+  let last = '';
+  const sync = () => {
+    let h = 0;
+    if (mq.matches) for (const p of [rp, dp]) if (p && !p.hidden) h = Math.max(h, p.getBoundingClientRect().height);
+    const v = h ? Math.round(h) + 'px' : '';
+    if (v === last) return;
+    last = v;
+    // body class 를 바꾸면 body 를 보는 감시자(탭바·패널 접기)가 덩달아 돈다 — 단추 묶음에만 직접 쓴다
+    // 묶음 전체를 올리면 펼친 출처 글(attribution)까지 지도 한가운데로 올라와 지도를 가린다 — 출처 글만 빼고 올린다
+    for (const g of document.querySelectorAll('.maplibregl-ctrl-bottom-right > :not(.maplibregl-ctrl-attrib)')) g.style.transform = v ? 'translateY(-' + v + ')' : '';
+  };
+  const ro = new ResizeObserver(sync);
+  for (const p of [rp, dp]) if (p) { ro.observe(p); new MutationObserver(sync).observe(p, { attributes: true, attributeFilter: ['hidden'] }); }
+  if (mq.addEventListener) mq.addEventListener('change', sync);
+  sync();
+})();
+
 function setRoutePeek(on, text) {
   const rp = document.getElementById('route-panel');
   routePeekBar();

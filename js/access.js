@@ -194,10 +194,10 @@ const StationAccess = (() => {
     // 68점 감사 5번: 길찾기(환승 대기 포함)와 숫자가 다른 이유를 표 바로 위에
     let h = '<div class="sa-def">열차 기다리는 시간은 뺀 <b>역끼리 비교용</b> 시간 — 길찾기 시간보다 짧을 수 있어요</div>' +
       '<table class="sa-tbl"><thead><tr>' +
-      '<th class="sa-lab"></th>' +
+      '<th class="sa-lab"><span class="sr-only">업무지구</span></th>' +
       '<th class="sa-now">지금</th>' +
       '<th class="sa-aft">개통 후</th>' +
-      '<th class="sa-gain"></th></tr></thead><tbody>';
+      '<th class="sa-gain"><span class="sr-only">빨라지는 분</span></th></tr></thead><tbody>';
     for (const r of a.rows) {
       let gain = '';
       if (r.isNew) gain = '<span class="sa-gain sa-new">신규</span>';

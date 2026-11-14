@@ -31,15 +31,16 @@
     if (folded() && now.split(',').some(function (k) { return k && (',' + seen + ',').indexOf(',' + k + ',') < 0; })) document.body.classList.remove('rpanel-hidden');
     seen = now;
     if (typeof syncMapBtn === 'function') syncMapBtn();
+    if (!mq.matches) { setHidden(true); return; }   // 휴대폰은 손잡이 없음 — 계산(스타일·크기 재기) 건너뜀
     // 접힌 동안은 창이 display:none 이라 접히기 전 '열린 창'을 기억해 둔 것으로 판단
     var p = folded() ? null : openPanel();
     var any = folded() ? !!document.querySelector('.rkp:not([hidden]), #route-panel:not([hidden]), #draw-panel:not([hidden])') : !!p;
     if (!mq.matches || !any) {
-      btn.hidden = true;
+      setHidden(true);
       if (folded() && !any) document.body.classList.remove('rpanel-hidden');   // 창을 닫으면 다음엔 펼친 채로
       return;
     }
-    btn.hidden = false;
+    setHidden(false);
     var wrap = document.getElementById('map-wrap').getBoundingClientRect();
     if (folded()) {
       btn.style.right = '0px';
@@ -50,10 +51,13 @@
       btn.style.top = Math.round(r.top - wrap.top + Math.min(r.height, wrap.height - (r.top - wrap.top)) / 2) + 'px';
     }
     var f = folded();
-    btn.setAttribute('aria-expanded', f ? 'false' : 'true');
-    btn.setAttribute('aria-label', f ? '오른쪽 창 펼치기' : '오른쪽 창 접기');
-    btn.title = f ? '오른쪽 창 펼치기' : '오른쪽 창 접기 (지도 넓게)';
+    setAttr('aria-expanded', f ? 'false' : 'true');
+    setAttr('aria-label', f ? '오른쪽 창 펼치기' : '오른쪽 창 접기');
+    setAttr('title', f ? '오른쪽 창 펼치기' : '오른쪽 창 접기 (지도 넓게)');
   }
+  // 바뀔 때만 쓴다 — 같은 값이라도 hidden 을 쓰면 아래 MutationObserver 가 다시 불러 매 프레임 도는 고리가 됐다(R8 실측, 11-15)
+  function setHidden(h) { if (btn.hidden !== h) btn.hidden = h; }
+  function setAttr(k, v) { if (btn.getAttribute(k) !== v) btn.setAttribute(k, v); }
   function schedule() { if (!raf) raf = requestAnimationFrame(place); }
 
   function toggle() {
@@ -74,7 +78,10 @@
     btn.addEventListener('click', toggle);
     wrap.appendChild(btn);
     // 창이 열리고 닫히는 것(hidden 속성)·크기 바뀜을 따라 손잡이를 옮긴다
-    new MutationObserver(schedule).observe(wrap, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'class'] });
+    // 성능 (R8, 11-15): 지도(#map) 안 변화(표지·칩·maplibre 클래스)는 손잡이와 상관없다 — 첫 화면에 180번 돌던 것
+    new MutationObserver(function (list) {
+      for (var i = 0; i < list.length; i++) { var t = list[i].target; if (t !== btn && !(t.closest && t.closest('#map'))) { schedule(); return; } }
+    }).observe(wrap, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'class'] });
     new MutationObserver(schedule).observe(document.body, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('resize', schedule);
     if (mq.addEventListener) mq.addEventListener('change', schedule);
@@ -111,7 +118,9 @@
   function syncMapBtn() {
     if (!mapBtn) return;
     var on = mapOnly();
-    mapBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    var p = on ? 'true' : 'false';
+    if (mapBtn.getAttribute('aria-pressed') === p) return;   // 바뀐 게 없으면 손대지 않음(관찰자 고리 막기)
+    mapBtn.setAttribute('aria-pressed', p);
     mapBtn.classList.toggle('active', on);
     mapBtn.title = on ? '창 다시 펴기' : '지도만 보기 (왼쪽·오른쪽 창 한 번에 접기)';
     mapBtn.lastChild.textContent = on ? ' 창 펴기' : ' 지도만';

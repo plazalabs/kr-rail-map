@@ -98,7 +98,11 @@
     // 패널이 열리고 닫히는 것(hidden)·체크박스 변화를 보고 선택 표시를 맞춘다
     // 떡상 패널은 나중에 만들어지므로 지도 영역 전체를 본다
     var wrap = $('map-wrap') || document.body;
-    if (global.MutationObserver) new MutationObserver(sync).observe(wrap, { attributes: true, attributeFilter: ['hidden'], subtree: true, childList: true });
+    // 성능 (R8, 11-15): 지도(#map) 안 표지·칩이 바뀔 때마다 돌던 것(첫 화면 180번) → 지도 밖 변화만, 한 프레임에 한 번
+    var raf = 0;
+    var later = function () { if (!raf) raf = (global.requestAnimationFrame || setTimeout)(function () { raf = 0; sync(); }); };
+    var outsideMap = function (list) { for (var i = 0; i < list.length; i++) { var t = list[i].target; if (!(t.closest && t.closest('#map'))) return true; } return false; };
+    if (global.MutationObserver) new MutationObserver(function (list) { if (outsideMap(list)) later(); }).observe(wrap, { attributes: true, attributeFilter: ['hidden'], subtree: true, childList: true });
     var cb = $('layer-jeonse');
     if (cb) cb.addEventListener('change', sync);
     if (global.MutationObserver) new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });

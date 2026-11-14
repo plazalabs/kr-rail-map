@@ -55,6 +55,11 @@ async function route(b, from, to) {
     const B = await route(b, '서울', '부산');
     R.check('B1 길찾기 실클릭', B.go.ok, B.go.why);
     R.check('B2 서울→부산 예상 요금 54,400원', /예상 요금 54,400원/.test(B.total) && !/추정/.test(B.total), B.total);
+    // 종합12장 A① (11-14): KTX 사이 역은 '선로상 지나는 역' — 'N개역'(모든 열차가 서는 것처럼) 아님 + 코레일 정차역 확인 링크
+    const pass = await b.evaluate(`(() => { const p = document.querySelector('#route-result .rc-panel:not([hidden])'); if (!p) return null;
+      const L = [...p.querySelectorAll('.leg')].find(l => l.querySelector('.leg-passnote')); if (!L) return { legs: [...p.querySelectorAll('.leg')].map(l => l.textContent.slice(0, 60)) };
+      return { note: !!L.querySelector('.leg-passnote a[href*="korail"]'), btn: (L.querySelector('.via-toggle') || {}).textContent }; })()`);
+    R.check("B2b KTX 사이 역 = '선로상 N구간'(N개역 아님) + 정차역은 열차마다 다름 안내·코레일 링크", !!pass && pass.note && /^선로상 \d+구간$/.test(pass.btn || ''), pass);
     R.check('B3 내역: KTX 서울→부산 54,400원 공식 운임표 (2026.9.1 기준)',
       B.rows.length === 1 && B.rows[0].includes('54,400원') && B.rows[0].includes('공식 운임표 (2026.9.1 기준)'), B.rows);
     await b.shot(path.join(OUT, 'b-seoul-busan.png'));

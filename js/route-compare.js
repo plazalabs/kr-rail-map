@@ -742,8 +742,12 @@ const RouteCompare = (() => {
         segStations.push(stLink(r.path[i2]));
         const viaId = `rc-via-${tabId}-${leg.from}-${leg.to}`;
         const un = leg.unopened ? ` <span class="badge-unopened">미개통</span>` : '';
-        html += `<div class="leg${leg.unopened ? ' leg-unopened' : ''}">${a} → <b>${ln}</b>${un} <button class="via-toggle" data-target="${viaId}">${n}개역</button> → ${b}\n` +
-          `<div class="via-list" id="${viaId}" hidden>${segStations.join(' → ')}</div></div>`;
+        // 종합12장 A① (11-14): KTX·일반철도는 열차마다 서는 역이 다르다 — 코레일 열차별 정차 자료(J2, 활용신청 대기) 전에는
+        // 사이 역을 '선로상 지나는 역'으로만 보여 준다 (예전엔 'N개역'이라 모든 열차가 그 역들에 서는 것처럼 읽혔다)
+        const passOnly = ['ktx', 'conventional'].includes(RF.categoryOf(leg.lineId));
+        const passNote = passOnly ? `<div class="leg-passnote">사이 역은 <b>선로상 지나는 역</b>이에요 — 실제로 서는 역은 열차마다 달라요 · <a href="https://www.letskorail.com/" target="_blank" rel="noopener">코레일에서 열차별 정차역 확인</a></div>` : '';
+        html += `<div class="leg${leg.unopened ? ' leg-unopened' : ''}">${a} → <b>${ln}</b>${un} <button class="via-toggle" data-target="${viaId}">${passOnly ? '선로상 ' + n + '구간' : n + '개역'}</button> → ${b}\n` +
+          passNote + `<div class="via-list" id="${viaId}" hidden>${segStations.join(' → ')}</div></div>`;
       }
       // 이 구간을 내린 뒤 갈아타는 시간 (역마다 다르다)
       if (leg.transferAfter > 0) {

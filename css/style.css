@@ -668,6 +668,8 @@ body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
 #route-result .leg-unopened .station-timeline { border-left-color: rgba(234, 179, 8, 0.4); }
 
 .station-timeline { margin-top: 6px; padding: 2px 0; }
+.leg-passnote { margin: 4px 0 2px; font-size: var(--fs-xs); line-height: 1.45; color: var(--muted); }
+.leg-passnote a { color: var(--accent); }
 .st-row {
   display: flex; align-items: center; gap: 8px;
   padding: 3px 0; font-size: var(--fs-sm); position: relative;

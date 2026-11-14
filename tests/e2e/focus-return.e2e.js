@@ -83,15 +83,15 @@ async function waitOpen(b, id, want = true, ms = 5000) { const t0 = Date.now(); 
   R.check("Esc 로 닫으면 포커스가 '분석' 버튼으로 (메뉴 항목은 닫혀 안 보이므로)", rsClosed && /tb-dropbtn/.test(a5), { rsClosed, a5 });
 
   // 5. 길찾기 패널 (키보드): '길찾기' 버튼 Enter → 포커스가 '출발' 칸으로, Esc → '길찾기' 버튼으로
-  const rb = await b.evaluate(`(() => { const e = document.getElementById('route-btn'); e.focus(); return document.activeElement === e; })()`);
+  const rb = await b.evaluate(`(() => { const e = document.querySelector('#tabbar [data-tab="route"]'); e.focus(); return document.activeElement === e; })()`);   // J7: 길찾기 = 왼쪽 레일
   await enter(b); await sleep(300);
   const rOpen = await b.evaluate(`!document.getElementById('route-panel').hidden`);
   const a6 = await b.evaluate(`document.activeElement && document.activeElement.id`);
   R.check("길찾기 (키보드) → 패널 열림·포커스가 '출발' 칸으로", rb && rOpen && a6 === 'route-from', { rb, rOpen, a6 });
   await b.key('Escape', 'Escape', 27); await sleep(300);
   const rClosed = await b.evaluate(`document.getElementById('route-panel').hidden`);
-  const a7 = await b.evaluate(`document.activeElement && document.activeElement.id`);
-  R.check("Esc 로 닫으면 포커스가 '길찾기' 버튼으로", rClosed && a7 === 'route-btn', { rClosed, a7 });
+  const a7 = await b.evaluate(`document.activeElement && document.activeElement.getAttribute('data-tab')`);
+  R.check("Esc 로 닫으면 포커스가 레일 '길찾기' 버튼으로", rClosed && a7 === 'route', { rClosed, a7 });
   // 6. 그리기 패널 (키보드): '도구 > 나만의 노선 그리기' → 포커스가 패널로, ✕(Enter) → '도구' 버튼으로
   const tb = await b.evaluate(`(() => { const e = [...document.querySelectorAll('#toolbar .tb-dropbtn')].find(x => x.textContent.trim().startsWith('도구')); e.focus(); return document.activeElement === e; })()`);
   await enter(b); await sleep(250);

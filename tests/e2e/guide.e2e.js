@@ -50,7 +50,7 @@ const card = b => b.evaluate(`(() => { const e = document.getElementById('guide-
   // 사이드바 '빠른 시작' — 카드를 본 뒤에도 늘 있다 (회장님: '처음 화면에 있던 게 안 보인다', 2026-11-11)
   const qs = await b.evaluate(`(() => { const items = [...document.querySelectorAll('#quick-start .qs-item')]; return { n: items.length, names: items.map(e => e.querySelector('b').textContent),
     visible: items.every(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.top >= 0 && r.bottom <= innerHeight; }) }; })()`);
-  R.check("카드를 본 뒤에도 사이드바 '빠른 시작' 4칸이 화면 안에 늘 있다", qs.n === 4 && qs.visible && /길찾기/.test(qs.names[0]), qs);
+  R.check("카드를 본 뒤에도 사이드바 '빠른 시작' 3칸(길찾기는 레일, J7)이 화면 안에 늘 있다", qs.n === 3 && qs.visible && /통근권/.test(qs.names[0]) && !qs.names.some(n => /길찾기/.test(n)), qs);
   await b.evaluate(`document.querySelector('#quick-start .qs-item[data-i="1"]').click()`); await sleep(1000);
   R.check("빠른 시작 '통근권 찾기' → 통근권 패널", await b.evaluate(`document.getElementById('cm-panel') && document.getElementById('cm-panel').style.display !== 'none'`));
   await b.evaluate(`CommuteMap.hide(); document.querySelector('#quick-start .qs-item[data-i="2"]').click()`); await sleep(500);
@@ -68,9 +68,10 @@ const card = b => b.evaluate(`(() => { const e = document.getElementById('guide-
   await m.evaluate(`document.getElementById('sidebar-toggle').click(); true`); await sleep(700);
   const mv = await m.evaluate(`(() => { const e = document.querySelector('#quick-start .qs-item'); const r = e.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && document.body.classList.contains('drawer-open'); })()`);
   R.check('휴대폰: ☰ 서랍 맨 위에 빠른 시작이 보인다', mv);
-  await m.evaluate(`document.querySelector('#quick-start .qs-item[data-i="0"]').click()`); await sleep(700);
-  const mr = await m.evaluate(`({ drawer: document.body.classList.contains('drawer-open'), route: !document.getElementById('route-panel').hidden })`);
-  R.check("휴대폰: '길찾기' 누르면 서랍이 닫히고 길찾기 창이 열린다", !mr.drawer && mr.route, mr);
+  // J7: 길찾기는 레일로 옮겨 빠른 시작에는 통근권(1)·투자(2)·노선도(3)
+  await m.evaluate(`document.querySelector('#quick-start .qs-item[data-i="1"]').click()`); await sleep(900);
+  const mr = await m.evaluate(`({ drawer: document.body.classList.contains('drawer-open'), cm: !!document.getElementById('cm-panel') && document.getElementById('cm-panel').style.display !== 'none' })`);
+  R.check("휴대폰: '통근권 찾기' 누르면 서랍이 닫히고 통근권 창이 열린다", !mr.drawer && mr.cm, mr);
   m.close();
   R.finish();
 })().catch(e => { console.error(e); process.exit(1); });

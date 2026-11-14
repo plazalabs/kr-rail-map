@@ -59,7 +59,7 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
 
   await tap(b, '#tabbar [data-tab="more"]');
   const sheet = await b.evaluate(`(() => { const t = document.getElementById('toolbar'); const r = t.getBoundingClientRect(); const bar = document.getElementById('tabbar').getBoundingClientRect();
-    return { disp: getComputedStyle(t).display, above: r.bottom <= bar.top + 1, ids: ['route-btn','diagram-btn','locate-btn','mode-btn'].every(id => { const e = document.getElementById(id); return e && e.getBoundingClientRect().width > 0; }) }; })()`);
+    return { disp: getComputedStyle(t).display, above: r.bottom <= bar.top + 1, ids: ['diagram-btn','locate-btn','mode-btn'].every(id => { const e = document.getElementById(id); return e && e.getBoundingClientRect().width > 0; }) }; })()`);
   R.check('더보기 → 툴바가 탭 바 위 시트로', sheet.disp !== 'none' && sheet.above && sheet.ids, sheet);
   R.check('더보기 시트에 사용법 버튼', await b.evaluate(`(() => { const e = document.getElementById('guide-btn'); return !!e && e.getBoundingClientRect().width > 0; })()`));
   await b.key('Escape', 'Escape', 27); await sleep(300);

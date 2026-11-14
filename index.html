@@ -59,9 +59,10 @@
       <button id="sidebar-close" class="icon-btn mob-only" aria-label="패널 닫기"><i data-ic="close"></i></button>
     </div>
     <p class="sb-sub">전국 철도 노선도 · <span id="data-summary">불러오는 중…</span></p>
+    <p class="sb-intro"><b>철도의 축, 도시의 내일.</b> 운행 중인 노선과 앞으로 생길 노선을 구분해 보고, 개통 전후 달라지는 연결을 비교해 보세요.</p>
 
     <div class="search-wrap">
-      <input id="search" type="search" placeholder="역 이름 검색" autocomplete="off"
+      <input id="search" type="search" placeholder="역 검색 (예: 서울역, 광화문)" autocomplete="off"
              aria-label="역 검색" role="combobox" aria-expanded="false" aria-controls="search-results">
       <kbd class="search-kbd">/</kbd>
       <div id="search-results" role="listbox" aria-label="검색 결과"></div>
@@ -128,13 +129,13 @@
     <button id="m-search" type="button" class="mob-only" aria-label="역 검색 열기"><i data-ic="search"></i><span>역 이름 검색</span></button>
 
     <div id="toolbar" role="toolbar" aria-label="지도 도구">
-      <button id="rocket-btn" class="tb-rocket" data-rocket-open aria-pressed="false" title="GTX 개통하면 우리 역은 몇 등이 될까 — 지도 안 떡상 랭킹"><i data-ic="trend"></i> GTX 떡상</button>
+      <button id="rocket-btn" class="tb-rocket j7-off" data-rocket-open aria-pressed="false" title="GTX 개통하면 우리 역은 몇 등이 될까 — 지도 안 떡상 랭킹"><i data-ic="trend"></i> GTX 떡상</button>
       <div class="tb-group" role="group" aria-label="배경 지도">
         <button data-style="normal" class="active" title="일반 지도" aria-label="일반 지도로 보기" aria-pressed="true">일반</button>
         <button data-style="satellite" title="위성 지도" aria-label="위성 지도로 보기" aria-pressed="false">위성</button>
         <button data-style="gray" title="흑백 지도" aria-label="흑백 지도로 보기" aria-pressed="false">흑백</button>
       </div>
-      <button id="route-btn" class="tb-primary">길찾기</button>
+      <button id="route-btn" class="tb-primary j7-off">길찾기</button>
       <button id="diagram-btn" title="45도 개략 노선도">노선도</button>
       <button id="locate-btn" class="tb-icon" title="내 위치" aria-label="내 위치로 이동"><i data-ic="locate"></i></button>
       <div class="tb-dropdown">
@@ -155,7 +156,7 @@
           <button id="invest-btn" role="menuitem">역세권 투자분석</button>
           <button id="coverage-btn" role="menuitem">노선 영향권</button>
           <button id="commute-btn" role="menuitem">통근권 찾기</button>
-          <button id="rocket-menu-btn" role="menuitem" data-rocket-open><i data-ic="trend"></i> GTX 떡상 랭킹</button>
+          <button id="rocket-menu-btn" class="j7-off" role="menuitem" data-rocket-open><i data-ic="trend"></i> GTX 떡상 랭킹</button>
           <button id="market-btn" role="menuitem" data-market-open><i data-ic="chart"></i> RAIL MARKET MAP (역 타일)</button>
           <button id="quiz-btn" role="menuitem" data-quiz-open><i data-ic="help"></i> 나에게 맞는 역 찾기</button>
         </div>

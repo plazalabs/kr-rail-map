@@ -1042,7 +1042,14 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
 .sd-jeonse-sec .jn-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--accent); }
 .sd-jeonse-sec .jn-bar em { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #c62828; }
 
-/* ---------- 빠른 시작 (사이드바, js/guide.js) ---------- */
+/* ---------- J7 가안 (2026-11-14): 왼쪽 레일이 주 메뉴 — 겹치는 진입점(도구막대 길찾기·GTX 떡상, 분석>떡상)은 숨김(코드 연결은 유지) ---------- */
+.j7-off { display: none !important; }
+.sb-intro { margin: 2px 0 10px; font-size: var(--fs-sm); line-height: 1.5; color: var(--text-2, var(--muted)); word-break: keep-all; }
+.sb-intro b { color: var(--text); }
+/* ---------- 빠른 시작 (사이드바, js/guide.js) — J7: 길찾기 칸은 레일에 있으므로 빼고 3칸 한 줄 칩 ---------- */
+#quick-start.qs-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#quick-start .qs-item { flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px 4px; min-height: 56px; }
+#quick-start .qs-item small { display: none; }
 .qs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 6px; }
 .qs-item { display: flex; gap: 6px; align-items: flex-start; text-align: left; min-width: 0;
   border: 1px solid var(--border); background: var(--btn-bg); color: var(--btn-text);

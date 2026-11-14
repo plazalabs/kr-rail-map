@@ -45,8 +45,8 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
   const b = await launch({ port: 9798, w: 1440, h: 900 });
   await b.send('Network.setBypassServiceWorker', { bypass: true });
   await b.goto(BASE + '#normal', 800); await ready(b);
-  const pre = await b.evaluate(`({ btn: !!document.getElementById('rocket-btn'), first: document.getElementById('toolbar').firstElementChild.id, panel: !!document.getElementById('rocket-panel'), layer: !!map.getLayer('rocket-tier') })`);
-  R.check("툴바 맨 앞에 '🚀 GTX 떡상' 버튼, 처음엔 패널·레이어 없음", pre.btn && pre.first === 'rocket-btn' && !pre.panel && !pre.layer, pre);
+  const pre = await b.evaluate(`({ btn: !!document.getElementById('rocket-btn'), rail: !!(document.querySelector('#tabbar [data-tab="rocket"]')||{}).offsetParent, tbVisible: !!document.getElementById('rocket-btn').offsetParent, panel: !!document.getElementById('rocket-panel'), layer: !!map.getLayer('rocket-tier') })`);
+  R.check("떡상 진입점 = 왼쪽 레일 '떡상'(도구막대 버튼은 J7 로 숨김), 처음엔 패널·레이어 없음", pre.btn && pre.rail && !pre.tbVisible && !pre.panel && !pre.layer, pre);
 
   await b.evaluate(`document.getElementById('rocket-btn').click()`);
   await until(b, `!!document.querySelector('#rocket-panel .rkp-row') && !!map.getLayer('rocket-tier')`);

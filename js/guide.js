@@ -63,7 +63,8 @@
   function renderQuick() {
     var box = document.getElementById('quick-start');
     if (!box || box.childElementCount) return;
-    box.innerHTML = ITEMS.map(function (it, i) { return itemHtml(it, i, 'qs-item'); }).join('');
+    // J7 가안(2026-11-14): '길찾기'(0번)는 왼쪽 레일에 있어 사이드바 빠른 시작에서는 뺀다 — 첫 방문 안내 카드에는 그대로
+    box.innerHTML = ITEMS.map(function (it, i) { return i === 0 ? '' : itemHtml(it, i, 'qs-item'); }).join('');
     box.querySelectorAll('.qs-item').forEach(function (b) {
       b.addEventListener('click', function () { run(+b.getAttribute('data-i')); });
     });

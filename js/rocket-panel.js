@@ -472,7 +472,8 @@
       StationRocket.setView({});
       if (turnedLayerOn) { turnedLayerOn = false; selfToggle = true; StationRocket.setLayer(false); selfToggle = false; }
     }
-    var b = document.querySelector('#toolbar [data-rocket-open]');
+    // J7: 도구막대 버튼은 숨김 → 보이는 쪽(왼쪽 레일 '떡상')으로 포커스를 돌려준다
+    var b = [document.querySelector('#tabbar [data-tab="rocket"]'), document.querySelector('#toolbar [data-rocket-open]')].filter(function (x) { return x && x.offsetParent; })[0];
     if (b && document.activeElement && document.activeElement !== document.body && !document.activeElement.offsetParent) b.focus();
   }
 

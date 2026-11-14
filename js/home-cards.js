@@ -31,7 +31,7 @@
       '.hc-n{flex:none;width:16px;font-weight:800;color:var(--muted);font-size:var(--fs-sm)}' +
       '.hc-nm{display:block;font-weight:700;font-size:var(--fs-sm)}.hc-ln{display:block;font-size:var(--fs-xs);color:var(--muted)}' +
       '.hc-ln i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:0}' +
-      '.hc-up{margin-left:auto;font-weight:800;color:var(--rk-up);font-size:var(--fs-sm)}' +
+      '.hc-up{margin-left:auto;font-weight:700;color:var(--text);font-size:var(--fs-xs);white-space:nowrap;font-variant-numeric:tabular-nums}' +
       '.hc-post{display:block;padding:7px 4px;border-bottom:1px solid var(--border);color:var(--text);text-decoration:none}' +
       '.hc-post:hover{background:var(--hover)}' +
       '.hc-tag{display:inline-block;font-size:var(--fs-xs);font-weight:700;color:var(--accent);background:var(--accent-weak);border-radius:6px;padding:0 6px;margin-bottom:2px}' +
@@ -43,11 +43,11 @@
   function renderTop(box, d) {
     if (!d || !d.top || !d.top.length) return;
     var sec = el('div', 'hc-sec hc-rank');
-    var head = el('div', 'hc-head'); head.appendChild(el('b', null, '개통하면 가장 많이 오르는 역'));
+    var head = el('div', 'hc-head'); head.appendChild(el('b', null, '개통 후 교통 접근성 변화'));   // J6: 집값 예측처럼 읽히지 않게 (회장님 결정 11-14)
     var all = el('button', null, '전체 →'); all.type = 'button'; all.setAttribute('data-rocket-open', '');
     all.addEventListener('click', function () { if (global.RocketPanel && RocketPanel.open) RocketPanel.open({}); });
     head.appendChild(all); sec.appendChild(head);
-    sec.appendChild(el('p', 'hc-sub', (d.year === 'all' ? '모든 계획 노선' : d.year + '년까지') + ' 개통 가정 · 수도권 ' + (d.total || '') + '역 교통 접근성 순위 · ▲ = 오르는 순위 칸 수 · 집값 예측 아님'));
+    sec.appendChild(el('p', 'hc-sub', (d.year === 'all' ? '모든 계획 노선' : d.year + '년까지') + ' 개통 가정 · 수도권 ' + (d.total || '') + '역 중 교통 접근성 순위 · 집값 예측 아님'));
     var ol = el('ol', 'hc-top');
     d.top.forEach(function (t, i) {
       var li = el('li'), b = el('button'); b.type = 'button';
@@ -56,7 +56,7 @@
       var mid = el('span'); mid.appendChild(el('span', 'hc-nm', t.n));
       var ln = el('span', 'hc-ln'); var dot = el('i'); dot.style.background = /^#[0-9a-f]{6}$/i.test(t.c || '') ? t.c : '#888'; ln.appendChild(dot);
       ln.appendChild(document.createTextNode((t.line || '') + (t.y ? ' · ' + t.y : ''))); mid.appendChild(ln); b.appendChild(mid);
-      b.appendChild(el('span', 'hc-up', '▲' + t.ch + '위'));   // 단위 — 오르는 순위 칸 수 (4차 N6)
+      b.appendChild(el('span', 'hc-up', '접근성 ' + t.now + '위→' + t.aft + '위'));   // J6: 순위 그 자체로 (주가 ▲ 장식 대신)
       b.addEventListener('click', function () { if (global.RocketPanel && RocketPanel.open) RocketPanel.open({ st: t.id, focus: true }); });
       li.appendChild(b); ol.appendChild(li);
     });

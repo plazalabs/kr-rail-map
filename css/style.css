@@ -1236,7 +1236,7 @@ body[data-theme="dark"] .maplibregl-ctrl-attrib-button, body[data-theme="eclipse
 .rkp-nm small i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
 .rkp-rt { display: flex; flex-direction: column; align-items: flex-end; }
 .rkp-list .rkp-chg { font-size: var(--fs-md); font-weight: 800; font-variant-numeric: tabular-nums; }
-.rkp-list .rkp-chg.up { color: var(--rk-up); }
+.rkp-list .rkp-chg.up { color: var(--accent); }   /* J6: 주가 빨강 대신 (접근성 순위 오름) */
 .rkp-list .rkp-chg.is-new { color: var(--rk-new); }
 .rkp-empty { padding: 12px; color: var(--muted); font-size: var(--fs-sm); }
 .rkp-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: var(--fs-xs); color: var(--text-2); padding: 0 4px; }

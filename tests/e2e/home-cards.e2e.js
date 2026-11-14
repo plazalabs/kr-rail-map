@@ -23,8 +23,10 @@ async function ready(b) {
   for (let i = 0; i < 30; i++) { if (await b.evaluate(`document.querySelectorAll('#home-cards .hc-top button').length === 3`)) break; await sleep(300); }
   const c = await b.evaluate(`(() => { const box = document.getElementById('home-cards'); return { names: [...box.querySelectorAll('.hc-nm')].map(x => x.textContent), ups: [...box.querySelectorAll('.hc-up')].map(x => x.textContent), sub: (box.querySelector('.hc-sub') || {}).textContent || '',
     rankJson: performance.getEntriesByType('resource').some(e => /data\\/rank\\.json/.test(e.name)), topJson: performance.getEntriesByType('resource').some(e => /rank-top\\.json/.test(e.name)) }; })()`);
-  R.check('TOP 3 = rank-top.json 그대로 (이름·▲계단)', c.names.join() === TOP.top.map(t => t.n).join() && c.ups.join() === TOP.top.map(t => '▲' + t.ch + '위').join(), c);
+  R.check('TOP 3 = rank-top.json 그대로 (이름·▲계단)', c.names.join() === TOP.top.map(t => t.n).join() && c.ups.join() === TOP.top.map(t => '접근성 ' + t.now + '위→' + t.aft + '위').join(), c);
   R.check("부제에 '집값 예측 아님'", /집값 예측 아님/.test(c.sub), c.sub);
+  const hd = await b.evaluate(`(document.querySelector('#home-cards .hc-rank .hc-head b') || {}).textContent || ''`);
+  R.check("J6 제목 '개통 후 교통 접근성 변화' ('가장 많이 오르는' 없음)", hd === '개통 후 교통 접근성 변화', hd);
   R.check('첫 화면에서 큰 rank.json 은 안 받고 작은 rank-top.json 만', c.topJson && !c.rankJson, { topJson: c.topJson, rankJson: c.rankJson });
   await b.evaluate(`document.querySelector('#home-cards .hc-top button').click(); 0`);
   let rp = null;

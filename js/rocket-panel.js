@@ -250,8 +250,8 @@
     var t = RankTable.tierOf(r);
     var where = [r.region, r.sgg].filter(Boolean).join(' ');
     var chg = r.isNew ? '<span class="rkp-chg is-new">신규</span>'
-      : (r.change > 0 ? '<span class="rkp-chg up">▲' + r.change + '</span>'
-        : (r.change < 0 ? '<span class="rkp-chg down">▼' + (-r.change) + '</span>' : '<span class="rkp-chg">그대로</span>'));
+      : (r.change > 0 ? '<span class="rkp-chg up">접근성 ▲' + r.change + '위</span>'
+        : (r.change < 0 ? '<span class="rkp-chg down">접근성 ▼' + (-r.change) + '위</span>' : '<span class="rkp-chg">그대로</span>'));
     var before = r.now.rank == null ? '<s class="rkp-was">지금 못 감</s>' : (r.change ? '<s class="rkp-was">' + r.now.rank + '위</s>' : '');
     // 순위 곡선
     var pts = curvePoints(doc, r.id, { weight: st.w, wait: st.wait });
@@ -288,12 +288,12 @@
   }
 
   function listHtml(rows, numOf) {
-    if (!rows.length) return '<li class="rkp-empty">' + (st.full ? '찾는 역이 없어요.' : '이 해까지는 크게 오르는 역이 없어요.') + '</li>';
+    if (!rows.length) return '<li class="rkp-empty">' + (st.full ? '찾는 역이 없어요.' : '이 해까지는 접근성 순위가 크게 오르는 역이 없어요.') + '</li>';
     return rows.map(function (r, i) {
       var nl = newLinesOf(doc, r, st.y)[0];
       var sub = nl ? '<i style="background:' + esc(nl.c) + '"></i>' + esc(nl.n) + (nl.y ? ' · ' + nl.y : '') : esc(r.region);
       var chg = r.isNew ? '<b class="rkp-chg is-new">신규</b>'
-        : (r.change > 0 ? '<b class="rkp-chg up">▲' + r.change + '</b>' : (r.change < 0 ? '<b class="rkp-chg down">▼' + (-r.change) + '</b>' : '<b class="rkp-chg">–</b>'));
+        : (r.change > 0 ? '<b class="rkp-chg up">▲' + r.change + '위</b>' : (r.change < 0 ? '<b class="rkp-chg down">▼' + (-r.change) + '위</b>' : '<b class="rkp-chg">–</b>'));
       return '<li><button type="button" class="rkp-row' + (r.id === st.sel ? ' is-sel' : '') + '" data-id="' + esc(r.id) + '">' +
         '<span class="rkp-no">' + (numOf ? numOf(r, i) : i + 1) + '</span>' +
         '<span class="rkp-nm"><b>' + esc(r.name) + '</b><small>' + sub + '</small></span>' +
@@ -347,7 +347,7 @@
     allb.textContent = st.full ? '← TOP 10 으로' : '전체 순위 보기 (' + R.total + '역) ↓';
     if (!st.full) {
       var top = RankTable.sortRows(R.rows.filter(function (x) { return !x.isNew && x.change != null && x.change > 0; }), 'rise').slice(0, 10);
-      el.querySelector('#rkp-list-h').textContent = when + ' 가장 많이 오르는 역';
+      el.querySelector('#rkp-list-h').textContent = when + ' 교통 접근성 순위가 가장 많이 오르는 역';   // J6
       el.querySelector('#rkp-list').innerHTML = listHtml(top);
       more.hidden = true;
       return;

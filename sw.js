@@ -4,8 +4,8 @@
  *  - GeoJSON 데이터: Cache First (최초 로드 후 캐시)
  *  - 지도 타일: Network First (오프라인이면 캐시된 타일만, 최대 200개)
  */
-const APP_CACHE = 'kr-rail-map-app-v236';
-const DATA_CACHE = 'kr-rail-map-data-v236';
+const APP_CACHE = 'kr-rail-map-app-v237';
+const DATA_CACHE = 'kr-rail-map-data-v237';
 const TILE_CACHE = 'kr-rail-map-tiles-v1';
 const MAX_TILE_ENTRIES = 200;
 
@@ -112,6 +112,17 @@ async function trimTileCache() {
   }
 }
 
+// 인터넷이 끊겼고 받아 둔 적 없는 페이지 — 짧은 한국어 안내(파일 없이 바로 만든다)
+function offlinePage() {
+  const html = '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
+    '<title>인터넷 연결 없음 | 한국철도맵</title><style>body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#fff;color:#16191d;line-height:1.6}' +
+    '@media(prefers-color-scheme:dark){body{background:#14171a;color:#e8eaed}a{color:#8ab0ff!important;border-color:#8ab0ff!important}}main{max-width:520px;margin:0 auto;padding:56px 20px}' +
+    'h1{font-size:22px;margin:0 0 8px}p{margin:0 0 20px;opacity:.85}a{display:inline-block;padding:11px 16px;border:1px solid #1b64da;border-radius:10px;color:#1b64da;text-decoration:none;font-weight:600}</style></head>' +
+    '<body><main><h1>인터넷 연결이 끊겼어요</h1><p>이 페이지는 아직 받아 두지 않았어요. 지도는 한 번 열어 본 적이 있으면 연결 없이도 볼 수 있어요.</p>' +
+    '<a href="' + self.registration.scope + 'index.html">지도로 가기</a></main></body></html>';
+  return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
@@ -166,10 +177,15 @@ self.addEventListener('fetch', (event) => {
             caches.open(APP_CACHE).then((cache) => cache.put(request, copy));
           }
           return res;
-        }).catch(() => {
+        }).catch(async () => {
           // 오프라인 내비게이션 폴백
-          if (request.mode === 'navigate') return caches.match('./index.html');   // 설치 때 받은 메인 (덮어쓰지 않음)
-          throw new Error('offline');
+          if (request.mode !== 'navigate') throw new Error('offline');
+          // 같은 페이지를 다른 질문(?…)으로 연 적이 있으면 그것 (index.html?from=… → index.html)
+          const same = await caches.match(request, { ignoreSearch: true });
+          if (same) return same;
+          // 11-15: 안 열어 본 노선 페이지(line/…)에 메인을 주면 상대 주소 css·js 가 다 깨져 '불러오는 중…'에서 멈췄다 → 안내 화면
+          if (/\/line\//.test(url.pathname)) return offlinePage();
+          return caches.match('./index.html');   // 설치 때 받은 메인 (덮어쓰지 않음)
         });
       })
     );

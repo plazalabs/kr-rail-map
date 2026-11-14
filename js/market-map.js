@@ -129,7 +129,7 @@
       { max: Infinity, key: 'p4', label: '6천만 이상', bg: '#17457a', fg: '#ffffff' },
     ];
     var NEW_COLOR = { key: 'new', label: '신규(지금은 못 감)', bg: '#7a3fd0', fg: '#ffffff' };
-    var NA_COLOR = { key: 'na', label: '자료 없음', bg: '#eceef1', fg: '#5b6470', hatch: true };
+    var NA_COLOR = { key: 'na', label: '자료 없음', bg: '#fbfcfd', fg: '#5b6470', hatch: true };   // K5: '0분' 회색(#d5d9de)과 헷갈리지 않게 거의 흰색 + 진한 빗금
 
     function colorOf(row, mode, tierOf, valueOf) {
       if (mode === 'jeonse' || mode === 'price') {
@@ -167,12 +167,14 @@
     }
 
     // squarified treemap (Bruls·Huizing·van Wijk 2000). items: [{v}], 반환: 같은 순서로 {x,y,w,h}
-    function squarify(values, x, y, w, h) {
+    // keep = true 면 크기순으로 다시 줄 세우지 않고 받은 순서대로 깐다(K5 — 노선 묶음을 GTX-A→H 읽는 순서로)
+    function squarify(values, x, y, w, h, keep) {
       var n = values.length, out = new Array(n);
       if (!n) return out;
       var total = 0; for (var i = 0; i < n; i++) total += Math.max(0, values[i]);
       if (!(total > 0) || w <= 0 || h <= 0) { for (var j = 0; j < n; j++) out[j] = { x: x, y: y, w: 0, h: 0 }; return out; }
-      var idx = values.map(function (v, k) { return k; }).sort(function (a, b) { return values[b] - values[a]; });
+      var idx = values.map(function (v, k) { return k; });
+      if (!keep) idx.sort(function (a, b) { return values[b] - values[a]; });
       var scale = (w * h) / total;
       var areas = idx.map(function (k) { return Math.max(0, values[k]) * scale; });
       var rx = x, ry = y, rw = w, rh = h, start = 0;
@@ -230,7 +232,7 @@
         return b.value - a.value || (a.name < b.name ? -1 : 1);
       });
       var total = groups.reduce(function (s, G) { return s + G.tiles.length; }, 0);
-      return { groups: groups, total: total };
+      return { groups: groups, total: total, ordered: by === 'line' };
     }
 
     // 묶음 배치 + 타일 배치를 한 번에. head: 묶음 이름 줄 높이(px)
@@ -263,7 +265,7 @@
         G.dv = 3 * floorV;
         G.tiles.forEach(function (t) { t.dv = Math.max(t.v, floorV); G.dv += t.dv; });
       });
-      var gr = squarify(model.groups.map(function (G) { return G.dv; }), 0, 0, W, H);
+      var gr = squarify(model.groups.map(function (G) { return G.dv; }), 0, 0, W, H, model.ordered);
       model.groups.forEach(function (G, i) {
         var r = gr[i]; G.rect = r;
         var inner = { x: r.x + 1, y: r.y + head, w: Math.max(0, r.w - 2), h: Math.max(0, r.h - head - 1) };
@@ -325,7 +327,8 @@
       '.mm-play{border:1px solid var(--border,#ccd);background:var(--panel-bg,#fff);color:var(--text,#222);border-radius:999px;width:30px;height:28px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-right:4px}' +
       '@media (prefers-reduced-motion: reduce){.mm-tile{transition:none}}' +
       '.mm-tile:focus-visible{outline:3px solid var(--accent,#1565c0);outline-offset:-3px;z-index:2}' +
-      '.mm-tile.na{background-image:repeating-linear-gradient(45deg,transparent 0 4px,rgba(0,0,0,.06) 4px 8px)}' +
+      '.mm-tile.na,.mm-legend i.na{background-image:repeating-linear-gradient(45deg,transparent 0 4px,rgba(0,0,0,.14) 4px 5px)}' +
+      '.mm-tile.na{border-color:#b9bfc6}.mm-legend i.na{box-shadow:inset 0 0 0 1px #9aa1a8}' +
       '.mm-tile.few{border-style:dashed;border-color:rgba(0,0,0,.45)}' +
       '.mm-tile.sel{box-shadow:inset 0 0 0 3px #111;z-index:3}' +
       '.mm-tile b{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
@@ -637,7 +640,7 @@
     }
     var sz = st.size === 'deals' ? ' · 크기 = 역이 속한 법정동 아파트 매매 건수(최근 6개월), 점선 = 자료 없음, 작은 값은 최소 크기로 보임'
       : st.size === 'supply' ? ' · 크기 = 역이 속한 법정동의 아직 준공 안 된 주택인허가 세대(수록 자료 기준, 입주 물량 그대로는 아님), 점선 = 없음·자료 없음, 작은 값은 최소 크기로 보임' : ' · 크기 = 모두 같음';
-    box.innerHTML = items.map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
+    box.innerHTML = items.map(function (x) { return '<span><i' + (x[0] === Logic.NA_COLOR.bg ? ' class="na"' : '') + ' style="background-color:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
       '<span>' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표) · 타일 숫자도 전세가율' : st.color === 'price' ? '평당가(만원/평) = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상) · 타일 숫자도 평당가' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위 · 타일 숫자 = 오른 계단(▲)' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + ((global.KR_WAIT && KR_WAIT.isPeak()) ? ' · 출퇴근 배차 넣음' : ' · 열차 대기 뺌') + sz) + '</span>';
   }
 
@@ -882,7 +885,10 @@
     var parts = st.view === 'scatter' ? [] : srcParts();   // 산점도는 자기 안내문에 기간·기준이 있다
     if (!parts.length) { p.hidden = true; p.innerHTML = ''; return; }
     p.hidden = false;
-    p.innerHTML = parts.map(esc).join('<br>') + '<br><b>값은 역이 속한 법정동 기준</b>이에요 — 역 바로 앞 단지 시세가 아닙니다 · <a href="data.html" target="_blank" rel="noopener">출처 자세히</a>';
+    // 판을 덜 먹게 한 줄로 짧게(기관 이름만) — 자료 전체 이름은 title(마우스 올리면)과 '자세히'에 (K5: 휴대폰에서 3줄이 판을 76px 줄이던 것)
+    var short = parts.map(function (t) { return t.replace(/: (\S+).*?(?= · \d|$)/, ': $1'); });   // 기관 이름 뒤 ~ 기간(숫자로 시작) 앞까지 지움 — 출처 이름 안의 '·'에 안 걸리게
+    p.title = parts.join('\n') + '\n값은 역이 속한 법정동 기준 — 역 바로 앞 단지 시세가 아닙니다';
+    p.innerHTML = short.map(esc).join(' · ') + ' · <b>법정동 기준</b>(역 앞 단지 시세 아님) · <a href="data.html" target="_blank" rel="noopener">자세히</a>';
   }
 
   function render() {

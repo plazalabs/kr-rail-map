@@ -2,7 +2,7 @@
  *  PC 1440×900
  *  - 분석 메뉴 'RAIL MARKET MAP' → 패널 열림, GTX-A 묶음이 맨 앞, 부제 '집값 예측 아님'
  *  - 타일이 판 밖으로 안 나가고 서로 안 겹침 (화면에서 직접 잼)
- *  - 광운대 타일 누르기 → 지도가 광운대로 가고 역 상세가 열림 + 카드에 지금→개통 후
+ *  - 광운대 타일 누르기 → 지도가 광운대로 가고 카드만(K6), 카드 '역 상세 열기'로 역 상세 + 카드에 지금→개통 후
  *  - 지도에서 다른 역(청량리)을 열면 그 타일이 골라짐 (양방향)
  *  - 색 '순위 변화' → 범례 바뀜, 연도 2027 → 타일 다시 그림
  *  - Esc 로 닫힘, 닫은 뒤 포커스가 연 단추로
@@ -44,7 +44,8 @@ async function until(b, expr, n = 40) {
     return { out, ov, panelInView: p.left >= 0 && p.right <= innerWidth && p.bottom <= innerHeight }; })()`);
   R.check('타일이 판 안에 있고 서로 안 겹침, 패널이 화면 안', geo.out === 0 && geo.ov === 0 && geo.panelInView, geo);
 
-  // 타일 → 지도·상세
+  // 타일 → 지도·카드 (K6: 상세는 패널 카드 한 곳만 — 큰 역 상세 창은 카드의 '역 상세 열기'로)
+  const cardShows = `(() => { const sel = MarketMap.state().sel; const f = STATIONS.find(x => x.properties.id === sel); const c = document.querySelector('#mm-panel .mm-card'); return !!f && !!c && c.textContent.includes(f.properties.name_ko); })()`;
   const kw = await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.name_ko === '광운대'); const t = s && document.querySelector('#mm-panel .mm-tile[data-id="' + s.properties.id + '"]');
     if (!t) return null; t.click(); return s.properties.id; })()`);
   await sleep(1400);
@@ -53,7 +54,10 @@ async function until(b, expr, n = 40) {
     const sd = document.getElementById('sd-panel'); const card = document.querySelector('#mm-panel .mm-card').textContent;
     return { near: d < 0.02, sdOpen: !!sd && sd.classList.contains('sd-open'), sdName: sd ? /광운대/.test(sd.textContent) : false, card: /광운대/.test(card) && /→/.test(card),
       sel: !!document.querySelector('#mm-panel .mm-tile.sel[data-id=' + JSON.stringify(${JSON.stringify(kw)}) + ']') }; })()`);
-  R.check('광운대 타일 → 지도가 광운대로 + 역 상세 열림 + 카드(지금→개통 후)', !!kw && afterTile.near && afterTile.sdOpen && afterTile.sdName && afterTile.card && afterTile.sel, afterTile);
+  R.check('광운대 타일 → 지도가 광운대로 + 카드(지금→개통 후)만, 역 상세 창은 안 열림(K6 한 곳만)', !!kw && afterTile.near && !afterTile.sdOpen && afterTile.card && afterTile.sel, afterTile);
+  await b.evaluate(`document.querySelector('#mm-panel .mm-card [data-a="detail"]').click(); 0`); await sleep(900);
+  const sdBtn = await b.evaluate(`(() => { const sd = document.getElementById('sd-panel'); return !!sd && sd.classList.contains('sd-open') && /광운대/.test(sd.textContent); })()`);
+  R.check("K6: 카드 '역 상세 열기' → 그 역 상세 창 열림", sdBtn);
   // 패널이 역 상세와 겹치지 않는다 (PC: 패널 왼쪽, 상세 오른쪽)
   const noOverlap = await b.evaluate(`(() => { const a = document.getElementById('mm-panel').getBoundingClientRect(), c = document.getElementById('sd-panel').getBoundingClientRect(); return a.right <= c.left + 1; })()`);
   R.check('PC: 타일 패널과 역 상세가 안 겹침', noOverlap);
@@ -86,8 +90,8 @@ async function until(b, expr, n = 40) {
     return { n: rows.length, total: m.total, sorted, first: rows[0] ? rows[0].textContent.slice(0, 40) : null }; })()`);
   R.check('목록 보기: 타일과 같은 역 수, 빨라지는 분 큰 순', lst.n === lst.total && lst.n > 50 && lst.sorted, lst);
   await b.evaluate(`(() => { const r = [...document.querySelectorAll('#mm-panel .mm-row')][3]; r.click(); })()`); await sleep(900);
-  const lsd = await b.evaluate(`({ sd: document.getElementById('sd-panel').classList.contains('sd-open'), sel: !!document.querySelector('#mm-panel .mm-row.sel') })`);
-  R.check('목록 줄 누르면 역 상세 열림 + 그 줄 골라짐', lsd.sd && lsd.sel, lsd);
+  const lsd = await b.evaluate(`({ card: ${cardShows}, sel: !!document.querySelector('#mm-panel .mm-row.sel') })`);
+  R.check('목록 줄 누르면 그 줄 골라지고 카드에 그 역', lsd.card && lsd.sel, lsd);
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'tiles'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
   // ▶ 재생 (전후 비교): 타일을 다시 그리지 않고 색만, 연도 배지, 끝나면 전체·멈춤
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="color"]'); s.value = 'gain'; s.dispatchEvent(new Event('change')); const y = document.querySelector('#mm-panel .mm-years button[data-y="all"]'); y && y.click(); })()`); await sleep(400);
@@ -130,8 +134,8 @@ async function until(b, expr, n = 40) {
   const mx = await b.evaluate(`(() => { const rows = [...document.querySelectorAll('#mm-panel .mm-mxr')]; return { rows: rows.length, groups: MarketMap.model().groups.length, cells: document.querySelectorAll('#mm-panel .mm-cell').length, total: MarketMap.model().total, first: rows[0] ? rows[0].querySelector('.mm-mxh b').textContent : null }; })()`);
   R.check('표(노선×역): 줄 = 묶음 수, 칸 = 역 수', mx.rows === mx.groups && mx.cells === mx.total && mx.cells > 50, mx);
   await b.evaluate(`document.querySelectorAll('#mm-panel .mm-cell')[2].click(); 0`); await sleep(700);
-  const mxs = await b.evaluate(`({ sel: !!document.querySelector('#mm-panel .mm-cell.sel'), sd: document.getElementById('sd-panel').classList.contains('sd-open') })`);
-  R.check('표 칸 누르면 골라지고 역 상세 열림', mxs.sel && mxs.sd, mxs);
+  const mxs = await b.evaluate(`({ sel: !!document.querySelector('#mm-panel .mm-cell.sel'), card: ${cardShows} })`);
+  R.check('표 칸 누르면 골라지고 카드에 그 역', mxs.sel && mxs.card, mxs);
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'tiles'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
   // 이미지 저장 캔버스
   const png = await b.evaluate(`(() => { const c = MarketMap._pngCanvas(); if (!c) return null; const g = c.getContext('2d'); const px = g.getImageData(300, 300, 1, 1).data; return { w: c.width, h: c.height, url: c.toDataURL('image/png').length, painted: !(px[0] === 255 && px[1] === 255 && px[2] === 255) }; })()`);
@@ -222,8 +226,8 @@ async function until(b, expr, n = 40) {
   R.check("산점도: '관찰 지표·인과 아님' 안내와 기간·5건 기준, '저평가·매수' 말 없음", /관찰 지표/.test(sc.note) && /인과/.test(sc.note) && /5건/.test(sc.note) && !sc.bad, sc.note.slice(0, 120));
   R.check('산점도: 점 낭독 이름에 빨라지는 분·가격 변화·법정동·건수', /분 빨라짐/.test(sc.lab) && /%/.test(sc.lab) && /거래 \d+→\d+건/.test(sc.lab), sc.lab);
   await b.evaluate(`document.querySelectorAll('#mm-panel .mm-dot')[5].click(); 0`); await sleep(800);
-  const scs = await b.evaluate(`({ sel: !!document.querySelector('#mm-panel .mm-dot.sel'), lab: !!document.querySelector('#mm-panel .mm-sc-lab'), sd: document.getElementById('sd-panel').classList.contains('sd-open') })`);
-  R.check('산점도: 점 누르면 골라지고(이름 표시) 역 상세 열림', scs.sel && scs.lab && scs.sd, scs);
+  const scs = await b.evaluate(`({ sel: !!document.querySelector('#mm-panel .mm-dot.sel'), lab: !!document.querySelector('#mm-panel .mm-sc-lab'), card: ${cardShows} })`);
+  R.check('산점도: 점 누르면 골라지고(이름 표시) 카드에 그 역', scs.sel && scs.lab && scs.card, scs);
   b.close();
   b = await launch({ port: 9677, w: 1440, h: 900 });
   await b.goto(BASE + '?market=1&c=jeonse#normal', 1500); await ready(b);

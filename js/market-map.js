@@ -5,7 +5,7 @@
  *   크기  : 모두 같게 / 거래 건수(투자 모드 — 역이 속한 법정동 아파트 매매, js/price.js)
  *   색    : 개선 분(지금 → 개통 후, 업무지구 가중 평균) / 순위 변화 등급(떡상·상승·보합·상대 하락·신규)
  *   연도  : 그해까지 개통한다고 가정한 노선만 (rank.json years)
- * 타일을 누르면 지도가 그 역으로 가고 역 상세가 열린다. 지도에서 역을 열면 타일도 고른다(양방향).
+ * 타일을 누르면 지도가 그 역으로 가고 패널 카드에 상세(K6 — 큰 역 상세 창은 카드의 '역 상세 열기'로). 지도에서 역을 열면 타일도 고른다(양방향).
  *
  * 원칙 (기획서 §0·§8, 68점 감사 9번)
  *   - 접근성 순위는 집값 예측이 아니다 — 부제로 고정한다.
@@ -1052,8 +1052,8 @@
     if (o.fromTile) {
       track('market_map_station_select', { 역: (rowsById.get(id) || {}).name });
       flyTo(id);
+      // K6 (6차 ③5·②5): 상세는 한 곳만 — 패널 카드. 큰 역 상세 창은 카드의 '역 상세 열기'로(예전엔 카드와 상세 창이 같이 떠 같은 내용이 두 번)
       if (isMobile()) setTab('card');
-      else openDetail(id);
     } else {
       var b = tileById.get(id);
       if (b && b.scrollIntoView) { try { b.scrollIntoView({ block: 'nearest' }); } catch (e) { /* 무시 */ } }

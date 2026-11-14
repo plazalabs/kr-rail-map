@@ -1542,3 +1542,6 @@ body.map-ready #map-skeleton .sk { animation: none; }
 .line-presets .lp-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .line-presets .lp-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
 @media (max-width: 768px) { .line-presets .lp-btn { min-height: 36px; } }
+
+/* J10 노선도에서 고른 역 고리 (2026-11-14) — 테마 강조색 */
+#diagram-overlay .dg-sel-ring { stroke: var(--accent); }

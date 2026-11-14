@@ -1,6 +1,6 @@
 /* e2e: 처음 쓰는 사람 안내 (2026-11-11 사용성 점검 B)
  *  A. 노선도: 아래 안내 줄('역을 누르면…')이 데스크톱·휴대폰 모두 화면 안에 보인다 (휴대폰은 색 범례만 숨김)
- *  B. 노선도 카드 '역 정보' 실클릭 → 노선도가 닫히고 그 역의 역 상세가 열린다
+ *  B. 노선도 카드 '지도에서 보기'(옛 '역 정보', J10) 실클릭 → 노선도가 닫히고 그 역의 역 상세가 열린다
  *  C. 투자 모드를 툴바로 처음 켜면 안내가 한 번 뜬다 — 화면 안, 툴바를 가리지 않음, '알겠어요'로 닫힘
  *  D. 껐다 다시 켜면 안내가 다시 안 뜬다
  *  E. 공유 링크 ?mode=invest 로 들어오면 안내가 안 뜬다
@@ -43,7 +43,7 @@ const TIP = `(() => { const e = document.getElementById('invest-tip'); if (!e) r
     const o = await press(b, '#diagram-btn'); await sleep(2500);
     const tip = await b.evaluate(`(() => { const e = document.querySelector('#diagram-overlay .dg-tip'); if (!e) return null; const r = e.getBoundingClientRect();
       return { shown: r.width > 0 && r.height > 0 && getComputedStyle(e).display !== 'none', inVp: r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight + 1, text: e.textContent }; })()`);
-    R.check(`${tag} A. 노선도 아래 '역을 누르면…' 안내 줄이 화면 안에 보인다`, o.ok && !!tip && tip.shown && tip.inVp && /역 정보/.test(tip.text), { o, tip });
+    R.check(`${tag} A. 노선도 아래 '역을 누르면…' 안내 줄이 화면 안에 보인다`, o.ok && !!tip && tip.shown && tip.inVp && /지도에서 볼/.test(tip.text), { o, tip });
     await b.shot(path.join(OUT, `diagram-${w}.png`)).catch(() => null);
 
     // B. 카드 '역 정보'

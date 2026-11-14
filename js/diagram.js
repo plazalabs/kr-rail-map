@@ -97,6 +97,7 @@ const DiagramMode = (() => {
         const rep = g.items.reduce((a, s) => ((s.properties.lines || []).length > (a.properties.lines || []).length ? s : a));
         nodes.set(id, {
           id, name, coord: g.coord, sid: rep.properties.id,
+          members: g.items.map(s => s.properties.id),
           lines: new Set(),
         });
         g.items.forEach(s => clusterOf.set(s.properties.id, id));
@@ -435,6 +436,7 @@ const DiagramMode = (() => {
       const g = mk('g', { class: 'dg-station' }, gDots);
       g.dataset.name = n.name;
       if (n.sid) g.dataset.sid = n.sid;
+      if (n.members) g.dataset.sids = n.members.join(',');
       g.dataset.lines = [...n.lines].join(',');
       // 일반역은 소속 노선 색으로 테두리를 준다
       let ring = '#5b626b';
@@ -462,6 +464,43 @@ const DiagramMode = (() => {
   let labelCtx = null;
   let labelTimer = 0;
   let focusLid = null;   // D8: 고른 노선 (null = 전체)
+  let rendered = false;  // J10: 그림이 다 그려졌나 (enter 는 다음 프레임에 그린다)
+  let pendingSid = null; // J10: 그려지면 찾아갈 역
+
+  /* J10 (2026-11-14): 지도에서 고른 역을 노선도에서 — 가운데로, 고리로 강조, 역 카드 열기.
+   * 노선도가 닫혀 있으면 열고, 다 그려진 뒤에 찾아간다. 그 역의 노선이 꺼져 있어 노선도에 없으면 false + 안내. */
+  function focusStation(sid) {
+    if (!sid) return false;
+    if (!active && !enter()) return false;
+    if (!rendered) { pendingSid = sid; return true; }
+    const svg = overlay && overlay.querySelector('.dg-canvas svg');
+    const scroll = overlay && overlay.querySelector('.dg-scroll');
+    if (!svg || !scroll) return false;
+    const g = [...svg.querySelectorAll('.dg-station')].find(x => (x.dataset.sids || x.dataset.sid || '').split(',').includes(sid));
+    if (!g) {
+      if (window.UI) UI.setStatus('이 역의 노선이 지금 노선도에 없어요 — 노선 목록에서 그 노선을 켜 주세요');
+      return false;
+    }
+    if (focusLid && !(g.dataset.lines || '').split(',').includes(focusLid)) {   // 다른 노선만 진하게 보는 중이면 전체로
+      focusLid = null; focusLine(null);
+      const pick = overlay.querySelector('#dg-pick'); if (pick) pick.value = '';
+    }
+    svg.querySelectorAll('.dg-sel').forEach(x => x.classList.remove('dg-sel'));
+    svg.querySelectorAll('.dg-sel-ring').forEach(x => x.remove());
+    g.classList.add('dg-sel');
+    const dot = g.querySelector('circle');
+    const cx = +dot.getAttribute('cx'), cy = +dot.getAttribute('cy');
+    // 강조 고리 — 색만이 아니라 굵은 고리 모양으로 (역 점 위, 클릭은 통과)
+    mk('circle', { class: 'dg-sel-ring', cx, cy, r: 13, fill: 'none', stroke: '#1b64da', 'stroke-width': 3.5, 'pointer-events': 'none' }, g.parentNode);
+    scale = Math.max(scale, Math.min(1.2, scroll.clientWidth / 700));
+    applyScale();
+    scroll.scrollLeft = Math.max(0, cx * scale - scroll.clientWidth / 2);
+    scroll.scrollTop = Math.max(0, cy * scale - scroll.clientHeight / 2);
+    // 역 카드(출발·도착·역 정보)도 연다 — 카드 위치는 화면 위치로 계산하므로 옮긴 뒤 다음 프레임에
+    requestAnimationFrame(() => { if (g.isConnected) g.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    if (window.UI) UI.setStatus((g.dataset.name || '') + ' — 노선도에서 보는 중');
+    return true;
+  }
 
   function placeLabels(scale) {
     if (!labelCtx) return;
@@ -562,7 +601,7 @@ const DiagramMode = (() => {
     legend.className = 'dg-legend';
     legend.innerHTML = '<span><i style="background:#16191d"></i>환승역</span>' +
       '<span><i style="background:#5b626b"></i>일반역</span>' +
-      '<span class="dg-tip">역을 누르면 지나는 노선을 보고, 출발·도착으로 정하거나 역 정보를 열 수 있어요</span>';
+      '<span class="dg-tip">역을 누르면 지나는 노선을 보고, 출발·도착으로 정하거나 지도에서 볼 수 있어요</span>';
 
     overlay.append(bar, scroll, legend);
     host.appendChild(overlay);
@@ -588,12 +627,14 @@ const DiagramMode = (() => {
           '노선 ' + out.lineCount + '개 · 역 ' + out.nodeCount + '곳 · ' + Math.round(performance.now() - t0) + 'ms';
         centerOnCore();
         bindStationClick(scroll);
+        rendered = true;
         const pick = bar.querySelector('#dg-pick');
         if (pick) {
           [...new Map(net.lines.map(ls => [ls.line.properties.id, ls.line.properties])).values()].sort((a, c) => (a.name_ko || '').localeCompare(c.name_ko || '', 'ko', { numeric: true }))
             .forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name_ko || p.id; pick.appendChild(o); });
           pick.onchange = () => focusLine(pick.value || null);
         }
+        if (pendingSid) { const s = pendingSid; pendingSid = null; focusStation(s); }
       } catch (e) {
         console.error('[DiagramMode]', e);
         scroll.innerHTML = '<p style="padding:40px;text-align:center;color:var(--muted)">' +
@@ -757,7 +798,7 @@ const DiagramMode = (() => {
         '<div style="display:flex;gap:5px;margin-top:8px">' +
         '<button data-act="from" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:var(--fs-xs);font-weight:600;color:var(--text)">출발</button>' +
         '<button data-act="to" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:var(--fs-xs);font-weight:600;color:var(--text)">도착</button>' +
-        '<button data-act="info" style="flex:1.3;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:var(--fs-xs);font-weight:600;color:var(--text)">역 정보</button>' +
+        '<button data-act="info" title="노선도를 닫고 지도에서 이 역 정보 열기" style="flex:1.6;padding:5px 0;border:1px solid var(--border);border-radius:6px;background:var(--input);font-size:var(--fs-xs);font-weight:600;color:var(--text)">지도에서 보기</button>' +
         '</div>';
       card.querySelectorAll('button').forEach(b => {
         b.onclick = ev => {
@@ -804,6 +845,8 @@ const DiagramMode = (() => {
     if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
     overlay = null;
     active = false;
+    rendered = false;
+    pendingSid = null;
     syncButton();
     scale = 1;
     if (map && typeof map.resize === 'function') {
@@ -813,6 +856,8 @@ const DiagramMode = (() => {
 
   const api = {
     init, enter, exit, isActive, focusLine, focused: () => focusLid,   // D8 노선 고르기
+    focusStation,   // J10 지도 → 노선도 같은 역
+    selected: () => { const g = overlay && overlay.querySelector('.dg-sel'); return g ? g.dataset.sid : null; },
     // 카드의 출발·도착 버튼 → (act, 역 이름, 역 ID). app.js 가 연결한다.
     onAction: null,
     // 테스트용 — 좌표 변환·역 묶음만 검사한다

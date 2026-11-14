@@ -116,6 +116,9 @@
     // 예전에는 이 버튼이 패널 맨 아래(출구·시간표 다음)에 있어서 스크롤하지
     // 않으면 존재조차 보이지 않았다. 이제 이름 바로 아래에 둔다.
     '.sd-actions{display:flex;gap:6px;margin:12px 0 2px}' +
+    '.sd-dg{display:inline-flex;align-items:center;gap:4px;margin-top:6px;min-height:30px;padding:3px 10px;border:1px solid var(--border,#ddd);' +
+    'border-radius:999px;background:var(--btn-bg,#fff);color:var(--text,#222);font:inherit;font-size:var(--fs-xs);font-weight:600;cursor:pointer}' +
+    '.sd-dg:hover{border-color:var(--accent,#1a73e8)}.sd-dg:focus-visible{outline:2px solid var(--accent,#1a73e8);outline-offset:1px}' +
     '.sd-actions button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;' +
     'padding:9px 4px;border:1px solid var(--border-strong,#ddd);border-radius:9px;' +
     'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;' +
@@ -514,7 +517,11 @@
     var sid = sp.id || p.id;
 
     var html = '<div><b style="font-size:var(--fs-lg)">' + esc(nameKo) + '</b>' +
-      (nameEn ? '<div class="sd-en">' + esc(nameEn) + '</div>' : '') + '</div>';
+      (nameEn ? '<div class="sd-en">' + esc(nameEn) + '</div>' : '') +
+      // J10 (2026-11-14): 같은 역을 45도 노선도에서 — 노선도가 그 역을 가운데·강조
+      (typeof DiagramMode !== 'undefined' && DiagramMode.focusStation
+        ? '<button type="button" class="sd-dg" title="45도 노선도에서 이 역 보기"><i data-ic="map"></i> 노선도에서 보기</button>' : '') +
+      '</div>';
 
     // 액션은 패널 맨 아래에 붙는다(sticky, F3) — 어느 탭에서 얼마나 내려도 스크롤 없이 보인다.
     // (예전엔 맨 아래 '흐르는' 자리라 안 보였고, 그다음엔 이름 바로 아래였다.)
@@ -775,6 +782,11 @@
       if (typeof KR_MODE !== 'undefined') KR_MODE.set('invest');
     });
 
+    var dgBtn = body.querySelector('.sd-dg');
+    if (dgBtn) dgBtn.addEventListener('click', function () {
+      hide();
+      DiagramMode.focusStation(sid);
+    });
     var cmBtn = body.querySelector('.sd-commute');
     if (cmBtn) cmBtn.addEventListener('click', function () {
       hide();

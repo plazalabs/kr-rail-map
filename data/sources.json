@@ -64,7 +64,7 @@
   "sources": [
     {
       "id": "osm-rails",
-      "title": "노선 선형 (80개 노선)",
+      "title": "노선 선형 (83개 노선)",
       "provider": "OpenStreetMap contributors",
       "attribution": "© OpenStreetMap contributors",
       "url": "https://www.openstreetmap.org/copyright",
@@ -172,7 +172,7 @@
     },
     {
       "id": "korail-addr",
-      "title": "역 ↔ 법정동 연결",
+      "title": "역 – 법정동 연결",
       "provider": "국가철도공단 — 역 주소데이터",
       "attribution": "국가철도공단 역 주소데이터",
       "url": "https://www.data.go.kr/",
@@ -561,7 +561,7 @@
       "provider": "레일포털(국가철도공단) — 전체 도시철도운행정보",
       "attribution": "레일포털 전체_도시철도운행정보(데이터 기준 2026.5.31.), 전국도시철도운영기관",
       "url": "https://data.kric.go.kr/rips/M_01_01/detail.do?id=900",
-      "licence": "data-go-kr-open",
+      "licence": "site-terms-unverified",
       "obtained": "레일포털 전체_도시철도운행정보(데이터 기준 2026.5.31.), 전국도시철도운영기관",
       "snapshot": "2026-05-31",
       "used_for": "길찾기 역 사이 시간 · 출퇴근 배차 (광역·민자·경전철·지방 도시철도)",
@@ -573,7 +573,8 @@
         "data/rank.json",
         "data/rank-top.json"
       ],
-      "commercial": "allowed"
+      "commercial": "unverified",
+      "caveat": "자료 페이지에 이용허락(공공누리) 표시가 없고, 레일포털(KRIC) 이용약관에 상업적 이용 금지 조항이 있다(2026-11-15 확인). 유료 서비스 전에 공공데이터포털의 이용허락 명시 판으로 바꾸거나 허락을 받아야 한다."
     },
     {
       "id": "derived",

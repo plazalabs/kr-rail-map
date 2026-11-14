@@ -24,6 +24,7 @@ const FILES = [
   'data/lines.geojson', 'data/stations.geojson', 'data/exits.geojson', 'data/access.json', 'data/rank.json', 'data/sources.json',
   'data/ktx-fares.json', 'data/transfer-times.json', 'data/station-complex.json', 'data/station-dev.json', 'data/station-jeonse.json',
   'data/station-market.json', 'data/station-price.json', 'data/station-region.json',
+  'data/fares-special.json', 'data/headways.json', 'data/rank-top.json', 'data/station-trend.json',
 ];
 const DIRS = ['js', 'css', 'line', 'icons', 'image', 'vendor'];
 
@@ -176,6 +177,16 @@ function main() {
   console.log(`줄 맨 앞 주석 남은 곳: ${left.length}` + (left.length ? ' — ' + left.slice(0, 5).join(', ') : ''));
   if (broken.length) { console.error('문법이 깨진 JS:\n  ' + broken.join('\n  ')); process.exitCode = 1; }
   else console.log('JS 문법 검사: 모두 통과');
+
+  // 사이트 코드가 부르는 자료 파일이 dist 에 다 있는지 (FILES 목록 갱신을 잊으면 공개 사이트 기능이 깨진다)
+  const used = new Set();
+  for (const rel of list.filter(r => /\.(js|html)$/.test(r) && !r.startsWith('vendor/'))) {
+    const t = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    for (const m of t.matchAll(/(?:data|line)\/[A-Za-z0-9_.\/-]+\.(?:json|geojson|csv)/g)) used.add(m[0]);
+  }
+  const missing = [...used].filter(f => !fs.existsSync(path.join(OUT, f)));
+  if (missing.length) { console.error('사이트가 쓰는데 dist 에 없는 자료 (FILES 에 넣을 것):\n  ' + missing.join('\n  ')); process.exitCode = 1; }
+  else console.log(`자료 파일 검사: 사이트가 부르는 ${used.size}개 모두 있음`);
 }
 
 if (require.main === module) main();

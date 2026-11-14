@@ -48,7 +48,8 @@
     ['map', '노선도', '전국 노선을 지하철 노선도처럼', function () { click('diagram-btn'); }],
   ];
   function itemHtml(it, i, cls) {
-    return '<button type="button" class="' + cls + '" data-i="' + i + '"><span class="gd-ic" aria-hidden="true">' + Icons.svg(it[0]) +
+    // title: 휴대폰 안내 카드는 설명 글을 숨기므로(J8) 길게 누르거나 마우스를 올리면 보이게
+    return '<button type="button" class="' + cls + '" data-i="' + i + '" title="' + it[1] + ' — ' + it[2] + '"><span class="gd-ic" aria-hidden="true">' + Icons.svg(it[0]) +
       '</span><span><b>' + it[1] + '</b><small>' + it[2] + '</small></span></button>';
   }
   function run(i) {

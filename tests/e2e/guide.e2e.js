@@ -17,7 +17,10 @@ async function ready(b) {
 const card = b => b.evaluate(`(() => { const e = document.getElementById('guide-card'); if (!e) return null; const r = e.getBoundingClientRect();
   const tb = document.getElementById('toolbar').getBoundingClientRect();
   const overlapTb = !(r.right <= tb.left || r.left >= tb.right || r.bottom <= tb.top || r.top >= tb.bottom);
-  return { inVp: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, items: e.querySelectorAll('.gd-item').length, overlapTb }; })()`);
+  const its = [...e.querySelectorAll('.gd-item')].map(x => x.getBoundingClientRect());
+  return { inVp: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, items: e.querySelectorAll('.gd-item').length, overlapTb,
+    share: Math.round(r.width * r.height / (innerWidth * innerHeight) * 1000) / 10, h: Math.round(r.height),
+    minTap: Math.round(Math.min(...its.map(x => Math.min(x.width, x.height)))) }; })()`);
 
 (async () => {
   for (const [w, h, mobile] of [[1440, 900, false], [390, 844, true]]) {
@@ -26,6 +29,8 @@ const card = b => b.evaluate(`(() => { const e = document.getElementById('guide-
     await b.goto(BASE + '#normal', 800); await ready(b);
     const c1 = await card(b);
     R.check(`${w}px 첫 방문: 안내 카드가 화면 안에 4항목, 툴바를 가리지 않음`, !!c1 && c1.inVp && c1.items === 4 && !c1.overlapTb, c1);
+    // J8 (2026-11-14): 휴대폰에서 지도를 36% 가리던 카드 → 화면의 15% 이하, 누르는 칸은 44px 이상
+    if (mobile) R.check(`${w}px J8 안내 카드가 화면의 15% 이하·누르는 칸 44px 이상`, !!c1 && c1.share <= 15 && c1.minTap >= 44, c1);
     await b.evaluate(`[...document.querySelectorAll('#guide-card .gd-item')].find(e => e.textContent.includes('통근권')).click()`); await sleep(1200);
     const after = await b.evaluate(`({ card: !!document.getElementById('guide-card'), cm: !!document.getElementById('cm-panel') && document.getElementById('cm-panel').style.display !== 'none' })`);
     R.check(`${w}px '통근권 찾기' → 카드 닫힘·통근권 열림`, !after.card && after.cm, after);

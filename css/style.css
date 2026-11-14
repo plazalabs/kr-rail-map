@@ -1021,6 +1021,15 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
 #guide-card .gd-ic { font-size: var(--fs-lg); width: 22px; text-align: center; }
 @media (max-width: 768px) {
   #guide-card { left: 8px; right: 8px; width: auto; bottom: calc(66px + env(safe-area-inset-bottom)); }
+  /* J8 (2026-11-14): 휴대폰에서 지도를 36% 가리던 것 → 한 줄 4칸(아이콘 + 이름). 설명은 버튼 title 에 */
+  #guide-card { padding: 8px 10px; }
+  #guide-card .gd-head { margin-bottom: 4px; }
+  #guide-card .gd-list { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #guide-card .gd-item { flex-direction: column; justify-content: center; gap: 2px; min-height: 56px; padding: 6px 2px; text-align: center; }
+  #guide-card .gd-item b { font-size: var(--fs-xs); line-height: 1.25; word-break: keep-all; }
+  #guide-card .gd-item small { display: none; }
+  #guide-card .gd-ic { width: auto; }
+  #guide-card .gd-foot { display: none; }
 }
 
 /* ---------- 전세가율 (js/jeonse.js) ---------- */

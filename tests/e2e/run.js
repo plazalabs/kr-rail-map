@@ -80,6 +80,7 @@ const CHECKS = [
   ['share-conditions', 'share-conditions.e2e.js', {}, '공유 링크에 비교 조건(배차 포함·개통 예정 포함) (H7, 2026-11-14)'],
   ['board', 'board.e2e.js', {}, '게시판: 설정 없으면 준비 중, 있으면 목록·글쓰기·도배 막기·신고·XSS 막힘 (Supabase 흉내, 2026-11-12)'],
   ['board-panel', 'board-panel.e2e.js', {}, '지도 안 게시판 패널: 레일·메뉴·아래 탭 → 페이지 안 바뀜, 글쓰기·신고·XSS 막힘, 떡상과 하나만, Esc (회장님 11-14)'],
+  ['share-landing', 'share-landing.e2e.js', {}, '공유 성공 통계: 카드로 도착 1번·이름표 지움·출발역 칸에 안 들어감·안내 카드 뜸, 결과 따로 셈 (11-15)'],
   ['panel-fold', 'panel-fold.e2e.js', {}, '오른쪽 창 접기·펼치기 손잡이(상태 유지, 새 창은 펼친 채) + Esc 두 번이면 왼쪽 패널도 접힘, 휴대폰은 손잡이 없음 (회장님 11-15)'],
   ['ui-fixes', 'ui-fixes.e2e.js', {}, '노선 비교·노선도 카드·노선도 툴바·영향권·style=local·그린 노선/위치 (IMPL7, 데스크톱)'],
   ['ui-fixes-mobile', 'ui-fixes.e2e.js', { MOBILE: '1' }, '같은 항목, 모바일 390×844'],

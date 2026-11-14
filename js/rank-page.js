@@ -325,21 +325,28 @@
   async function shareStation(id, msgEl) {
     const r = RankTable.compute(doc, { weight: st.w, region: st.r, at: st.t === 'aft' ? st.y : 'all', wait: st.wait }).rows.find(x => x.id === id);
     if (!r) return;
+    // 공유 성공 통계 (2026-11-15): 누름 → 결과 → 받은 사람 도착(?ref=card-rank, js/track.js)
+    const tr = (n, d) => { try { if (window.KRTrack) KRTrack(n, d); } catch (e) { /* 무시 */ } };
+    const result = x => tr('share_result', { 종류: 'card-rank', 결과: x });
+    tr('share_card', { 종류: 'card-rank' });
     const c = shareCanvas(r);
     const blob = await new Promise(res => c.toBlob(res, 'image/png'));
-    if (!blob) { if (msgEl) msgEl.textContent = '이미지를 만들지 못했어요.'; return; }
+    if (!blob) { result('만들기 실패'); if (msgEl) msgEl.textContent = '이미지를 만들지 못했어요.'; return; }
     const name = '접근성_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png';
     const file = (typeof File === 'function') ? new File([blob], name, { type: 'image/png' }) : null;
+    let why = '';
     try {
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: r.name + ' GTX 개통 후 ' + r.aft.rank + '위', text: location.origin + location.pathname });
+        await navigator.share({ files: [file], title: r.name + ' GTX 개통 후 ' + r.aft.rank + '위', text: location.origin + location.pathname + '?ref=card-rank' });
+        result('공유함');
         if (msgEl) msgEl.textContent = '공유했어요.';
         return;
       }
-    } catch (e) { if (e && e.name === 'AbortError') return; }
+    } catch (e) { if (e && e.name === 'AbortError') { result('취소'); return; } why = '공유 실패→저장'; }
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    result(why || '저장함');
     if (msgEl) msgEl.textContent = '이미지를 저장했어요 (' + name + ').';
   }
   window.RankShare = { canvas: id => { const r = RankTable.compute(doc, { weight: st.w, region: st.r, at: st.t === 'aft' ? st.y : 'all', wait: st.wait }).rows.find(x => x.id === id); return r ? shareCanvas(r) : null; } };
@@ -347,7 +354,7 @@
   // 링크 복사 — 이 역 카드가 펼쳐진 순위표 주소 (지금 기준·지역·연도 그대로). 카톡에 붙여 넣으면 바로 그 역
   function cardUrl(id) {
     const u = new URL(location.href);
-    u.searchParams.set('open', id); u.searchParams.delete('q'); u.searchParams.delete('tier');
+    u.searchParams.set('open', id); u.searchParams.delete('q'); u.searchParams.delete('tier'); u.searchParams.delete('ref');
     return u.toString();
   }
   $('list').addEventListener('click', async e => {

@@ -349,21 +349,28 @@
       info.name + '역까지 ' + info.limit + '분 안 — 지금 ' + s.n + '곳 → 개통 후 ' + s.m + '곳', 'card-reach');
   }
 
-  // tag: 어떤 카드가 퍼졌는지 세려고 공유 주소에 ?from= 이름표 (6차 공유 피드백 — 측정 없는 바이럴은 구멍)
+  // tag: 어떤 카드가 퍼졌는지 세려고 공유 주소에 ?ref= 이름표 (6차 공유 피드백 — 측정 없는 바이럴은 구멍)
+  // 결과도 따로 센다(2026-11-15): 누름(share_card) → 결과(share_result: 공유함·저장함·취소·공유 실패→저장·만들기 실패) → 받은 사람 도착(js/track.js '공유로 도착')
   function saveCanvas(c, name, title, tag) {
     if (tag && typeof global.KRTrack === 'function') global.KRTrack('share_card', { 종류: tag });   // Umami: 카드별 공유 단추 횟수
+    var result = function (r) { if (tag && typeof global.KRTrack === 'function') global.KRTrack('share_result', { 종류: tag, 결과: r }); };
     return new Promise(function (res) { c.toBlob(res, 'image/png'); }).then(function (blob) {
-      if (!blob) return '이미지를 만들지 못했어요.';
+      if (!blob) { result('만들기 실패'); return '이미지를 만들지 못했어요.'; }
       var file = (typeof File === 'function') ? new File([blob], name, { type: 'image/png' }) : null;
       var download = function () {
         var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+        result(why || '저장함');
         return '이미지를 저장했어요';
       };
+      var why = '';
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        return navigator.share({ files: [file], title: title, text: location.origin + location.pathname + (tag ? '?from=' + tag : '') })
-          .then(function () { return '공유했어요'; }, function (e) { return (e && e.name === 'AbortError') ? '' : download(); });
+        return navigator.share({ files: [file], title: title, text: location.origin + location.pathname + (tag ? '?ref=' + tag : '') })
+          .then(function () { result('공유함'); return '공유했어요'; }, function (e) {
+            if (e && e.name === 'AbortError') { result('취소'); return ''; }
+            why = '공유 실패→저장'; return download();
+          });
       }
       return download();
     });

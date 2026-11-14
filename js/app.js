@@ -1097,15 +1097,18 @@ document.getElementById('share-btn').addEventListener('click', async () => {
     if (scope === 'all') url.searchParams.set('scope', 'all'); else url.searchParams.delete('scope');
     const vp = document.querySelector('#line-presets .lp-btn[aria-pressed="true"]');
     if (vp && vp.dataset.preset !== 'all') url.searchParams.set('view', vp.dataset.preset); else url.searchParams.delete('view');
+    url.searchParams.delete('ref');
     await navigator.clipboard.writeText(url.toString());
     setStatus('링크 복사됨' + (from && to ? ` (${from}→${to} 포함)` : ''));
-  } catch { setStatus('링크 복사에 실패했습니다'); }
+    if (window.KRTrack) KRTrack('링크 복사 결과', { 곳: '지도', 결과: '성공' });
+  } catch { setStatus('링크 복사에 실패했습니다'); if (window.KRTrack) KRTrack('링크 복사 결과', { 곳: '지도', 결과: '실패' }); }
 });
 
 // URL 파라미터로 길찾기 복원
 function restoreFromUrl() {
   const q = new URLSearchParams(location.search);
-  const from = q.get('from'), to = q.get('to');
+  // 11-14 판 공유 카드 주소 ?from=card-… 는 출발역이 아니라 공유 이름표 (js/track.js 가 세고 지운다 — 남아 있어도 길찾기엔 안 넣음)
+  const from0 = q.get('from'), from = /^card-/.test(from0 || '') ? null : from0, to = q.get('to');
   if (from || to) {
     document.getElementById('route-panel').hidden = false;
     // from_id/to_id 가 있으면(새 링크) 그 역으로 확정한다. 없으면(옛 링크, 이름만)

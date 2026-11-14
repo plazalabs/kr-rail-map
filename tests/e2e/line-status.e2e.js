@@ -88,6 +88,23 @@ const overlap = (a, c) => a && c && a.left < c.right && c.left < a.right && a.to
     p = await press(b, '#line-presets .lp-btn[data-preset="all"]');
     q = await b.evaluate(STATE);
     R.check('C6 전체 → 모두 켜짐', p.ok && q.n === q.total && q.pressed.join() === 'all', JSON.stringify({ p, n: q.n, t: q.total }));
+    // E. 공유 링크 (J13): 보기 버튼·범위가 주소에 들어가고, 그 주소로 열면 같은 보기
+    await press(b, '#line-presets .lp-btn[data-preset="construction"]');
+    const shared = await b.evaluate(`new Promise(res => { const orig = navigator.clipboard && navigator.clipboard.writeText;
+      try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { res(t); return Promise.resolve(); } } }); } catch (e) { res('ERR ' + e); }
+      document.getElementById('share-btn').click(); setTimeout(() => res(null), 3000); })`);
+    const su = shared && !/^ERR/.test(shared) ? new URL(shared) : null;
+    R.check('E1 공유 링크에 view=construction·scope=all', !!su && su.searchParams.get('view') === 'construction' && su.searchParams.get('scope') === 'all', shared);
+    if (su) {
+      await b.goto(BASE.replace(/index\.html.*$/, 'index.html') + su.search, 500); await ready(b);
+      await sleep(600);
+      const e2 = await b.evaluate(STATE);
+      R.check('E2 그 링크로 열면 전국·공사 중 노선만·버튼 눌림', e2.statuses === 'construction' && e2.pressed.join() === 'construction' && e2.total > 80, JSON.stringify(e2));
+    }
+    await press(b, '#line-presets .lp-btn[data-preset="all"]');
+    const shared2 = await b.evaluate(`new Promise(res => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { res(t); return Promise.resolve(); } } });
+      document.getElementById('share-btn').click(); setTimeout(() => res(null), 3000); })`);
+    R.check("E3 '전체'면 view 를 안 붙임", !!shared2 && !new URL(shared2).searchParams.has('view'), shared2);
     const exc = b.logs.filter(x => /EXC/.test(x));
     R.check('예외 0 (PC)', exc.length === 0, exc.slice(0, 3));
     b.close(); b = null;

@@ -670,6 +670,14 @@ function refreshLinePresets() {
   });
 }
 
+/* ?scope=all&view=open 등 — 공유 링크의 노선 보기 되살리기 (J13). 지도 위치(?c=)가 있으면 범위를 바꿔도 날아가지 않는다 */
+function restoreViewFromUrl() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('scope') === 'all' && scope !== 'all') setScope('all', { fly: !q.get('c') });
+  const v = q.get('view');
+  if (v && v !== 'all' && LINE_PRESETS.some(p => p[0] === v)) applyLinePreset(v);
+}
+
 /* ?line=<id> 로 특정 노선만 보기 */
 function focusLineFromUrl() {
   const lid = new URLSearchParams(location.search).get('line');
@@ -1007,6 +1015,10 @@ document.getElementById('share-btn').addEventListener('click', async () => {
     // 비교 조건 (H7, 2026-11-14): 배차 포함·개통 예정 노선 포함 — 받은 사람도 같은 조건으로 본다
     if (window.KR_WAIT && KR_WAIT.isPeak()) url.searchParams.set('wait', '1'); else url.searchParams.delete('wait');
     if (from && to && routeIncludeUnopened()) url.searchParams.set('unopened', '1'); else url.searchParams.delete('unopened');
+    // 노선 보기 (J13, 2026-11-14): 범위(전국)·보기 버튼(운행 중 등) — 받은 사람도 같은 노선을 본다
+    if (scope === 'all') url.searchParams.set('scope', 'all'); else url.searchParams.delete('scope');
+    const vp = document.querySelector('#line-presets .lp-btn[aria-pressed="true"]');
+    if (vp && vp.dataset.preset !== 'all') url.searchParams.set('view', vp.dataset.preset); else url.searchParams.delete('view');
     await navigator.clipboard.writeText(url.toString());
     setStatus('링크 복사됨' + (from && to ? ` (${from}→${to} 포함)` : ''));
   } catch { setStatus('링크 복사에 실패했습니다'); }
@@ -1978,7 +1990,7 @@ Promise.all([styleReadyP, dataPromise]).then(() => {
   if (typeof HomeCards !== 'undefined' && HomeCards.init) HomeCards.init();   
   if (typeof ActiveLayers !== 'undefined' && ActiveLayers.init) ActiveLayers.init();   // 지도 위 '켜진 분석' 표시 (68점 감사 12번)   // 사이드바 TOP 3·커뮤니티 (한가할 때 받음)   // 나에게 맞는 역 찾기 (질문 4개, ?quiz=1 결과 주소)   // RAIL MARKET MAP 역 타일 (?market=1 이면 바로 연다, 2026-11-13)   // 지도 안 떡상 패널 (?rocket=1 이면 바로 연다)
   if (typeof StationArea !== 'undefined') { StationArea.init(map, STATIONS); StationArea.setLines([...visibleLines]); }
-  if (!focusLineFromUrl()) restoreFromUrl();
+  if (!focusLineFromUrl()) { restoreViewFromUrl(); restoreFromUrl(); }
 }).catch(e => { console.error('첫 화면 준비 실패', e); setStatus('지도 자료를 불러오지 못했습니다. 새로고침해 주세요.'); });
 // 베이스맵 교체(setStyle) 시 커스텀 레이어가 날아가므로 복원
 // styleReady=true 는 style.load 경로. 이 시점엔 스타일 JSON 이 적용돼 addLayer 가

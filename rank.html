@@ -559,7 +559,7 @@ h1{font-size:20px}
     const bg = g.createLinearGradient(0, 0, 0, S); bg.addColorStop(0, '#0b1d3a'); bg.addColorStop(1, '#10305e');
     g.fillStyle = bg; g.fillRect(0, 0, S, S);
     g.fillStyle = 'rgba(255,255,255,.06)'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(900 - i * 40, 160 + i * 30, 260 - i * 30, 0, Math.PI * 2); g.fill(); }
-    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText('GTX 개통 후, 우리 역은 몇 등?', 80, 120);
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText((st.t === 'aft' && st.y !== 'all' ? st.y + '년까지 개통하면' : 'GTX·새 노선 모두 개통하면') + ', 우리 역 접근성은 몇 위?', 80, 120);   // 카드 공통 표기 (2026-11-14)
     g.fillStyle = '#ffffff'; g.font = '800 104px ' + F; g.fillText(r.name + '역', 80, 250);
     g.fillStyle = '#9fb3d1'; g.font = '500 32px ' + F; g.fillText([r.region, r.sgg].filter(Boolean).join(' ') + ' · ' + REGION[st.r] + ' ' + (st.w === 'avg' ? '' : LABEL[st.w] + ' ') + '순위', 84, 305);
     // 큰 순위
@@ -568,14 +568,14 @@ h1{font-size:20px}
     g.fillText(nowTxt, 80, 440);
     g.fillStyle = '#ffffff'; g.font = '800 150px ' + F; g.fillText(r.aft.rank + '위', 80, 600);
     const w1 = g.measureText(r.aft.rank + '위').width;
-    g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText(st.y === 'all' ? '개통 후' : st.y + '년 개통 후', 80 + w1 + 24, 600);
+    g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('개통 후', 80 + w1 + 24, 600);
     // 배지
-    const bt = t === 'new' ? '신규' : (r.change > 0 ? '▲' + r.change + '계단' : r.change < 0 ? '▼' + (-r.change) + '계단' : '그대로') + '  ' + RankTable.TIERS[t].label;
+    const bt = t === 'new' ? '신규' : (r.change > 0 ? '▲' + r.change : r.change < 0 ? '▼' + (-r.change) : '그대로') + '  ' + ({ rocket: '접근성 크게 개선', up: '접근성 개선', flat: '비슷', down: '상대 하락' })[t];   // '떡상'·'계단' 빼기 (카드 공통 표기)
     g.font = '800 44px ' + F; const bw = g.measureText(bt).width + 56;
     roundRect(g, 80, 640, bw, 78, 39); g.fillStyle = COL; g.fill();
     g.fillStyle = '#fff'; g.fillText(bt, 108, 694);
     // 이 역에 새로 생기는 노선 (개통 연도)
-    const plan = lineChips(r.lines, true).slice(0, 3).map(x => { const y = RankTable.yearOf(x.m.o); return x.m.n + (y ? ' ' + y : ''); });
+    const plan = lineChips(r.lines, true).slice(0, 3).map(x => { if (x.m.s === 'planned' || x.m.s === 'proposed') return x.m.n + ' (계획)'; const y = RankTable.yearOf(x.m.o); return x.m.n + (y ? ' ' + y : ''); });   // 계획 노선은 연도 없이 (카드 공통 표기)
     if (plan.length) { g.font = '600 30px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('새 노선 ' + plan.join(' · '), 80 + bw + 26, 692); }
     // 업무지구 분
     const D = ['도심권 CBD', '여의도권 YBD', '강남권 GBD'];   // 권역 안 가장 빠른 역까지 (감사 이전1)
@@ -590,7 +590,7 @@ h1{font-size:20px}
     g.fillStyle = '#7f93b3'; g.font = '500 24px ' + F;
     g.fillText(st.wait ? '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림' : '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1000);
     g.fillStyle = '#c8d3e6'; g.font = '700 28px ' + F;
-    g.fillText('한국철도맵 GTX 떡상 랭킹 · plazalabs.github.io/kr-rail-map/rank.html', 80, 1044);
+    g.fillText('한국철도맵 · 개통 후 교통 접근성 순위 · plazalabs.github.io/kr-rail-map/rank.html', 80, 1044);
     return c;
   }
   async function shareStation(id, msgEl) {
@@ -599,7 +599,7 @@ h1{font-size:20px}
     const c = shareCanvas(r);
     const blob = await new Promise(res => c.toBlob(res, 'image/png'));
     if (!blob) { if (msgEl) msgEl.textContent = '이미지를 만들지 못했어요.'; return; }
-    const name = 'GTX떡상_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png';
+    const name = '접근성_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png';
     const file = (typeof File === 'function') ? new File([blob], name, { type: 'image/png' }) : null;
     try {
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) {

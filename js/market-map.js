@@ -1023,17 +1023,19 @@
     var k = S.cardBase(1350), g = k.g, F = S.FONT;
     var colorName = { gain: '빨라지는 분', tier: '순위 변화', jeonse: '전세가율', price: '평당가' }[st.color] || '빨라지는 분';
     g.fillStyle = '#9fb3d1'; g.font = '600 32px ' + F;
-    g.fillText((st.y === 'all' ? 'GTX·새 노선 모두 개통하면' : st.y + '년까지 개통하면') + ' · ' + WLABEL[st.w] + ' 기준', 72, 126);
+    g.fillText((S.scenario ? S.scenario(st.y) : (st.y === 'all' ? 'GTX·새 노선 모두 개통하면' : st.y + '년까지 개통하면')) + ' · ' + WLABEL[st.w] + ' 기준', 72, 126);
     g.fillStyle = '#ffffff'; g.font = '800 56px ' + F; g.fillText('한 장으로 보는 수도권 철도 효과', 72, 200);
     g.fillStyle = '#9fb3d1'; g.font = '500 26px ' + F; g.fillText('색 = ' + colorName + ' · 타일 하나 = 역 하나 · ' + model.total + '역', 72, 244);
     var X = 56, Y = 276, BW = k.W - 112, BH = 820, FS = 22, sc = 12 / FS;   // 카드 글자 최소 22px (카톡 압축에 뭉개지지 않게)   // 판 위치·크기, 글자 20px (labelPlan 은 12px 기준이라 비율로)
     var m2 = { ordered: model.ordered, groups: model.groups.map(function (G) { return { name: G.name, value: G.value, tiles: G.tiles.map(function (t) { return { v: t.v, row: t.row, color: t.color, gain: t.gain, _t: t }; }) }; }), total: model.total };
     Logic.layout(m2, BW, BH, 30);
+    var plannedNames = {};   // 이름 → 계획 노선(planned·proposed)인지 — 같은 이름이 공사 중으로도 있으면 계획 아님
+    Object.keys((doc && doc.lines) || {}).forEach(function (id) { var m = doc.lines[id]; if (!m || !m.n) return; var pl = m.s === 'planned' || m.s === 'proposed'; plannedNames[m.n] = (m.n in plannedNames) ? (plannedNames[m.n] && pl) : pl; });
     m2.groups.forEach(function (G) {
       var r = G.rect; if (!r || r.w < 2) return;
       g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(X + r.x, Y + r.y, r.w, r.h);
       g.fillStyle = '#ffffff'; g.font = '800 22px ' + F;
-      var gn = G.name + ' · ' + G.tiles.length; while (gn.length > 2 && g.measureText(gn).width > r.w - 10) gn = gn.slice(0, -1);
+      var gn = G.name + (plannedNames[G.name] ? ' (계획)' : '') + ' · ' + G.tiles.length; while (gn.length > 2 && g.measureText(gn).width > r.w - 10) gn = gn.slice(0, -1);   // 계획 노선 묶음은 '(계획)' (카드 공통 표기)
       g.fillText(gn, X + r.x + 6, Y + r.y + 23);
       G.tiles.forEach(function (t) {
         var q = t.rect; if (!q || q.w < 1) return;
@@ -1051,7 +1053,7 @@
       });
     });
     // 범례 한 줄
-    var leg = st.color === 'tier' ? ['rocket', 'up', 'flat', 'down', 'new'].map(function (kk) { return [Logic.TIER_COLORS[kk].bg, RTab().TIERS[kk].label]; })
+    var leg = st.color === 'tier' ? ['rocket', 'up', 'flat', 'down', 'new'].map(function (kk) { return [Logic.TIER_COLORS[kk].bg, (S.CARD_TIER || {})[kk] || RTab().TIERS[kk].label]; })   // 카드는 '떡상' 대신 '접근성 크게 개선' (카드 공통 표기)
       : st.color === 'jeonse' ? Logic.JEONSE_BINS.map(function (b) { return [b.bg, b.label]; })
       : st.color === 'price' ? Logic.PRICE_BINS.map(function (b) { return [b.bg, b.label]; })
       : Logic.GAIN_BINS.map(function (b) { return [b.bg, b.label]; }).concat([[Logic.NEW_COLOR.bg, '신규']]);

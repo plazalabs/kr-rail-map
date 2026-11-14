@@ -70,6 +70,27 @@ const EV = `(window.__ev || []).filter(e => e[0] === '과업').map(e => e[1].단
       return { w: c.width, n30now: s.n30now, n30aft: s.n30aft, best: s.best && s.best.id }; })()`);
     R.check('가짜 값(신규·120분 넘음·자료 없음·긴 이름): 그려지고 요약 1곳→1곳(서울 25→18분)·최대 단축 여의도', fake && fake.w === 1080 && fake.n30now === 1 && fake.n30aft === 1 && fake.best === 'ybd', fake);
 
+    // 카드 공통 표기 (뮤즈 카드 검수 TASK 2026-11-14): TOP10 겹침 0 · 계획 노선 '(계획)' · '떡상·계단' 없음 · 시나리오 한 문장
+    const cardRule = await b.evaluate(`(async () => {
+      const S = StationShareImage, doc = await fetch('data/rank.json').then(r => r.json());
+      const all = RankTable.compute(doc, { weight: 'avg', region: 'capital' }).rows;
+      const top = all.filter(r => r.change != null).sort((a, b) => b.change - a.change).slice(0, 10);
+      const long = (n, rg, sgg, now, aft) => ({ name: n, region: rg, sgg, now: { rank: now }, aft: { rank: aft }, change: now - aft });
+      const rows = top.concat([long('115정거장(중계주공)', '경기', '안산시 단원구', 1234, 1), long('국제금융센터·부산은행', '경남', '창원시 마산회원구', 1000, 100), long('부천종합운동장', '경기', '부천시 원미구', 999, 88)]);
+      const lay = S.top10Layout(rows, document.createElement('canvas').getContext('2d'));
+      // 그리는 글자 모으기 (fillText 가로채기)
+      const texts = []; const P = CanvasRenderingContext2D.prototype, ft = P.fillText; P.fillText = function (t) { texts.push(String(t)); return ft.apply(this, arguments); };
+      try { const kw = all.find(r => r.name === '광운대'); S.draw(kw, { doc, y: 'all', w: 'avg' }); S.drawTop10(top, { y: 'all', w: 'avg' }); } finally { P.fillText = ft; }
+      const L = doc.lines;
+      return { overlap: lay.filter(x => x.overlap).map(x => x.name), n: lay.length,
+        e: S.planLabel(L['gtx-e']), c: S.planLabel(L['gtx-c']), d: S.planLabel(L['gtx-d']),
+        bad: texts.filter(t => /떡상|계단/.test(t)), plan: texts.find(t => /^새 노선/.test(t)) || '',
+        scen: texts.filter(t => /개통하면/.test(t)) };
+    })()`);
+    R.check('TOP10 열 배치: 실제 TOP10 + 최장 이름·지역 3행 겹침 0', cardRule.overlap.length === 0 && cardRule.n === 13, cardRule.overlap);
+    R.check("계획 노선은 연도 없이 '(계획)': GTX-E (계획)·GTX-D (계획), 공사 중은 연도: GTX-C 2031", cardRule.e === 'GTX-E (계획)' && cardRule.d === 'GTX-D (계획)' && cardRule.c === 'GTX-C 2031' && cardRule.plan.includes('GTX-E (계획)'), cardRule);
+    R.check("카드 글자에 '떡상'·'계단' 없음 + 시나리오는 'GTX·새 노선 모두 개통하면'", cardRule.bad.length === 0 && cardRule.scen.length >= 2 && cardRule.scen.every(t => t.startsWith('GTX·새 노선 모두 개통하면')), { bad: cardRule.bad, scen: cardRule.scen });
+
     // 4) 길찾기 결과
     await b.evaluate(`(() => { const st = n => STATIONS.find(s => s.properties.name_ko === n);
       setRouteStation(document.getElementById('route-from'), st('강남')); setRouteStation(document.getElementById('route-to'), st('역삼'));

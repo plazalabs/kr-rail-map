@@ -12,11 +12,23 @@
 
   function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
-  // 이 역에 새로 생기는 노선 (개통 전) — '이름 연도'
+  /* 카드 공통 표기 (뮤즈 카드 검수 TASK, 2026-11-14) — 카드 3종(TOP10·우리 역·타일)과 rank.html 카드가 같은 말을 쓴다.
+   * - 시나리오: 같은 계산은 같은 이름 — 'GTX·새 노선 모두 개통하면' / '2031년까지 개통하면'
+   * - 계획 노선(planned·proposed: 국가철도망 반영·예타 전 등)은 연도 없이 '(계획)' — 공사 중 노선과 같은 무게로 쓰지 않는다
+   * - '떡상'·'계단' 대신 '접근성 개선'·'▲N' (앱 TOP10 카드와 같은 말) */
+  function scenario(y) { return (!y || y === 'all') ? 'GTX·새 노선 모두 개통하면' : y + '년까지 개통하면'; }
+  function planLabel(m) {
+    if (!m) return '';
+    if (m.s === 'planned' || m.s === 'proposed') return m.n + ' (계획)';
+    var y = (typeof RankTable !== 'undefined' && RankTable.yearOf) ? RankTable.yearOf(m.o) : null;
+    return m.n + (y ? ' ' + y : '');
+  }
+  var CARD_TIER = { rocket: '접근성 크게 개선', up: '접근성 개선', flat: '비슷', down: '상대 하락', new: '신규' };
+  function changeText(r) { return r.change > 0 ? '▲' + r.change : r.change < 0 ? '▼' + (-r.change) : '그대로'; }
+  // 이 역에 새로 생기는 노선 (개통 전) — 공사 중 '이름 연도', 계획 '이름 (계획)'
   function planLines(doc, r) {
     return (r.lines || []).map(function (id) { return doc.lines && doc.lines[id]; })
-      .filter(function (m) { return m && m.s !== 'open'; }).slice(0, 3)
-      .map(function (m) { var y = RankTable.yearOf(m.o); return m.n + (y ? ' ' + y : ''); });
+      .filter(function (m) { return m && m.s !== 'open'; }).slice(0, 3).map(planLabel);
   }
 
   // o: { doc, y: '2031'|'all', w: 'avg'|…, wait }
@@ -25,15 +37,15 @@
     var k = cardBase(1350), g = k.g, F = FONT, D = 40;   // D: 정사각형 때보다 내용을 아래로 내린 만큼
     var t = RankTable.tierOf(r);
     g.fillStyle = 'rgba(255,255,255,.06)'; for (var i = 0; i < 6; i++) { g.beginPath(); g.arc(900 - i * 40, 200 + i * 30, 260 - i * 30, 0, Math.PI * 2); g.fill(); }
-    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText('GTX 개통 후, 우리 역은 몇 등?', 80, 120 + D);
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText(scenario(o.y) + ', 우리 역 접근성은 몇 위?', 80, 120 + D);
     g.fillStyle = '#ffffff'; g.font = '800 104px ' + F; g.fillText(r.name + '역', 80, 250 + D);
     g.fillStyle = '#9fb3d1'; g.font = '500 32px ' + F; g.fillText([r.region, r.sgg].filter(Boolean).join(' ') + ' · 수도권 ' + (WLABEL[o.w] || '') + '순위', 84, 305 + D);
     g.font = '700 46px ' + F; g.fillStyle = '#c8d3e6';
-    g.fillText(r.isNew ? '지금은 철도 없음' : '지금 접근성 ' + r.now.rank + '위', 80, 460 + D);
+    g.fillText(r.isNew ? '지금은 철도 없음' : '지금 접근성 ' + r.now.rank + '위', 80, 460 + D);   // 아래 큰 숫자 = 개통 후 접근성 순위
     g.fillStyle = '#ffffff'; g.font = '800 150px ' + F; g.fillText(r.aft.rank + '위', 80, 620 + D);
     var w1 = g.measureText(r.aft.rank + '위').width;
-    g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText(o.y === 'all' ? '개통 후' : o.y + '년 개통 후', 80 + w1 + 24, 620 + D);
-    var bt = t === 'new' ? '신규' : (r.change > 0 ? '▲' + r.change + '계단' : r.change < 0 ? '▼' + (-r.change) + '계단' : '그대로') + '  ' + RankTable.TIERS[t].label;
+    g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('개통 후', 80 + w1 + 24, 620 + D);   // 시나리오는 맨 위 한 문장
+    var bt = t === 'new' ? '신규' : changeText(r) + '  ' + CARD_TIER[t];
     g.font = '800 44px ' + F; var bw = g.measureText(bt).width + 56;
     roundRect(g, 80, 670 + D, bw, 78, 39); g.fillStyle = COLS[t]; g.fill();
     g.fillStyle = '#fff'; g.fillText(bt, 108, 724 + D);
@@ -51,7 +63,7 @@
     return k.c;
   }
 
-  function fileName(r) { return 'GTX떡상_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png'; }
+  function fileName(r) { return '접근성_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png'; }
 
   // 반환: 안내 글 ('공유했어요' / '이미지를 저장했어요' / '' (취소))
   function save(r, o) { return saveCanvas(draw(r, o), fileName(r), r.name + ' 개통 후 접근성 ' + r.aft.rank + '위', 'card-station'); }
@@ -85,8 +97,8 @@
   // ③ TOP10 순위표 카드 — rows: 오른 순 정렬된 역(최대 10), o: { y, w, wait, asof }
   function drawTop10(rows, o) {
     var k = cardBase(1350), g = k.g;
-    var when = o.y === 'all' ? '모두 개통하면' : o.y + '년까지 개통하면';
-    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + FONT; g.fillText('GTX·새 노선 ' + when, 72, 132);
+    var when = scenario(o.y);
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + FONT; g.fillText(when, 72, 132);
     g.fillStyle = '#ffffff'; g.font = '800 64px ' + FONT; g.fillText('개통 후 교통 접근성 개선 TOP 10', 72, 214);   // 계산한 지표 그대로(주식 '오르는' 문법 빼기 — 표시광고법)
     g.fillStyle = '#9fb3d1'; g.font = '500 28px ' + FONT;
     g.fillText('수도권 ' + (WLABEL[o.w] || '') + '접근성 순위 · TOP ' + rows.length, 72, 262);
@@ -96,20 +108,40 @@
       if (i % 2 === 0) { g.fillStyle = 'rgba(255,255,255,.05)'; g.fillRect(56, y - 4, k.W - 112, rh - 6); }
       g.fillStyle = i < 3 ? '#ffd166' : '#9fb3d1'; g.font = '800 40px ' + FONT; g.fillText(String(i + 1), 80, y + 50);
       g.fillStyle = '#ffffff'; g.font = '800 40px ' + FONT;
-      var nm = r.name; while (g.measureText(nm).width > 330 && nm.length > 2) nm = nm.slice(0, -1);
-      g.fillText(nm === r.name ? nm : nm + '…', 150, y + 50);
-      g.fillStyle = '#9fb3d1'; g.font = '500 26px ' + FONT; g.fillText([r.region, r.sgg].filter(Boolean).join(' '), 500, y + 48);   // 이름은 330px 안으로 자름(150~480)
-      var chg = '▲' + r.change;
+      var nm = topName(g, r.name);   // 말줄임표까지 320px 안 (지역 칸 490 앞에서 끝남)
+      g.fillText(nm, 150, y + 50);
+      var L = top10Row(g, r, k.W);   // 열 배치 한 곳에서 (겹침 검사도 같은 함수)
+      if (L.region) { g.fillStyle = '#9fb3d1'; g.font = '500 26px ' + FONT; g.fillText(L.region, L.regX, y + 48); }
       g.fillStyle = '#5fe39a'; g.font = '800 40px ' + FONT;   // 어두운 바탕에서 잘 보이는 밝은 초록 (기존 역 카드 '−N분'과 같은 색)
-      var cw = g.measureText(chg).width; g.fillText(chg, k.W - 80 - cw, y + 50);
-      g.fillStyle = '#c8d3e6'; g.font = '600 26px ' + FONT;
-      var rk = '접근성 ' + r.now.rank + '위 → ' + r.aft.rank + '위', rw = g.measureText(rk).width; g.fillText(rk, k.W - 80 - cw - 28 - rw, y + 48);
+      g.fillText(L.chg, L.chgX, y + 50);
+      g.fillStyle = '#c8d3e6'; g.font = '600 26px ' + FONT; g.fillText(L.rk, L.rkX, y + 48);
     });
     cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구까지' : '타는 시간 + 갈아타며 걷는 시간(기다림 제외) · 업무지구까지', o.asof);
     return k.c;
   }
+  /* TOP10 한 행의 열 위치 (뮤즈 카드 검수 1순위: '인천 연수'+'접근성' 겹침). 오른쪽 끝부터 ▲N → '접근성 N위 → M위' 를 놓고,
+   * 지역은 이름 칸 끝(480)과 순위 글자 사이 남은 폭(사이 24px)에 '시도 시군구' → '시군구 끝말(연수구)' → '시도' 중 들어가는 첫 것 —
+   * 글자 중간을 자르면('인천…') 어디인지 못 읽어서 말 단위로 고른다. 하나도 안 들어가면 지역을 뺀다. */
+  function topName(g, name) {
+    if (g.measureText(name).width <= 320) return name;
+    var ell = g.measureText('…').width, nm = name;
+    while (nm.length > 2 && g.measureText(nm).width + ell > 320) nm = nm.slice(0, -1);
+    return nm + '…';
+  }
+  function top10Row(g, r, W) {
+    g.font = '800 40px ' + FONT; var chg = changeText(r), cw = g.measureText(chg).width, chgX = W - 80 - cw;
+    g.font = '600 26px ' + FONT; var rk = '접근성 ' + r.now.rank + '위 → ' + r.aft.rank + '위', rkX = chgX - 28 - g.measureText(rk).width;
+    g.font = '500 26px ' + FONT;
+    var regX = 490, room = rkX - 24 - regX, sg = String(r.sgg || '').split(' ');
+    var cands = [[r.region, r.sgg].filter(Boolean).join(' '), sg[sg.length - 1], r.region].filter(Boolean);
+    var reg = '';
+    for (var i = 0; i < cands.length; i++) if (g.measureText(cands[i]).width <= room) { reg = cands[i]; break; }
+    return { chg: chg, chgX: chgX, rk: rk, rkX: rkX, region: reg, regX: regX, regEnd: regX + (reg ? g.measureText(reg).width : 0) };
+  }
+  // 시험·눈 검수용: 행마다 지역 끝 x < 순위 글자 시작 x 인지
+  function top10Layout(rows, g) { return rows.map(function (r) { var L = top10Row(g, r, 1080); g.font = '800 40px ' + FONT; var nEnd = 150 + g.measureText(topName(g, r.name)).width; return { name: r.name, nameEnd: Math.round(nEnd), region: L.region, regEnd: Math.round(L.regEnd), rkStart: Math.round(L.rkX), overlap: nEnd > L.regX - 8 || (!!L.region && L.regEnd > L.rkX - 8) }; }); }
   function saveTop10(rows, o) {
-    var name = 'GTX떡상_TOP10_' + (o.y === 'all' ? '전체개통' : o.y + '년') + '.png';
+    var name = '접근성TOP10_' + (o.y === 'all' ? '전체개통' : o.y + '년') + '.png';
     return saveCanvas(drawTop10(rows, o), name, (o.y === 'all' ? '모두 개통하면' : o.y + '년까지') + ' 교통 접근성 개선 TOP 10', 'card-top10');
   }
 
@@ -127,7 +159,7 @@
   function drawLife(info, o) {
     o = o || {};
     var k = cardBase(1350), g = k.g, F = FONT, rows = info.rows || [], s = lifeSummary(rows);
-    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText('GTX·새 노선이 모두 개통하면', 72, 132);
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText(scenario('all'), 72, 132);
     g.fillStyle = '#ffffff'; g.font = '800 84px ' + F;
     var nm = info.name + '역'; while (g.measureText(nm).width > 936 && nm.length > 3) nm = nm.slice(0, -2) + '…';
     g.fillText(nm, 72, 226);
@@ -188,5 +220,5 @@
     });
   }
 
-  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, drawLife: drawLife, saveLife: saveLife, lifeSummary: lifeSummary, BRAND: BRAND, FONT: FONT, cardBase: cardBase, cardFooter: cardFooter, saveCanvas: saveCanvas };
+  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, top10Layout: top10Layout, scenario: scenario, planLabel: planLabel, CARD_TIER: CARD_TIER, changeText: changeText, drawLife: drawLife, saveLife: saveLife, lifeSummary: lifeSummary, BRAND: BRAND, FONT: FONT, cardBase: cardBase, cardFooter: cardFooter, saveCanvas: saveCanvas };
 })(typeof window !== 'undefined' ? window : globalThis);

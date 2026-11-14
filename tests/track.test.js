@@ -13,7 +13,7 @@ function check(label, cond, detail) {
 function load(store) {
   const sent = [];
   const win = { umami: { track: (n, d) => sent.push([n, d]) }, localStorage: store };
-  vm.runInContext(src, vm.createContext({ window: win, Date, JSON, String }));
+  vm.runInContext(src, vm.createContext({ window: win, Date, JSON, String, URLSearchParams, URL }));
   return { T: win.KRTrack, sent };
 }
 const mem = () => { const m = {}; return { getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); } }; };
@@ -50,6 +50,10 @@ check("app.js: 길찾기 결과가 있을 때만 task('route')", has('js/app.js'
 check("station-detail.js: 시세 탭 → task('price')", has('js/station-detail.js', "key === 'p' && global.KRTrack && global.KRTrack.task) global.KRTrack.task('price')"));
 check("market-map.js: 타일 역 카드 → task('price')", has('js/market-map.js', "global.KRTrack.task('price')"));
 check("home-cards.js: TOP3 카드 → task('top3')", has('js/home-cards.js', "global.KRTrack.task('top3')"));
+
+// 11-15: 주소 질문(?…)만 바뀌는 replaceState(공유 이름표 지우기·순위표 필터·퀴즈)를 Umami 가 새 페이지 보기로 세지 않게
+for (const f of ['index.html', 'rank.html', 'board.html', 'data.html']) check(f + ': Umami data-exclude-search="true" (주소 질문 바뀜을 방문으로 안 셈)', has(f, 'data-exclude-search="true"'));
+check('track.js: 공유 이름표 shareRef — ref 우선, 예전 from=card-* 도', (() => { const T = a.T; return T.shareRef('?ref=card-top10') === 'card-top10' && T.shareRef('?from=card-life') === 'card-life' && T.shareRef('?from=%EC%84%9C%EC%9A%B8') === null && T.shareRef('?ref=<x>') === null; })());
 
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

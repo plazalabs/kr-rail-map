@@ -108,6 +108,15 @@ const count = b => b.evaluate(`(() => { const s = map.getSource('cm-stations'); 
   const sdClosed = await b.evaluate(`!document.getElementById('sd-panel').classList.contains('sd-open')`);
   R.check("역 상세 '이 역까지 통근권 보기' → 그 역(잠실) 기준 통근권", hasLink && /잠실/.test(s4) && sdClosed, { hasLink, s4, sdClosed });
 
+
+  // K12 (6차 ②7): 대기 시간 설명 = 실제 계산 상태. 배차 끔 → '처음 열차 대기 뺌', 켬(자료 받음) → '출퇴근 배차의 절반' + 분이 늘어남
+  await b.evaluate(`(() => { const c = document.getElementById('cm-wait'); if (c.checked) { c.checked = false; c.dispatchEvent(new Event('change')); } })()`); await sleep(800);
+  const off = await b.evaluate(`({ def: document.getElementById('cm-def').textContent, note: document.getElementById('cm-wait-note').textContent, n: (map.getSource('cm-stations')._data.features || []).length })`);
+  R.check("배차 끔: '처음 열차 대기 뺌' 문구", /처음 열차를 기다리는 시간은 빠져/.test(off.def) && /처음 열차 대기는 뺌/.test(off.note), off);
+  await b.evaluate(`(() => { const c = document.getElementById('cm-wait'); c.checked = true; c.dispatchEvent(new Event('change')); })()`);
+  let on; for (let i = 0; i < 30; i++) { await sleep(300); on = await b.evaluate(`({ def: document.getElementById('cm-def').textContent, note: document.getElementById('cm-wait-note').textContent, sum: document.getElementById('cm-summary').textContent, n: (map.getSource('cm-stations')._data.features || []).length, hw: RouteFinder.hasHeadways() })`); if (on.hw && /배차 넣음/.test(on.sum)) break; }
+  R.check("배차 켬: '출퇴근 배차의 절반' 문구 + 같은 시간 안 역 수가 줄거나 같음", on.hw && /출퇴근 배차의 절반/.test(on.def) && /처음 탈 때와 갈아탈 때/.test(on.note) && on.n <= off.n, { on, offN: off.n });
+  await b.evaluate(`(() => { const c = document.getElementById('cm-wait'); c.checked = false; c.dispatchEvent(new Event('change')); })()`); await sleep(500);
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0', exc.length === 0, exc.slice(0, 3));
   b.close();

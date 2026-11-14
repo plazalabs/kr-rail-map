@@ -21,7 +21,18 @@
   let map = null, ST = [], byId = new Map();
   let panel = null, active = false;
   let destId = null, maxMin = 45, withUnopened = false, sortBy = 'time';
-  let headwayTried = false, headwayFailed = false;   // I2: 출퇴근 배차 자료를 받으려 했는지·실패했는지
+  let headwayTried = false, headwayFailed = false;
+  // 대기 시간 설명 (K12) — route.js allTimesFrom 이 실제로 넣는 것과 같게:
+  //  배차 넣음(출퇴근 배차 자료 있음) → 처음 탈 때·갈아탈 때 출퇴근 배차의 절반 (KTX·급행·같은 승강장 맞은편 환승은 0)
+  //  배차 안 넣음(꺼짐·자료 못 받음·받는 중) → 갈아탈 때만 노선별 평소 대기 어림, 처음 열차 대기는 0
+  function waitCopy(peakApplied) {
+    return peakApplied
+      ? { def: '역에서 역까지 어림한 시간입니다 — 집·회사까지 걷는 시간은 빠져 있고, 열차 기다리는 시간은 출퇴근 배차의 절반으로 넣었어요.',
+          note: '처음 탈 때와 갈아탈 때 출퇴근 배차 간격의 절반을 넣음(KTX·급행·같은 승강장 맞은편 환승은 0)' }
+      : { def: '역에서 역까지 어림한 시간입니다 — 집·회사까지 걷는 시간과 처음 열차를 기다리는 시간은 빠져 있어요.',
+          note: '갈아탈 때 기다리는 시간은 노선별 평소 배차로 어림해 넣고, 처음 열차 대기는 뺌' };
+  }
+  if (typeof window !== 'undefined') window.__cmWaitCopy = waitCopy;   // I2: 출퇴근 배차 자료를 받으려 했는지·실패했는지
   let lastRows = [];
   const BANDS = [
     [15, '#1b7f3b', '15분'], [30, '#43a047', '30분'], [45, '#f9a825', '45분'],
@@ -120,7 +131,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     panel.innerHTML = `
 <div id="cm-head">통근권 찾기 <button id="cm-close" aria-label="닫기"><i data-ic="close"></i></button></div>
 <div id="cm-body">
-  <p class="cm-def">역에서 역까지 어림한 시간입니다 — 집·회사까지 걷는 시간과 처음 열차를 기다리는 시간은 빠져 있어요.</p>
+  <p class="cm-def" id="cm-def">${waitCopy(false).def}</p>
   <div class="cm-row">
     <label for="cm-dest">직장(목적지) 역</label>
     <div class="ac-wrap"><input id="cm-dest" placeholder="예: 강남" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"><div class="ac-list" hidden></div></div>
@@ -136,7 +147,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
   <div class="cm-legend" aria-hidden="true">${BANDS.map(b => `<span><i style="background:${b[1]}"></i>${b[2]}</span>`).join('')}</div>
   <div id="cm-summary" role="status" aria-live="polite"></div>
   <ul id="cm-list"></ul>
-  <div class="cm-note">소요 시간은 운행 속도·환승 도보·승강장 접근 시간으로 낸 <b>추정값</b>입니다(시각표 미반영 · 갈아탈 때 기다리는 시간은 배차 간격 절반으로 넣고, 처음 열차 대기는 뺌 · ±20~30%).
+  <div class="cm-note">소요 시간은 운행 속도·환승 도보·승강장 접근 시간으로 낸 <b>추정값</b>입니다(시각표 미반영 · <span id="cm-wait-note">${waitCopy(false).note}</span> · ±20~30%).
   길찾기와 같은 계산입니다. 시세는 투자 모드에서 역이 속한 법정동의 아파트 매매 중위 평당가(최근 6개월)이며, 역 바로 옆 값이 아닙니다. 전세가율은 같은 단지·같은 면적의 매매·신규 전세 짝의 중위값(80% 이상 (주의)).</div>
 </div>`;
     document.body.appendChild(panel);
@@ -233,6 +244,11 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     }).join(' · ');
     const hwNow = !!(RouteFinder.hasHeadways && RouteFinder.hasHeadways());
     const hwNote = !wantPeak ? '' : hwNow ? ' · 출퇴근 배차 넣음' : headwayFailed ? ' · <b>배차 자료를 못 받아 배차 없이 계산</b>' : ' · 배차 자료 받는 중…';
+    // K12 (6차 ②7): 위·아래 설명 문구를 '실제로 넣은 대기 시간' 상태에서 만든다 (예전엔 배차를 켜도 '처음 대기 뺌' 고정)
+    const wc = waitCopy(wantPeak && hwNow);
+    const defEl = panel.querySelector('#cm-def'), noteEl = panel.querySelector('#cm-wait-note');
+    if (defEl) defEl.textContent = wc.def;
+    if (noteEl) noteEl.textContent = wc.note;
     sum.innerHTML = `<b>${esc(dest.properties.name_ko)}</b>까지 ${maxMin}분 안: <b>${lastRows.length}</b>역` +
       (withUnopened ? ' (개통 예정 포함)' : '') + hwNote + '<br>' + per;
     renderList();

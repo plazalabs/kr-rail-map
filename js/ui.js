@@ -296,6 +296,8 @@ const UI = (() => {
       if (sdm && panelOpen(sdm)) { const b = document.getElementById(sdm.close); if (b) b.click(); return; }
       if (window.MarketMap && MarketMap.isOpen && MarketMap.isOpen()) { MarketMap.close(); return; }
       if (window.RocketPanel && RocketPanel.isOpen && RocketPanel.isOpen()) { RocketPanel.close(); return; }
+      // 게시판 패널도 같은 자리 — 포커스가 지도에 있어도 Esc 로 닫힌다 (11-15 panel-fold e2e 에서 발견: 창 안에서만 닫혔음)
+      if (window.BoardPanel && BoardPanel.isOpen && BoardPanel.isOpen()) { BoardPanel.close(); return; }
       const m = visibleModal();
       if (m) {
         const btn = document.getElementById(m.close);
@@ -315,6 +317,16 @@ const UI = (() => {
       if (ddOpen) return;
       // 닫을 것이 없으면: 입력칸에서 빠져나와 지도로 (K1) — 지도에서는 화살표·+/− 로 움직인다(map-keyboard)
       const a = document.activeElement;
+      // 입력칸 밖에서 한 번 더 Esc → PC 왼쪽 패널도 접어 지도를 한눈에 (회장님 피드백 11-15). 다시 펴기는 손잡이 › 또는 레일 '노선'
+      const typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+      // 메모·그리기·역 고르기를 끝내는 Esc(e.krEscHandled)는 접지 않는다 — 그 처리기는 이 처리기 뒤에 돌 수도 있어 한 박자 뒤에 본다
+      if (!typing && !isMobile() && !document.body.classList.contains('sidebar-hidden')) {
+        setTimeout(() => {
+          if (e.krEscHandled || e.defaultPrevented || document.body.classList.contains('sidebar-hidden')) return;
+          const st = document.getElementById('sidebar-toggle');
+          if (st && st.offsetParent) st.click();
+        }, 0);
+      }
       if (a && a !== document.body && a.blur) a.blur();
       const cv = (typeof map !== 'undefined' && map && map.getCanvas) ? map.getCanvas() : null;
       if (cv) { try { cv.focus({ preventScroll: true }); } catch (err) { /* 무시 */ } }

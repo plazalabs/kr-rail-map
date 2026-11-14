@@ -1587,3 +1587,23 @@ body.map-ready #map-skeleton .sk { animation: none; }
 
 /* J10 노선도에서 고른 역 고리 (2026-11-14) — 테마 강조색 */
 #diagram-overlay .dg-sel-ring { stroke: var(--accent); }
+
+/* 오른쪽 창 접기 손잡이 (회장님 피드백 11-15: 지도가 한눈에 보이게) — js/panel-fold.js 가 열린 창 왼쪽 가장자리에 붙인다.
+   왼쪽 #sidebar-toggle 과 같은 모양을 좌우로 뒤집음. 접으면 창은 숨기만 하고(상태 유지) 손잡이는 화면 오른쪽 끝. */
+#rpanel-toggle { display: none; }
+@media (min-width: 981px) {
+  #rpanel-toggle:not([hidden]) {
+    display: flex; align-items: center; justify-content: center;
+    position: absolute; transform: translateY(-50%);
+    width: 22px; height: 56px; padding: 0; border-right: 0;
+    border-radius: 10px 0 0 10px; z-index: 47;
+  }
+  #rpanel-toggle::after {
+    content: ""; width: 8px; height: 8px; border: solid currentColor; border-width: 0 0 2.2px 2.2px;
+    transform: translateX(-2px) rotate(-135deg);
+  }
+  body.rpanel-hidden #rpanel-toggle::after { transform: translateX(2px) rotate(45deg); }
+  body.rpanel-hidden .rkp, body.rpanel-hidden #route-panel, body.rpanel-hidden #draw-panel { display: none !important; }
+}
+/* '지도만 보기' 단추 (js/panel-fold.js, 11-15) — PC 도구막대 '투자' 옆. 휴대폰은 창이 시트·서랍이라 필요 없음 */
+@media (max-width: 980px) { #maponly-btn { display: none !important; } }

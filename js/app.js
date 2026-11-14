@@ -2535,7 +2535,7 @@ const KbNav = (() => {
     if (k === 'KeyN' || k === 'BracketRight') { e.preventDefault(); step(1); }
     else if (k === 'KeyP' || k === 'BracketLeft') { e.preventDefault(); step(-1); }
     else if (k === 'Enter' && chosen) { e.preventDefault(); const s = chosen; showStation(s, s.geometry.coordinates); }
-    else if (k === 'Escape' && chosen) { clear(); setStatus('역 고르기를 끝냈습니다'); }
+    else if (k === 'Escape' && chosen) { e.krEscHandled = true; clear(); setStatus('역 고르기를 끝냈습니다'); }
   }
   const canvas = map.getCanvas();
   canvas.setAttribute('aria-label', '지도. 화살표: 이동, +/−: 확대·축소, N/P: 화면 안의 역을 하나씩 고르기, Enter: 고른 역 열기');

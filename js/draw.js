@@ -443,7 +443,7 @@ const DrawTools = (() => {
     if ((tag === 'BUTTON' || tag === 'SELECT' || tag === 'A') && (e.key === 'Enter' || e.key === 'Backspace')) return;
     if (e.key === 'Enter') { e.preventDefault(); finish(); }
     else if (e.key === 'Backspace') { e.preventDefault(); undo(); }
-    else if (e.key === 'Escape') { cancel(); }
+    else if (e.key === 'Escape') { e.krEscHandled = true; cancel(); }   // 표시: 이 Esc 로 왼쪽 패널까지 접지 않게 (js/ui.js)
   }
 
   function init(m, statusCb) {

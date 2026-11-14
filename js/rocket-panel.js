@@ -444,6 +444,7 @@
 
   function open(o) {
     o = o || {};
+    if (global.BoardPanel && BoardPanel.isOpen()) BoardPanel.close();   // 게시판 패널과 같은 자리 — 하나만 (회장님 11-14)
     if (global.leaveRouteMode) global.leaveRouteMode();   // K10: 떡상으로 바꾸면 길찾기 경로를 지운다
     if (!el) build();
     var go = function () {

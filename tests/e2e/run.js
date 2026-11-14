@@ -77,6 +77,7 @@ const CHECKS = [
   ['route-mode', 'route-mode.e2e.js', {}, '길찾기 칩 줌 12 미만은 출발·도착·환승만 · 떡상·시세로 바꾸면 경로 지움 · 배경 바꿔도 경로 유지 (K10, 2026-11-14)'],
   ['share-conditions', 'share-conditions.e2e.js', {}, '공유 링크에 비교 조건(배차 포함·개통 예정 포함) (H7, 2026-11-14)'],
   ['board', 'board.e2e.js', {}, '게시판: 설정 없으면 준비 중, 있으면 목록·글쓰기·도배 막기·신고·XSS 막힘 (Supabase 흉내, 2026-11-12)'],
+  ['board-panel', 'board-panel.e2e.js', {}, '지도 안 게시판 패널: 레일·메뉴·아래 탭 → 페이지 안 바뀜, 글쓰기·신고·XSS 막힘, 떡상과 하나만, Esc (회장님 11-14)'],
   ['ui-fixes', 'ui-fixes.e2e.js', {}, '노선 비교·노선도 카드·노선도 툴바·영향권·style=local·그린 노선/위치 (IMPL7, 데스크톱)'],
   ['ui-fixes-mobile', 'ui-fixes.e2e.js', { MOBILE: '1' }, '같은 항목, 모바일 390×844'],
   ['tabbar', 'tabbar.e2e.js', {}, '휴대폰 아래 탭 5칸(길찾기·떡상·시세·게시판·더보기)·더보기 시트·PC 엔 없음 (작업 1)'],

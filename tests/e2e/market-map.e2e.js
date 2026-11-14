@@ -28,11 +28,20 @@ async function until(b, expr, n = 40) {
   let b = await launch({ port: 9671, w: 1440, h: 900 });
   await b.goto(BASE + '#normal', 1500); await ready(b);
   const opened = await b.evaluate(`(() => { const btn = document.getElementById('market-btn'); if (!btn) return 'no-btn'; btn.click(); return 'ok'; })()`);
-  const tilesUp = await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 50`, 60); await sleep(500);
+  const tilesUp = await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 10`, 60); await sleep(500);
   const head = await b.evaluate(`(() => { const p = document.getElementById('mm-panel'); return { hidden: p.hidden, groups: [...p.querySelectorAll('.mm-gname')].map(g => g.textContent.split(' · ')[0]),
     def: (p.querySelector('.mm-def') || {}).textContent || '', n: p.querySelectorAll('.mm-tile').length }; })()`);
   R.check("분석 메뉴 'RAIL MARKET MAP' → 패널·타일", opened === 'ok' && tilesUp && !head.hidden, { opened, tilesUp, n: head.n });
   R.check('GTX-A 묶음이 맨 앞, GTX-B·C 도 있음', head.groups[0] === 'GTX-A' && ['GTX-B', 'GTX-C'].every(g => head.groups.includes(g)), head.groups.slice(0, 6));
+  // 회장님 11-14: 기본은 GTX-A·B·C 만, 나머지는 '더보기'
+  R.check('기본은 GTX-A·B·C 묶음만', head.groups.length > 0 && head.groups.every(g => ['GTX-A', 'GTX-B', 'GTX-C'].includes(g)), head.groups);
+  const more1 = await b.evaluate(`(() => { const m = document.querySelector('#mm-panel .mm-more'); if (!m || m.hidden) return null; const t = m.textContent; m.click(); return t; })()`);
+  await sleep(600);
+  const moreOpen = await b.evaluate(`(() => { const p = document.getElementById('mm-panel'); const m = p.querySelector('.mm-more'); return { n: p.querySelectorAll('.mm-tile').length, groups: [...p.querySelectorAll('.mm-gname')].map(g => g.textContent.split(' · ')[0]), txt: m.textContent, exp: m.getAttribute('aria-expanded') }; })()`);
+  R.check("'더보기 N곳' 누르면 다른 묶음이 늘고 '접기'로 바뀜", !!more1 && /더보기.*\d+곳/.test(more1) && moreOpen.n > head.n && moreOpen.groups.some(g => !['GTX-A', 'GTX-B', 'GTX-C'].includes(g)) && /접기/.test(moreOpen.txt) && moreOpen.exp === 'true', { more1, n0: head.n, n1: moreOpen.n, g: moreOpen.groups.slice(0, 8) });
+  await b.evaluate(`document.querySelector('#mm-panel .mm-more').click(); 0`); await sleep(600);
+  const moreClosed = await b.evaluate(`document.querySelectorAll('#mm-panel .mm-tile').length`);
+  R.check("'접기' → 처음 개수로", moreClosed === head.n, { moreClosed, n0: head.n });
   R.check("부제에 '집값이나 투자수익 예측이 아닙니다'", /집값이나 투자수익 예측이 아닙니다/.test(head.def), head.def);
 
   const geo = await b.evaluate(`(() => { const bd = document.querySelector('#mm-panel .mm-board').getBoundingClientRect();
@@ -88,7 +97,7 @@ async function until(b, expr, n = 40) {
     const g = id => { for (const G of m.groups) for (const t of G.tiles) if (t.row.id === id) return t.row.isNew ? 1e6 : (t.gain == null ? -1e6 : t.gain); return null; };
     const ks = rows.map(r => g(r.dataset.id)); const sorted = ks.every((k, i) => i === 0 || ks[i - 1] >= k);
     return { n: rows.length, total: m.total, sorted, first: rows[0] ? rows[0].textContent.slice(0, 40) : null }; })()`);
-  R.check('목록 보기: 타일과 같은 역 수, 빨라지는 분 큰 순', lst.n === lst.total && lst.n > 50 && lst.sorted, lst);
+  R.check('목록 보기: 타일과 같은 역 수, 빨라지는 분 큰 순', lst.n === lst.total && lst.n > 10 && lst.sorted, lst);
   await b.evaluate(`(() => { const r = [...document.querySelectorAll('#mm-panel .mm-row')][3]; r.click(); })()`); await sleep(900);
   const lsd = await b.evaluate(`({ card: ${cardShows}, sel: !!document.querySelector('#mm-panel .mm-row.sel') })`);
   R.check('목록 줄 누르면 그 줄 골라지고 카드에 그 역', lsd.card && lsd.sel, lsd);
@@ -132,7 +141,7 @@ async function until(b, expr, n = 40) {
   // 표(노선×역)
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'matrix'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
   const mx = await b.evaluate(`(() => { const rows = [...document.querySelectorAll('#mm-panel .mm-mxr')]; return { rows: rows.length, groups: MarketMap.model().groups.length, cells: document.querySelectorAll('#mm-panel .mm-cell').length, total: MarketMap.model().total, first: rows[0] ? rows[0].querySelector('.mm-mxh b').textContent : null }; })()`);
-  R.check('표(노선×역): 줄 = 묶음 수, 칸 = 역 수', mx.rows === mx.groups && mx.cells === mx.total && mx.cells > 50, mx);
+  R.check('표(노선×역): 줄 = 묶음 수, 칸 = 역 수', mx.rows === mx.groups && mx.cells === mx.total && mx.cells > 10, mx);
   await b.evaluate(`document.querySelectorAll('#mm-panel .mm-cell')[2].click(); 0`); await sleep(700);
   const mxs = await b.evaluate(`({ sel: !!document.querySelector('#mm-panel .mm-cell.sel'), card: ${cardShows} })`);
   R.check('표 칸 누르면 골라지고 카드에 그 역', mxs.sel && mxs.card, mxs);

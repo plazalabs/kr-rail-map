@@ -283,6 +283,7 @@
   if (typeof document === 'undefined') { global.MarketMap = { Logic: Logic }; return; }
 
   /* ---------------- 화면 ---------------- */
+  var CORE = ['GTX-A', 'GTX-B', 'GTX-C'], hiddenN = 0;   // 기본으로 보이는 묶음 (회장님 11-14)
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var WLABEL = { avg: '평균', cbd: '도심', ybd: '여의도', gbd: '강남' };
   var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', view: 'tiles', sel: null, cmp: [], tab: 'tiles', focus: null, band: null };
@@ -317,6 +318,8 @@
       '.mm-legend{display:flex;flex-wrap:wrap;gap:3px 9px;padding:0 14px 6px;font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
       '.mm-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:-1px}' +
       '.mm-board{position:relative;flex:1 1 auto;min-height:200px;margin:0 10px 8px;overflow:hidden}' +
+      '.mm-more{margin:0 10px 8px;padding:8px 12px;border:1px solid var(--border,#cfd5dc);border-radius:10px;background:var(--surface,#f3f5f7);color:inherit;font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:center}' +
+      '.mm-more:hover{background:var(--hover,#e8ecf0)}' +
       '.mm-group{position:absolute;box-sizing:border-box;border:1px solid var(--border,#cfd5dc);border-radius:4px;background:var(--surface,#f6f7f9)}' +
       '.mm-gname{position:absolute;left:4px;top:1px;right:4px;font-size:var(--fs-xs);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text,#222)}' +
       '.mm-tile{position:absolute;box-sizing:border-box;border:1px solid rgba(255,255,255,.75);border-radius:2px;overflow:hidden;cursor:pointer;padding:2px 3px;' +
@@ -400,7 +403,7 @@
     el.setAttribute('aria-label', 'RAIL MARKET MAP 역 타일');
     el.innerHTML =
       '<div class="mm-head"><div><p class="mm-eyebrow">RAIL MARKET MAP · 수도권 <span class="mm-n"></span>역 중 <span class="mm-now"></span></p>' +
-      '<h2>개통하면 어느 역이 얼마나 빨라지나</h2>' +
+      '<h2>GTX 개통하면 어느 동네가 얼마나 가까워지나</h2>' +
       '<p class="mm-def">업무지구까지 걸리는 시간(열차 대기 뺌)으로 본 <b>교통 접근성</b>입니다 · 집값이나 투자수익 예측이 아닙니다</p></div>' +
       '<button class="mm-png" type="button" aria-label="이미지로 저장" title="지금 타일을 이미지로 저장 (제목·조건·범례·출처 포함)"><i data-ic="camera"></i></button>' +
       '<button class="mm-link" type="button" aria-label="지금 보는 조건으로 링크 복사" title="지금 보는 조건(연도·기준·색·묶기·고른 역)으로 링크 복사"><i data-ic="link"></i></button>' +
@@ -423,6 +426,7 @@
       '<div class="mm-focus" hidden></div>' +
       '<p class="mm-src" hidden></p>' +
       '<div class="mm-board" role="grid" aria-label="역 타일"></div>' +
+      '<button type="button" class="mm-more" hidden></button>' +
       '<div class="mm-card" aria-live="polite"></div>';
     document.body.appendChild(el);
     var back = document.createElement('button');
@@ -434,6 +438,7 @@
     el.querySelector('.mm-wait').addEventListener('change', function (e) { if (global.KR_WAIT) KR_WAIT.set(e.target.checked ? 'peak' : 'none'); });
     if (global.KR_WAIT) KR_WAIT.onChange(function () { if (isOpen) render(); });
     el.querySelector('.mm-png').addEventListener('click', function () { savePng(); });
+    el.querySelector('.mm-more').addEventListener('click', function () { st.more = !st.more; track('market_map_filter_change', { 종류: '더보기' }); render(); });
     el.querySelector('.mm-link').addEventListener('click', function () {
       var url = location.origin + location.pathname + linkQuery() + location.hash;
       var done = function () { note('타일 지도 링크를 복사했습니다 — 같은 조건으로 열립니다'); track('market_map_share'); };
@@ -496,7 +501,7 @@
   // 링크: ?market=1&y=&w=&c=&g=&s=&st= — 모르는 값은 무시(기본값)
   var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier', 'jeonse', 'price'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
   function linkQuery() {
-    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.band ? '&b=' + st.band : '') + (global.KR_WAIT ? '&wait=' + (KR_WAIT.isPeak() ? '1' : '0') : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
+    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.band ? '&b=' + st.band : '') + (st.more ? '&m=1' : '') + (global.KR_WAIT ? '&wait=' + (KR_WAIT.isPeak() ? '1' : '0') : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
   }
   function note(msg) { var s = document.getElementById('status'); if (s) s.textContent = msg; }
 
@@ -554,6 +559,27 @@
       var gs2 = model.groups.map(function (G) { return Object.assign({}, G, { tiles: G.tiles.filter(function (t) { return Logic.bandOf(t) === st.band; }) }); })
         .filter(function (G) { return G.tiles.length; });
       model = Object.assign({}, model, { groups: gs2, total: gs2.reduce(function (s, G) { return s + G.tiles.length; }, 0) });
+    }
+    // 회장님 11-14: 기본은 GTX-A·B·C 만, 지금도 갈 수 있는 역만(신규 = 비교할 '지금'이 없음). D~H·그 밖의 새 노선·신규 역은 '더보기'
+    hiddenN = 0;
+    if (st.group === 'line' && st.scope === 'new' && !st.focus && !st.band) {
+      var core = function (G, t) { return CORE.indexOf(G.name) >= 0 && t.gain != null; };
+      if (!st.more && st.sel && !model.groups.some(function (G) { return G.tiles.some(function (t) { return t.row.id === st.sel && core(G, t); }); })) st.more = true;   // 고른 역이 접힌 쪽이면 펼쳐 둔다
+      if (!st.more) {
+        var all = model.total;
+        var cg = model.groups.filter(function (G) { return CORE.indexOf(G.name) >= 0; })
+          .map(function (G) { return Object.assign({}, G, { tiles: G.tiles.filter(function (t) { return core(G, t); }) }); })
+          .filter(function (G) { return G.tiles.length; });
+        model = Object.assign({}, model, { groups: cg, total: cg.reduce(function (s2, G) { return s2 + G.tiles.length; }, 0) });
+        hiddenN = all - model.total;
+      }
+    }
+    var mb = el.querySelector('.mm-more');
+    if (mb) {
+      var canMore = st.group === 'line' && st.scope === 'new' && !st.focus && !st.band;
+      mb.hidden = !canMore || (!st.more && !hiddenN);
+      mb.textContent = st.more ? '접기 — GTX-A·B·C 만 보기' : '더보기 — GTX-D~H·그 밖의 새 노선·새로 생기는 역 ' + hiddenN + '곳';
+      mb.setAttribute('aria-expanded', st.more ? 'true' : 'false');
     }
     el.querySelector('.mm-n').textContent = out.total;
     var now = el.querySelector('.mm-now'); if (now) now.textContent = '지금 ' + model.total + '역';   // K7: '수도권 696역 중 지금 121역'
@@ -1142,6 +1168,7 @@
     if (['list', 'tiles', 'matrix', 'scatter', 'bands'].indexOf(o.view) >= 0) st.view = o.view;
     if (o.focus && String(o.focus).length < 40) st.focus = String(o.focus);
     if (o.band && /^b[0-4n]$/.test(String(o.band))) st.band = String(o.band);   // 없는 묶음이면 compute 가 풀어 준다
+    if (o.more) st.more = true;   // 링크 &m=1 — 더보기 펼친 채로
     if (st.view === 'scatter' && !invest()) st.view = 'tiles';
     if (st.size !== 'equal' && !invest()) st.size = 'equal';
     if ((st.color === 'jeonse' || st.color === 'price') && !invest()) st.color = 'gain';
@@ -1204,7 +1231,7 @@
       b.addEventListener('click', function () { open({}); });
     });
     var q = new URLSearchParams(location.search);
-    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s'), view: q.get('v'), focus: q.get('f'), band: q.get('b') });
+    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s'), view: q.get('v'), focus: q.get('f'), band: q.get('b'), more: q.get('m') === '1' });
   }
 
   global.MarketMap = { Logic: Logic, init: init, open: open, close: close, pick: pick,

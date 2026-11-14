@@ -855,7 +855,10 @@ body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
 .dg-legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
 @media (max-width: 640px) {
-  .dg-bar { gap: 6px; padding: 8px 10px; }
+  /* 2026-11-14: 노선 고르기(select)가 길어 휴대폰에서 '닫기'가 화면 밖(392px)으로 밀렸다 → 고르기 폭 제한·버튼 줄바꿈 금지·넘치면 둘째 줄 */
+  .dg-bar { gap: 6px; padding: 8px 10px; flex-wrap: wrap; row-gap: 6px; }
+  .dg-bar button { white-space: nowrap; }
+  .dg-bar select { max-width: 30vw; }
   .dg-bar .dg-hint { display: none; }
   .dg-bar .dg-title { font-size: var(--fs-sm); }
   .dg-bar button { padding: 6px 9px; font-size: var(--fs-xs); }

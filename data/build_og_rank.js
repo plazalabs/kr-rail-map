@@ -15,17 +15,17 @@ const RT = require(path.join(ROOT, 'js/rank.js'));
 const doc = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/rank.json'), 'utf8'));
 const c = RT.compute(doc, { weight: 'avg', region: 'capital' });
 const top = RT.sortRows(c.rows, 'rise').filter(r => !r.isNew).slice(0, 5).map(r => ({ n: r.name, a: r.now.rank, b: r.aft.rank, d: r.change }));
-const kw = c.rows.find(r => r.name === '광운대');
+// 특정 역을 앞세우지 않는다(중립, 2026-11-14) — 예전엔 광운대 한 역을 크게 보여 줬다. 그 자리에 슬로건
 
 const html = `<!doctype html><meta charset="utf-8"><body style="margin:0"><canvas id="c" width="1200" height="630"></canvas><script>
-const T = ${JSON.stringify(top)}, K = ${JSON.stringify(kw ? { a: kw.now.rank, b: kw.aft.rank } : null)};
+const T = ${JSON.stringify(top)};
 const g = document.getElementById('c').getContext('2d'), F = '"Malgun Gothic","Apple SD Gothic Neo",sans-serif';
 const bg = g.createLinearGradient(0, 0, 1200, 630); bg.addColorStop(0, '#0b1d3a'); bg.addColorStop(1, '#123a6e'); g.fillStyle = bg; g.fillRect(0, 0, 1200, 630);
 g.fillStyle = '#9fb3d1'; g.font = '600 30px ' + F; g.fillText('한국철도맵', 64, 78);
 g.fillStyle = '#fff'; g.font = '800 64px ' + F; g.fillText('GTX 개통 후,', 64, 168); g.fillText('우리 역은 몇 등?', 64, 248);
 g.fillStyle = '#5fe39a'; g.font = '800 40px ' + F; g.fillText('🚀 GTX 떡상 랭킹', 64, 320);
 g.fillStyle = '#c8d3e6'; g.font = '500 26px ' + F; g.fillText('CBD·YBD·GBD 까지 시간으로 매긴', 64, 380); g.fillText('수도권 역 순위 — 지금 vs 개통 후', 64, 416);
-if (K) { g.fillStyle = '#fff'; g.font = '700 30px ' + F; g.fillText('광운대 ' + K.a + '위 → ' + K.b + '위', 64, 500); }
+g.fillStyle = '#7fb0ff'; g.font = '700 28px ' + F; g.fillText('축을 읽으면, 도시의 미래가 보인다', 64, 500);
 g.fillStyle = '#7f93b3'; g.font = '500 22px ' + F; g.fillText('plazalabs.github.io/kr-rail-map/rank.html', 64, 580);
 // 오른쪽: 많이 오르는 TOP 5
 const X = 660; g.fillStyle = 'rgba(255,255,255,.07)'; g.beginPath(); g.roundRect ? g.roundRect(X - 30, 60, 530, 510, 24) : g.rect(X - 30, 60, 530, 510); g.fill();

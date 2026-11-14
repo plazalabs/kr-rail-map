@@ -189,6 +189,8 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
   await m.evaluate(`document.getElementById('rocket-btn').click()`);
   await until(m, `!!document.querySelector('#rocket-panel .rkp-row')`);
   await sleep(1300);
+  // 떠오름 모션(kr-sheet-in, 24px)이 백그라운드 크롬에서 멈춰 있으면 24px 아래로 재진다 — 모션을 끝낸 뒤 잰다 (2026-11-14)
+  await m.evaluate(`document.getAnimations().forEach(a => { try { a.finish(); } catch (e) {} }); true`); await sleep(100);
   const mb = await m.evaluate(`(() => { const p = document.getElementById('rocket-panel').getBoundingClientRect(); const t = ['tabbar', 'toolbar'].map(id => document.getElementById(id)).find(e => e && getComputedStyle(e).display !== 'none').getBoundingClientRect();   /* 아래 바 = 탭 바 (작업 1) */
     const bg = getComputedStyle(document.getElementById('rocket-panel')).backgroundColor;
     return { p: { left: p.left, right: p.right, top: p.top, bottom: p.bottom, h: p.height }, tbTop: t.top, vw: innerWidth, vh: innerHeight, bg, grip: !!document.querySelector('.rkp-grip').offsetParent }; })()`);

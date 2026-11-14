@@ -83,6 +83,7 @@ const CHECKS = [
   ['share-landing', 'share-landing.e2e.js', {}, '공유 성공 통계: 카드로 도착 1번·이름표 지움·출발역 칸에 안 들어감·안내 카드 뜸, 결과 따로 셈 (11-15)'],
   ['a11y', 'a11y.e2e.js', {}, 'axe 접근성 검사(WCAG 2.1 AA) 8화면 위반 0 — 대비·구조 (11-15)'],
   ['idle-cpu', 'idle-cpu.e2e.js', {}, '가만히 있을 때 CPU 안 씀: 스타일 계산·스크립트 시간 (R8 손잡이 고리 버그, 11-15)'],
+  ['offline', 'offline.e2e.js', {}, '한 번 열어 본 뒤 인터넷이 끊겨도 지도·역 데이터가 뜸 (서비스 워커, 11-15)'],
   ['panel-fold', 'panel-fold.e2e.js', {}, '오른쪽 창 접기·펼치기 손잡이(상태 유지, 새 창은 펼친 채) + Esc 두 번이면 왼쪽 패널도 접힘, 휴대폰은 손잡이 없음 (회장님 11-15)'],
   ['ui-fixes', 'ui-fixes.e2e.js', {}, '노선 비교·노선도 카드·노선도 툴바·영향권·style=local·그린 노선/위치 (IMPL7, 데스크톱)'],
   ['ui-fixes-mobile', 'ui-fixes.e2e.js', { MOBILE: '1' }, '같은 항목, 모바일 390×844'],

@@ -22,7 +22,7 @@
     var nick = '';
     try { nick = localStorage.getItem(NICK_KEY) || ''; } catch (e) { nick = ''; }
     return '<div class="sd-sec sd-talk" data-sid="' + esc(sid) + '">' + head +
-      '<ul class="sd-talk-list" aria-live="polite"><li class="sd-note">불러오는 중…</li></ul>' +
+      '<ul class="sd-talk-list"><li class="sd-note">불러오는 중…</li></ul>' +   /* 목록 통째 낭독 방지(11-15) — 등록 결과는 .sd-talk-msg(status)가 읽음 */
       '<form class="sd-talk-form" novalidate>' +
         '<input class="sd-talk-nick" maxlength="20" placeholder="닉네임 (안 쓰면 익명)" value="' + esc(nick) + '" aria-label="닉네임">' +
         '<textarea class="sd-talk-body" maxlength="1000" rows="2" placeholder="' + esc(name) + '역에 대해 한마디…" aria-label="' + esc(name) + '역 이야기 쓰기"></textarea>' +

@@ -69,7 +69,7 @@
         '<p class="rkp-def">개인 정보(전화번호·주소)는 쓰지 마세요 · 쓴 글은 직접 고치거나 지울 수 없어요(익명) · 신고 3번이면 숨겨져요 · 지워야 할 글은 <a class="bdp-del" target="_blank" rel="noopener">삭제 요청</a></p>' +
         '<div class="bdp-tabs" role="group" aria-label="종류로 거르기"><button type="button" data-k="" aria-pressed="true">전체</button>' +
           Object.keys(K).map(function (k) { return '<button type="button" data-k="' + k + '" aria-pressed="false">' + K[k] + '</button>'; }).join('') + '</div>' +
-        '<ol class="bdp-list" aria-live="polite"></ol>' +
+        '<ol class="bdp-list"></ol>' +   /* 목록 통째 낭독 방지(11-15) — 올림 결과는 .bdp-msg(status)가 읽음 */
         '<button type="button" class="bdp-more" hidden>더 보기</button>' +
       '</div>';
     document.getElementById('map-wrap').appendChild(el);

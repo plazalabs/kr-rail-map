@@ -280,11 +280,85 @@ async function loadData() {
 // 노선 필터 + 개통 상태. open=true 면 운행 중만, false 면 미개통(공사중·계획중·구상중)만.
 // status 가 비어 있으면 운행 중으로 본다 (route.js 와 같은 기준).
 const UNOPENED_OPACITY = 0.75;
-function lineFilterWithStatus(ids, open) {
+function lineFilterWithStatus(ids, open, only) {
   const isOpen = ['==', ['coalesce', ['get', 'status'], 'open'], 'open'];
-  return ['all', ['in', ['get', 'id'], ['literal', ids]], open ? isOpen : ['!', isOpen]];
+  const f = ['all', ['in', ['get', 'id'], ['literal', ids]], open ? isOpen : ['!', isOpen]];
+  if (only) f.push(['==', ['get', 'status'], only]);
+  return f;
 }
-const UNOPENED_LAYERS = ['rail-lines-unopened', 'rail-lines-unopened-label'];
+// 미개통 상태별 선 모양 (J4, 2026-11-14) — 색만으로 상태를 나누지 않는다(색각 차이). 범례·노선 목록과 같은 모양.
+const STATUS_LINE = {
+  construction: { layer: 'rail-lines-unopened', label: '공사 중', dash: [3, 1.5], width: [7, 2, 12, 4, 16, 6] },
+  planned: { layer: 'rail-lines-planned', label: '계획', dash: [1.2, 1.4], width: [7, 1.8, 12, 3.5, 16, 5] },
+  proposed: { layer: 'rail-lines-proposed', label: '구상', dash: [0.2, 1.6], width: [7, 2, 12, 3.5, 16, 5], round: true },
+};
+const UNOPENED_LINE_LAYERS = Object.values(STATUS_LINE).map(s => s.layer);
+const UNOPENED_LAYERS = [...UNOPENED_LINE_LAYERS, 'rail-lines-unopened-label'];
+function lineStatusOf(p) { return (p && p.status) || 'open'; }
+
+/* ---------- 노선 상태 범례 (J4, 2026-11-14 UX 종합 리뷰) ----------
+ * 지도 위에 늘 보이는 범례: 운행 중(실선)·공사 중(긴 점선)·계획(짧은 점선)·구상(점).
+ * 글자 + 선 모양을 같이 써서 색만으로 상태를 나누지 않는다. 줄을 누르면 그 상태의 노선을 모두 켜거나 끈다
+ * (노선 목록 체크와 같은 visibleLines 를 바꾼다 — 역 점·라벨·역세권도 같이 따라간다).
+ * 휴대폰(좁은 화면)에서는 '범례' 버튼 하나로 접혀 있다가 누르면 펼친다. */
+const STATUS_ORDER = [
+  ['open', '운행 중', null],
+  ['construction', STATUS_LINE.construction.label, STATUS_LINE.construction.dash],
+  ['planned', STATUS_LINE.planned.label, STATUS_LINE.planned.dash],
+  ['proposed', STATUS_LINE.proposed.label, STATUS_LINE.proposed.dash],
+];
+function statusSwatch(dash, round) {
+  // 선 굵기 3 기준 점선 비율을 SVG 로 — 지도 선 모양과 같은 비율
+  const w = 3, da = dash ? dash.map(v => Math.max(v * w, 0.01)).join(' ') : '';
+  return `<svg class="sl-sw" viewBox="0 0 28 8" width="28" height="8" aria-hidden="true"><line x1="2" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="${w}"${da ? ` stroke-dasharray="${da}"` : ''}${round ? ' stroke-linecap="round"' : ''}/></svg>`;
+}
+class StatusLegend {
+  onAdd() {
+    const el = document.createElement('div');
+    el.className = 'maplibregl-ctrl status-legend';
+    el.id = 'status-legend';
+    el.innerHTML = `<button type="button" class="sl-toggle" aria-expanded="false" aria-controls="sl-rows">범례</button>` +
+      `<div class="sl-rows" id="sl-rows" role="group" aria-label="노선 상태 — 눌러서 켜고 끄기">` +
+      STATUS_ORDER.map(([st, label, dash]) =>
+        `<button type="button" class="sl-row" data-status="${st}" aria-pressed="true">${statusSwatch(dash, st === 'proposed')}<span class="sl-label">${label}</span><span class="sl-n"></span></button>`).join('') +
+      `</div>`;
+    el.querySelector('.sl-toggle').addEventListener('click', () => {
+      const open = !el.classList.contains('open');
+      el.classList.toggle('open', open);
+      el.querySelector('.sl-toggle').setAttribute('aria-expanded', String(open));
+    });
+    el.querySelectorAll('.sl-row').forEach(b => b.addEventListener('click', () => toggleStatusLines(b.dataset.status)));
+    this._el = el;
+    return el;
+  }
+  onRemove() { this._el.remove(); }
+}
+function toggleStatusLines(st) {
+  const ids = scopeLines().filter(f => lineStatusOf(f.properties) === st).map(f => f.properties.id);
+  if (!ids.length) return;
+  const anyOn = ids.some(id => visibleLines.has(id));
+  ids.forEach(id => anyOn ? visibleLines.delete(id) : visibleLines.add(id));
+  document.querySelectorAll('#line-list .line-item').forEach(l => {
+    const cb = l.querySelector('input');
+    if (cb) cb.checked = visibleLines.has(l.dataset.lineId);
+  });
+  updateFilters();
+  setStatus(`${STATUS_ORDER.find(s => s[0] === st)[1]} 노선 ${ids.length}개 ${anyOn ? '숨김' : '표시'}`);
+}
+function refreshStatusLegend() {
+  const el = document.getElementById('status-legend');
+  if (!el || typeof scopeLines !== 'function') return;
+  const all = scopeLines();
+  el.querySelectorAll('.sl-row').forEach(b => {
+    const ids = all.filter(f => lineStatusOf(f.properties) === b.dataset.status).map(f => f.properties.id);
+    const on = ids.filter(id => visibleLines.has(id)).length;
+    b.hidden = ids.length === 0;
+    b.setAttribute('aria-pressed', String(on > 0));
+    b.querySelector('.sl-n').textContent = on === ids.length ? `${ids.length}` : `${on}/${ids.length}`;
+    b.title = `${b.querySelector('.sl-label').textContent} 노선 ${ids.length}개 — 눌러서 ${on > 0 ? '숨기기' : '보이기'}`;
+  });
+}
+map.addControl(new StatusLegend(), 'bottom-right');
 
 function addDataLayers() {
   if (map.getSource('lines')) return; // 스타일 교체 후 중복 방지
@@ -301,15 +375,18 @@ function addDataLayers() {
   // 미개통 노선(공사중·계획중·구상중) — 점선 + '개통 예정' 글자 (2026-11-09 결정 1).
   // 예전에는 운행 중인 노선과 똑같은 실선이라 지금 탈 수 있는 노선처럼 보였다.
   // rail-lines 는 운행 중만, 이 두 레이어는 미개통만 그린다 (노선 필터는 updateFilters() 가 같이 건다).
-  map.addLayer({
-    id: 'rail-lines-unopened', type: 'line', source: 'lines',
-    filter: lineFilterWithStatus([...visibleLines], false),
-    paint: {
-      'line-color': ['coalesce', ['get', 'color'], '#888888'],
-      'line-width': ['interpolate', ['linear'], ['zoom'], 7, 2, 12, 4, 16, 6],
-      'line-opacity': UNOPENED_OPACITY,
-      'line-dasharray': [2, 1.5]
-    }
+  Object.entries(STATUS_LINE).forEach(([st, s]) => {
+    map.addLayer({
+      id: s.layer, type: 'line', source: 'lines',
+      filter: lineFilterWithStatus([...visibleLines], false, st),
+      layout: s.round ? { 'line-cap': 'round' } : {},
+      paint: {
+        'line-color': ['coalesce', ['get', 'color'], '#888888'],
+        'line-width': ['interpolate', ['linear'], ['zoom'], ...s.width],
+        'line-opacity': UNOPENED_OPACITY,
+        'line-dasharray': s.dash
+      }
+    });
   });
   map.addLayer({
     id: 'rail-lines-unopened-label', type: 'symbol', source: 'lines', minzoom: 9,
@@ -413,7 +490,10 @@ function updateFilters() {
   // 역은 지나는 노선(lines) 중 하나라도 켜져 있으면 보인다 (환승역이 대표 노선만으로 걸러지던 결함 수정)
   const sf = UI.lineFilterExpr(ids);
   if (map.getLayer('rail-lines')) map.setFilter('rail-lines', lineFilterWithStatus(ids, true));
-  UNOPENED_LAYERS.forEach(id => { if (map.getLayer(id)) map.setFilter(id, lineFilterWithStatus(ids, false)); });
+  Object.entries(STATUS_LINE).forEach(([st, s]) => { if (map.getLayer(s.layer)) map.setFilter(s.layer, lineFilterWithStatus(ids, false, st)); });
+  if (map.getLayer('rail-lines-unopened-label')) map.setFilter('rail-lines-unopened-label', lineFilterWithStatus(ids, false));
+  if (typeof refreshStatusLegend === 'function') refreshStatusLegend();
+  if (typeof refreshLinePresets === 'function') refreshLinePresets();
   if (map.getLayer('rail-stations')) map.setFilter('rail-stations', sf);
   if (map.getLayer('station-labels')) map.setFilter('station-labels', sf);
   // 역세권 범위도 역 점과 같은 기준(lines)으로 거른다
@@ -529,7 +609,7 @@ function renderLineList() {
         label.append(cb, sw, document.createTextNode(p.name_ko || p.id), info);
         if (p.note) label.title = p.note;
         if (p.status !== 'open') label.title = (label.title ? label.title + ' / ' : '') +
-          (p.status === 'construction' ? '공사 중' : '계획 중');
+          (p.status === 'construction' ? '공사 중' : p.status === 'proposed' ? '구상' : '계획 중');
         label.addEventListener('mouseenter', () => highlightLine(p.id));
         label.addEventListener('mouseleave', () => highlightLine(null));
         det.appendChild(label);
@@ -537,6 +617,57 @@ function renderLineList() {
     box.appendChild(det);
   });
   document.getElementById('line-count').textContent = `(${scope === 'metro' ? '수도권' : '전국'} ${lines.length})`;   // 기준을 밝힌다 (감사 N13)
+  renderLinePresets();
+}
+
+/* ---------- 노선 보기 버튼 (J5, 2026-11-14 UX 종합 리뷰) ----------
+ * 체크박스를 하나씩 누르지 않고 상태·종류별로 한 번에 고른다. 기본 = 전체.
+ * 지금 켜진 노선이 어느 버튼과 똑같으면 그 버튼이 눌린 모양(aria-pressed) — 노선을 하나 직접 바꾸면 풀린다. */
+const LINE_PRESETS = [
+  ['all', '전체', () => true],
+  ['open', '운행 중', p => (p.status || 'open') === 'open'],
+  ['construction', '공사 중', p => p.status === 'construction'],
+  ['plan', '계획·구상', p => p.status === 'planned' || p.status === 'proposed'],
+  ['hsr', '고속철도', p => p.category === 'ktx'],
+];
+function syncLineChecks() {
+  document.querySelectorAll('#line-list .line-item').forEach(l => {
+    const cb = l.querySelector('input');
+    if (cb) cb.checked = visibleLines.has(l.dataset.lineId);
+  });
+}
+function presetIds(key) {
+  const pr = LINE_PRESETS.find(x => x[0] === key);
+  return pr ? scopeLines().filter(f => pr[2](f.properties)).map(f => f.properties.id) : [];
+}
+function applyLinePreset(key) {
+  const ids = presetIds(key);
+  const name = LINE_PRESETS.find(x => x[0] === key)[1];
+  if (!ids.length) { setStatus(`${name} 노선이 이 범위에 없어요`); return; }
+  visibleLines.clear();
+  ids.forEach(id => visibleLines.add(id));
+  syncLineChecks();
+  updateFilters();
+  setStatus(`${name} 노선 ${ids.length}개 표시`);
+}
+function renderLinePresets() {
+  const box = document.getElementById('line-presets');
+  if (!box) return;
+  box.innerHTML = LINE_PRESETS.map(([k, label]) =>
+    `<button type="button" class="lp-btn" data-preset="${k}" aria-pressed="false">${label}</button>`).join('');
+  box.querySelectorAll('.lp-btn').forEach(b => b.addEventListener('click', () => applyLinePreset(b.dataset.preset)));
+  refreshLinePresets();
+}
+function refreshLinePresets() {
+  const box = document.getElementById('line-presets');
+  if (!box || !box.firstChild) return;
+  box.querySelectorAll('.lp-btn').forEach(b => {
+    const ids = presetIds(b.dataset.preset);
+    const same = ids.length > 0 && ids.length === visibleLines.size && ids.every(id => visibleLines.has(id));
+    b.setAttribute('aria-pressed', String(same));
+    b.hidden = ids.length === 0;
+    b.title = `${b.textContent} 노선 ${ids.length}개만 보기`;
+  });
 }
 
 /* ?line=<id> 로 특정 노선만 보기 */
@@ -1454,7 +1585,7 @@ function highlightRoute(path, legs) {
   const pathSet = new Set(path);
   // 노선 레이어는 전부 숨기고, 경로만 따로 그린다
   if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0);
-  if (map.getLayer('rail-lines-unopened')) map.setPaintProperty('rail-lines-unopened', 'line-opacity', 0);
+  UNOPENED_LINE_LAYERS.forEach(id => { if (map.getLayer(id)) map.setPaintProperty(id, 'line-opacity', 0); });
   if (map.getLayer('rail-lines-unopened-label')) map.setLayoutProperty('rail-lines-unopened-label', 'visibility', 'none');
   if (map.getLayer('rail-stations')) {
     const only = ['case', ['in', ['get', 'id'], ['literal', [...pathSet]]], 1, 0];
@@ -1657,7 +1788,7 @@ function clearRouteHighlight() {
     try { mk.remove(); } catch (e) {}
   }
   if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0.9);
-  if (map.getLayer('rail-lines-unopened')) map.setPaintProperty('rail-lines-unopened', 'line-opacity', UNOPENED_OPACITY);
+  UNOPENED_LINE_LAYERS.forEach(id => { if (map.getLayer(id)) map.setPaintProperty(id, 'line-opacity', UNOPENED_OPACITY); });
   if (map.getLayer('rail-lines-unopened-label')) map.setLayoutProperty('rail-lines-unopened-label', 'visibility', 'visible');
   if (map.getLayer('rail-stations')) {
     map.setPaintProperty('rail-stations', 'circle-opacity', 1);

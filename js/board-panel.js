@@ -106,7 +106,7 @@
     var t = document.createElement('time'); t.dateTime = p.created_at; t.textContent = B().ago(p.created_at);
     try { t.title = new Date(p.created_at).toLocaleString('ko-KR'); } catch (e) { /* 무시 */ }
     meta.append(t);
-    var r = document.createElement('button'); r.className = 'bdp-rep'; r.type = 'button'; r.textContent = '신고'; r.setAttribute('data-id', p.id); meta.append(r);
+    var r = document.createElement('button'); r.className = 'bdp-rep'; r.type = 'button'; r.textContent = '신고'; r.setAttribute('data-id', p.id); r.setAttribute('aria-label', (p.nick || '익명') + ' 글 신고'); meta.append(r);   /* 낭독기: '신고'만으로는 누구 글인지 모름(역 이야기와 같게, 11-15) */
     var b = document.createElement('div'); b.className = 'bdp-body'; b.textContent = p.body;
     li.append(meta, b);
     return li;

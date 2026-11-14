@@ -382,6 +382,8 @@
       '#mm-return{position:fixed;z-index:940;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));border:0;border-radius:999px;padding:9px 16px;' +
       'background:var(--accent,#1565c0);color:#fff;font:inherit;font-size:var(--fs-sm);font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}' +
       '#mm-return[hidden]{display:none}' +
+      // K7 휴대폰: 범례는 한 줄(옆으로 밀기), 긴 설명 문장은 접힌 '보기 설정' 안 대신 title로 — 판 높이를 지킨다
+      '@media (max-width:768px){#mm-panel .mm-legend{flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;padding-bottom:4px}#mm-panel .mm-legend>span.mm-lgx{display:none}}' +
       '@media (max-width:768px){#mm-panel{left:0;right:0;top:auto;bottom:0;width:auto;min-width:0;height:min(78vh,640px);border-radius:16px 16px 0 0}' +
       '.mm-tabs{display:flex}.mm-head h2{font-size:var(--fs-md)}.mm-def{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}#mm-panel[data-tab="card"] .mm-board,#mm-panel[data-tab="card"] .mm-legend,#mm-panel[data-tab="card"] .mm-years,#mm-panel[data-tab="card"] .mm-ctrl{display:none}' +
       '#mm-panel[data-tab="tiles"] .mm-card{display:none}#mm-panel[data-tab="card"] .mm-card{max-height:none;flex:1 1 auto;border-top:0}}';
@@ -397,7 +399,7 @@
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-label', 'RAIL MARKET MAP 역 타일');
     el.innerHTML =
-      '<div class="mm-head"><div><p class="mm-eyebrow">RAIL MARKET MAP · 수도권 <span class="mm-n"></span>역</p>' +
+      '<div class="mm-head"><div><p class="mm-eyebrow">RAIL MARKET MAP · 수도권 <span class="mm-n"></span>역 중 <span class="mm-now"></span></p>' +
       '<h2>개통하면 어느 역이 얼마나 빨라지나</h2>' +
       '<p class="mm-def">업무지구까지 걸리는 시간(열차 대기 뺌)으로 본 <b>교통 접근성</b>입니다 · 집값이나 투자수익 예측이 아닙니다</p></div>' +
       '<button class="mm-png" type="button" aria-label="이미지로 저장" title="지금 타일을 이미지로 저장 (제목·조건·범례·출처 포함)"><i data-ic="camera"></i></button>' +
@@ -416,7 +418,8 @@
         '<label>역 <select data-k="scope"><option value="new">새 노선이 서는 역</option><option value="affected">빨라지는 역 모두</option><option value="all">수도권 전체</option></select></label>' +
       '</div>' +
       '<div class="mm-years" role="group" aria-label="이 해까지 개통한다고 가정"></div>' +
-      '<div class="mm-legend" aria-label="색 뜻"></div></details>' +
+      '</details>' +
+      '<div class="mm-legend" aria-label="색 뜻"></div>' +   // K7: 설정을 접어도 색 뜻은 늘 보이게 밖으로
       '<div class="mm-focus" hidden></div>' +
       '<p class="mm-src" hidden></p>' +
       '<div class="mm-board" role="grid" aria-label="역 타일"></div>' +
@@ -458,6 +461,7 @@
         render();
       });
     });
+    el.querySelector('.mm-opts').addEventListener('toggle', function () { if (isMobile()) return; try { localStorage.setItem('krrail-mm-opts', this.open ? '1' : '0'); } catch (e) { /* 무시 */ } requestAnimationFrame(function () { if (model && st.view === 'tiles') draw(); }); });
     el.querySelector('.mm-tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) setTab(b.dataset.tab); });
     var board = el.querySelector('.mm-board');
     board.addEventListener('click', function (e) {
@@ -548,6 +552,7 @@
       model = Object.assign({}, model, { groups: gs2, total: gs2.reduce(function (s, G) { return s + G.tiles.length; }, 0) });
     }
     el.querySelector('.mm-n').textContent = out.total;
+    var now = el.querySelector('.mm-now'); if (now) now.textContent = '지금 ' + model.total + '역';   // K7: '수도권 696역 중 지금 121역'
   }
 
   function renderYears() {
@@ -641,7 +646,7 @@
     var sz = st.size === 'deals' ? ' · 크기 = 역이 속한 법정동 아파트 매매 건수(최근 6개월), 점선 = 자료 없음, 작은 값은 최소 크기로 보임'
       : st.size === 'supply' ? ' · 크기 = 역이 속한 법정동의 아직 준공 안 된 주택인허가 세대(수록 자료 기준, 입주 물량 그대로는 아님), 점선 = 없음·자료 없음, 작은 값은 최소 크기로 보임' : ' · 크기 = 모두 같음';
     box.innerHTML = items.map(function (x) { return '<span><i' + (x[0] === Logic.NA_COLOR.bg ? ' class="na"' : '') + ' style="background-color:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
-      '<span>' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표) · 타일 숫자도 전세가율' : st.color === 'price' ? '평당가(만원/평) = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상) · 타일 숫자도 평당가' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위 · 타일 숫자 = 오른 계단(▲)' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + ((global.KR_WAIT && KR_WAIT.isPeak()) ? ' · 출퇴근 배차 넣음' : ' · 열차 대기 뺌') + sz) + '</span>';
+      '<span class="mm-lgx">' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표) · 타일 숫자도 전세가율' : st.color === 'price' ? '평당가(만원/평) = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상) · 타일 숫자도 평당가' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위 · 타일 숫자 = 오른 계단(▲)' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + ((global.KR_WAIT && KR_WAIT.isPeak()) ? ' · 출퇴근 배차 넣음' : ' · 열차 대기 뺌') + sz) + '</span>';
   }
 
   // 목록 보기 — 묶음과 상관없이 한 줄로. 색 기준이 '빨라지는 분'이면 분 큰 순(신규는 맨 앞), '순위 변화'면 오른 계단 큰 순
@@ -1085,7 +1090,9 @@
     isOpen = true;
     el.hidden = false;
     setTab('tiles');
-    var opts = el.querySelector('.mm-opts'); if (opts) opts.open = !isMobile();
+    // K7 (6차 ②2·②4): 설정은 처음엔 접어 판을 넓게 — 접힌 줄에 지금 조건 요약(.mm-sum)이 보인다. 펼치고 접은 것은 기억(이 브라우저만)
+    var opts = el.querySelector('.mm-opts');
+    if (opts) { var keep = null; try { keep = localStorage.getItem('krrail-mm-opts'); } catch (e) { /* 무시 */ } opts.open = keep === '1' && !isMobile(); }
     el.querySelector('.mm-board').innerHTML = '<div class="mm-empty">순위 자료를 받는 중…</div>';
     track('market_map_open');
     return load().then(function (ok) {

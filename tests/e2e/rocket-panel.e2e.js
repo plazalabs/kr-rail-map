@@ -129,7 +129,7 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
     const c = StationShareImage.draw(row, { doc: StationRocket.doc(), y: r.y, w: r.w, wait: r.wait });
     const px = c.getContext('2d').getImageData(540, 540, 1, 1).data;
     return { btn: !!btn, link: !!link, w: c.width, h: c.height, painted: px[3] === 255, name: StationShareImage.fileName(row) }; })()`);
-  R.check('카드의 📸 공유 이미지 = 패널 안 버튼 (rank.html 링크 없음), 1080×1080 그림', sh.btn && !sh.link && sh.w === 1080 && sh.h === 1080 && sh.painted && /^GTX떡상_.+위→\d+위\.png$/.test(sh.name), sh);
+  R.check('카드의 📸 공유 이미지 = 패널 안 버튼 (rank.html 링크 없음), 세로 1080×1350 그림(카드 ①, 11-14)', sh.btn && !sh.link && sh.w === 1080 && sh.h === 1350 && sh.painted && /^GTX떡상_.+위→\d+위\.png$/.test(sh.name), sh);
   const u0 = await b.evaluate('location.href');
   await b.evaluate(`document.querySelector('#rkp-hero [data-act="share"]').click(); true`); await sleep(1500);
   const sh2 = await b.evaluate(`({ url: location.href, txt: document.querySelector('#rkp-hero [data-act="share"]').textContent })`);

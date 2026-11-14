@@ -1,6 +1,6 @@
 /* StationShareImage — 떡상 카드 '공유 이미지' (지도 안 떡상 패널용, 2026-11-12)
  *
- * 정사각형 1080×1080 PNG (인스타·카톡). 화면 글꼴로 캔버스에 그린다. 외부 자원 없음.
+ * 세로 1080×1350 PNG (인스타·카톡, 11-14 정사각형에서 바꿈). 화면 글꼴로 캔버스에 그린다. 외부 자원 없음.
  * 휴대폰에서 파일 공유를 지원하면 공유 창, 아니면 내려받기.
  * 그림은 rank.html 의 shareCanvas 와 같다 (예전엔 패널에서 누르면 rank.html 로 넘어갔다 — 회장님: 한 화면에).
  * TODO(새벽 개편): rank.html 도 이 파일을 쓰게 해서 그리는 코드를 하나로.
@@ -21,40 +21,33 @@
 
   // o: { doc, y: '2031'|'all', w: 'avg'|…, wait }
   function draw(r, o) {
-    var S = 1080, c = document.createElement('canvas'); c.width = S; c.height = S;
-    var g = c.getContext('2d');
-    var F = '"Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    // 공유 카드 ① 우리 역 카드 (11-14): 정사각형 1080 → 세로 1080×1350(카톡·인스타에서 더 크게) + 공통 아래 띠
+    var k = cardBase(1350), g = k.g, F = FONT, D = 40;   // D: 정사각형 때보다 내용을 아래로 내린 만큼
     var t = RankTable.tierOf(r);
-    var bg = g.createLinearGradient(0, 0, 0, S); bg.addColorStop(0, '#0b1d3a'); bg.addColorStop(1, '#10305e');
-    g.fillStyle = bg; g.fillRect(0, 0, S, S);
-    g.fillStyle = 'rgba(255,255,255,.06)'; for (var i = 0; i < 6; i++) { g.beginPath(); g.arc(900 - i * 40, 160 + i * 30, 260 - i * 30, 0, Math.PI * 2); g.fill(); }
-    g.fillStyle = '#7fb0ff'; g.font = '700 26px ' + F; g.fillText('축을 읽으면, 도시의 미래가 보인다', 80, 64);   // 슬로건 (2026-11-14 확정)
-    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText('GTX 개통 후, 우리 역은 몇 등?', 80, 120);
-    g.fillStyle = '#ffffff'; g.font = '800 104px ' + F; g.fillText(r.name + '역', 80, 250);
-    g.fillStyle = '#9fb3d1'; g.font = '500 32px ' + F; g.fillText([r.region, r.sgg].filter(Boolean).join(' ') + ' · 수도권 ' + (WLABEL[o.w] || '') + '순위', 84, 305);
+    g.fillStyle = 'rgba(255,255,255,.06)'; for (var i = 0; i < 6; i++) { g.beginPath(); g.arc(900 - i * 40, 200 + i * 30, 260 - i * 30, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText('GTX 개통 후, 우리 역은 몇 등?', 80, 120 + D);
+    g.fillStyle = '#ffffff'; g.font = '800 104px ' + F; g.fillText(r.name + '역', 80, 250 + D);
+    g.fillStyle = '#9fb3d1'; g.font = '500 32px ' + F; g.fillText([r.region, r.sgg].filter(Boolean).join(' ') + ' · 수도권 ' + (WLABEL[o.w] || '') + '순위', 84, 305 + D);
     g.font = '700 46px ' + F; g.fillStyle = '#c8d3e6';
-    g.fillText(r.isNew ? '지금은 철도 없음' : '지금 ' + r.now.rank + '위', 80, 440);
-    g.fillStyle = '#ffffff'; g.font = '800 150px ' + F; g.fillText(r.aft.rank + '위', 80, 600);
+    g.fillText(r.isNew ? '지금은 철도 없음' : '지금 ' + r.now.rank + '위', 80, 460 + D);
+    g.fillStyle = '#ffffff'; g.font = '800 150px ' + F; g.fillText(r.aft.rank + '위', 80, 620 + D);
     var w1 = g.measureText(r.aft.rank + '위').width;
-    g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText(o.y === 'all' ? '개통 후' : o.y + '년 개통 후', 80 + w1 + 24, 600);
+    g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText(o.y === 'all' ? '개통 후' : o.y + '년 개통 후', 80 + w1 + 24, 620 + D);
     var bt = t === 'new' ? '신규' : (r.change > 0 ? '▲' + r.change + '계단' : r.change < 0 ? '▼' + (-r.change) + '계단' : '그대로') + '  ' + RankTable.TIERS[t].label;
     g.font = '800 44px ' + F; var bw = g.measureText(bt).width + 56;
-    roundRect(g, 80, 640, bw, 78, 39); g.fillStyle = COLS[t]; g.fill();
-    g.fillStyle = '#fff'; g.fillText(bt, 108, 694);
+    roundRect(g, 80, 670 + D, bw, 78, 39); g.fillStyle = COLS[t]; g.fill();
+    g.fillStyle = '#fff'; g.fillText(bt, 108, 724 + D);
     var plan = planLines(o.doc, r);
-    if (plan.length) { g.font = '600 30px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('새 노선 ' + plan.join(' · '), 80 + bw + 26, 692); }
-    ['도심권 CBD', '여의도권 YBD', '강남권 GBD'].forEach(function (d, k) {
-      var y = 800 + k * 70, n = r.now.times ? r.now.times[k] : null, a = r.aft.times ? r.aft.times[k] : null;
+    if (plan.length) { g.font = '600 30px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('새 노선 ' + plan.join(' · '), 80, 812 + D); }
+    ['도심권 CBD', '여의도권 YBD', '강남권 GBD'].forEach(function (d, j) {
+      var y = 920 + D + j * 80, n = r.now.times ? r.now.times[j] : null, a = r.aft.times ? r.aft.times[j] : null;
       g.fillStyle = '#9fb3d1'; g.font = '600 32px ' + F; g.fillText(d, 80, y);
       g.fillStyle = '#ffffff'; g.font = '800 40px ' + F;
       g.fillText((n != null && a != null && n > a) ? n + '분 → ' + a + '분' : (a == null ? '—' : a + '분'), 330, y);
       if (n != null && a != null && n > a) { g.fillStyle = '#5fe39a'; g.font = '800 34px ' + F; g.fillText('−' + (n - a) + '분', 720, y); }
     });
-    g.fillStyle = '#7f93b3'; g.font = '500 24px ' + F;
-    g.fillText(o.wait ? '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림' : '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1000);
-    g.fillStyle = '#c8d3e6'; g.font = '700 28px ' + F;
-    g.fillText('한국철도맵 GTX 떡상 랭킹 · plazalabs.github.io/kr-rail-map', 80, 1044);
-    return c;
+    cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구까지' : '타는 시간 + 갈아타며 걷는 시간(기다림 제외) · 업무지구까지', o.doc && o.doc.updated);
+    return k.c;
   }
 
   function fileName(r) { return 'GTX떡상_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png'; }

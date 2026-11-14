@@ -738,12 +738,17 @@ body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
     position: fixed; inset: 0 auto 0 0;
     width: min(84vw, 340px);
     transform: translateX(-101%);
-    transition: transform .24s cubic-bezier(.32,.72,0,1);
+    /* 닫힌 서랍은 화면 밖이지만 키보드·낭독기로는 81개 단추가 그대로 잡혔다(11-15 점검) → 닫힘 = visibility:hidden.
+       닫을 때는 미끄러짐(.24s)이 끝난 뒤 숨기고, 열 때는 바로 보이게 */
+    visibility: hidden;
+    transition: transform .24s cubic-bezier(.32,.72,0,1), visibility 0s linear .24s;
     box-shadow: none;
     border-right: 1px solid var(--border);
   }
   body.drawer-open #sidebar {
     transform: none;
+    visibility: visible;
+    transition: transform .24s cubic-bezier(.32,.72,0,1), visibility 0s;
     box-shadow: var(--shadow-lg);
   }
   body.drawer-open { overflow: hidden; }

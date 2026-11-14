@@ -33,5 +33,20 @@ const STATES = [
     R.check(`${nm}: axe WCAG 2.1 AA 위반 0`, v.length === 0, v);
     b.close(); await sleep(600);
   }
+  // 휴대폰 닫힌 서랍: 화면 밖 단추 81개가 키보드·낭독기에 잡히던 것 (11-15) → 닫힘 = visibility:hidden, 열면 보임
+  {
+    const b = await launch({ port: 9799, w: 360, h: 740, mobile: true });
+    await b.send('Network.setBypassServiceWorker', { bypass: true });
+    await b.goto(root + 'index.html#normal', 800);
+    for (let i = 0; i < 80; i++) { await sleep(250); if (await b.evaluate(`typeof dataReady !== 'undefined' && dataReady`).catch(() => false)) break; }
+    await sleep(1200);
+    const closed = await b.evaluate(`getComputedStyle(document.getElementById('sidebar')).visibility`);
+    await b.evaluate(`document.getElementById('sidebar-toggle').click(); 0`); await sleep(500);
+    const open = await b.evaluate(`({ v: getComputedStyle(document.getElementById('sidebar')).visibility, s: (() => { const r = document.getElementById('search').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; })() })`);
+    await b.evaluate(`document.getElementById('sidebar-close').click(); 0`); await sleep(1000);
+    const again = await b.evaluate(`getComputedStyle(document.getElementById('sidebar')).visibility + '/' + document.body.className + '/' + getComputedStyle(document.getElementById('sidebar')).transform`);
+    R.check('휴대폰 서랍: 닫힘 hidden → 열면 visible·검색칸 화면 안 → 다시 닫으면 hidden', closed === 'hidden' && open.v === 'visible' && open.s && /^hidden/.test(again), { closed, open, again });
+    b.close();
+  }
   R.finish();
 })().catch(e => { console.error(e); process.exit(1); });

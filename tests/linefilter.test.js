@@ -34,7 +34,7 @@ for (const id of ['st-8083915082', 'st-4818002014', 'st-1444692971']) {
 }
 
 // ui.js 에서 필터 함수 3개만 꺼낸다
-const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8').replace(/\r\n/g, '\n');   // 윈도우 CRLF 로 받아도 아래 정규식(\n 기준)이 맞도록 (외부 검토 11-14)
 const m = ui.match(/function stationLineIds[\s\S]*?\n  function lineFilterExpr[\s\S]*?\n  }\n/);
 check('ui.js 에 stationLineIds·linesKey·lineFilterExpr 가 있음', !!m);
 const ctx = {};

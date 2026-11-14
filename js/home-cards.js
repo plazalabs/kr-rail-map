@@ -28,6 +28,8 @@
       '.hc-top{list-style:none;margin:0;padding:0}' +
       '.hc-top button{display:flex;align-items:center;gap:10px;width:100%;padding:7px 4px;border:0;border-bottom:1px solid var(--border);background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;border-radius:0}' +
       '.hc-top button:hover{background:var(--hover)}' +
+      '.hc-tiles{display:block;width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface,var(--hover));color:var(--accent);font:inherit;font-size:var(--fs-sm);font-weight:700;cursor:pointer;text-align:center}' +
+      '.hc-tiles:hover{background:var(--hover)}' +
       '.hc-n{flex:none;width:16px;font-weight:800;color:var(--muted);font-size:var(--fs-sm)}' +
       '.hc-nm{display:block;font-weight:700;font-size:var(--fs-sm)}.hc-ln{display:block;font-size:var(--fs-xs);color:var(--muted)}' +
       '.hc-ln i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:0}' +
@@ -61,6 +63,10 @@
       li.appendChild(b); ol.appendChild(li);
     });
     sec.appendChild(ol);
+    // 회장님 11-14 ③: 타일맵이 분석 메뉴에만 있어 못 찾음 → TOP 3 바로 아래에서 연다
+    var tiles = el('button', 'hc-tiles', 'GTX 역 타일로 한눈에 보기 →'); tiles.type = 'button';
+    tiles.addEventListener('click', function () { if (global.MarketMap && MarketMap.open) MarketMap.open({}); if (global.KRTrack && global.KRTrack.task) global.KRTrack.task('home_tiles'); });
+    sec.appendChild(tiles);
     box.appendChild(sec);
   }
 

@@ -35,6 +35,12 @@ async function ready(b) {
   const feed = await b.evaluate(`(() => { const s = document.querySelector('#home-cards .hc-feed'); const ready = typeof KrBoard !== 'undefined' && KrBoard.ready();
     return { ready, n: s ? s.querySelectorAll('.hc-post').length : 0, tags: s ? s.querySelectorAll('.hc-body *').length : 0 }; })()`);
   R.check('커뮤니티 칸: 게시판 켜져 있으면 글 0~2개, 글 안에 태그 없음(글자로만)', feed.n <= 2 && feed.tags === 0, feed);
+  // 회장님 11-14 ③: TOP 3 바로 아래 'GTX 역 타일로 한눈에 보기' → 타일맵 열림
+  const tb = await b.evaluate(`(() => { if (typeof RocketPanel !== 'undefined' && RocketPanel.isOpen()) RocketPanel.close(); const t = document.querySelector('#home-cards .hc-rank .hc-tiles'); if (!t) return null; const txt = t.textContent; t.click(); return txt; })()`);
+  let mmOpen = false;
+  for (let i = 0; i < 40; i++) { mmOpen = await b.evaluate(`(() => { const p = document.getElementById('mm-panel'); return !!p && !p.hidden && p.querySelectorAll('.mm-tile').length > 10; })()`); if (mmOpen) break; await sleep(300); }
+  R.check("TOP 3 아래 'GTX 역 타일로 한눈에 보기' → 타일맵 열림", /타일로 한눈에/.test(tb || '') && mmOpen, { tb, mmOpen });
+  await b.evaluate(`typeof MarketMap !== 'undefined' && MarketMap.close && MarketMap.close(); 0`);
   // 지도 위 '켜진 분석' (68점 감사 12번): 떡상 지도 켜면 뜨고 끄면 사라짐
   await b.evaluate(`(() => { if (typeof RocketPanel !== 'undefined' && RocketPanel.isOpen()) RocketPanel.close(); const c = document.getElementById('layer-rocket'); if (c.checked) c.click(); })()`); await sleep(400);
   const off0 = await b.evaluate(`(() => { const e = document.getElementById('al-chip'); return !e || e.hidden; })()`);

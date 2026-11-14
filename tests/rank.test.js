@@ -93,7 +93,7 @@ console.log('\n[⏱ 출퇴근 배차] data/headways.json — 공식 시간표로
   check('배차 포함하면 시간이 늘기만 한다 (광운대 9/15/9 → 12/19/12)', k1 && k1.aft.times.join() === '12,19,12' && k1.aft.times.every((t, i) => t >= k0.aft.times[i]), k1 && k1.aft.times.join());
   check('배차 포함 광운대 수도권 10위 안', k1 && k1.aft.rank <= 10, k1 && k1.aft.rank);
   check('모든 역이 배차 포함 값을 가짐 (now_w·aft_w·y_w)', doc.rows.every(r => Array.isArray(r.now_w) && Array.isArray(r.aft_w) && r.y_w && Object.keys(r.y_w).length === doc.years.length));
-  const html2 = fs.readFileSync(path.join(ROOT, 'rank.html'), 'utf8');
+  const html2 = fs.readFileSync(path.join(ROOT, 'rank.html'), 'utf8') + fs.readFileSync(path.join(ROOT, 'js/rank-page.js'), 'utf8');
   check('순위표에 ⏱ 배차 포함 스위치 (기본 꺼짐, 주소 wait=1)', /id="wait" aria-pressed="false"/.test(html2) && /qs\.get\('wait'\) === '1'/.test(html2));
 }
 
@@ -143,7 +143,7 @@ console.log('\n[일치] 역 상세의 순위와 순위표 전국 순위가 같�
 }
 
 console.log('\n[화면] rank.html');
-const html = fs.readFileSync(path.join(ROOT, 'rank.html'), 'utf8');
+const html = fs.readFileSync(path.join(ROOT, 'rank.html'), 'utf8') + fs.readFileSync(path.join(ROOT, 'js/rank-page.js'), 'utf8');   // K15: 인라인 스크립트를 파일로 뺐다 (CSP)
 check('rank.js 를 불러옴', /<script src="js\/rank\.js"><\/script>/.test(html));
 check('기준 버튼 4개 (평균·CBD·YBD·GBD 중시)', ['avg', 'cbd', 'ybd', 'gbd'].every(v => html.includes('data-v="' + v + '"')));
 check('지역 버튼 (서울·수도권·전국)', ['seoul', 'capital', 'all'].every(v => html.includes('data-v="' + v + '"')));

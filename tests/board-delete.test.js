@@ -9,7 +9,7 @@ const ROOT = path.join(__dirname, '..');
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 let pass = 0, fail = 0;
 function check(label, cond) { if (cond) { pass++; console.log(`  ✓ ${label}`); } else { fail++; console.log(`  ✗ ${label}`); } }
-const board = read('board.html'), talk = read('js/station-talk.js');
+const board = read('board.html') + read('js/board-page.js'), talk = read('js/station-talk.js');
 check('게시판 규칙에 직접 삭제가 안 되는 이유(익명) + 삭제 요청 링크', /직접 고치거나 지울 수 없어요/.test(board) && /id="del-link"/.test(board) && /삭제 요청/.test(board));
 check('삭제 요청 링크는 설정의 의견 양식(feedbackUrl)으로 채운다', /\$\('del-link'\)\.href = C\.feedbackUrl/.test(board));
 check('요청할 때 적을 것(시각·닉네임·첫 문장) 안내', /시각·닉네임·첫 문장/.test(board));

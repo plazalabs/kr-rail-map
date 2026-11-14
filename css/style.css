@@ -372,7 +372,7 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
 /* ---------- 4. 지도 ---------- */
 #map-wrap { flex: 1; position: relative; min-width: 0; }
 #map { position: absolute; inset: 0; background: var(--surface); }
-#map.grayscale .maplibregl-canvas { filter: grayscale(1); }
+/* 흑백 배경: 캔버스 필터를 쓰지 않는다 (K8 — 노선 색까지 회색이 됐다). js/app.js grayBasemap */
 
 /* 아이콘 버튼 공통 */
 .icon-btn {

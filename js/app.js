@@ -2,7 +2,9 @@
 'use strict';
 
 const STYLES = {
-  normal: 'https://tiles.openfreemap.org/styles/bright',
+  // K8 (6차 ①A1·②6, 2026-11-14): 밝은 배경은 positron — 회색조라 철도·경로·통근권 색이 앞에 선다.
+  // bright 는 도로·건물·공원 색이 진해 노선 색과 다투었다. (같은 OpenFreeMap, 같은 폰트·출처 표기)
+  normal: 'https://tiles.openfreemap.org/styles/positron',
   // 다크는 OpenFreeMap 자체 스타일을 쓴다.
   //
   // 예전엔 CARTO dark_all 래스터를 썼는데, 지금은 키 없이 요청하면
@@ -28,7 +30,7 @@ const STYLES = {
     },
     layers: [{ id: 'esri', type: 'raster', source: 'esri' }]
   },
-  gray: 'https://tiles.openfreemap.org/styles/bright' // 흑백은 bright + CSS grayscale 필터
+  gray: 'https://tiles.openfreemap.org/styles/positron' // 흑백 = positron 의 배경 레이어 색만 회색으로 (grayBasemap) — 철도색은 그대로
 };
 const MODES = ['normal', 'satellite', 'gray'];
 
@@ -125,7 +127,7 @@ function modeFromHash() {
 let appliedStyleKey = styleKeyFor(modeFromHash(), theme);   // 지도를 baseStyle() 로 만들었으므로 그 키에서 시작
 function styleKeyFor(mode, theme) {
   if (mode === 'satellite') return 'satellite';
-  return DARK_THEMES.has(theme) ? 'dark' : 'bright';
+  return (DARK_THEMES.has(theme) ? 'dark' : 'positron') + (mode === 'gray' ? '-gray' : '');   // 흑백↔일반 전환 때 배경 색을 되돌리려고 스타일을 다시 받는다
 }
 function applyView() {
   const mode = modeFromHash();
@@ -147,7 +149,7 @@ function applyView() {
     // 전체 교체로 style.load 를 보장해 기존 복원 경로를 탄다.
     map.setStyle(baseStyle(), { diff: false });
   }
-  document.getElementById('map').classList.toggle('grayscale', mode === 'gray');
+  // 예전: 캔버스 전체 grayscale 필터 → 노선·경로 색까지 회색이 됐다 (K8). 이제 배경 레이어만 grayBasemap 이 바꾼다.
   if (location.hash !== '#' + mode) history.replaceState(null, '', '#' + mode);
 }
 document.querySelectorAll('#toolbar [data-style]').forEach(b =>
@@ -2022,6 +2024,38 @@ function koreanBasemapLabels() {
   });
 }
 map.on('style.load', koreanBasemapLabels);
+// 흑백 배경 (K8): style.load 때(우리 레이어를 다시 얹기 전이라 지금 있는 레이어 = 배경 스타일) 색 칠 속성만 회색으로.
+// 문자열 색만 바꾸고 식(expression)은 그대로 — positron 은 65개 중 63개가 문자열.
+function grayOf(c) {
+  c = String(c).trim();
+  const hs = /^(hsla?)\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(,\s*[\d.]+\s*)?\)$/i.exec(c);
+  if (hs) return `${hs[1]}(${hs[2]},0%,${hs[4]}%${hs[5] || ''})`;   // 채도만 0
+  let r, g, b, a = null;
+  const hx = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
+  if (hx) { const h = hx[1].length === 3 ? hx[1].split('').map(x => x + x).join('') : hx[1]; r = parseInt(h.slice(0, 2), 16); g = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16); }
+  else {
+    const n = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/i.exec(c);
+    if (!n) return null;
+    r = +n[1]; g = +n[2]; b = +n[3]; if (n[4] != null) a = +n[4];
+  }
+  const y = Math.round(0.2126 * r + 0.7152 * g + 0.0722 * b);
+  return a == null ? `rgb(${y},${y},${y})` : `rgba(${y},${y},${y},${a})`;
+}
+function grayBasemap() {
+  if (modeFromHash() !== 'gray') return;
+  const st = map.getStyle && map.getStyle();
+  if (!st || !st.layers) return;
+  st.layers.forEach(l => {
+    // 배경 스타일 레이어만 (배경색 + OpenFreeMap 타일 출처) — style.load 에서 우리 노선 레이어가 먼저 다시 얹히므로 출처로 가린다
+    if (l.type !== 'background' && l.source !== 'openmaptiles' && l.source !== 'ne2_shaded') return;
+    Object.keys(l.paint || {}).forEach(k => {
+      if (!/color$/.test(k) || typeof l.paint[k] !== 'string') return;
+      const gcol = grayOf(l.paint[k]);
+      if (gcol) try { map.setPaintProperty(l.id, k, gcol); } catch (e) { /* 그 속성만 건너뜀 */ }
+    });
+  });
+}
+map.on('style.load', grayBasemap);
 map.on('styledata', restoreCustomLayers); // 동일 스타일 재적용 등 style.load 미발화 대비 안전망
 
 /* ---------- 노선 하이라이트 ---------- */

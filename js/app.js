@@ -105,6 +105,15 @@ map.on('error', e => {
   if (!styleOk && !(e && e.sourceId) && /style|Failed to fetch|NetworkError|AJAXError|404|50\d/i.test(msg)) useFallbackStyle(msg.slice(0, 60));
 });
 window.KR_usedFallbackStyle = () => usedFallback;
+// K11 (6차 ①A9): 배경 스타일이 스프라이트에 없는 아이콘 이름을 부르면 MapLibre 가 경고를 쏟고 그 자리만 비운다.
+// 빈 1×1 투명 그림을 채워 경고를 막는다 (어떤 이름이 빠졌는지는 __missingImages 에 남겨 둔다).
+window.__missingImages = [];
+map.on('styleimagemissing', e => {
+  const id = e && e.id;
+  if (!id || map.hasImage(id)) return;
+  if (window.__missingImages.length < 50) window.__missingImages.push(id);
+  try { map.addImage(id, { width: 1, height: 1, data: new Uint8Array(4) }); } catch (err) { /* 이미 추가됨 */ }
+});
 
 let LINES = [], STATIONS = [];
 // 내 위치 버튼으로 마지막에 찍힌 위치 [lng, lat] — 찍은 적이 없으면 null (스타일 교체 후 복원용)
@@ -1162,7 +1171,7 @@ function setupRouteFinder() {
   const info = RouteFinder.buildGraph(LINES, STATIONS);
   // 지도에 따로 그리지 않는 급행 계통(ITX-청춘)도 경로 결과에 이름이 나오게
   if (RouteFinder.extraLines) RouteFinder.extraLines().forEach(x => lineNameOf.set(x.id, x.name_ko));
-  console.log('route graph:', info);
+  window.__routeGraph = info;   // K11 (6차 ①B1): 콘솔 출력 대신 — 개발 때 콘솔에서 __routeGraph 로 본다
   attachAutocomplete(document.getElementById('route-from'));
   attachAutocomplete(document.getElementById('route-to'));
 }
@@ -2116,6 +2125,28 @@ function koreanBasemapLabels() {
   });
 }
 map.on('style.load', koreanBasemapLabels);
+// K11: 배경 스타일(positron)의 도로 번호 방패 필터 ['<=', ['get','ref_length'], 6] 가 번호 없는 도로(null)에서
+// "Expected value to be of type number, but found null" 경고를 타일마다 쏟는다 → 숫자 비교 안의 ['get', X] 를
+// 값이 없으면 비교가 '거짓'이 되는 숫자로 감싼다 (<·<= 는 아주 큰 수, >·>= 는 아주 작은 수). 결과 표시는 같다.
+function guardNumericFilter(f) {
+  if (!Array.isArray(f)) return f;
+  const op = f[0];
+  if (['<', '<=', '>', '>='].includes(op) && f.length === 3 && Array.isArray(f[1]) && f[1][0] === 'get' && f[1].length === 2 && typeof f[2] === 'number') {
+    return [op, ['coalesce', f[1], op[0] === '<' ? 1e9 : -1e9], f[2]];
+  }
+  return f.map(guardNumericFilter);
+}
+function guardBasemapFilters() {
+  const st = map.getStyle && map.getStyle();
+  if (!st || !st.layers) return;
+  st.layers.forEach(l => {
+    if (!l.filter || l.source !== 'openmaptiles') return;
+    const t = JSON.stringify(l.filter);
+    if (!/"(<|<=|>|>=)",\["get"/.test(t)) return;
+    try { map.setFilter(l.id, guardNumericFilter(l.filter)); } catch (e) { /* 그 레이어만 건너뜀 */ }
+  });
+}
+map.on('style.load', guardBasemapFilters);
 // 흑백 배경 (K8): style.load 때(우리 레이어를 다시 얹기 전이라 지금 있는 레이어 = 배경 스타일) 색 칠 속성만 회색으로.
 // 문자열 색만 바꾸고 식(expression)은 그대로 — positron 은 65개 중 63개가 문자열.
 function grayOf(c) {

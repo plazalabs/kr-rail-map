@@ -164,6 +164,7 @@ const StationAccess = (() => {
       '.sa-gain.sa-new{color:#1a73e8}' +
       // 다크 테마(어두운 바탕)에서는 초록·파랑을 밝게 — 대비 4.5:1 (axe 11-15)
       'body[data-theme="dark"] .sa-gain,body[data-theme="eclipse"] .sa-gain,body[data-theme="neon"] .sa-gain{color:#5fd38d}' +
+      'body[data-theme="win95"] .sa-gain{color:#0b592d}' +   // 회색 바탕 #c0c0c0 대비 4.5:1
       'body[data-theme="dark"] .sa-gain.sa-new,body[data-theme="eclipse"] .sa-gain.sa-new,body[data-theme="neon"] .sa-gain.sa-new{color:#8ab4f8}' +
       '.sa-none{color:var(--muted,#5b6470)}' +
       '.sa-sum{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border,#e5e7eb);' +

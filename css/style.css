@@ -1621,3 +1621,14 @@ body.map-ready #map-skeleton .sk { animation: none; }
 }
 /* '지도만 보기' 단추 (js/panel-fold.js, 11-15) — PC 도구막대 '투자' 옆. 휴대폰은 창이 시트·서랍이라 필요 없음 */
 @media (max-width: 980px) { #maponly-btn { display: none !important; } }
+
+/* ---------- 윈도 고대비(forced-colors) (11-15) ----------
+   고대비에서는 배경색이 모두 시스템 색으로 바뀌어, 배경색으로만 표시하던 '고른 것'(일반·위성·흑백, 최적·최소환승 탭, 라이트·다크, 수도권·전국)이
+   안 고른 것과 똑같아졌다 → 시스템 강조색(Highlight)으로. 다크 테마의 지도 단추 아이콘 뒤집기(filter: invert)는 MapLibre 가 주는
+   고대비용 흰 아이콘을 검게 만들어 검은 바탕에 안 보였다 → 고대비에서는 뒤집지 않는다. 테마 변수는 그대로(543행 원칙). */
+@media (forced-colors: active) {
+  button.active, button[aria-pressed="true"], [role="tab"][aria-selected="true"] {
+    forced-color-adjust: none; background: Highlight !important; color: HighlightText !important; border-color: Highlight !important;
+  }
+  .maplibregl-ctrl-icon { filter: none !important; }
+}

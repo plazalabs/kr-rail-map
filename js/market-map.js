@@ -331,6 +331,7 @@
       '.mm-tile b{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.mm-tile span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92}' +
       '.mm-tile.inl{display:flex;align-items:baseline;gap:4px}.mm-tile.inl b,.mm-tile.inl span{display:inline}.mm-tile.inl span{flex:none}' +
+      '.mm-src{margin:0 14px 6px;font-size:var(--fs-xs);line-height:1.45;color:var(--muted,#5b6470)}.mm-src[hidden]{display:none}.mm-src b{color:var(--text,#222)}' +
       '.mm-crowd{position:absolute;left:8px;bottom:8px;z-index:4;display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:calc(100% - 16px);padding:6px 8px 6px 10px;border-radius:10px;background:var(--panel-bg,#fff);color:var(--text,#222);box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:var(--fs-sm)}' +
       '.mm-tolist{border:1px solid var(--accent,#1565c0);background:var(--accent,#1565c0);color:#fff;border-radius:999px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:var(--fs-sm);font-weight:700}.mm-tolist:focus-visible{outline:3px solid var(--text,#222);outline-offset:2px}' +
       '.mm-mx{display:flex;flex-direction:column;gap:6px;padding:2px}' +
@@ -414,6 +415,7 @@
       '<div class="mm-years" role="group" aria-label="이 해까지 개통한다고 가정"></div>' +
       '<div class="mm-legend" aria-label="색 뜻"></div></details>' +
       '<div class="mm-focus" hidden></div>' +
+      '<p class="mm-src" hidden></p>' +
       '<div class="mm-board" role="grid" aria-label="역 타일"></div>' +
       '<div class="mm-card" aria-live="polite"></div>';
     document.body.appendChild(el);
@@ -845,12 +847,51 @@
       '<button type="button" class="mm-unfocus">← 전체 보기</button>';
   }
 
+  /* K4 (6차 피드백 ③4·②8): 시세·전세·공급을 색이나 크기로 쓸 때, 기준 기간·출처 기관·'법정동 값'을 타일 바로 위에 적는다.
+   * 범례는 접혀 있을 수 있어서 따로 둔다. 기간은 자료 파일의 updated·period 에서 자동으로 — 자료를 새로 받으면 저절로 바뀐다. */
+  function ym(s) { var m = /^(\d{4})-(\d{2})/.exec(s || ''); return m ? { y: +m[1], m: +m[2] } : null; }   // '2026-09' → {y:2026, m:9}
+  function ymSpan(a, b) { return !a || !b ? '' : a.y === b.y ? a.y + '년 ' + a.m + '~' + b.m + '월' : a.y + '년 ' + a.m + '월~' + b.y + '년 ' + b.m + '월'; }
+  function ymRange(to, n) {   // '2026-09', 6 → '2026년 4~9월'
+    var e = ym(to); if (!e) return '';
+    var s = { y: e.y, m: e.m - (n - 1) };
+    while (s.m < 1) { s.m += 12; s.y--; }
+    return ymSpan(s, e);
+  }
+  function srcParts() {
+    var out = [];
+    var org = function (src) { return String(src || '').replace(/\s*\(공공데이터포털[^)]*\)/, ' (공공데이터포털)'); };
+    if (st.color === 'price' || st.size === 'deals') {
+      var pm = typeof StationPrice !== 'undefined' && StationPrice.meta && StationPrice.meta();
+      if (pm) out.push((st.color === 'price' ? '평당가' : '거래 건수') + ': ' + org(pm.source) + (pm.updated ? ' · ' + ymRange(pm.updated, 6) : ''));
+    }
+    if (st.color === 'jeonse') {
+      var jm = typeof StationJeonse !== 'undefined' && StationJeonse.meta && StationJeonse.meta();
+      if (jm) {
+        var p = jm.period || [], per = ymSpan(ym(p[0]), ym(p[1]));
+        out.push('전세가율: ' + org(jm.source) + (per ? ' · ' + per : ''));
+      }
+    }
+    if (st.size === 'supply') {
+      var dm = typeof StationDev !== 'undefined' && StationDev.meta && StationDev.meta();
+      if (dm) out.push('입주 예정 세대: ' + org(dm.source) + (ym(dm.updated) ? ' · ' + ym(dm.updated).y + '년 ' + ym(dm.updated).m + '월 받음' : ''));
+    }
+    return out;
+  }
+  function renderSrc() {
+    var p = el.querySelector('.mm-src'); if (!p) return;
+    var parts = st.view === 'scatter' ? [] : srcParts();   // 산점도는 자기 안내문에 기간·기준이 있다
+    if (!parts.length) { p.hidden = true; p.innerHTML = ''; return; }
+    p.hidden = false;
+    p.innerHTML = parts.map(esc).join('<br>') + '<br><b>값은 역이 속한 법정동 기준</b>이에요 — 역 바로 앞 단지 시세가 아닙니다 · <a href="data.html" target="_blank" rel="noopener">출처 자세히</a>';
+  }
+
   function render() {
     if (!el || !doc) return;
     compute();
     renderYears();
     renderLegend();
     renderFocus();
+    renderSrc();
     el.querySelector('[data-k="group"]').value = st.group;
     el.querySelector('[data-k="color"]').value = st.color;
     el.querySelector('[data-k="size"]').value = st.size;

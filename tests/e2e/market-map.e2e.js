@@ -198,6 +198,9 @@ async function until(b, expr, n = 40) {
     return { color: st.color, keys, legend: document.querySelector('#mm-panel .mm-legend').textContent.slice(0, 80) }; })()`);
   const jk = Object.keys(jv.keys).filter(k => /^j\d$/.test(k)).length;
   R.check('투자 모드: 색 = 전세가율 → 전세가율 구간 색 3개 이상 + 범례', jv.color === 'jeonse' && jk >= 3 && /전세가율|50%/.test(jv.legend), jv);
+  // K4: 시세를 쓰면 타일 바로 위에 출처 기관·기간(자료 파일에서 자동)·'법정동 기준'
+  const srcLine = await b.evaluate(`(() => { const p = document.querySelector('#mm-panel .mm-src'); return p && !p.hidden ? p.textContent : null; })()`);
+  R.check('K4: 전세가율 색 → 타일 위에 국토교통부·기간(년 월)·법정동 기준', !!srcLine && /국토교통부/.test(srcLine) && /\d{4}년 \d+~\d+월/.test(srcLine) && /법정동 기준/.test(srcLine), srcLine);
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="size"]'); s.value = 'supply'; s.dispatchEvent(new Event('change')); })()`);
   await until(b, `typeof StationDev !== 'undefined' && StationDev.isReady()`, 40); await sleep(900);
   const sv = await b.evaluate(`(() => { const m = MarketMap.model(); const vs = []; m.groups.forEach(G => G.tiles.forEach(t => vs.push(t.v)));
@@ -227,6 +230,7 @@ async function until(b, expr, n = 40) {
   await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 30`, 60);
   const nv = await b.evaluate(`MarketMap.state().color`);
   R.check('투자 모드가 아니면 전세가율 색은 막히고 기본(빨라지는 분)', nv === 'gain', nv);
+  R.check('K4: 보통 모드(빨라지는 분)에선 시세 출처 줄 숨김', await b.evaluate(`document.querySelector('#mm-panel .mm-src').hidden`));
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'scatter'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
   const nsc = await b.evaluate(`({ dots: document.querySelectorAll('#mm-panel .mm-dot').length, view: document.querySelector('#mm-panel [data-k="view"]').value })`);
   R.check('투자 모드가 아니면 산점도(가격)는 막히고 타일로', nsc.dots === 0 && nsc.view === 'tiles', nsc);

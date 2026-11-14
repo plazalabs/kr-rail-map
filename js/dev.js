@@ -178,7 +178,7 @@ const StationDev = (() => {
     return wrap ? '<div class="dv-yrs">' + inner + '</div>' : inner;
   }
 
-  return { load, isReady, of, brief, sectionHtml, setDoc };
+  return { load, isReady, of, brief, sectionHtml, setDoc, meta: () => doc };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = StationDev;

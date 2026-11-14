@@ -229,6 +229,18 @@ console.log("\n[68점 감사 8번] '최소요금' 은 함께 보이는 다른 �
   const pfBad = [];
   Object.entries(PF).forEach(([k, v]) => { const [x, y] = k.split('|'); [[x, y], [y, x]].forEach(([u, w]) => { const f = nowFare(u, w, 'arex', 'arex'); if (!f || f.total !== v) pfBad.push(u + '→' + w + ' ' + (f && f.total) + '≠' + v); }); });
   check('공항철도 공식 역간 요금표 ' + Object.keys(PF).length * 2 + '칸 모두 일치', Object.keys(PF).length === 91 && pfBad.length === 0, pfBad.slice(0, 5).join(', '));
+  // 신분당선 공식 역간 운임표 120쌍 × 양방향 (data/fares-special.json shinbundang.pair_fares, 11-15)
+  // 신분당선으로 가면 표 값과 같아야 하고, 다른 노선(정자↔미금 수인분당선)으로 가면 표보다 비싸면 안 된다
+  const SPF = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/fares-special.json'), 'utf8')).lines[SB].pair_fares;
+  const sbBad = []; let sbSame = 0;
+  Object.entries(SPF).forEach(([k, v]) => { const [x, y] = k.split('|'); [[x, y], [y, x]].forEach(([u, w]) => {
+    const A = onLine(u, SB), B = onLine(w, SB);
+    const r = A && B && RC.findAll(A.id, B.id, { includeUnopened: false }).now;
+    const f = r && RC.calcFareDetail(r, r.distKm || 0);
+    const onSb = r && r.legs.some(l => !l.walk && l.lineId === SB);
+    if (!f || (onSb ? f.total !== v : f.total > v)) sbBad.push(u + '→' + w + ' ' + (f && f.total) + '≠' + v); else if (onSb) sbSame++;
+  }); });
+  check('신분당선 공식 역간 운임표 ' + Object.keys(SPF).length * 2 + '칸: 신분당선 길은 표와 같고 다른 길은 더 싸다', Object.keys(SPF).length === 120 && sbBad.length === 0 && sbSame >= 236, sbBad.slice(0, 5).join(', ') + ' 같음 ' + sbSame);
   // 공항철도 통합구간만 타면 별도 운임 없음
   const gm = nowFare('서울', '검암', 'arex', 'arex');
   check('서울→검암(통합구간만)은 별도 운임 없음', gm && !gm.parts.some(p => p.kind === 'extra'), gm && gm.total + '원');

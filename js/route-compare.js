@@ -168,6 +168,7 @@ const RouteCompare = (() => {
     // 구간 거리가 없는 옛 모양의 결과에서만 예전 방식으로 물러난다.
     // 별도 운임 (신분당선·GTX-A·공항철도 독립구간). 공항철도 독립구간 거리는 수도권 거리에서 뺀다
     const extraParts = [];
+    let tableWhole = null;   // 한 노선만 탄 길에서 운영사 공식 역간 요금표 값(신분당선·공항철도)
     const legsOn = id => (r.legs || []).filter(l => !l.walk && l.lineId === id);
     const sb = SPECIAL['seoul-metropolitan-subway-shinbundang-line'];
     const sbLegs = legsOn('seoul-metropolitan-subway-shinbundang-line');
@@ -175,6 +176,14 @@ const RouteCompare = (() => {
       const key = shinbundangSections(sbLegs, sb);
       const fee = key ? (sb.fare[key] != null ? sb.fare[key] : key.split('').reduce((a, k) => a + (sb.fare[k] || 0), 0)) : 0;
       if (fee > 0) extraParts.push({ kind: 'extra', line: '신분당선', detail: key.split('').map(k => (sb.sections.find(x => x.id === k) || {}).label).join('·'), fare: fee, basis: 'official' });
+      // 신분당선만 탄 길(한 구간)은 공식 역간 운임표 값이 곧 전체 요금 — 지도 거리로 셈하면
+      // 신논현↔미금(공식 3,950)·청계산입구↔광교(3,450)가 거리 경계(20·25km)에서 100원 어긋났다 (11-15 공식표 240칸 대조)
+      const rides = (r.legs || []).filter(l => !l.walk && l.lineId);
+      if (sb.pair_fares && rides.length === 1 && sbLegs.length === 1) {
+        const a = segName(rides[0].from), b = segName(rides[0].to), p = sb.pair_fares;
+        const v = p[a + '|' + b] != null ? p[a + '|' + b] : p[b + '|' + a];
+        if (v != null) tableWhole = v;
+      }
     }
     const ga = SPECIAL['great-train-express-line-a'];
     const gaLegs = (r.legs || []).filter(l => !l.walk && GTXA_FAMILY.includes(l.lineId));
@@ -185,7 +194,7 @@ const RouteCompare = (() => {
       extraParts.push({ kind: 'extra', line: 'GTX-A', detail: '평일 기준 · 주말은 ' + (ga.base - ga.weekend_base).toLocaleString() + '원 낮음', fare: fee, basis: future ? 'estimate' : 'official' });
     }
     const ax = SPECIAL['arex'];
-    let arexIndepKm = 0, arexWhole = null;
+    let arexIndepKm = 0;
     if (ax) {
       // 공식 역간 요금표(pair_fares)가 있으면 그 값: 독립구간 몫 = 표(탄 역→내린 역) − 표(일반구간 쪽 역→청라).
       // 청라를 넘는 표 값은 공식 공식의 단순 합이 아니다(검암→운서 2,500 ≠ 1,550+1,700) — 11-14 공식표 대조.
@@ -195,7 +204,7 @@ const RouteCompare = (() => {
       // 공항철도만 탄 길(한 구간)은 공식표 값이 곧 전체 요금 — 지도 거리로 셈하면 서울↔김포공항이 100원 어긋난다
       const rides = (r.legs || []).filter(l => !l.walk && l.lineId);
       if (rides.length === 1 && rides[0].lineId === 'arex' && (rides[0].segs || []).length)
-        arexWhole = pair(segName(rides[0].segs[0].a), segName(rides[0].segs[rides[0].segs.length - 1].b));
+        tableWhole = pair(segName(rides[0].segs[0].a), segName(rides[0].segs[rides[0].segs.length - 1].b));
       legsOn('arex').forEach(l => {
         const segs = l.segs || [];
         let ind = 0, term = 0;
@@ -228,8 +237,8 @@ const RouteCompare = (() => {
     if (metroLegKm < 0.05) metroLegKm = 0;   // 구간 거리 합의 부동소수 찌꺼기(2터미널→운서가 1,550원 더 붙던 것)
     const metroKm = legKmKnown ? metroLegKm : Math.max(0, distKm - ktxKm - convKm);
     let metroPart = metroKm > 0 ? { kind: 'metro', fare: calcFare(metroKm), basis: 'formula' } : null;
-    if (arexWhole != null) {
-      const rest = arexWhole - extraParts.reduce((a, p) => a + p.fare, 0);
+    if (tableWhole != null) {
+      const rest = tableWhole - extraParts.reduce((a, p) => a + p.fare, 0);
       if (metroPart && rest > 0) metroPart = { kind: 'metro', fare: rest, basis: 'official' };
     }
     const convPart = convKm > 0 ? { kind: 'conventional', fare: calcConvFare(convKm), basis: 'estimate' } : null;

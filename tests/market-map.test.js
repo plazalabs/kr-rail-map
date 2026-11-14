@@ -144,5 +144,17 @@ console.log('\n[K2 라벨 단계]');
   check('K2: 글자 폭 어림 — 한글 12px·숫자 7px', L.textW('연신내') === 36 && L.textW('−22분') === 33, [L.textW('연신내'), L.textW('−22분')]);
 }
 
+// K3 최소 크기 — 값 차이가 커도(1 vs 10000) 모든 타일이 그려지고 순서는 그대로
+console.log('\n[K3 최소 크기]');
+{
+  const mk = vs => ({ groups: [{ name: 'A', value: 0, tiles: vs.map(v => ({ v })) }, { name: 'B', value: 0, tiles: [{ v: 1 }, { v: 1 }] }] });
+  const m = L.layout(mk([10000, 5000, 1, 1, 1, 1, 1, 1]), 600, 380, 18);
+  const all = m.groups.flatMap(G => G.tiles);
+  const minSide = Math.min(...all.map(t => Math.min(t.rect.w, t.rect.h)));
+  check('K3: 1 대 10000 이어도 모든 타일 한 변 8px 이상', minSide >= 8, minSide);
+  check('K3: 큰 값 타일이 여전히 더 큼(순서 유지)', all[0].rect.w * all[0].rect.h > all[1].rect.w * all[1].rect.h && all[1].rect.w * all[1].rect.h > all[2].rect.w * all[2].rect.h);
+  check('K3: 작은 묶음(B)도 이름 줄 아래 타일 자리가 있음', m.groups[1].tiles.every(t => t.rect.h >= 8), m.groups[1].tiles.map(t => t.rect));
+}
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

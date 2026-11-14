@@ -246,13 +246,28 @@
       if (val && cw >= nw + 4 + vw) return { mode: 'inline' };                   // 한 줄에 '이름 값'
       return { mode: 'name' };                                                    // 이름만 (넘치면 말줄임)
     }
+    var MIN_SIDE = 14;   // 타일 한 변 최소(px) — 손가락·마우스로 누를 수 있고 테두리가 보이는 크기
     function layout(model, W, H, head) {
       head = head == null ? 18 : head;
-      var gr = squarify(model.groups.map(function (G) { return G.value; }), 0, 0, W, H);
+      // K3 최소 크기 — 거래 건수·입주 세대처럼 값 차이가 큰 크기에서 작은 역이 1px 아래로 줄어 사라지던 것(증발)을 막는다.
+      // 타일마다 화면에서 최소 MIN_SIDE×MIN_SIDE 넓이를 받게 바닥값을 깔고(값 순서는 그대로), 묶음에는 이름 줄 몫을 더한다.
+      var n = 0, sumV = 0;
+      model.groups.forEach(function (G) { G.tiles.forEach(function (t) { n++; sumV += t.v; }); });
+      var area = Math.max(1, W * H), minA = Math.min(Math.max(MIN_SIDE * MIN_SIDE, area / Math.max(1, n * 8)), area / Math.max(1, n * 2.2)), floorV = 0;   // 역이 적으면 바닥도 넉넉히(가는 띠 방지)
+      for (var it = 0; it < 4; it++) {   // 바닥값을 올리면 합도 커지므로 몇 번 되풀이해 맞춘다
+        var tot = 0;
+        model.groups.forEach(function (G) { G.tiles.forEach(function (t) { tot += Math.max(t.v, floorV); }); tot += 3 * floorV; });
+        floorV = tot * minA / area;
+      }
+      model.groups.forEach(function (G) {
+        G.dv = 3 * floorV;
+        G.tiles.forEach(function (t) { t.dv = Math.max(t.v, floorV); G.dv += t.dv; });
+      });
+      var gr = squarify(model.groups.map(function (G) { return G.dv; }), 0, 0, W, H);
       model.groups.forEach(function (G, i) {
         var r = gr[i]; G.rect = r;
         var inner = { x: r.x + 1, y: r.y + head, w: Math.max(0, r.w - 2), h: Math.max(0, r.h - head - 1) };
-        var tr = squarify(G.tiles.map(function (t) { return t.v; }), inner.x, inner.y, inner.w, inner.h);
+        var tr = squarify(G.tiles.map(function (t) { return t.dv; }), inner.x, inner.y, inner.w, inner.h);
         G.tiles.forEach(function (t, k) { t.rect = tr[k]; });
       });
       return model;
@@ -618,8 +633,8 @@
     } else {
       items = Logic.GAIN_BINS.map(function (b) { return [b.bg, b.label]; }).concat([[Logic.NEW_COLOR.bg, Logic.NEW_COLOR.label], [Logic.NA_COLOR.bg, '자료 없음(빗금)']]);
     }
-    var sz = st.size === 'deals' ? ' · 크기 = 역이 속한 법정동 아파트 매매 건수(최근 6개월), 점선 = 자료 없음'
-      : st.size === 'supply' ? ' · 크기 = 역이 속한 법정동의 아직 준공 안 된 주택인허가 세대(수록 자료 기준, 입주 물량 그대로는 아님), 점선 = 없음·자료 없음' : ' · 크기 = 모두 같음';
+    var sz = st.size === 'deals' ? ' · 크기 = 역이 속한 법정동 아파트 매매 건수(최근 6개월), 점선 = 자료 없음, 작은 값은 최소 크기로 보임'
+      : st.size === 'supply' ? ' · 크기 = 역이 속한 법정동의 아직 준공 안 된 주택인허가 세대(수록 자료 기준, 입주 물량 그대로는 아님), 점선 = 없음·자료 없음, 작은 값은 최소 크기로 보임' : ' · 크기 = 모두 같음';
     box.innerHTML = items.map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
       '<span>' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표) · 타일 숫자도 전세가율' : st.color === 'price' ? '평당가(만원/평) = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상) · 타일 숫자도 평당가' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위 · 타일 숫자 = 오른 계단(▲)' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + ((global.KR_WAIT && KR_WAIT.isPeak()) ? ' · 출퇴근 배차 넣음' : ' · 열차 대기 뺌') + sz) + '</span>';
   }

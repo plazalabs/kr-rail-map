@@ -53,9 +53,11 @@ for a, b in zip(rows, rows[1:]):
     if sec <= 0:
         continue
     lid = LID[b['호선']]
+    # 역간거리(km) — 요금은 공식 거리로 매긴다 (지도 선로 길이로는 서울→강남이 15.1km 로 경계를 넘어 100원 비쌌다, J1 2026-11-14)
+    km = float(b['역간거리(km)'] or 0)
     for na in names(a['역명']):
         for nb in names(b['역명']):
-            table.setdefault(lid, []).append([na, nb, sec])
+            table.setdefault(lid, []).append([na, nb, sec, km] if km > 0 else [na, nb, sec])
 
 block = ('  // <official-runtimes> — data/build_official_runtimes.py 가 만든다. 손으로 고치지 말 것.\n'
          '  // 출처: 서울교통공사 역간거리 및 소요시간(2024.3.25. 기준), 서울열린데이터광장 OA-12034, 공공누리 제1유형\n'

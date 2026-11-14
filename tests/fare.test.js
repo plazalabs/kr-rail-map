@@ -84,6 +84,12 @@ check('서울→부산 최단시간이 KTX', r.time && r.time.legs.some(l => l.l
 
 const r2 = RC.findAll(id('강남'), id('역삼'));
 check('강남→역삼 요금 1,550원', r2.time && r2.time.fare === 1550, r2.time && r2.time.fare);
+// J1 (2026-11-14 UX 종합 리뷰 대조): 요금 거리는 서울교통공사 공식 역간거리.
+// 4호선 서울역→사당 9.8km + 2호선 사당→강남 5.2km = 15.0km → 1,650원. 지도 선로 길이(15.09km)로 재면 1,750원으로 틀렸다.
+const r3 = RC.findAll(id('서울'), id('강남')).now;
+check('서울→강남(지금 운행 노선) 공식 거리 15.0km', r3 && near(r3.legs.reduce((s, l) => s + (l.distKm || 0), 0), 15.0, 0.05),
+  r3 && r3.legs.reduce((s, l) => s + (l.distKm || 0), 0).toFixed(2));
+check('서울→강남(지금 운행 노선) 요금 1,650원', r3 && r3.fare === 1650, r3 && r3.fare);
 
 
 console.log('\n[KTX 공식 운임표] 2026-09-01 통합 운임 (data/ktx-fares.json)');

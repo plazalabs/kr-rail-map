@@ -28,6 +28,7 @@ const RouteCompare = (() => {
   }
 
   let stationNameOf = new Map();
+  let stationCoordOf = new Map();   // id → [경도, 위도] — 카카오맵 길찾기 링크에 쓴다
   function sname(id) {
     return stationNameOf.get(id) || id;
   }
@@ -401,7 +402,34 @@ const RouteCompare = (() => {
     if (!r) return null;
     const distKm = routeDistance(r.path);
     const fd = calcFareDetail(r, distKm);
-    return markUnopened({ ...r, distKm, fare: fd.total, fareDetail: fd });
+    return markUnopened({ ...r, distKm, fare: fd.total, fareDetail: fd, officialShare: officialShareOf(r) });
+  }
+
+  // 달리는 시간 중 공식 운행시간(서울교통공사 역간 소요시간·레일포털 시각표)으로 낸 몫 (0~1).
+  // 결과 카드에 '시간 근거'로 보인다 — 공식값과 어림값을 같은 숫자처럼 섞어 보이지 않게 (J3, 2026-11-14 UX 종합 리뷰)
+  function officialShareOf(r) {
+    if (!r || !r.path || !r.legs || !RF.adjacency) return null;
+    const adj = RF.adjacency();
+    let i = 0, off = 0, est = 0;
+    for (const leg of r.legs) {
+      const j = r.path.indexOf(leg.to, i);
+      if (j < 0) break;
+      if (!leg.walk && leg.lineId) {
+        for (let k = i; k < j; k++) {
+          // 같은 두 역 사이에 간선이 여럿일 수 있다(선형 간선 + 공식 소요시간 계통 간선) — 탐색이 고른 것 = 가장 빠른 것
+          let e = null, m = Infinity;
+          for (const x of adj.get(r.path[k]) || []) {
+            if (x.to !== r.path[k + 1] || x.lineId !== leg.lineId) continue;
+            const mx = edgeMinutes(x);
+            if (mx < m) { e = x; m = mx; }
+          }
+          if (!e) continue;
+          if (e.officialMin != null) off += m; else est += m;
+        }
+      }
+      i = j;
+    }
+    return off + est > 0 ? off / (off + est) : null;
   }
 
   // '최소요금' 은 화면에 함께 나오는 어느 후보보다 비싸면 안 된다 (68점 감사 8번, 2026-11-13).
@@ -539,6 +567,8 @@ const RouteCompare = (() => {
       .rc-badge { display: inline-block; font-size: var(--fs-xs); background: var(--accent, #3388ff); color: #fff;
         border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
       .rc-insight { font-size: var(--fs-xs); color: var(--muted, #666); margin: 8px 0; line-height: 1.6; }
+      .rc-basis { font-size: var(--fs-xs); color: var(--muted, #5b6470); margin: 0 0 6px; line-height: 1.5; }
+      .rc-basis a { color: var(--accent, #1b64da); text-decoration: underline; text-underline-offset: 2px; }
       /* 기본(운행 중인 노선만) 결과 위의 '개통 예정 노선 포함' 안내 한 줄 */
       .rc-noroute { padding: 8px 2px; line-height: 1.6; } .rc-noroute .rc-nr-why { margin: 4px 0 8px; font-size: var(--fs-sm); color: var(--muted, #5b6470); }
       .rc-oo-hint { font-size: var(--fs-xs); line-height: 1.6; margin: 0 0 8px; padding: 6px 10px; border-radius: 8px;
@@ -653,6 +683,32 @@ const RouteCompare = (() => {
       `<div class="rc-nf-why">${note}</div></div>`;
   }
 
+  // 결과 카드 아래 '근거' 한 줄 — 휴대폰에서도 보이게(마우스 올림 설명은 휴대폰에서 안 보인다).
+  // 이 앱은 시간표·실시간 앱이 아니다: 무엇으로 계산했고 무엇을 안 넣었는지, 실제 출발 전 어디서 확인하는지 (J3, 2026-11-14)
+  function basisHtml(r) {
+    if (!r || !r.legs || !r.legs.length) return '';
+    const s = r.officialShare;
+    // 한 줄로 짧게 — '시간표·급행·지연 안 넣음' 은 바로 아래 rp-note 가 늘 보여 준다(되풀이하면 작은 화면에서 창이 넘친다, route-fit e2e)
+    const timePart = (s == null || s <= 0.005) ? '시간: 평균 속도 어림'
+      : s >= 0.995 ? '시간: 공식 운행시간'
+      : `시간: ${Math.round(s * 100)}% 공식·나머지 어림`;
+    const rail = r.legs.some(l => l.lineId && ['ktx', 'conventional'].includes(RF.categoryOf(l.lineId)));
+    // 카카오맵 공식 URL 형식(apis.map.kakao.com/web/guide 'URL로 바로가기', 2026-11-14 확인):
+    // 대중교통 = https://map.kakao.com/link/by/traffic/이름,위도,경도/이름,위도,경도
+    const a = r.path && r.path[0], b = r.path && r.path[r.path.length - 1];
+    const pt = id => {
+      const n = stationNameOf.get(id), c = stationCoordOf.get(id);
+      if (!n || !c) return '';
+      const name = (/역$/.test(n) ? n : n + '역').replace(/[,/]/g, ' ');
+      return encodeURIComponent(name) + ',' + (+c[1]).toFixed(6) + ',' + (+c[0]).toFixed(6);
+    };
+    const links = [];
+    if (pt(a) && pt(b)) links.push(`<a href="https://map.kakao.com/link/by/traffic/${pt(a)}/${pt(b)}" target="_blank" rel="noopener">카카오맵</a>`);
+    if (rail) links.push('<a href="https://www.korail.com/" target="_blank" rel="noopener">코레일</a>');
+    return `<p class="rc-basis" title="공식 운행시간 = 서울교통공사 역간 소요시간·레일포털 시각표. 열차 시간표·급행·첫 열차 기다리는 시간·지연은 넣지 않은 예상값입니다">${timePart}` +
+      (links.length ? ` · 확인: ${links.join(' · ')}` : '') + '</p>';
+  }
+
   function variantHtml(r, tabId, badge) {
     const fd = r.fareDetail;
     // 미정 운임(개통 전 GTX 등)이 있으면 합계가 확정처럼 보이지 않게 '+ ○○ 요금 미정' 을 합계 옆에 직접 적는다 (68점 감사 7번)
@@ -660,8 +716,9 @@ const RouteCompare = (() => {
     const fareTxt = pend.length
       ? `예상 요금 ${r.fare.toLocaleString()}원 <span class="rc-est">+ ${escapeHtml(pend.join('·'))} 요금 미정</span>`
       : `예상 요금 ${r.fare.toLocaleString()}원${fd && fd.estimated ? ' <span class="rc-est">(일부 추정)</span>' : ''}`;
-    let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분<span class="rc-def" title="운행 속도로 어림한 시간 — 갈아탈 때 기다리는 시간은 넣고, 처음 열차를 기다리는 시간은 뺐습니다">(환승 대기 포함)</span> · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
+    let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분<span class="rc-def" title="공식 운행시간으로 낸 시간(자료 없는 구간은 어림) — 갈아탈 때 기다리는 시간은 넣고, 처음 열차를 기다리는 시간은 뺐습니다">(환승 대기 포함)</span> · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
     html += fareBreakdownHtml(fd);
+    html += basisHtml(r);
     // 미개통 노선을 지나는 경로는 명시한다.
     // 이 지도는 착공·계획 노선까지 그리므로 '지금 갈 수 있는 길'로 오해하면 안 된다.
     if (r.unopenedLines && r.unopenedLines.length) {
@@ -801,6 +858,7 @@ const RouteCompare = (() => {
     RF = routeFinder;
     // 그래프는 RouteFinder 것을 빌려 쓴다 (여기서 다시 만들지 않는다)
     stationNameOf = new Map(stations.map(s => [s.properties.id, s.properties.name_ko]));
+    stationCoordOf = new Map(stations.map(s => [s.properties.id, s.geometry && s.geometry.coordinates]));
     lineNameOf = new Map(lines.map(f => [f.properties.id, f.properties.name_ko]));
     if (RF.extraLines) RF.extraLines().forEach(x => lineNameOf.set(x.id, x.name_ko));   // ITX-청춘 등 급행 계통
   }
@@ -810,5 +868,5 @@ const RouteCompare = (() => {
   return { init, findAll, findAllOpen, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, loadSpecialFares, fareBreakdownHtml,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
     compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf, fastestTabId, pickCheapest, hasPending,
-    _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich } };
+    _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich, basisHtml } };
 })();

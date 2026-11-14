@@ -1052,7 +1052,7 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
 /* 길찾기 — 키 작은 화면(브라우저 안 높이 ≤ 720px: 1366×768 노트북 + 도구막대)에서는 더 촘촘하게.
  * GitHub 시험 러너(안 높이 625px)에서 창이 45px 넘친 것을 맞춘다 (2026-11-11). */
 @media (min-width: 769px) and (max-height: 720px) {
-  #route-panel { top: 52px; gap: 4px; padding: 8px 12px; max-height: calc(100vh - 60px); }
+  #route-panel { top: 52px; gap: 3px; padding: 6px 12px; max-height: calc(100vh - 60px); }
   #route-panel .rp-head { font-size: var(--fs-sm); margin: 0; }
   #route-panel input { padding: 5px 9px; }
   #route-panel .rp-row button { padding: 5px 10px; }
@@ -1060,12 +1060,18 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
   #route-panel .rp-opt-sub { display: none; }
   #route-panel .rc-nf { padding: 6px 10px; margin-bottom: 4px; }
   #route-panel .rc-nf-time { font-size: var(--fs-lg); }
-  #route-panel .rc-tabs { margin-bottom: 4px; }
+  #route-panel .rc-tabs { margin-bottom: 2px; }
   #route-panel .rc-insight { margin: 4px 0; }
   #route-panel .rc-fare { margin: -2px 0 4px; padding: 3px 8px; line-height: 1.4; }   /* 별도 운임 줄이 늘어난 만큼 (2026-11-13) */
   #route-panel .unopened-notice { margin: 4px 0; padding: 5px 8px; }
-  #route-result .leg { padding: 3px 0; }
-  #route-result .total { margin-bottom: 4px; padding: 6px 9px; }
+  #route-result .leg { padding: 2px 0; }
+  #route-result .total { margin-bottom: 4px; padding: 5px 9px; }
+  /* J3 근거 한 줄(시간 근거·확인 링크)이 들어간 만큼 여백을 줄인다 — 글은 그대로 (2026-11-14, route-fit 1366×720) */
+  #route-panel .rc-basis { margin: 0 0 2px; line-height: 1.4; }
+  #route-panel .rc-fare { margin: -2px 0 2px; padding: 2px 8px; }
+  #route-panel .rc-oo-hint { margin: 0 0 4px; padding: 4px 8px; line-height: 1.45; }
+  #route-panel .unopened-notice { margin: 2px 0; padding: 4px 8px; }
+  #route-panel .rc-insight { margin: 2px 0; line-height: 1.45; }
 }
 
 /* 휴대폰 툴바 '오른쪽에 더 있음' 표시 (js/ui.js initToolbarMore) */

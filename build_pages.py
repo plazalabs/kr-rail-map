@@ -217,6 +217,8 @@ def main():
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<!-- 11-15: 노선 페이지에만 CSP 가 없었다 — 메인과 같은 원칙(자기 출처 + Umami 통계만). 인라인 style 속성이 있어 style-src unsafe-inline, JSON-LD 는 실행 안 되는 자료라 막히지 않는다 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cloud.umami.is; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cloud.umami.is https://api-gateway.umami.dev https://gateway.umami.is; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{esc(title)}</title>
 <meta name="description" content="{esc(desc)}">

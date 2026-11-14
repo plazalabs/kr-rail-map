@@ -586,6 +586,10 @@
         // 통근권 찾기(js/commute.js)로 — '이 역이 직장이면 어디서 다닐 수 있나'
         (typeof CommuteMap !== 'undefined'
           ? '<button type="button" class="sd-commute" style="margin-top:8px;padding:0;border:0;background:none;color:var(--accent,#1a73e8);font:inherit;font-size:var(--fs-sm);cursor:pointer;text-decoration:underline">이 역까지 통근권 보기 →</button>'
+          : '') +
+        // 공유 카드 ② 생활권 변화 (종합피드백 12장 B) — 업무지구 5곳까지 지금 → 개통 후
+        (typeof StationShareImage !== 'undefined' && StationShareImage.saveLife && StationAccess.of(sid)
+          ? '<button type="button" class="sd-life" style="display:block;margin-top:8px;padding:0;border:0;background:none;color:var(--accent,#1a73e8);font:inherit;font-size:var(--fs-sm);cursor:pointer;text-decoration:underline">생활권 변화 카드로 공유 →</button>'
           : '') + '</div>';
     }
 
@@ -709,6 +713,7 @@
     var tabBtns = Array.prototype.slice.call(body.querySelectorAll('.sd-tab'));
     function pick(key, focus) {
       lastTab = key;
+      if (key === 'p' && global.KRTrack && global.KRTrack.task) global.KRTrack.task('price');   // 과업: 시세 상세 (A③)
       tabBtns.forEach(function (b) {
         var on = b.getAttribute('data-tab') === key;
         b.setAttribute('aria-selected', on ? 'true' : 'false');
@@ -786,6 +791,13 @@
     if (dgBtn) dgBtn.addEventListener('click', function () {
       hide();
       DiagramMode.focusStation(sid);
+    });
+    var lfBtn = body.querySelector('.sd-life');
+    if (lfBtn) lfBtn.addEventListener('click', function () {
+      var ac = StationAccess.of(sid);
+      if (!ac) return;
+      StationShareImage.saveLife({ name: nameKo, rows: ac.rows, asof: StationAccess.asof ? StationAccess.asof() : '' }, { wait: false })   // access.json 은 기다림 뺀 시간
+        .then(function (msg) { if (msg) lfBtn.textContent = msg + ' — 다시 공유 →'; });
     });
     var cmBtn = body.querySelector('.sd-commute');
     if (cmBtn) cmBtn.addEventListener('click', function () {

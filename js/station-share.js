@@ -113,6 +113,61 @@
     return saveCanvas(drawTop10(rows, o), name, (o.y === 'all' ? '모두 개통하면' : o.y + '년까지') + ' 교통 접근성 개선 TOP 10', 'card-top10');
   }
 
+  // ② 우리 역 생활권 변화 카드 (종합피드백 12장 B, 2026-11-14) — 킬러 1순위 '생활권 변화'의 무료 미리보기.
+  // info: { name, area, rows: StationAccess.of(id).rows, asof } — 업무지구 5곳까지 지금 → 개통 후 분, 막대 두 줄.
+  var LIFE_LABEL = { cbd: '도심 (시청·광화문)', ybd: '여의도', gbd: '강남', seoul: '서울역', pangyo: '판교' };
+  function lifeSummary(rows) {
+    var ok = rows.filter(function (r) { return r.after != null; });
+    var in30 = function (k) { return rows.filter(function (r) { return r[k] != null && r[k] <= 30; }).length; };
+    var saves = rows.filter(function (r) { return r.save != null && r.save > 0; });
+    var best = saves.slice().sort(function (a, b) { return b.save - a.save; })[0] || null;
+    return { n30now: in30('now'), n30aft: in30('after'), total: ok.length, best: best,
+      newCount: rows.filter(function (r) { return r.isNew; }).length };
+  }
+  function drawLife(info, o) {
+    o = o || {};
+    var k = cardBase(1350), g = k.g, F = FONT, rows = info.rows || [], s = lifeSummary(rows);
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText('GTX·새 노선이 모두 개통하면', 72, 132);
+    g.fillStyle = '#ffffff'; g.font = '800 84px ' + F;
+    var nm = info.name + '역'; while (g.measureText(nm).width > 936 && nm.length > 3) nm = nm.slice(0, -2) + '…';
+    g.fillText(nm, 72, 226);
+    g.fillStyle = '#ffd166'; g.font = '800 56px ' + F; g.fillText('생활권 변화', 72, 300);
+    if (info.area) { g.fillStyle = '#9fb3d1'; g.font = '500 28px ' + F; g.fillText(info.area, 72, 346); }
+    // 요약 띠: 30분 안 업무지구 수 + 가장 많이 줄어드는 곳
+    roundRect(g, 72, 380, k.W - 144, 120, 24); g.fillStyle = 'rgba(255,255,255,.08)'; g.fill();
+    g.fillStyle = '#c8d3e6'; g.font = '600 30px ' + F; g.fillText('30분 안에 닿는 업무지구', 104, 430);
+    g.fillStyle = '#ffffff'; g.font = '800 46px ' + F; g.fillText(s.n30now + '곳 → ' + s.n30aft + '곳', 104, 482);
+    if (s.best) {
+      var bt = (LIFE_LABEL[s.best.id] || s.best.name) + ' −' + s.best.save + '분';
+      g.font = '800 34px ' + F; var bw = g.measureText(bt).width + 48;
+      roundRect(g, k.W - 104 - bw, 418, bw, 64, 32); g.fillStyle = '#0a8f4a'; g.fill();
+      g.fillStyle = '#ffffff'; g.fillText(bt, k.W - 104 - bw + 24, 462);
+    }
+    // 목적지별 막대: 옅은 회색 = 지금, 초록 = 개통 후 (120분을 꽉 찬 길이로)
+    var x0 = 360, wMax = k.W - 72 - x0 - 300, top = 560, rh = 108, cap = 120;
+    var len = function (m) { return Math.max(26, Math.min(m, cap) / cap * wMax); };   // 26px = 막대 높이 — 더 짧으면 둥근 모서리가 깨진다
+    rows.slice(0, 5).forEach(function (r, i) {
+      var y = top + i * rh, good = r.save > 0 || r.isNew;
+      g.fillStyle = '#ffffff'; g.font = '700 30px ' + F; g.fillText(LIFE_LABEL[r.id] || r.name, 72, y + 48);
+      if (r.now != null) { g.fillStyle = 'rgba(200,211,230,.35)'; roundRect(g, x0, y + 4, len(r.now), 26, 13); g.fill(); }
+      if (r.after != null) { g.fillStyle = good ? '#5fe39a' : '#8a929a'; roundRect(g, x0, y + 40, len(r.after), 26, 13); g.fill(); }
+      g.font = '600 24px ' + F; g.fillStyle = '#c8d3e6';
+      g.fillText(r.now == null ? '지금 철도로 못 감' : '지금 ' + r.now + '분', x0 + (r.now == null ? 0 : len(r.now) + 12), y + 26);
+      g.fillStyle = '#ffffff'; g.font = '800 26px ' + F;
+      g.fillText(r.after == null ? '—' : '개통 후 ' + r.after + '분', x0 + (r.after == null ? 0 : len(r.after) + 12), y + 62);
+      var tag = r.isNew ? '새로 연결' : (r.save > 0 ? '−' + r.save + '분' : '그대로');
+      g.font = '800 30px ' + F; g.fillStyle = good ? '#5fe39a' : '#9fb3d1';
+      g.fillText(tag, k.W - 72 - g.measureText(tag).width, y + 48);
+    });
+    cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구 안 가장 가까운 역까지' : '타는 시간 + 갈아타며 걷는 시간(기다림 제외) · 업무지구 안 가장 가까운 역까지', info.asof);
+    return k.c;
+  }
+  function saveLife(info, o) {
+    var s = lifeSummary(info.rows || []);
+    return saveCanvas(drawLife(info, o), '생활권변화_' + info.name + '.png',
+      info.name + '역 생활권 변화 — 30분 안 업무지구 ' + s.n30now + '곳 → ' + s.n30aft + '곳', 'card-life');
+  }
+
   // tag: 어떤 카드가 퍼졌는지 세려고 공유 주소에 ?from= 이름표 (6차 공유 피드백 — 측정 없는 바이럴은 구멍)
   function saveCanvas(c, name, title, tag) {
     if (tag && typeof global.KRTrack === 'function') global.KRTrack('share_card', { 종류: tag });   // Umami: 카드별 공유 단추 횟수
@@ -133,5 +188,5 @@
     });
   }
 
-  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, BRAND: BRAND, FONT: FONT, cardBase: cardBase, cardFooter: cardFooter, saveCanvas: saveCanvas };
+  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, drawLife: drawLife, saveLife: saveLife, lifeSummary: lifeSummary, BRAND: BRAND, FONT: FONT, cardBase: cardBase, cardFooter: cardFooter, saveCanvas: saveCanvas };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -17,5 +17,25 @@
       if (u && typeof u.track === 'function') u.track(name, data);
     } catch (e) { /* 통계 실패는 조용히 무시 */ }
   }
+  // 과업 측정 (종합피드백 12장 A③, 2026-11-14): '처음 온 사람이 하려던 일을 해냈나'를 숫자로.
+  // 단계마다 이 페이지에서 한 번만 '과업' 이벤트를 보낸다 — 단계 이름 · 첫 방문 여부 · 들어온 뒤 걸린 시간(구간).
+  // 전환율 = 단계별 과업 수 ÷ 방문 수 (Umami 이벤트 화면에서 '과업' → 단계·첫방문으로 나눠 본다).
+  var T0 = Date.now(), done = {}, first = '아니오';
+  try {
+    var ls = global.localStorage;
+    if (ls && !ls.getItem('krrail-seen')) { first = '예'; ls.setItem('krrail-seen', String(T0)); }
+  } catch (e) { first = '모름'; }   // 저장소가 막혀 있으면(사생활 보호 창 등) 첫 방문을 알 수 없다
+  function bucket(ms) {
+    var s = ms / 1000;
+    return s < 30 ? '30초 안' : s < 120 ? '2분 안' : s < 300 ? '5분 안' : '5분 넘게';
+  }
+  var STEPS = { search: '역 검색 성공', route: '길찾기 결과', price: '시세 상세', top3: 'TOP3 카드' };
+  function task(step) {
+    if (!STEPS[step] || done[step]) return;
+    done[step] = true;
+    track('과업', { 단계: STEPS[step], 첫방문: first, 걸린시간: bucket(Date.now() - T0) });
+  }
+  track.task = task;
+  track._bucket = bucket;   // 시험용
   global.KRTrack = track;
 })(typeof window !== 'undefined' ? window : this);

@@ -256,7 +256,8 @@ const StationAccess = (() => {
     return c[0] > 126.3 && c[0] < 127.9 && c[1] > 36.85 && c[1] < 38.3;
   }
 
-  return { load, isReady, of, biggestGain, sectionHtml, fmt, setDoc };
+  function asof() { return (doc && doc.updated) || ''; }   // 자료 기준일 (공유 카드 아래 띠)
+  return { load, isReady, of, biggestGain, sectionHtml, fmt, setDoc, asof };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = StationAccess;

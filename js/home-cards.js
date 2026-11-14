@@ -57,7 +57,7 @@
       var ln = el('span', 'hc-ln'); var dot = el('i'); dot.style.background = /^#[0-9a-f]{6}$/i.test(t.c || '') ? t.c : '#888'; ln.appendChild(dot);
       ln.appendChild(document.createTextNode((t.line || '') + (t.y ? ' · ' + t.y : ''))); mid.appendChild(ln); b.appendChild(mid);
       b.appendChild(el('span', 'hc-up', '접근성 ' + t.now + '위→' + t.aft + '위'));   // J6: 순위 그 자체로 (주가 ▲ 장식 대신)
-      b.addEventListener('click', function () { if (global.RocketPanel && RocketPanel.open) RocketPanel.open({ st: t.id, focus: true }); });
+      b.addEventListener('click', function () { if (global.RocketPanel && RocketPanel.open) RocketPanel.open({ st: t.id, focus: true }); if (global.KRTrack && global.KRTrack.task) global.KRTrack.task('top3'); });
       li.appendChild(b); ol.appendChild(li);
     });
     sec.appendChild(ol);

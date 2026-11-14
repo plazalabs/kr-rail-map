@@ -1108,6 +1108,7 @@
     renderCard();
     if (o.fromTile) {
       track('market_map_station_select', { 역: (rowsById.get(id) || {}).name });
+      if (global.KRTrack && global.KRTrack.task) global.KRTrack.task('price');   // 과업: 시세 상세 — 타일에서 역 카드 (A③)
       flyTo(id);
       // K6 (6차 ③5·②5): 상세는 한 곳만 — 패널 카드. 큰 역 상세 창은 카드의 '역 상세 열기'로(예전엔 카드와 상세 창이 같이 떠 같은 내용이 두 번)
       if (isMobile()) setTab('card');

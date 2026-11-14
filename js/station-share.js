@@ -60,11 +60,68 @@
   function fileName(r) { return 'GTX떡상_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png'; }
 
   // 반환: 안내 글 ('공유했어요' / '이미지를 저장했어요' / '' (취소))
-  function save(r, o) {
-    var c = draw(r, o);
+  function save(r, o) { return saveCanvas(draw(r, o), fileName(r), r.name + ' GTX 개통 후 ' + r.aft.rank + '위'); }
+
+  /* ── 카톡·인스타 공유 카드 (회장님 11-14: 사진이 곧 광고 — 3→1→4→2→5 순서) ──
+   * 모두 세로 1080×1350(4:5, 카톡·인스타에서 가장 크게 보임) + 같은 아래 띠(슬로건·주소·'추정·집값 예측 아님·기준일').
+   * 앱 이름은 BRAND 한 곳만 — 이름이 정해지면 여기만 바꾼다. */
+  var BRAND = '한국철도맵';   // TODO(앱 이름 확정 후): 새 이름으로
+  var SITE = 'plazalabs.github.io/kr-rail-map';
+  var FONT = '"Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+  function cardBase(H) {
+    var W = 1080, c = document.createElement('canvas'); c.width = W; c.height = H;
+    var g = c.getContext('2d');
+    var bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0b1d3a'); bg.addColorStop(1, '#10305e');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#7fb0ff'; g.font = '700 26px ' + FONT; g.fillText('축을 읽으면, 도시의 미래가 보인다', 72, 70);
+    return { c: c, g: g, W: W, H: H };
+  }
+  // 아래 띠 — note: 계산 방식 한 줄, asof: 자료 기준일
+  function cardFooter(k, note, asof) {
+    var g = k.g, y = k.H - 150;
+    g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(72, y, k.W - 144, 2);
+    g.fillStyle = '#9fb3d1'; g.font = '500 24px ' + FONT;
+    g.fillText(note, 72, y + 44);
+    g.fillText('교통 접근성 추정 · 집값·투자수익 예측 아님' + (asof ? ' · 자료 기준 ' + asof : ''), 72, y + 80);
+    g.fillStyle = '#ffffff'; g.font = '800 30px ' + FONT; g.fillText(BRAND, 72, y + 126);
+    var bw = g.measureText(BRAND).width;
+    g.fillStyle = '#c8d3e6'; g.font = '600 26px ' + FONT; g.fillText(SITE, 72 + bw + 18, y + 126);
+  }
+
+  // ③ TOP10 순위표 카드 — rows: 오른 순 정렬된 역(최대 10), o: { y, w, wait, asof }
+  function drawTop10(rows, o) {
+    var k = cardBase(1350), g = k.g;
+    var when = o.y === 'all' ? '모두 개통하면' : o.y + '년까지 개통하면';
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + FONT; g.fillText('GTX·새 노선 ' + when, 72, 132);
+    g.fillStyle = '#ffffff'; g.font = '800 64px ' + FONT; g.fillText('교통 접근성이 가장 많이 오르는 역', 72, 214);
+    g.fillStyle = '#9fb3d1'; g.font = '500 28px ' + FONT;
+    g.fillText('수도권 ' + (WLABEL[o.w] || '') + '접근성 순위 · TOP ' + rows.length, 72, 262);
+    var top = 310, rh = 82;
+    rows.slice(0, 10).forEach(function (r, i) {
+      var y = top + i * rh;
+      if (i % 2 === 0) { g.fillStyle = 'rgba(255,255,255,.05)'; g.fillRect(56, y - 4, k.W - 112, rh - 6); }
+      g.fillStyle = i < 3 ? '#ffd166' : '#9fb3d1'; g.font = '800 40px ' + FONT; g.fillText(String(i + 1), 80, y + 50);
+      g.fillStyle = '#ffffff'; g.font = '800 40px ' + FONT;
+      var nm = r.name; while (g.measureText(nm).width > 330 && nm.length > 2) nm = nm.slice(0, -1);
+      g.fillText(nm === r.name ? nm : nm + '…', 150, y + 50);
+      g.fillStyle = '#9fb3d1'; g.font = '500 26px ' + FONT; g.fillText([r.region, r.sgg].filter(Boolean).join(' '), 500, y + 48);   // 이름은 330px 안으로 자름(150~480)
+      var chg = '▲' + r.change;
+      g.fillStyle = '#5fe39a'; g.font = '800 40px ' + FONT;   // 어두운 바탕에서 잘 보이는 밝은 초록 (기존 역 카드 '−N분'과 같은 색)
+      var cw = g.measureText(chg).width; g.fillText(chg, k.W - 80 - cw, y + 50);
+      g.fillStyle = '#c8d3e6'; g.font = '600 26px ' + FONT;
+      var rk = r.now.rank + '위 → ' + r.aft.rank + '위', rw = g.measureText(rk).width; g.fillText(rk, k.W - 80 - cw - 28 - rw, y + 48);
+    });
+    cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구까지' : '타는 시간 + 갈아타며 걷는 시간(기다림 제외) · 업무지구까지', o.asof);
+    return k.c;
+  }
+  function saveTop10(rows, o) {
+    var name = 'GTX떡상_TOP10_' + (o.y === 'all' ? '전체개통' : o.y + '년') + '.png';
+    return saveCanvas(drawTop10(rows, o), name, (o.y === 'all' ? '모두 개통하면' : o.y + '년까지') + ' 교통 접근성 TOP 10');
+  }
+
+  function saveCanvas(c, name, title) {
     return new Promise(function (res) { c.toBlob(res, 'image/png'); }).then(function (blob) {
       if (!blob) return '이미지를 만들지 못했어요.';
-      var name = fileName(r);
       var file = (typeof File === 'function') ? new File([blob], name, { type: 'image/png' }) : null;
       var download = function () {
         var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
@@ -73,12 +130,12 @@
         return '이미지를 저장했어요';
       };
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        return navigator.share({ files: [file], title: r.name + ' GTX 개통 후 ' + r.aft.rank + '위', text: location.origin + location.pathname })
+        return navigator.share({ files: [file], title: title, text: location.origin + location.pathname })
           .then(function () { return '공유했어요'; }, function (e) { return (e && e.name === 'AbortError') ? '' : download(); });
       }
       return download();
     });
   }
 
-  global.StationShareImage = { draw: draw, save: save, fileName: fileName };
+  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, BRAND: BRAND };
 })(typeof window !== 'undefined' ? window : globalThis);

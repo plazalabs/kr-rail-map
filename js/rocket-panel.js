@@ -177,6 +177,7 @@
       '</div>' +
       '<ol class="rkp-list" id="rkp-list" aria-labelledby="rkp-list-h"></ol>' +
       '<button type="button" class="rkp-more" hidden>더 보기</button>' +
+      '<button type="button" class="rkp-topshare" hidden><i data-ic="camera"></i> TOP 10 이미지로 공유 (카톡·인스타)</button>' +   // 공유 카드 ③ (11-14)
       '<button type="button" class="rkp-allbtn" aria-expanded="false"></button>' +
       '<div class="rkp-legend" aria-label="지도 점 색">' +
         '<span><i style="background:#0a8f4a"></i>떡상</span><span><i style="background:#3aa76d"></i>상승</span><span><i style="background:#9aa1a8"></i>보합</span><span><i style="background:#d9701a"></i>상대 하락</span><span><i style="background:#7a3fd0"></i>신규</span>' +
@@ -204,6 +205,16 @@
     el.querySelector('.rkp-play').addEventListener('click', function () { playT ? stopPlay() : play(); });
     el.querySelector('.rkp-wait').addEventListener('click', function () { st.wait = !st.wait; if (global.KR_WAIT) KR_WAIT.set(st.wait ? 'peak' : 'none'); render(true); });
     if (global.KR_WAIT) KR_WAIT.onChange(function () { var w = KR_WAIT.isPeak(); if (w !== st.wait) { st.wait = w; if (isOpen) render(true); } });
+    // 공유 카드 ③ TOP10 순위표 — 목록과 같은 10역(오른 순)을 1080×1350 그림으로
+    el.querySelector('.rkp-topshare').addEventListener('click', function () {
+      var b = this, R = res();
+      var top = RankTable.sortRows(R.rows.filter(function (x) { return !x.isNew && x.change != null && x.change > 0; }), 'rise').slice(0, 10);
+      if (!top.length || typeof StationShareImage === 'undefined') return;
+      var t0 = b.innerHTML; b.disabled = true;
+      StationShareImage.saveTop10(top, { y: st.y, w: st.w, wait: st.wait, asof: doc && doc.updated }).then(function (m) {
+        b.disabled = false; if (m) { b.textContent = m; setTimeout(function () { b.innerHTML = t0; }, 1800); }
+      }, function () { b.disabled = false; b.textContent = '저장 실패'; setTimeout(function () { b.innerHTML = t0; }, 1800); });
+    });
     el.querySelector('.rkp-allbtn').addEventListener('click', function () {
       st.full = !st.full; st.n = 50;
       renderList();
@@ -343,6 +354,7 @@
     var when = st.y === 'all' ? '모두 개통하면' : st.y + '년까지';
     var tools = el.querySelector('.rkp-tools'), more = el.querySelector('.rkp-more'), allb = el.querySelector('.rkp-allbtn');
     tools.hidden = !st.full;
+    el.querySelector('.rkp-topshare').hidden = true;
     allb.setAttribute('aria-expanded', String(st.full));
     allb.textContent = st.full ? '← TOP 10 으로' : '전체 순위 보기 (' + R.total + '역) ↓';
     if (!st.full) {
@@ -350,6 +362,7 @@
       el.querySelector('#rkp-list-h').textContent = when + ' 교통 접근성 순위가 가장 많이 오르는 역';   // J6
       el.querySelector('#rkp-list').innerHTML = listHtml(top);
       more.hidden = true;
+      el.querySelector('.rkp-topshare').hidden = !top.length || typeof StationShareImage === 'undefined' || !StationShareImage.saveTop10;
       return;
     }
     el.querySelectorAll('.rkp-sort [data-sort]').forEach(function (b) {

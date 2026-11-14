@@ -55,6 +55,11 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
     return { title: p.querySelector('#rkp-title').textContent, hero: !!p.querySelector('.rkp-hero'), hint: !!p.querySelector('.rkp-hint'), sel: RocketPanel.state().sel, tip: !!document.querySelector('.rkp-tip'),
       list: p.querySelectorAll('.rkp-row').length, first: (p.querySelector('.rkp-row b')||{}).textContent }; })()`);
   R.check(`처음엔 고른 역 없음: 질문 제목·카드 없음·말풍선 없음·TOP 10 (1위 ${TOP1.name})`, s0.title === '개통하면 우리 역은 몇 등이 될까요?' && !s0.hero && s0.hint && s0.sel === null && !s0.tip && s0.list === 10 && s0.first === TOP1.name, s0);
+  // 공유 카드 ③ (11-14): TOP 10 일 때 'TOP 10 이미지로 공유' 단추 보임 + 그림이 세로 1080×1350
+  const tc = await b.evaluate(`(() => { const btn = document.querySelector('#rocket-panel .rkp-topshare');
+    const c = StationShareImage.drawTop10([], { y: 'all', w: 'avg' });
+    return { btn: !!btn && !btn.hidden, w: c.width, h: c.height }; })()`);
+  R.check("TOP 10 화면: 'TOP 10 이미지로 공유' 단추 보임 + 카드 1080×1350", tc.btn && tc.w === 1080 && tc.h === 1350, tc);
   await b.evaluate(`map.jumpTo({ center: STATIONS.find(s => s.properties.id === '${KW.id}').geometry.coordinates, zoom: 13 }); true`);
   await sleep(900);
   const pk = await clickStation(b, KW.id);

@@ -75,7 +75,14 @@
     if (typeof RouteFinder === 'undefined' || !RouteFinder.allTimesFrom) return [];
     // 공통 '출퇴근 배차 넣기'(D9): 켜면 처음 탈 때·갈아탈 때 출퇴근 배차의 절반, 끄면 예전처럼 갈아탈 때만
     const peak = !!(opts && opts.peakWait) || (opts && opts.peakWait === undefined && typeof window !== 'undefined' && window.KR_WAIT && window.KR_WAIT.isPeak());
-    const times = RouteFinder.allTimesFrom(destStationId, { openOnly: !(opts && opts.withUnopened), peakWait: peak });
+    const withUn = !!(opts && opts.withUnopened);
+    const times = RouteFinder.allTimesFrom(destStationId, { openOnly: !withUn, peakWait: peak });
+    // 개통 후에도 지금 길은 그대로 있다 — '최적'(시간+환승 부담)이 갈아타기 적은 새 길을 골라 표시 분이 더 길어지면
+    // 지금 길의 분을 쓴다 (11-14 reach-card e2e: 삼성 45분, 대치 지금 18분 → 개통 후 20분으로 나오던 것)
+    if (withUn) RouteFinder.allTimesFrom(destStationId, { openOnly: true, peakWait: peak }).forEach((m, id) => {
+      const a = times.get(id);
+      if (a == null || m < a) times.set(id, m);
+    });
     const rows = [];
     times.forEach((min, id) => {
       if (id === destStationId || min > limitMin) return;
@@ -85,6 +92,16 @@
     });
     rows.sort((a, b) => a.min - b.min || a.name.localeCompare(b.name, 'ko'));
     return rows;
+  }
+
+  // B 카드 값 — 지금(운행 중만) · 개통 후(모두) 를 같은 목적지·같은 분·같은 배차 설정으로 따로 센다
+  function reachCardInfo() {
+    const dest = byId.get(destId);
+    if (!dest) return null;
+    const wantPeak = !!(window.KR_WAIT && window.KR_WAIT.isPeak()), hw = !!(RouteFinder.hasHeadways && RouteFinder.hasHeadways());
+    return { name: dest.properties.name_ko, coord: dest.geometry.coordinates, limit: maxMin,
+      now: compute(destId, maxMin, { withUnopened: false }), aft: compute(destId, maxMin, { withUnopened: true }),
+      lines: (typeof LINES !== 'undefined' ? LINES : []), wait: wantPeak && hw };
   }
 
   function injectCss() {
@@ -107,6 +124,8 @@ background:var(--bg,#fff);color:var(--text,#222);font-size:var(--fs-sm);box-sizi
 .cm-legend{display:flex;flex-wrap:wrap;gap:8px;font-size:var(--fs-xs);margin:6px 0}
 .cm-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:3px;vertical-align:-1px}
 #cm-summary{background:var(--bg,#f5f5f5);border-radius:8px;padding:8px 10px;margin-bottom:8px;line-height:1.6}
+.cm-reach-share{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:6px;padding:7px 10px;border:1px solid var(--accent,#1b64da);border-radius:9px;background:var(--panel-bg,#fff);color:var(--accent,#1b64da);font:inherit;font-weight:700;cursor:pointer}
+.cm-reach-share:hover{background:var(--hover,#eef2f7)}
 #cm-list{list-style:none;margin:0;padding:0}
 #cm-list li button{display:flex;width:100%;justify-content:space-between;gap:8px;padding:5px 4px;border:0;
 border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
@@ -166,6 +185,11 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     cw.addEventListener('change', e => { if (window.KR_WAIT) window.KR_WAIT.set(e.target.checked ? 'peak' : 'none'); });
     if (window.KR_WAIT) window.KR_WAIT.onChange(() => { cw.checked = window.KR_WAIT.isPeak(); if (active) render(false); });
     panel.querySelector('#cm-sort').addEventListener('change', e => { sortBy = e.target.value; renderList(); });
+    panel.querySelector('#cm-summary').addEventListener('click', e => {
+      if (!e.target.closest('.cm-reach-share')) return;
+      const info = reachCardInfo();
+      if (info) StationShareImage.saveReach(info, { wait: info.wait }).then(msg => { if (msg && typeof window.setStatus === 'function') window.setStatus(msg); });
+    });
     panel.querySelector('#cm-list').addEventListener('click', e => {
       // 결과 0역 안내의 버튼 — 시간 늘리기 / 개통 예정 포함 켜기
       const more = e.target.closest('button[data-more]');
@@ -250,7 +274,9 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     if (defEl) defEl.textContent = wc.def;
     if (noteEl) noteEl.textContent = wc.note;
     sum.innerHTML = `<b>${esc(dest.properties.name_ko)}</b>까지 ${maxMin}분 안: <b>${lastRows.length}</b>역` +
-      (withUnopened ? ' (개통 예정 포함)' : '') + hwNote + '<br>' + per;
+      (withUnopened ? ' (개통 예정 포함)' : '') + hwNote + '<br>' + per +
+      // 회장님 11-14 B: 같은 목적지·같은 분으로 '지금 | 개통 후' 두 칸 지도 카드 (station-share.js drawReach)
+      (typeof StationShareImage !== 'undefined' && StationShareImage.saveReach ? '<button type="button" class="cm-reach-share"><i data-ic="camera"></i> 개통 전/후 지도 카드로 공유</button>' : '');
     renderList();
   }
 
@@ -350,5 +376,5 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     map.on('style.load', () => { if (active) render(false); });
   }
 
-  window.CommuteMap = { init, show, hide, isActive, compute, _debug: { bandOf, optionLabel, findByLabel } };
+  window.CommuteMap = { init, show, hide, isActive, compute, reachCardInfo, _debug: { bandOf, optionLabel, findByLabel } };
 })();

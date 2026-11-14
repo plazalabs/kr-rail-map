@@ -200,6 +200,155 @@
       info.name + '역 생활권 변화 — 30분 안 업무지구 ' + s.n30now + '곳 → ' + s.n30aft + '곳', 'card-life');
   }
 
+  // ② 출퇴근 비교 카드 (회장님 11-14: A) — info: { from, to, status: better|new|same|worse, now:{min,tr}, aft:{min,tr}, lines:[이름] }
+  // 길찾기 '지금 → 개통 후' 상자와 같은 값(RouteCompare.compareNowFuture). 시간 = 타는 시간 + 갈아탈 때 걷기·기다림, 처음 열차 기다림·시간표·급행·지연 뺌
+  function commuteSummary(info) {
+    var n = info.now, a = info.aft, st = info.status;
+    var save = (n && a) ? n.min - a.min : 0;
+    return { save: save, pct: (n && n.min > 0 && save > 0) ? Math.round(save / n.min * 100) : 0,
+      tag: st === 'new' ? '새로 연결' : (st === 'better' ? '−' + save + '분' : '변화 없음'), good: st === 'new' || st === 'better' };
+  }
+  function fitText(g, t, maxW) { while (g.measureText(t).width > maxW && t.length > 2) t = t.slice(0, -2) + '…'; return t; }
+  function drawCommute(info, o) {
+    o = o || {};
+    var k = cardBase(1350), g = k.g, F = FONT, s = commuteSummary(info), W = k.W;
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText(scenario('all'), 72, 132);
+    // 출발 → 도착 (길면 글자를 줄이고, 그래도 길면 두 줄)
+    var A = info.from + '역', B = info.to + '역', size = 76;
+    g.font = '800 ' + size + 'px ' + F;
+    while (g.measureText(A + ' → ' + B).width > W - 144 && size > 56) { size -= 4; g.font = '800 ' + size + 'px ' + F; }
+    g.fillStyle = '#ffffff';
+    var y = 226;
+    if (g.measureText(A + ' → ' + B).width <= W - 144) g.fillText(A + ' → ' + B, 72, y);
+    else { g.fillText(fitText(g, A + ' →', W - 144), 72, y); y += size + 10; g.fillText(fitText(g, B, W - 144), 72, y); }
+    g.fillStyle = '#ffd166'; g.font = '800 52px ' + F; g.fillText('출퇴근 길이 이렇게 바뀌어요', 72, y + 74);
+    // 지금 / 개통 후 두 칸
+    var top = y + 120, bw = (W - 144 - 32) / 2, bh = 300;
+    var box = function (x, label, m, tr, hot) {
+      roundRect(g, x, top, bw, bh, 28); g.fillStyle = hot ? 'rgba(95,227,154,.16)' : 'rgba(255,255,255,.08)'; g.fill();
+      g.fillStyle = '#c8d3e6'; g.font = '700 32px ' + F; g.fillText(label, x + 36, top + 62);
+      g.fillStyle = hot ? '#5fe39a' : '#ffffff';
+      if (m == null) { g.font = '800 64px ' + F; g.fillText('못 감', x + 36, top + 170); g.fillStyle = '#c8d3e6'; g.font = '600 28px ' + F; g.fillText('운행 중인 철도로는', x + 36, top + 232); }
+      else {
+        g.font = '800 120px ' + F; g.fillText(String(m), x + 36, top + 190);
+        var mw = g.measureText(String(m)).width; g.font = '800 44px ' + F; g.fillText('분', x + 36 + mw + 10, top + 190);
+        g.fillStyle = '#c8d3e6'; g.font = '600 30px ' + F; g.fillText(tr == null ? '' : (tr ? '환승 ' + tr + '번' : '갈아타지 않음'), x + 36, top + 250);
+      }
+    };
+    box(72, '지금', info.now ? info.now.min : null, info.now ? info.now.tr : null, false);
+    box(72 + bw + 32, '개통 후', info.aft ? info.aft.min : null, info.aft ? info.aft.tr : null, s.good);
+    // 줄어드는 시간 띠
+    var py = top + bh + 40;
+    roundRect(g, 72, py, W - 144, 132, 28); g.fillStyle = s.good ? '#0a8f4a' : 'rgba(255,255,255,.10)'; g.fill();
+    g.fillStyle = '#ffffff'; g.font = '800 60px ' + F;
+    var big = info.status === 'new' ? '철도로 새로 이어져요' : (info.status === 'better' ? '한 번 갈 때 ' + s.save + '분 줄어요' : '이 길은 시간 변화 없음');
+    g.fillText(fitText(g, big, W - 216), 108, py + 86);
+    // 왕복·한 달(출근 20일) 환산 — 'better' 일 때만
+    var ly = py + 132 + 70;
+    g.font = '600 32px ' + F; g.fillStyle = '#c8d3e6';
+    if (info.status === 'better') {
+      var month = s.save * 2 * 20, hh = Math.floor(month / 60), mm = month % 60;
+      g.fillText('왕복 ' + (s.save * 2) + '분 · 한 달 출근 20일이면 약 ' + (hh ? hh + '시간 ' : '') + (mm ? mm + '분' : '') + ' (' + s.pct + '%)', 72, ly);
+      ly += 52;
+    }
+    if (info.lines && info.lines.length) { g.fillStyle = '#ffffff'; g.font = '700 32px ' + F; g.fillText(fitText(g, '타는 새 노선: ' + info.lines.join(' · '), W - 144), 72, ly); ly += 48; }
+    if (info.unsure) { g.fillStyle = '#ffd166'; g.font = '600 28px ' + F; g.fillText('계획·구상 단계 노선은 바뀌거나 늦어질 수 있어요', 72, ly); ly += 44; }
+    // 길이 막대: 회색 = 지금, 초록 = 개통 후 (긴 쪽을 꽉 찬 길이로)
+    var nm = info.now && info.now.min, am = info.aft && info.aft.min;
+    if (nm != null || am != null) {
+      var bx = 232, bmax = W - 72 - bx - 130, mx = Math.max(nm || 0, am || 0) || 1, by = Math.max(ly + 26, k.H - 330);
+      var bar = function (yy, label, m, col) {
+        g.fillStyle = '#c8d3e6'; g.font = '700 28px ' + F; g.fillText(label, 72, yy + 30);
+        if (m == null) { g.fillStyle = '#9fb3d1'; g.font = '600 26px ' + F; g.fillText('철도로 못 감', bx, yy + 30); return; }
+        var L = Math.max(30, m / mx * bmax); roundRect(g, bx, yy + 4, L, 34, 17); g.fillStyle = col; g.fill();
+        g.fillStyle = '#ffffff'; g.font = '800 28px ' + F; g.fillText(m + '분', bx + L + 14, yy + 32);
+      };
+      bar(by, '지금', nm, 'rgba(200,211,230,.45)');
+      bar(by + 60, '개통 후', am, s.good ? '#5fe39a' : 'rgba(200,211,230,.45)');
+    }
+    cardFooter(k, '타는 시간 + 갈아탈 때 걷기·기다림 · 처음 열차 기다림·시간표·급행·지연 미반영', info.asof);
+    return k.c;
+  }
+  function saveCommute(info, o) {
+    var s = commuteSummary(info);
+    return saveCanvas(drawCommute(info, o), '출퇴근_' + info.from + '_' + info.to + '.png',
+      info.from + '역 → ' + info.to + '역 개통 후 ' + s.tag, 'card-commute');
+  }
+
+  // ⑤ 개통 전/후 지도 카드 (회장님 11-14 B) — "○○역까지 N분 안에 닿는 역" 을 지금 | 개통 후 두 칸에 나란히.
+  // 지도 사진(타일)이 아니라 노선·역을 직접 그린다 — 타일 저작권·CORS 걱정 없고 글자가 또렷하다.
+  // info: { name, coord:[lng,lat], limit, now:[{id,name,min,coord}], aft:[…], lines: 노선 GeoJSON features, wait }
+  function reachSummary(info) {
+    var nowIds = {}; (info.now || []).forEach(function (r) { nowIds[r.id] = 1; });
+    var added = (info.aft || []).filter(function (r) { return !nowIds[r.id]; }).sort(function (a, b) { return a.min - b.min; });
+    return { n: (info.now || []).length, m: (info.aft || []).length, added: added, nowIds: nowIds };
+  }
+  function drawReach(info, o) {
+    o = o || {};
+    var k = cardBase(1350), g = k.g, F = FONT, W = k.W, s = reachSummary(info);
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText(scenario('all'), 72, 132);
+    g.fillStyle = '#ffffff'; var size = 76; g.font = '800 ' + size + 'px ' + F;
+    var title = info.name + '역까지 ' + info.limit + '분 안';
+    while (g.measureText(title).width > W - 144 && size > 52) { size -= 4; g.font = '800 ' + size + 'px ' + F; }
+    g.fillText(fitText(g, title, W - 144), 72, 226);
+    g.fillStyle = '#ffd166'; g.font = '800 50px ' + F;
+    g.fillText(s.added.length ? '닿는 역이 ' + s.n + '곳 → ' + s.m + '곳' : '개통해도 닿는 역은 그대로', 72, 300);
+    // 두 칸이 같은 범위를 보도록 — 개통 후에 닿는 역 + 목적지로 범위를 잡는다
+    var pts = (info.aft || []).map(function (r) { return r.coord; }).concat([info.coord]);
+    var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    pts.forEach(function (c) { if (!c) return; x0 = Math.min(x0, c[0]); x1 = Math.max(x1, c[0]); y0 = Math.min(y0, c[1]); y1 = Math.max(y1, c[1]); });
+    var kx = Math.cos(((y0 + y1) / 2) * Math.PI / 180);
+    var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, spanX = Math.max((x1 - x0) * kx, 0.08), spanY = Math.max(y1 - y0, 0.08);
+    var PW = 456, PH = 600, PT = 390, pad = 1.18;
+    var sc = Math.min(PW / (spanX * pad), PH / (spanY * pad));
+    var proj = function (c, px) { return [px + PW / 2 + (c[0] - cx) * kx * sc, PT + PH / 2 - (c[1] - cy) * sc]; };
+    var panel = function (px, label, count, after) {
+      g.fillStyle = '#c8d3e6'; g.font = '700 32px ' + F; g.fillText(label, px, PT - 22);
+      g.fillStyle = after && s.added.length ? '#5fe39a' : '#ffffff'; g.font = '800 40px ' + F;
+      var ct = count + '곳' + (after && s.added.length ? ' (+' + s.added.length + ')' : ''); g.fillText(ct, px + PW - g.measureText(ct).width, PT - 22);
+      g.save(); roundRect(g, px, PT, PW, PH, 24); g.fillStyle = 'rgba(255,255,255,.06)'; g.fill(); g.clip();
+      // 노선: 지금 = 운행 중만(옅게), 개통 후 = 운행 중 + 새 노선(제 색 점선)
+      (info.lines || []).forEach(function (f) {
+        var pr = f.properties || {}, open = pr.status === 'open';
+        if (!open && !after) return;
+        var geom = f.geometry || {}, parts = geom.type === 'LineString' ? [geom.coordinates] : (geom.type === 'MultiLineString' ? geom.coordinates : []);
+        g.strokeStyle = open ? 'rgba(200,211,230,.28)' : (/^#[0-9a-f]{6}$/i.test(pr.color || '') ? pr.color : '#ffd166');
+        g.lineWidth = open ? 3 : 5; g.setLineDash(open ? [] : [12, 8]);
+        parts.forEach(function (cs) { g.beginPath(); cs.forEach(function (c, i) { var q = proj(c, px); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); }); g.stroke(); });
+      });
+      g.setLineDash([]);
+      var rows = after ? (info.aft || []) : (info.now || []);
+      rows.forEach(function (r) {
+        var q = proj(r.coord, px), isNew = after && !s.nowIds[r.id];
+        g.beginPath(); g.arc(q[0], q[1], isNew ? 8 : 6, 0, Math.PI * 2); g.fillStyle = isNew ? '#ffd166' : '#5fe39a'; g.fill();
+      });
+      var d = proj(info.coord, px);
+      g.beginPath(); g.arc(d[0], d[1], 13, 0, Math.PI * 2); g.fillStyle = '#ffffff'; g.fill();
+      g.beginPath(); g.arc(d[0], d[1], 6, 0, Math.PI * 2); g.fillStyle = '#0b1d3a'; g.fill();
+      g.restore();
+    };
+    panel(72, '지금', s.n, false);
+    panel(72 + PW + 24, '개통 후', s.m, true);
+    // 범례 + 새로 닿는 역 예
+    var ly = PT + PH + 52;
+    g.font = '600 26px ' + F;
+    var leg = function (x, col, r, t) { g.beginPath(); g.arc(x + 9, ly - 9, r, 0, Math.PI * 2); g.fillStyle = col; g.fill(); g.fillStyle = '#c8d3e6'; g.fillText(t, x + 26, ly); return x + 26 + g.measureText(t).width + 30; };
+    var lx = leg(72, '#ffffff', 10, info.name + '(목적지)'); lx = leg(lx, '#5fe39a', 7, info.limit + '분 안'); leg(lx, '#ffd166', 8, '새로 닿는 역');
+    if (s.added.length) {
+      ly += 52; g.fillStyle = '#ffffff'; g.font = '700 30px ' + F;
+      g.fillText(fitText(g, '새로: ' + s.added.slice(0, 5).map(function (r) { return r.name + ' ' + r.min + '분'; }).join(' · '), W - 144), 72, ly);
+    }
+    ly += 46; g.fillStyle = '#ffd166'; g.font = '600 26px ' + F;
+    g.fillText('점선 = 아직 없는 노선(공사·계획·구상) — 바뀌거나 늦어질 수 있어요', 72, ly);
+    cardFooter(k, o.wait ? '타는 시간 + 갈아탈 때 걷기 + 출퇴근 배차 기다림 · 시간표·급행·지연 미반영' : '타는 시간 + 갈아탈 때 걷기·기다림 · 처음 열차 기다림·시간표·급행·지연 미반영', info.asof);
+    return k.c;
+  }
+  function saveReach(info, o) {
+    var s = reachSummary(info);
+    return saveCanvas(drawReach(info, o), '통근권_' + info.name + '_' + info.limit + '분.png',
+      info.name + '역까지 ' + info.limit + '분 안 — 지금 ' + s.n + '곳 → 개통 후 ' + s.m + '곳', 'card-reach');
+  }
+
   // tag: 어떤 카드가 퍼졌는지 세려고 공유 주소에 ?from= 이름표 (6차 공유 피드백 — 측정 없는 바이럴은 구멍)
   function saveCanvas(c, name, title, tag) {
     if (tag && typeof global.KRTrack === 'function') global.KRTrack('share_card', { 종류: tag });   // Umami: 카드별 공유 단추 횟수
@@ -220,5 +369,5 @@
     });
   }
 
-  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, top10Layout: top10Layout, scenario: scenario, planLabel: planLabel, CARD_TIER: CARD_TIER, changeText: changeText, drawLife: drawLife, saveLife: saveLife, lifeSummary: lifeSummary, BRAND: BRAND, FONT: FONT, cardBase: cardBase, cardFooter: cardFooter, saveCanvas: saveCanvas };
+  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, top10Layout: top10Layout, scenario: scenario, planLabel: planLabel, CARD_TIER: CARD_TIER, changeText: changeText, drawLife: drawLife, saveLife: saveLife, lifeSummary: lifeSummary, drawCommute: drawCommute, saveCommute: saveCommute, commuteSummary: commuteSummary, drawReach: drawReach, saveReach: saveReach, reachSummary: reachSummary, BRAND: BRAND, FONT: FONT, cardBase: cardBase, cardFooter: cardFooter, saveCanvas: saveCanvas };
 })(typeof window !== 'undefined' ? window : globalThis);

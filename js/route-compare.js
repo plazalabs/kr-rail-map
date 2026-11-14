@@ -19,6 +19,7 @@ const RouteCompare = (() => {
 
   let RF = null;                 // RouteFinder — 그래프·시간모델의 유일한 출처
   let lineNameOf = new Map();
+  let lineMetaOf = new Map();   // 카드에 노선 상태·목표 연도 (commuteCardInfo)
 
   function hav(ax, ay, bx, by) {
     const r = Math.PI / 180;
@@ -602,6 +603,12 @@ const RouteCompare = (() => {
       .rc-nf-delta { margin-left: auto; text-align: right; font-size: var(--fs-sm); font-weight: 700;
         color: var(--accent, #1b64da); padding-bottom: 2px; white-space: nowrap; }
       .rc-nf-why { font-size: var(--fs-xs); color: var(--muted, #5b6470); margin-top: 7px; line-height: 1.5; }
+      .rc-nf-delta.has-share { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+      .rc-nf-share { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
+        border: 1px solid var(--accent, #1b64da); border-radius: 999px; background: var(--card, #fff); color: var(--accent, #1b64da);
+        font: inherit; font-size: var(--fs-xs); font-weight: 700; line-height: 1.3; cursor: pointer; }
+      .rc-nf-share i { width: 12px; height: 12px; }
+      .rc-nf-share:hover { background: var(--accent-weak, #e8f0fe); }
       .rc-nf-why b { color: var(--text, #16191d); font-weight: 600; }
       .rc-nf.flat .rc-nf-time { font-size: var(--fs-md); font-weight: 600; }
     `;
@@ -812,6 +819,11 @@ const RouteCompare = (() => {
     const fastId = fastestTabId(all);
 
     let html = include ? nowFutureHtml(cmp) : openOnlyHintHtml(all);
+    // 회장님 11-14 A: '지금 → 개통 후' 를 카톡·인스타용 세로 카드로 (station-share.js drawCommute)
+    if (include && cmp.status !== 'none' && typeof StationShareImage !== 'undefined' && StationShareImage.saveCommute)
+      // 상자 아래 한 줄로 붙이면 길찾기 창이 길어져 화면을 넘는다(route-fit e2e) — '−N분' 글자 아래 작은 알약으로.
+      html = html.replace(/<div class="rc-nf-delta">([\s\S]*?)<\/div>/, (m, d) =>
+        `<div class="rc-nf-delta has-share"><span>${d}</span><button type="button" class="rc-nf-share" title="출퇴근 카드로 공유 (카톡·인스타 세로 그림)" aria-label="출퇴근 카드로 공유"><i data-ic="camera"></i> 카드로 공유</button></div>`);
     html += `<div class="rc-tabs${tabs.length > 3 ? ' four' : ''}">` + tabs.map((t, i) =>
       `<button class="rc-tab${i === 0 ? ' active' : ''}" data-tab="${t.id}">${t.label}${t.id === fastId ? '<span class="rc-fast" title="표시 시간이 가장 짧은 길">최단</span>' : ''}</button>`).join('') + `</div>`;
     if (insight) html += `<div class="rc-insight">${insight}</div>`;
@@ -825,6 +837,13 @@ const RouteCompare = (() => {
       return `<div class="rc-panel" id="rc-panel-${t.id}"${i === 0 ? '' : ' hidden'}>${variantHtml(t.r, t.id, isBest)}</div>`;
     }).join('');
     box.innerHTML = html;
+    const shareBtn = box.querySelector('.rc-nf-share');
+    if (shareBtn) {
+      if (window.Icons && Icons.hydrate) try { Icons.hydrate(shareBtn); } catch (e) { /* 아이콘 없어도 동작 */ }
+      shareBtn.addEventListener('click', () => {
+        StationShareImage.saveCommute(commuteCardInfo(fromId, toId, cmp)).then(msg => { if (msg && typeof window.setStatus === 'function') window.setStatus(msg); });
+      });
+    }
     if (!box.dataset.rcStBound) {
       box.dataset.rcStBound = '1';
       box.addEventListener('click', e => {
@@ -861,6 +880,23 @@ const RouteCompare = (() => {
     });
   }
 
+  // 카드에 넣을 값 — compareNowFuture 결과 그대로 (worse 는 '변화 없음'으로: 개통 후 경로가 더 느리면 지금 길을 그대로 탄다)
+  function commuteCardInfo(fromId, toId, cmp) {
+    const st = cmp.status === 'worse' ? 'same' : cmp.status;
+    const v = r => r ? { min: r.minutes, tr: r.transfers } : null;
+    return { from: sname(fromId), to: sname(toId), status: st, now: v(cmp.now), aft: st === 'same' ? v(cmp.now) : v(cmp.future),
+      lines: st === 'same' ? [] : (cmp.lines || []).map(lineStatusLabel),
+      unsure: st !== 'same' && (cmp.lines || []).some(id => ['planned', 'proposed'].includes((lineMetaOf.get(id) || {}).status)) };
+  }
+  // 'GTX-D (계획 · 2035년)' — 카드가 퍼질 때 확정된 노선처럼 읽히지 않게 상태·목표 연도를 붙인다
+  const STATUS_WORD = { construction: '공사 중', planned: '계획', proposed: '구상' };
+  function lineStatusLabel(id) {
+    const name = lineNameOf.get(id) || id, m = lineMetaOf.get(id);
+    if (!m || !STATUS_WORD[m.status]) return name;
+    const y = String(m.opened || '').match(/\d{4}년대?/);
+    return name + ' (' + STATUS_WORD[m.status] + (y ? ' · ' + y[0] : '') + ')';
+  }
+
   function hide() {
     const box = document.getElementById('route-result');
     if (box) box.innerHTML = '';
@@ -872,6 +908,7 @@ const RouteCompare = (() => {
     stationNameOf = new Map(stations.map(s => [s.properties.id, s.properties.name_ko]));
     stationCoordOf = new Map(stations.map(s => [s.properties.id, s.geometry && s.geometry.coordinates]));
     lineNameOf = new Map(lines.map(f => [f.properties.id, f.properties.name_ko]));
+    lineMetaOf = new Map(lines.map(f => [f.properties.id, { status: f.properties.status, opened: f.properties.opened }]));
     if (RF.extraLines) RF.extraLines().forEach(x => lineNameOf.set(x.id, x.name_ko));   // ITX-청춘 등 급행 계통
   }
 
@@ -879,6 +916,6 @@ const RouteCompare = (() => {
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
   return { init, findAll, findAllOpen, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, loadSpecialFares, fareBreakdownHtml,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
-    compareNowFuture, nowFutureHtml, openOnlyHintHtml, insightOf, fastestTabId, pickCheapest, hasPending,
+    compareNowFuture, nowFutureHtml, commuteCardInfo, lineStatusLabel, openOnlyHintHtml, insightOf, fastestTabId, pickCheapest, hasPending,
     _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich, basisHtml } };
 })();

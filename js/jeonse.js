@@ -103,7 +103,7 @@
     var cb = document.getElementById('layer-jeonse');
     if (cb && !cb.__jn) {
       cb.__jn = true;
-      cb.addEventListener('change', function () { setLayer(cb.checked); });
+      cb.addEventListener('change', function () { if (cb.checked && global.leaveRouteMode) global.leaveRouteMode(); setLayer(cb.checked); });   // K10: 시세 색칠로 바꾸면 길찾기 경로를 지운다
     }
   }
   function restore() { if (layerOn) addLayer(); }

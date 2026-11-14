@@ -1650,9 +1650,11 @@ function routeLineInfo(lineId) {
   };
 }
 
-function highlightRoute(path, legs) {
+let lastRoute = null;   // 배경 바꿀 때(스타일 통째 교체) 경로를 다시 그리려고 기억 (K10)
+function highlightRoute(path, legs, opt) {
   if (!map || !path || !path.length) return;
   clearRouteHighlight();
+  lastRoute = { path, legs };
   if (typeof closeStationPopup === 'function') closeStationPopup();
 
   // 배경 지도에 그려진 철도·역 심볼까지 숨긴다
@@ -1796,12 +1798,15 @@ function highlightRoute(path, legs) {
     }
     return (legs && legs.length) ? routeLineInfo(legs[legs.length - 1].lineId).color : '#e23b3b';
   };
+  // K10 (6차 ①A7): 넓게 볼 때(줌 12 미만) 칩이 수십 개 겹쳐 지도를 덮었다 → 출발·도착·환승역만 남긴다.
+  // 환승역 = 마지막 구간을 뺀 각 구간의 도착역 (걷기 구간 포함 — 내려서 걸어가는 곳도 갈아타는 곳)
+  const keyIds = new Set([path[0], path[path.length - 1], ...(legs || []).slice(0, -1).map(l => l.to)]);
   path.forEach((id, i) => {
     const c = coordOf(id);
     const st = STATIONS.find(x => x.properties.id === id);
     if (!c || !st) return;
     const el = document.createElement('div');
-    el.className = 'rt-label' + (i === path.length - 1 ? ' is-end' : '');
+    el.className = 'rt-label' + (i === path.length - 1 ? ' is-end' : '') + (keyIds.has(id) ? ' is-key' : ' is-minor');
     const badge = document.createElement('span');
     badge.className = 'rt-label-n';
     badge.textContent = String(i + 1);
@@ -1814,6 +1819,9 @@ function highlightRoute(path, legs) {
         .setLngLat(c).addTo(map));
     } catch (e) {}
   });
+
+  syncRouteChipZoom();
+  if (!map.__rtZoom) { map.__rtZoom = true; map.on('zoom', syncRouteChipZoom); }
 
   // 범례 — 어떤 구간이 무슨 노선인지
   const seen = [];
@@ -1848,12 +1856,28 @@ function highlightRoute(path, legs) {
     const sh = m && el && !el.hidden ? Math.min(el.getBoundingClientRect().height, window.innerHeight * 0.6) : 0;
     return m ? { top: 70, bottom: Math.max(85, sh + 70), left: 30, right: 30 } : { top: 115, bottom: 85, left: 70, right: 440 };
   } };
-  try { map.fitBounds(bounds, { padding: pad, maxZoom: 12.2 }); }
+  if (opt && opt.keepView) { /* 배경만 바뀐 경우 — 보던 화면 그대로 */ }
+  else try { map.fitBounds(bounds, { padding: pad, maxZoom: 12.2 }); }
   catch (e) { map.fitBounds(bounds, { padding: 40, maxZoom: 12.2 }); }   // 화면이 너무 작아 여백이 안 들어가면
 }
 
 // 하이라이트 제거 (원래대로)
+const ROUTE_CHIP_MINZOOM = 12;
+function syncRouteChipZoom() {
+  try { map.getContainer().classList.toggle('rt-far', map.getZoom() < ROUTE_CHIP_MINZOOM); } catch (e) {}
+}
+// K10 (6차 ①A8·②5): 다른 모드(떡상·시세·투자 모드·투자분석)로 바꾸면 길찾기 경로를 지운다.
+// 예전엔 패널만 바뀌고 경로 선·역 칩이 지도에 남아, 떡상 순위·시세 색과 겹쳐 무엇을 보는지 헷갈렸다.
+// 길찾기 패널을 닫으면 ui.js 가 clearRouteHighlight() 를 부른다 — 입력한 출발·도착은 그대로 남는다.
+function leaveRouteMode() {
+  const rp = document.getElementById('route-panel');
+  if (rp && !rp.hidden) rp.hidden = true;
+  else if (routeLabelMarkers.length || (map && map.getLayer && map.getLayer('route-casing'))) clearRouteHighlight();
+}
+window.leaveRouteMode = leaveRouteMode;
+
 function clearRouteHighlight() {
+  lastRoute = null;
   if (!map) return;
   lastRouteFit = null;
   ['route-highlight-labels', 'route-highlight-walk', 'route-highlight-stations', 'route-highlight-line', 'route-casing'].forEach(id => {
@@ -2073,6 +2097,8 @@ function restoreCustomLayers(styleReady) {
     if (typeof StationArea !== 'undefined') StationArea.restore();
     if (typeof StationJeonse !== 'undefined' && StationJeonse.restore) StationJeonse.restore();
     if (typeof StationRocket !== 'undefined') StationRocket.restore();
+    // K10: 배경(일반·위성·흑백)·테마를 바꾸면 경로 선은 스타일과 함께 사라지고 역 칩만 남던 것 → 경로를 다시 그린다
+    if (lastRoute) { const r = lastRoute; highlightRoute(r.path, r.legs, { keepView: true }); }
   }
 }
 map.on('style.load', () => restoreCustomLayers(true));
@@ -2375,6 +2401,7 @@ document.getElementById('report-btn').addEventListener('click', () => {
 document.getElementById('invest-btn').addEventListener('click', () => {
   if (typeof InvestAnalyzer === 'undefined') { setStatus('투자분석 모듈을 불러오지 못했습니다.'); return; }
   const on = !InvestAnalyzer.isActive();
+  if (on) leaveRouteMode();
   if (on) loadDetailData();   // 투자분석 결과의 도심 접근성·공급 절
   InvestAnalyzer.setMode(on);
   document.getElementById('invest-btn').classList.toggle('active', on);
@@ -2384,6 +2411,7 @@ document.getElementById('invest-btn').addEventListener('click', () => {
 if (typeof KR_MODE !== 'undefined') {
   document.getElementById('mode-btn').addEventListener('click', () => KR_MODE.toggle());
   KR_MODE.onChange(mode => {
+    leaveRouteMode();
     if (mode === 'invest') {
       loadDetailData({ prefetch: true });   // 시세·단지·공급을 지금 받기 시작 (출구는 원래 규칙대로)
       setStatus('투자 모드: 역 상세에 시세·단지·공급이 보입니다');

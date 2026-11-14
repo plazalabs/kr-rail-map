@@ -118,7 +118,7 @@ const HAS_HINT = `!!document.querySelector('#sd-panel .sd-mode-on')`;
   b.close(); await sleep(1000);
 
   // ── E. 공유 링크 ?mode=invest — 받은 사람 저장값(rail)은 그대로
-  const e = await launch({ port: 9722, w: 1440, h: 1000 });
+  const e = await launch({ port: 9732, w: 1440, h: 1000 });
   await e.send('Network.setBypassServiceWorker', { bypass: true });
   await e.send('Page.addScriptToEvaluateOnNewDocument', { source: `try { if (!sessionStorage.getItem('__seeded')) { localStorage.setItem('krrail-mode', 'rail'); sessionStorage.setItem('__seeded', '1'); } } catch (e) {}` });
   const url = BASE.includes('?') ? BASE + '&mode=invest' : BASE + '?mode=invest';

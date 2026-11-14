@@ -444,6 +444,7 @@
 
   function open(o) {
     o = o || {};
+    if (global.leaveRouteMode) global.leaveRouteMode();   // K10: 떡상으로 바꾸면 길찾기 경로를 지운다
     if (!el) build();
     var go = function () {
       doc = StationRocket.doc();

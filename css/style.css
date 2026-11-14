@@ -891,6 +891,8 @@ body[data-theme="pink"] .rc-nf.hot .rc-nf-delta { color: #c9264b; }
   font-size: var(--fs-xs); font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .rt-label.is-end .rt-label-n { background: #b01f1f; }
+/* K10: 넓게 볼 때(줌 12 미만)는 출발·도착·환승 칩만 (app.js syncRouteChipZoom) */
+.rt-far .rt-label.is-minor { display: none; }
 .rt-label.is-end { color: #8c1414; }
 @media (max-width: 640px) {
   .rt-label { font-size: var(--fs-xs); padding: 2px 6px 2px 3px; }

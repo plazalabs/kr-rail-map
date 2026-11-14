@@ -219,9 +219,16 @@ console.log("\n[68점 감사 8번] '최소요금' 은 함께 보이는 다른 �
   const sw = nowFare('수원', '강남', null, SB);
   const html = RC.fareBreakdownHtml(sw);
   check('수원→강남 내역에 "신분당선 별도 운임" + 운영사 공식 요금', /신분당선 별도 운임/.test(html) && /운영사 공식 요금/.test(html), html);
-  // 2터미널은 거리(지도 기준) 때문에 공식 5,350원과 수십 원 차이 — '공식 계산식' 으로 밝힌다
+  // 2터미널·검암 출발 — 공항철도 공식 역간 요금표 값 그대로 (11-14: 계산식은 2터미널 20원, 검암→운서 750원 어긋났음)
   const t2 = nowFare('서울', '인천공항2터미널', 'arex', 'arex');
-  check('서울→2터미널은 공식 5,350원에서 ±50원 안, 출처는 공식 계산식', t2 && Math.abs(t2.total - 5350) <= 50 && t2.parts.some(p => p.kind === 'extra' && p.basis === 'formula'), t2 && t2.total + '원');
+  check('서울→2터미널 = 공식표 5,350원, 출처 공식', t2 && t2.total === 5350 && t2.parts.some(p => p.kind === 'extra' && p.basis === 'official'), t2 && t2.total + '원');
+  const gu = nowFare('검암', '운서', 'arex', 'arex');
+  check('검암→운서 = 공식표 2,500원 (수도권+독립 단순 합 3,250 아님)', gu && gu.total === 2500, gu && gu.total + '원');
+  // 공항철도 공식 역간 요금표 91쌍 × 양방향 = 앱 계산 (data/fares-special.json arex.pair_fares)
+  const PF = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/fares-special.json'), 'utf8')).lines.arex.pair_fares;
+  const pfBad = [];
+  Object.entries(PF).forEach(([k, v]) => { const [x, y] = k.split('|'); [[x, y], [y, x]].forEach(([u, w]) => { const f = nowFare(u, w, 'arex', 'arex'); if (!f || f.total !== v) pfBad.push(u + '→' + w + ' ' + (f && f.total) + '≠' + v); }); });
+  check('공항철도 공식 역간 요금표 ' + Object.keys(PF).length * 2 + '칸 모두 일치', Object.keys(PF).length === 91 && pfBad.length === 0, pfBad.slice(0, 5).join(', '));
   // 공항철도 통합구간만 타면 별도 운임 없음
   const gm = nowFare('서울', '검암', 'arex', 'arex');
   check('서울→검암(통합구간만)은 별도 운임 없음', gm && !gm.parts.some(p => p.kind === 'extra'), gm && gm.total + '원');

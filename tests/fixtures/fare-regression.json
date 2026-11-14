@@ -12,36 +12,274 @@
     },
     "special": {
       "rule": "운영사 공식 별도 운임 — data/fares-special.json (신분당선 dxline4_1, gtx-a.com/fareIF.do, airportrailroad.com)",
-      "effective": "2025-06-28"
+      "effective": "2025-06-28",
+      "boundary": "경계 사례(11-14 확인): 공항철도 역간 요금표(airportrailroad.com/train/normal/fare, 선후불 교통카드 어른) · GTX-A 구간별 요금(gtx-a.com/fareIF.do, 평일 성인). 신분당선 역간 요금표는 공식 페이지 글자가 깨져 역 이름을 못 읽어 넣지 않음 — 별도운임 700·1,000·1,000·1,500·1,700·2,200 은 확인"
     }
   },
   "metro": [
-    { "line": 4, "from": "서울", "to": "사당", "km": 9.8, "fare": 1550, "why": "10km 바로 아래 — 기본요금" },
-    { "line": 3, "from": "교대", "to": "수서", "km": 10.2, "fare": 1650, "why": "10km 바로 위 — 첫 100원" },
-    { "line": 5, "from": "방화", "to": "까치산", "km": 8.9, "fare": 1550, "why": "5호선 기본" },
-    { "line": 5, "from": "방화", "to": "신정", "km": 10.2, "fare": 1650, "why": "5호선 10km 경계" },
-    { "line": 3, "from": "지축", "to": "경복궁", "km": 11.1, "fare": 1650, "why": "10~15km" },
-    { "line": 4, "from": "당고개", "to": "혜화", "km": 13.9, "fare": 1650, "why": "10~15km (CSV 이름 '당고개' = 지금 '불암산')" },
-    { "line": 8, "from": "암사역사공원", "to": "모란", "km": 18.8, "fare": 1750, "why": "8호선 전 구간" },
-    { "line": 7, "from": "장암", "to": "건대입구", "km": 19.0, "fare": 1750, "why": "15~20km" },
-    { "line": 7, "from": "장암", "to": "고속터미널", "km": 26.8, "fare": 1950, "why": "25~30km" },
-    { "line": 3, "from": "지축", "to": "오금", "km": 38.2, "fare": 2150, "why": "3호선 전 구간 35~40km" },
-    { "line": 5, "from": "방화", "to": "상일동", "km": 45.3, "fare": 2350, "why": "45km 바로 위" }
+    {
+      "line": 4,
+      "from": "서울",
+      "to": "사당",
+      "km": 9.8,
+      "fare": 1550,
+      "why": "10km 바로 아래 — 기본요금"
+    },
+    {
+      "line": 3,
+      "from": "교대",
+      "to": "수서",
+      "km": 10.2,
+      "fare": 1650,
+      "why": "10km 바로 위 — 첫 100원"
+    },
+    {
+      "line": 5,
+      "from": "방화",
+      "to": "까치산",
+      "km": 8.9,
+      "fare": 1550,
+      "why": "5호선 기본"
+    },
+    {
+      "line": 5,
+      "from": "방화",
+      "to": "신정",
+      "km": 10.2,
+      "fare": 1650,
+      "why": "5호선 10km 경계"
+    },
+    {
+      "line": 3,
+      "from": "지축",
+      "to": "경복궁",
+      "km": 11.1,
+      "fare": 1650,
+      "why": "10~15km"
+    },
+    {
+      "line": 4,
+      "from": "당고개",
+      "to": "혜화",
+      "km": 13.9,
+      "fare": 1650,
+      "why": "10~15km (CSV 이름 '당고개' = 지금 '불암산')"
+    },
+    {
+      "line": 8,
+      "from": "암사역사공원",
+      "to": "모란",
+      "km": 18.8,
+      "fare": 1750,
+      "why": "8호선 전 구간"
+    },
+    {
+      "line": 7,
+      "from": "장암",
+      "to": "건대입구",
+      "km": 19,
+      "fare": 1750,
+      "why": "15~20km"
+    },
+    {
+      "line": 7,
+      "from": "장암",
+      "to": "고속터미널",
+      "km": 26.8,
+      "fare": 1950,
+      "why": "25~30km"
+    },
+    {
+      "line": 3,
+      "from": "지축",
+      "to": "오금",
+      "km": 38.2,
+      "fare": 2150,
+      "why": "3호선 전 구간 35~40km"
+    },
+    {
+      "line": 5,
+      "from": "방화",
+      "to": "상일동",
+      "km": 45.3,
+      "fare": 2350,
+      "why": "45km 바로 위"
+    }
   ],
   "ktx": [
-    { "line": "gyeongbu-line-ktx", "from": "서울", "to": "부산", "fare": 54400 },
-    { "line": "gyeongbu-line-ktx", "from": "서울", "to": "동대구", "fare": 39000 },
-    { "line": "gyeongbu-line-ktx", "from": "서울", "to": "대전", "fare": 21600 },
-    { "line": "honam-line-ktx", "from": "용산", "to": "광주송정", "fare": 38100 },
-    { "line": "honam-line-ktx", "from": "용산", "to": "목포", "fare": 44000 },
-    { "line": "gangneung-line-ktx", "from": "서울", "to": "강릉", "fare": 27600 },
-    { "line": "gangneung-line-ktx", "from": "청량리", "to": "평창", "fare": 18000 },
-    { "line": "ktx", "from": "용산", "to": "여수엑스포", "fare": 45400 },
-    { "line": "ktx-jungbunaeryuk-line", "from": "판교", "to": "충주", "tableFrom": "판교경기", "fare": 12300, "why": "운임표 이름은 판교(경기) — 이름 맞춤 확인" }
+    {
+      "line": "gyeongbu-line-ktx",
+      "from": "서울",
+      "to": "부산",
+      "fare": 54400
+    },
+    {
+      "line": "gyeongbu-line-ktx",
+      "from": "서울",
+      "to": "동대구",
+      "fare": 39000
+    },
+    {
+      "line": "gyeongbu-line-ktx",
+      "from": "서울",
+      "to": "대전",
+      "fare": 21600
+    },
+    {
+      "line": "honam-line-ktx",
+      "from": "용산",
+      "to": "광주송정",
+      "fare": 38100
+    },
+    {
+      "line": "honam-line-ktx",
+      "from": "용산",
+      "to": "목포",
+      "fare": 44000
+    },
+    {
+      "line": "gangneung-line-ktx",
+      "from": "서울",
+      "to": "강릉",
+      "fare": 27600
+    },
+    {
+      "line": "gangneung-line-ktx",
+      "from": "청량리",
+      "to": "평창",
+      "fare": 18000
+    },
+    {
+      "line": "ktx",
+      "from": "용산",
+      "to": "여수엑스포",
+      "fare": 45400
+    },
+    {
+      "line": "ktx-jungbunaeryuk-line",
+      "from": "판교",
+      "to": "충주",
+      "tableFrom": "판교경기",
+      "fare": 12300,
+      "why": "운임표 이름은 판교(경기) — 이름 맞춤 확인"
+    }
   ],
   "special": [
-    { "from": "판교", "to": "강남", "fromLine": "seoul-metropolitan-subway-shinbundang-line", "fare": 2650 },
-    { "from": "수서", "to": "동탄", "fromLine": "great-train-express-line-a", "fare": 4450 },
-    { "from": "서울", "to": "인천공항1터미널", "fromLine": "arex", "fare": 4750 }
+    {
+      "from": "판교",
+      "to": "강남",
+      "fromLine": "seoul-metropolitan-subway-shinbundang-line",
+      "fare": 2650
+    },
+    {
+      "from": "수서",
+      "to": "동탄",
+      "fromLine": "great-train-express-line-a",
+      "fare": 4450
+    },
+    {
+      "from": "서울",
+      "to": "인천공항1터미널",
+      "fromLine": "arex",
+      "fare": 4750
+    },
+    {
+      "from": "서울",
+      "to": "청라국제도시",
+      "fromLine": "arex",
+      "fare": 2150,
+      "boundary": true
+    },
+    {
+      "from": "서울",
+      "to": "영종",
+      "fromLine": "arex",
+      "fare": 3350,
+      "boundary": true
+    },
+    {
+      "from": "서울",
+      "to": "운서",
+      "fromLine": "arex",
+      "fare": 3850,
+      "boundary": true
+    },
+    {
+      "from": "서울",
+      "to": "인천공항2터미널",
+      "fromLine": "arex",
+      "fare": 5350,
+      "boundary": true
+    },
+    {
+      "from": "검암",
+      "to": "운서",
+      "fromLine": "arex",
+      "fare": 2500,
+      "boundary": true
+    },
+    {
+      "from": "청라국제도시",
+      "to": "인천공항1터미널",
+      "fromLine": "arex",
+      "fare": 2600,
+      "boundary": true
+    },
+    {
+      "from": "인천공항1터미널",
+      "to": "인천공항2터미널",
+      "fromLine": "arex",
+      "fare": 1200,
+      "boundary": true
+    },
+    {
+      "from": "수서",
+      "to": "성남",
+      "fromLine": "great-train-express-line-a",
+      "fare": 3450,
+      "boundary": true
+    },
+    {
+      "from": "수서",
+      "to": "구성",
+      "fromLine": "great-train-express-line-a",
+      "fare": 3950,
+      "boundary": true
+    },
+    {
+      "from": "운정중앙",
+      "to": "서울",
+      "fromLine": "great-train-express-line-a",
+      "fare": 4450,
+      "boundary": true
+    },
+    {
+      "from": "운정중앙",
+      "to": "킨텍스",
+      "fromLine": "great-train-express-line-a",
+      "fare": 3200,
+      "boundary": true
+    },
+    {
+      "from": "킨텍스",
+      "to": "대곡",
+      "fromLine": "great-train-express-line-a",
+      "fare": 3200,
+      "boundary": true
+    },
+    {
+      "from": "대곡",
+      "to": "서울",
+      "fromLine": "great-train-express-line-a",
+      "fare": 3700,
+      "boundary": true
+    },
+    {
+      "from": "연신내",
+      "to": "서울",
+      "fromLine": "great-train-express-line-a",
+      "fare": 3200,
+      "boundary": true
+    }
   ]
 }

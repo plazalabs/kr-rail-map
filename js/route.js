@@ -239,9 +239,22 @@ const RouteFinder = (() => {
   // 서울역 공항철도↔GTX-A 를 4분으로 잡아 공덕→삼성이 18분으로 너무 짧게 나왔다).
   const GTX_DEEP_TRANSFER_MIN = 8;
   const isGtx = lid => /^gtx|great-train-express/.test(lid || '');
-  function transferMinutes(stationId, a, b, fromId, toId) {
-    if (sameService(a, b) && a !== b) return 0;   // 이어 달리는 구간 — 갈아타지 않는다
-    if (isPlatformTransfer(stationId, a, b, fromId, toId)) return PLATFORM_MIN;
+  // 운행 중인 선로에 정차역만 끼워 넣은 구간 (새 선로·새 승강장이 아님). 양 끝 역에서는 지금 쓰는
+  // 그 승강장·그 열차를 타므로 환승 자료도 운행 중 노선 것을 쓰고 '새 대심도 역 8분' 규칙을 걸지 않는다.
+  // (11-14: 대곡에서 서해선→GTX-A 3분이 창릉 개통 후 8분이 되어 곡산→서울 22분 → 28분으로 늘던 것.
+  //  서울역 공항철도↔GTX-A 연장(gtx-a-seoul-suseo) 8분은 11-11 회장님 결정 그대로 — 여기 넣지 않는다)
+  const STOP_OVERLAY = { 'gtx-a-changneung': GA };
+  function overlayLine(stationId, lid) {
+    const base = STOP_OVERLAY[lid];
+    if (!base || isUnopened(base)) return lid;
+    const s = stationId && stationsById.get(stationId);
+    const ls = (s && s.properties.lines) || [];
+    return ls.includes(base) ? base : lid;
+  }
+  function transferMinutes(stationId, a0, b0, fromId, toId) {
+    if (sameService(a0, b0) && a0 !== b0) return 0;   // 이어 달리는 구간 — 갈아타지 않는다
+    if (isPlatformTransfer(stationId, a0, b0, fromId, toId)) return PLATFORM_MIN;
+    const a = overlayLine(stationId, a0), b = overlayLine(stationId, b0);
     const base = (() => {
       if (!transferDoc || !stationId || !a || !b || a === b) return TRANSFER_MIN;
       const s = transferDoc.stations[stationId];

@@ -185,29 +185,53 @@ const RouteCompare = (() => {
       extraParts.push({ kind: 'extra', line: 'GTX-A', detail: '평일 기준 · 주말은 ' + (ga.base - ga.weekend_base).toLocaleString() + '원 낮음', fare: fee, basis: future ? 'estimate' : 'official' });
     }
     const ax = SPECIAL['arex'];
-    let arexIndepKm = 0;
+    let arexIndepKm = 0, arexWhole = null;
     if (ax) {
-      let ind = 0, term = 0;
-      legsOn('arex').forEach(l => (l.segs || []).forEach(sg => {
-        const a = segName(sg.a), b = segName(sg.b);
-        if (ax.terminal_link.includes(a) && ax.terminal_link.includes(b)) term += sg.km;
-        else if (ax.independent.includes(a) && ax.independent.includes(b)) ind += sg.km;
-      }));
-      if (ind > 0 || term > 0) {
-        arexIndepKm = ind + term;
-        let fee = ind > 0
-          ? ax.base + ax.per_km * Math.max(0, ind - ax.base_km) + ax.terminal_per_km * term
-          : ax.base + ax.terminal_per_km * Math.max(0, term - ax.base_km);
-        fee = Math.floor(fee / ax.round_down) * ax.round_down;
-        extraParts.push({ kind: 'extra', line: '공항철도', detail: '청라~공항 구간', fare: fee, basis: term > 0 ? 'formula' : 'official' });
-      }
+      // 공식 역간 요금표(pair_fares)가 있으면 그 값: 독립구간 몫 = 표(탄 역→내린 역) − 표(일반구간 쪽 역→청라).
+      // 청라를 넘는 표 값은 공식 공식의 단순 합이 아니다(검암→운서 2,500 ≠ 1,550+1,700) — 11-14 공식표 대조.
+      const pf = ax.pair_fares || null, hub = ax.integrated_until;
+      const pair = (x, y) => pf && (pf[x + '|' + y] != null ? pf[x + '|' + y] : pf[y + '|' + x] != null ? pf[y + '|' + x] : null);
+      const inIndep = n => ax.independent.includes(n) || ax.terminal_link.includes(n);
+      // 공항철도만 탄 길(한 구간)은 공식표 값이 곧 전체 요금 — 지도 거리로 셈하면 서울↔김포공항이 100원 어긋난다
+      const rides = (r.legs || []).filter(l => !l.walk && l.lineId);
+      if (rides.length === 1 && rides[0].lineId === 'arex' && (rides[0].segs || []).length)
+        arexWhole = pair(segName(rides[0].segs[0].a), segName(rides[0].segs[rides[0].segs.length - 1].b));
+      legsOn('arex').forEach(l => {
+        const segs = l.segs || [];
+        let ind = 0, term = 0;
+        segs.forEach(sg => {
+          const a = segName(sg.a), b = segName(sg.b);
+          if (ax.terminal_link.includes(a) && ax.terminal_link.includes(b)) term += sg.km;
+          else if (ax.independent.includes(a) && ax.independent.includes(b)) ind += sg.km;
+        });
+        if (!(ind > 0 || term > 0)) return;
+        arexIndepKm += ind + term;
+        const s0 = segName(segs[0].a), s1 = segName(segs[segs.length - 1].b);
+        const gen = !inIndep(s0) ? s0 : !inIndep(s1) ? s1 : null;   // 일반(수도권)구간 쪽 끝역
+        const whole = pair(s0, s1), toHub = gen ? pair(gen, hub) : 0;
+        let fee, basis;
+        if (whole != null && toHub != null) { fee = whole - toHub; basis = 'official'; }
+        else {
+          fee = ind > 0
+            ? ax.base + ax.per_km * Math.max(0, ind - ax.base_km) + ax.terminal_per_km * term
+            : ax.base + ax.terminal_per_km * Math.max(0, term - ax.base_km);
+          fee = Math.floor(fee / ax.round_down) * ax.round_down;
+          basis = term > 0 ? 'formula' : 'official';
+        }
+        extraParts.push({ kind: 'extra', line: '공항철도', detail: '청라~공항 구간', fare: fee, basis });
+      });
     }
     // 개통 전 GTX(B·C 등) — 공식 요금이 없다. 일반 전철 요금으로만 셈했다는 사실을 밝힌다
     const futureGtx = Array.from(new Set((r.legs || []).filter(l => !l.walk && isFutureGtx(l.lineId)).map(l => lineNameOf.get(l.lineId) || l.lineId)));
     if (futureGtx.length) extraParts.push({ kind: 'pending', line: futureGtx.join('·'), fare: 0, basis: 'estimate' });
     if (arexIndepKm > 0) metroLegKm = Math.max(0, metroLegKm - arexIndepKm);
+    if (metroLegKm < 0.05) metroLegKm = 0;   // 구간 거리 합의 부동소수 찌꺼기(2터미널→운서가 1,550원 더 붙던 것)
     const metroKm = legKmKnown ? metroLegKm : Math.max(0, distKm - ktxKm - convKm);
-    const metroPart = metroKm > 0 ? { kind: 'metro', fare: calcFare(metroKm), basis: 'formula' } : null;
+    let metroPart = metroKm > 0 ? { kind: 'metro', fare: calcFare(metroKm), basis: 'formula' } : null;
+    if (arexWhole != null) {
+      const rest = arexWhole - extraParts.reduce((a, p) => a + p.fare, 0);
+      if (metroPart && rest > 0) metroPart = { kind: 'metro', fare: rest, basis: 'official' };
+    }
     const convPart = convKm > 0 ? { kind: 'conventional', fare: calcConvFare(convKm), basis: 'estimate' } : null;
     if (metroPart && !order.includes('metro')) order.unshift('metro');   // 옛 모양(구간 거리 없음)
     const parts = order.map(o => o === 'metro' ? metroPart : o === 'conventional' ? convPart : ktxParts[o]).filter(Boolean).concat(extraParts);
@@ -640,7 +664,9 @@ const RouteCompare = (() => {
         return `<li>${what} 약 +${won} <span class="rc-est">추정 — 개통 전이라 공식 요금 없음, 지금 운행 구간 요금제로 셈</span></li>`;
       }
       if (p.kind === 'pending') return `<li>${escapeHtml(p.line)} 요금 미정 <span class="rc-est">추정 — 개통 전, 더 비쌀 수 있음</span></li>`;
-      return `<li>수도권 전철 ${won} <span class="rc-src">거리 기준 계산</span></li>`;
+      return p.basis === 'official'
+        ? `<li>수도권 전철 ${won} <span class="rc-src">공항철도 공식 역간 요금표</span></li>`
+        : `<li>수도권 전철 ${won} <span class="rc-src">거리 기준 계산</span></li>`;
     }).join('');
     return `<ul class="rc-fare">${rows}</ul>`;
   }
@@ -687,7 +713,10 @@ const RouteCompare = (() => {
     // 변화 없음(또는 개통 후가 더 느림) — 이득이 없다고 솔직히 말한다.
     // 부동산 도구에서 '조용히 넘어가기'는 곧 잘못된 판단으로 이어진다.
     const dTrans = now.transfers - f.transfers;
-    const note = dTrans > 0
+    // 'worse' 인데 환승이 줄면 '시간은 그대로' 가 아니다 — 새 길은 환승이 적은 대신 몇 분 더 걸린다 (대치→삼성 18분 vs 20분, 11-14)
+    const note = (dTrans > 0 && cmp.status === 'worse')
+      ? `새 노선으로 가면 환승이 ${dTrans}회 줄지만 ${-cmp.savedMin}분 더 걸려, 지금 길이 더 빠릅니다.`
+      : dTrans > 0
       ? `시간은 그대로지만 환승이 ${dTrans}회 줄어듭니다.`
       : '이 구간은 개통 예정 노선으로 얻는 이득이 없습니다.';
     return `<div class="rc-nf flat"><div class="rc-nf-row">` +
@@ -809,7 +838,8 @@ const RouteCompare = (() => {
       { id: 'time', label: '<i data-ic="zap"></i> 최적', r: all.time },
       // 개통 예정 노선을 안 쓰는 경로가 따로 있을 때만 '지금' 탭을 붙인다.
       // 늘 붙이면 최단시간 탭과 같은 내용이 두 번 나와 헷갈린다.
-      ...(cmp.status === 'better' ? [{ id: 'now', label: '<i data-ic="clock"></i> 지금 바로', r: all.now }] : []),
+      // 'worse'(새 길은 환승이 적지만 더 느림)도 더 빠른 지금 길을 탭으로 보여 준다 (11-15)
+      ...(cmp.status === 'better' || cmp.status === 'worse' ? [{ id: 'now', label: '<i data-ic="clock"></i> 지금 바로', r: all.now }] : []),
       { id: 'transfer', label: '<i data-ic="repeat"></i> 최소환승', r: all.transfer },
       { id: 'fare', label: '<i data-ic="won"></i> 최소요금', r: all.fare },
     ].filter(t => t.r);

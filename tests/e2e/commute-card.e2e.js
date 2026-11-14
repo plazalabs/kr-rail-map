@@ -40,6 +40,11 @@ const R = recorder('commute-card');
   const nw = await run('은행사거리(가칭)', '광화문', true);
   R.check('지금 못 가는 역 → 새로 연결, 지금 = 없음', !!nw.info && nw.info.status === 'new' && nw.info.now === null && nw.info.aft.min > 0, nw.info);
 
+  // 개통 후 새 길이 환승은 적지만 더 느린 경우(곡산→서울, 11-15 기준 −2분) — 상자는 '지금 = 개통 후', 설명은 '더 걸려 지금 길이 빠름', 카드는 same, 더 빠른 '지금 바로' 탭이 있음
+  const wr = await b.evaluate(`(() => { const A = ${id('곡산')}, C = ${id('서울')}; const cmp = RouteCompare.compareNowFuture(A, C);
+    RouteCompare.show(A, C, { includeUnopened: true }); const w = document.querySelector('#route-result .rc-nf-why');
+    return { st: cmp.status, saved: cmp.savedMin, why: w ? w.textContent : '', nowTab: !!document.querySelector('#route-result .rc-tab[data-tab="now"]'), card: RouteCompare.commuteCardInfo(A, C, cmp).status }; })()`);
+  R.check('더 느린 새 길 → 지금 길이 빠르다고 설명, 카드는 변화 없음, 지금 바로 탭 있음', wr.st === 'worse' && wr.nowTab && (/지금 길이 더 빠릅니다|이득이 없습니다/.test(wr.why) && !/시간은 그대로/.test(wr.why) && wr.card === 'same'), wr);
   const size = await b.evaluate(`(() => { const c = StationShareImage.drawCommute(${JSON.stringify(i1)}); return [c.width, c.height]; })()`);
   R.check('카드 1080×1350', size[0] === 1080 && size[1] === 1350, size);
   const exc = b.logs.filter(l => /EXC/.test(l));

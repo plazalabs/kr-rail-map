@@ -198,7 +198,7 @@ border-bottom:1px solid var(--border,#ddd)}
 .iv-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
 .iv-gtx{border:2px solid #c026d3}
 .iv-score{font-size:var(--fs-3xl);font-weight:800}
-.iv-grade{display:inline-block;background:var(--accent,#3388ff);color:#fff;border-radius:6px;
+.iv-grade{display:inline-block;background:var(--accent,#3388ff);color:var(--accent-text,#fff);border-radius:6px;
 padding:2px 10px;font-weight:700;margin-left:8px}
 .iv-note{font-size:var(--fs-xs);color:var(--muted,#888);margin-top:6px;line-height:1.5}
 .iv-reason{font-size:var(--fs-xs);color:var(--muted,#888);margin:2px 0}

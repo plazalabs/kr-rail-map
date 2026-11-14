@@ -1832,7 +1832,8 @@ function highlightRoute(path, legs, opt) {
     const badge = document.createElement('span');
     badge.className = 'rt-label-n';
     badge.textContent = String(i + 1);
-    badge.style.background = i === 0 ? routeLineInfo((legs && legs[0] && legs[0].lineId) || '').color : colorAt(i);
+    const bc = i === 0 ? routeLineInfo((legs && legs[0] && legs[0].lineId) || '').color : colorAt(i);
+    badge.style.background = window.KRInk ? KRInk.onWhiteText(bc) : bc;   // 흰 숫자 대비 4.5:1 (axe 11-15)
     const nm = document.createElement('span');
     nm.textContent = st.properties.name_ko;
     el.append(badge, nm);

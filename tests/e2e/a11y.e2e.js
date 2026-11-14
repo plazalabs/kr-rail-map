@@ -1,0 +1,37 @@
+/* e2e: axe 접근성 자동 검사 (WCAG 2.1 A/AA, axe-core 4.10.2 — tests/e2e/vendor/axe.min.js, MPL-2.0) — 2026-11-15
+ *  처음 돌렸을 때 위반: 길찾기 번호 칩 대비·타일맵 grid 구조 32곳·순위표 노선 칩 대비 86곳·차트 role=img 안 링크·
+ *  노선 페이지 회색 글자 23곳·다크 길찾기 탭(흰 글자 on 밝은 파랑)·다크 순위표 점선 칩 → 모두 0 으로 고친 뒤 회귀 막기
+ * 실행: node tests/e2e/run.js --only a11y
+ */
+'use strict';
+const fs = require('fs'), path = require('path');
+const { launch, sleep, BASE, recorder } = require('./lib/cdp');
+const R = recorder('a11y');
+const AXE = fs.readFileSync(path.join(__dirname, 'vendor', 'axe.min.js'), 'utf8');
+const root = BASE.replace(/#.*$/, '').replace(/[^/]*$/, '');
+const STATES = [
+  ['첫 화면 PC', 'index.html#normal', 1440, 900],
+  ['길찾기 결과 PC', 'index.html?from=광화문&to=강남#normal', 1440, 900, 2500],
+  ['다크 길찾기 결과 PC', 'index.html?from=광화문&to=강남#normal', 1440, 900, 2500, { dark: true }],
+  ['타일맵', 'index.html?market=1#normal', 1440, 900, 2500],
+  ['휴대폰 떡상', 'index.html?rocket=1#normal', 390, 844, 2500, { mobile: true }],
+  ['순위표', 'rank.html', 1280, 900],
+  ['다크 순위표', 'rank.html', 1280, 900, 1200, { dark: true }],
+  ['노선 페이지', 'line/gtx-c.html', 1280, 900],
+];
+(async () => {
+  for (const [nm, url, w, h, wait, o = {}] of STATES) {
+    const b = await launch({ port: 9799, w, h, mobile: !!o.mobile });
+    await b.send('Network.setBypassServiceWorker', { bypass: true });
+    if (o.dark) { await b.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] }); await b.send('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('krrail-theme', 'dark'); } catch (e) {}` }); }
+    await b.goto(root + url, 800);
+    for (let i = 0; i < 80; i++) { await sleep(250); if (await b.evaluate(`document.readyState === 'complete' && (typeof dataReady === 'undefined' || dataReady)`).catch(() => false)) break; }
+    await sleep(wait || 1200);
+    await b.evaluate(AXE + ';0');
+    const v = await b.evaluate(`axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] }, resultTypes: ['violations'] })
+      .then(r => r.violations.map(v => v.id + 'x' + v.nodes.length + ' ' + v.nodes.slice(0, 2).map(n => n.target.join(' ')).join(' | ')))`);
+    R.check(`${nm}: axe WCAG 2.1 AA 위반 0`, v.length === 0, v);
+    b.close(); await sleep(600);
+  }
+  R.finish();
+})().catch(e => { console.error(e); process.exit(1); });

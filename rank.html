@@ -134,7 +134,7 @@ color:var(--tierink);background:var(--tierbg)}
 .lines{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .ln{font-size:12px;font-weight:700;color:#fff;border-radius:4px;padding:1px 5px;white-space:nowrap;line-height:1.5}
 .ln.plan{background:transparent!important;border:1.5px dashed currentColor}
-@media(prefers-color-scheme:dark){.ln.plan{filter:brightness(1.8) saturate(1.2)}}
+/* 다크 점선 칩 글자색은 js/ink.js 가 바탕 대비 4.5:1 로 계산 (axe 11-15) */
 .tms{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin-top:5px;font-variant-numeric:tabular-nums}
 .tms b{color:var(--text)}
 .tms s{color:var(--muted);margin-right:2px}
@@ -270,6 +270,7 @@ h1{font-size:20px}
 <script src="js/icons.js"></script>
 <script src="js/page-keys.js"></script>
 <script src="js/track.js"></script>
+<script src="js/ink.js"></script>
 <script src="js/rank.js"></script>
 <script src="js/rank-page.js"></script>
 </body>

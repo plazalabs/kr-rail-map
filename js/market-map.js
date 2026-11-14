@@ -314,7 +314,7 @@
       '.mm-ctrl select{font:inherit;font-size:var(--fs-xs);padding:3px 4px;border:1px solid var(--border,#ccd);border-radius:6px;background:var(--panel-bg,#fff);color:var(--text,#222)}' +
       '.mm-years{display:flex;flex-wrap:wrap;gap:4px;padding:0 14px 6px}' +
       '.mm-years button,.mm-tabs button{font:inherit;font-size:var(--fs-xs);padding:3px 9px;border-radius:999px;border:1px solid var(--border,#ccd);background:var(--panel-bg,#fff);color:var(--text,#222);cursor:pointer}' +
-      '.mm-years button[aria-pressed="true"],.mm-tabs button[aria-selected="true"]{background:var(--accent,#1565c0);border-color:var(--accent,#1565c0);color:#fff;font-weight:700}' +
+      '.mm-years button[aria-pressed="true"],.mm-tabs button[aria-selected="true"]{background:var(--accent,#1565c0);border-color:var(--accent,#1565c0);color:var(--accent-text,#fff);font-weight:700}' +
       '.mm-legend{display:flex;flex-wrap:wrap;gap:3px 9px;padding:0 14px 6px;font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
       '.mm-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:-1px}' +
       '.mm-board{position:relative;flex:1 1 auto;min-height:200px;margin:0 10px 8px;overflow:hidden}' +
@@ -339,7 +339,7 @@
       '.mm-tile.inl{display:flex;align-items:baseline;gap:4px}.mm-tile.inl b,.mm-tile.inl span{display:inline}.mm-tile.inl span{flex:none}' +
       '.mm-src{margin:0 14px 6px;font-size:var(--fs-xs);line-height:1.45;color:var(--muted,#5b6470)}.mm-src[hidden]{display:none}.mm-src b{color:var(--text,#222)}' +
       '.mm-crowd{position:absolute;left:8px;bottom:8px;z-index:4;display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:calc(100% - 16px);padding:6px 8px 6px 10px;border-radius:10px;background:var(--panel-bg,#fff);color:var(--text,#222);box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:var(--fs-sm)}' +
-      '.mm-tolist{border:1px solid var(--accent,#1565c0);background:var(--accent,#1565c0);color:#fff;border-radius:999px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:var(--fs-sm);font-weight:700}.mm-tolist:focus-visible{outline:3px solid var(--text,#222);outline-offset:2px}' +
+      '.mm-tolist{border:1px solid var(--accent,#1565c0);background:var(--accent,#1565c0);color:var(--accent-text,#fff);border-radius:999px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:var(--fs-sm);font-weight:700}.mm-tolist:focus-visible{outline:3px solid var(--text,#222);outline-offset:2px}' +
       '.mm-mx{display:flex;flex-direction:column;gap:6px;padding:2px}' +
       '.mm-mxr{display:flex;gap:8px;align-items:flex-start}' +
       '.mm-mxh{flex:none;width:92px;font-size:var(--fs-xs);line-height:1.3}.mm-mxh b{display:block;font-size:var(--fs-sm)}.mm-mxh span{color:var(--muted,#5b6470)}' +
@@ -383,7 +383,7 @@
       '.mm-sum{font-weight:normal;color:var(--muted,#5b6470)}' +
       '.mm-empty{padding:24px;text-align:center;color:var(--muted,#5b6470);font-size:var(--fs-sm)}' +
       '#mm-return{position:fixed;z-index:940;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));border:0;border-radius:999px;padding:9px 16px;' +
-      'background:var(--accent,#1565c0);color:#fff;font:inherit;font-size:var(--fs-sm);font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}' +
+      'background:var(--accent,#1565c0);color:var(--accent-text,#fff);font:inherit;font-size:var(--fs-sm);font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}' +
       '#mm-return[hidden]{display:none}' +
       // K7 휴대폰: 범례는 한 줄(옆으로 밀기), 긴 설명 문장은 접힌 '보기 설정' 안 대신 title로 — 판 높이를 지킨다
       '@media (max-width:768px){#mm-panel .mm-legend{flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;padding-bottom:4px}#mm-panel .mm-legend>span.mm-lgx{display:none}}' +
@@ -425,7 +425,7 @@
       '<div class="mm-legend" aria-label="색 뜻"></div>' +   // K7: 설정을 접어도 색 뜻은 늘 보이게 밖으로
       '<div class="mm-focus" hidden></div>' +
       '<p class="mm-src" hidden></p>' +
-      '<div class="mm-board" role="grid" aria-label="역 타일"></div>' +
+      '<div class="mm-board" role="group" aria-label="역 타일 — 화살표 키로 옮겨 다님"></div>' +
       '<button type="button" class="mm-more" hidden></button>' +
       '<div class="mm-card" aria-live="polite"></div>';
     document.body.appendChild(el);
@@ -853,7 +853,7 @@
         if (plan.mode !== 'none') { shown++; inner = '<b>' + esc(row.name) + '</b>'; }
         if (plan.mode === 'two') inner += '<span>' + esc(val) + '</span>';
         else if (plan.mode === 'inline') { cls += ' inl'; inner += '<span>' + esc(val) + '</span>'; }
-        html += '<button type="button" class="' + cls + '" data-id="' + esc(row.id) + '" tabindex="-1" role="gridcell" aria-label="' + esc(lab) + '" title="' + esc(lab) + '" ' +
+        html += '<button type="button" class="' + cls + '" data-id="' + esc(row.id) + '" tabindex="-1" aria-label="' + esc(lab) + '" title="' + esc(lab) + '" ' +
           'style="left:' + q.x + 'px;top:' + q.y + 'px;width:' + q.w + 'px;height:' + q.h + 'px;background-color:' + t.color.bg + ';color:' + t.color.fg + '">' + inner + '</button>';
       });
     });

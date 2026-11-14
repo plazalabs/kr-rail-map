@@ -77,7 +77,7 @@ def order_stations(geom, sts, lat0):
 
 
 STYLE = """
-:root{--bg:#fff;--surface:#f6f7f9;--text:#16191d;--text2:#4a5158;--muted:#868e96;--border:#e3e6ea;--accent:#0b57d0}
+:root{--bg:#fff;--surface:#f6f7f9;--text:#16191d;--text2:#4a5158;--muted:#5b6470;--border:#e3e6ea;--accent:#0b57d0}
 *{box-sizing:border-box}
 body{margin:0;font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 color:var(--text);background:var(--bg);line-height:1.65;-webkit-font-smoothing:antialiased}

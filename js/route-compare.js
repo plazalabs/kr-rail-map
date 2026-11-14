@@ -600,13 +600,13 @@ const RouteCompare = (() => {
         background: var(--panel-bg, #fff); color: var(--text, #222); border-radius: 8px;
         cursor: pointer; font-size: var(--fs-xs); line-height: 1.25; letter-spacing: -.01em;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .rc-tab.active { background: var(--accent, #3388ff); color: #fff; border-color: var(--accent, #3388ff); font-weight: bold; }
+      .rc-tab.active { background: var(--accent, #3388ff); color:var(--accent-text,#fff); border-color: var(--accent, #3388ff); font-weight: bold; }
       /* 2차 감사 R6: '최적' 보다 빠른 탭에 붙는 짧은 표시 (탭이 좁아 두 글자) */
       .rc-fast { display: inline-block; margin-left: 3px; padding: 0 4px; border-radius: 4px; font-size: var(--fs-xs); font-weight: bold;
         background: rgba(234, 179, 8, 0.14); color: var(--warn-text, #8a5300); vertical-align: 1px; }
       .rc-tab.active .rc-fast { background: #fff; color: var(--accent, #3388ff); }
       .rc-def { font-size: var(--fs-xs); color: var(--muted, #666); font-weight: normal; margin-left: 2px; }
-      .rc-badge { display: inline-block; font-size: var(--fs-xs); background: var(--accent, #3388ff); color: #fff;
+      .rc-badge { display: inline-block; font-size: var(--fs-xs); background: var(--accent, #3388ff); color:var(--accent-text,#fff);
         border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
       .rc-insight { font-size: var(--fs-xs); color: var(--muted, #666); margin: 8px 0; line-height: 1.6; }
       .rc-basis { font-size: var(--fs-xs); color: var(--muted, #5b6470); margin: 0 0 6px; line-height: 1.5; }

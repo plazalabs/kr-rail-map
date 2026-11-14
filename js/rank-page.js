@@ -54,13 +54,17 @@
   }
   function chipHtml(x) {
     const plan = x.m.s && x.m.s !== 'open';
-    return '<span class="ln' + (plan ? ' plan' : '') + '" style="' + (plan ? 'color:' : 'background:') + esc(x.m.c || '#666') + '"' +
+    // 글자 대비 4.5:1 (axe 11-15): 밝은 공식 색은 조금 진하게 — js/ink.js
+    const c = x.m.c || '#666', Ink = window.KRInk;
+    const dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+    const col = Ink ? (plan ? (dark ? Ink.asTextDark(c, '#1c2024') : Ink.asText(c, '#f6f7f9')) : Ink.onWhiteText(c)) : c;
+    return '<span class="ln' + (plan ? ' plan' : '') + '" style="' + (plan ? 'color:' : 'background:') + esc(col) + '"' +
       (plan ? ' title="개통 전"' : '') + '>' + esc(x.m.n) + '</span>';
   }
   function chips(ids) {
     const u = lineChips(ids);
     const h = u.slice(0, 5).map(chipHtml);
-    if (u.length > 5) h.push('<span class="ln" style="background:#888">+' + (u.length - 5) + '</span>');
+    if (u.length > 5) h.push('<span class="ln" style="background:#666">+' + (u.length - 5) + '</span>');
     return h.join('');
   }
 
@@ -99,7 +103,7 @@
     const ly = place(top, 'now'), ry = place(top, 'aft');
     const Hfit = Math.max(H, Math.ceil(Math.max(...ly.values(), ...ry.values()) + 14));
     const ticks = [1, 10, 100, 1000].filter(t => t <= maxR);
-    let g = '<svg viewBox="0 0 ' + W + ' ' + Hfit + '" role="img" aria-label="많이 오르는 역 10곳의 지금 순위와 개통 후 순위">';
+    let g = '<svg viewBox="0 0 ' + W + ' ' + Hfit + '" role="group" aria-label="많이 오르는 역 10곳의 지금 순위와 개통 후 순위">';
     g += '<text class="ax" x="' + L + '" y="14" text-anchor="middle">지금</text><text class="ax" x="' + R + '" y="14" text-anchor="middle">' + aftLabel() + '</text>';
     ticks.forEach(t => { const yy = y(t); g += '<line x1="' + L + '" x2="' + R + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--border)" stroke-dasharray="2 4"/>' +
       '<text class="ax" x="' + ((L + R) / 2) + '" y="' + (yy - 3) + '" text-anchor="middle">' + t + '위</text>'; });

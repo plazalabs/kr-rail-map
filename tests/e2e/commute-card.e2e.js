@@ -44,7 +44,7 @@ const R = recorder('commute-card');
   const wr = await b.evaluate(`(() => { const A = ${id('곡산')}, C = ${id('서울')}; const cmp = RouteCompare.compareNowFuture(A, C);
     RouteCompare.show(A, C, { includeUnopened: true }); const w = document.querySelector('#route-result .rc-nf-why');
     return { st: cmp.status, saved: cmp.savedMin, why: w ? w.textContent : '', nowTab: !!document.querySelector('#route-result .rc-tab[data-tab="now"]'), card: RouteCompare.commuteCardInfo(A, C, cmp).status }; })()`);
-  R.check('더 느린 새 길 → 지금 길이 빠르다고 설명, 카드는 변화 없음, 지금 바로 탭 있음', wr.st === 'worse' && wr.nowTab && (/지금 길이 더 빠릅니다|이득이 없습니다/.test(wr.why) && !/시간은 그대로/.test(wr.why) && wr.card === 'same'), wr);
+  R.check('더 느린 새 길 → 지금 길이 빠르다고 설명, 카드는 변화 없음, 지금 바로 탭 있음', wr.st === 'worse' && wr.nowTab && (/분 더 걸려, 지금 길이 더 빠릅니다/.test(wr.why) && !/시간은 그대로/.test(wr.why) && wr.card === 'same'), wr);
   const size = await b.evaluate(`(() => { const c = StationShareImage.drawCommute(${JSON.stringify(i1)}); return [c.width, c.height]; })()`);
   R.check('카드 1080×1350', size[0] === 1080 && size[1] === 1350, size);
   const exc = b.logs.filter(l => /EXC/.test(l));

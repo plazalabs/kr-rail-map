@@ -716,6 +716,8 @@ const RouteCompare = (() => {
     // 'worse' 인데 환승이 줄면 '시간은 그대로' 가 아니다 — 새 길은 환승이 적은 대신 몇 분 더 걸린다 (대치→삼성 18분 vs 20분, 11-14)
     const note = (dTrans > 0 && cmp.status === 'worse')
       ? `새 노선으로 가면 환승이 ${dTrans}회 줄지만 ${-cmp.savedMin}분 더 걸려, 지금 길이 더 빠릅니다.`
+      : cmp.status === 'worse'
+      ? `새 노선을 쓰는 길은 ${-cmp.savedMin}분 더 걸려, 지금 길이 더 빠릅니다.`   // 곡산→서울 (11-15)
       : dTrans > 0
       ? `시간은 그대로지만 환승이 ${dTrans}회 줄어듭니다.`
       : '이 구간은 개통 예정 노선으로 얻는 이득이 없습니다.';

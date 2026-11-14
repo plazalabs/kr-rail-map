@@ -139,6 +139,9 @@ async function until(b, expr, n = 40) {
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="view"]'); s.value = 'tiles'; s.dispatchEvent(new Event('change')); })()`); await sleep(400);
   // 이미지 저장 캔버스
   const png = await b.evaluate(`(() => { const c = MarketMap._pngCanvas(); if (!c) return null; const g = c.getContext('2d'); const px = g.getImageData(300, 300, 1, 1).data; return { w: c.width, h: c.height, url: c.toDataURL('image/png').length, painted: !(px[0] === 255 && px[1] === 255 && px[2] === 255) }; })()`);
+  // 공유 카드 ④ (11-14): '이미지로 저장' = 세로 1080×1350 어두운 카드 (옛 1200px 그림은 카드 부품이 없을 때만)
+  const card4 = await b.evaluate(`(() => { const c = MarketMap._cardCanvas(); if (!c) return null; const px = c.getContext('2d').getImageData(540, 700, 1, 1).data; return { w: c.width, h: c.height, len: c.toDataURL('image/png').length, painted: px[3] > 0 }; })()`);
+  R.check('공유 카드 ④: 타일 히트맵 카드 1080×1350 그려짐', !!card4 && card4.w === 1080 && card4.h === 1350 && card4.len > 50000 && card4.painted, card4);
   R.check('이미지 저장: 1200px 캔버스에 타일이 그려짐', !!png && png.w === 1200 && png.h > 800 && png.url > 20000 && png.painted, png);
   // 색·연도
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="color"]'); s.value = 'tier'; s.dispatchEvent(new Event('change')); })()`);

@@ -1015,9 +1015,61 @@
     g.fillText('업무지구까지 열차 대기 뺀 추정 시간으로 본 교통 접근성 · 집값이나 투자수익 예측이 아닙니다 · 출처 plazalabs.github.io/kr-rail-map/data.html' + (doc && doc.updated ? ' · 기준 ' + doc.updated : ''), 24, ly + 28);
     return c;
   }
+  /* 공유 카드 ④ 타일 히트맵 (11-14): 세로 1080×1350 어두운 카드 — 다른 공유 카드와 같은 바탕·아래 띠(StationShareImage).
+   * 타일 숫자는 K1 처럼 고른 색 지표, 라벨은 K2 단계(labelPlan)를 글자 크기에 맞춰 늘려 쓴다. */
+  function cardCanvas() {
+    var S = global.StationShareImage;
+    if (!model || !S || !S.cardBase) return null;
+    var k = S.cardBase(1350), g = k.g, F = S.FONT;
+    var colorName = { gain: '빨라지는 분', tier: '순위 변화', jeonse: '전세가율', price: '평당가' }[st.color] || '빨라지는 분';
+    g.fillStyle = '#9fb3d1'; g.font = '600 32px ' + F;
+    g.fillText((st.y === 'all' ? 'GTX·새 노선 모두 개통하면' : st.y + '년까지 개통하면') + ' · ' + WLABEL[st.w] + ' 기준', 72, 126);
+    g.fillStyle = '#ffffff'; g.font = '800 56px ' + F; g.fillText('한 장으로 보는 수도권 철도 효과', 72, 200);
+    g.fillStyle = '#9fb3d1'; g.font = '500 26px ' + F; g.fillText('색 = ' + colorName + ' · 타일 하나 = 역 하나 · ' + model.total + '역', 72, 244);
+    var X = 56, Y = 276, BW = k.W - 112, BH = 820, FS = 22, sc = 12 / FS;   // 카드 글자 최소 22px (카톡 압축에 뭉개지지 않게)   // 판 위치·크기, 글자 20px (labelPlan 은 12px 기준이라 비율로)
+    var m2 = { ordered: model.ordered, groups: model.groups.map(function (G) { return { name: G.name, value: G.value, tiles: G.tiles.map(function (t) { return { v: t.v, row: t.row, color: t.color, gain: t.gain, _t: t }; }) }; }), total: model.total };
+    Logic.layout(m2, BW, BH, 30);
+    m2.groups.forEach(function (G) {
+      var r = G.rect; if (!r || r.w < 2) return;
+      g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(X + r.x, Y + r.y, r.w, r.h);
+      g.fillStyle = '#ffffff'; g.font = '800 22px ' + F;
+      var gn = G.name + ' · ' + G.tiles.length; while (gn.length > 2 && g.measureText(gn).width > r.w - 10) gn = gn.slice(0, -1);
+      g.fillText(gn, X + r.x + 6, Y + r.y + 23);
+      G.tiles.forEach(function (t) {
+        var q = t.rect; if (!q || q.w < 1) return;
+        var x = X + q.x, y = Y + q.y;
+        g.fillStyle = t.color.bg; g.fillRect(x + 1, y + 1, q.w - 2, q.h - 2);
+        var val = metricOf(t._t).main, plan = Logic.labelPlan(t.row.name, val, q.w * sc, q.h * sc);
+        if (plan.mode === 'none') return;
+        g.fillStyle = t.color.fg; g.font = '800 ' + FS + 'px ' + F;
+        var nm = t.row.name, room = q.w - 10;
+        if (g.measureText(nm).width > room) { var ell = g.measureText('…').width; while (nm.length > 1 && g.measureText(nm).width + ell > room) nm = nm.slice(0, -1); nm += '…'; }   // 말줄임표 폭까지 넣어 옆 타일로 안 넘치게
+        g.fillText(nm, x + 5, y + 24);
+        g.font = '600 ' + FS + 'px ' + F;
+        if (plan.mode === 'two') g.fillText(val, x + 5, y + 50);
+        else if (plan.mode === 'inline') { g.font = '800 ' + FS + 'px ' + F; var nw = g.measureText(nm + ' ').width; g.font = '600 ' + FS + 'px ' + F; g.fillText(val, x + 5 + nw, y + 24); }
+      });
+    });
+    // 범례 한 줄
+    var leg = st.color === 'tier' ? ['rocket', 'up', 'flat', 'down', 'new'].map(function (kk) { return [Logic.TIER_COLORS[kk].bg, RTab().TIERS[kk].label]; })
+      : st.color === 'jeonse' ? Logic.JEONSE_BINS.map(function (b) { return [b.bg, b.label]; })
+      : st.color === 'price' ? Logic.PRICE_BINS.map(function (b) { return [b.bg, b.label]; })
+      : Logic.GAIN_BINS.map(function (b) { return [b.bg, b.label]; }).concat([[Logic.NEW_COLOR.bg, '신규']]);
+    var lx = 72, ly = Y + BH + 46; g.font = '600 22px ' + F;
+    leg.forEach(function (L) { var w = g.measureText(L[1]).width; if (lx + 30 + w > k.W - 72) return; g.fillStyle = L[0]; g.fillRect(lx, ly - 18, 22, 22); g.fillStyle = '#c8d3e6'; g.fillText(L[1], lx + 30, ly); lx += 30 + w + 22; });
+    var src = srcParts().map(function (t) { return t.replace(/: (\S+).*?(?= · \d|$)/, ': $1'); }).join(' · ');
+    S.cardFooter(k, src ? src + ' · 법정동 기준' : '타는 시간 + 갈아타며 걷는 시간(기다림 제외) · 업무지구까지', doc && doc.updated);
+    return k.c;
+  }
+
   function savePng() {
-    var c = pngCanvas(); if (!c) return;
+    var S = global.StationShareImage, cc = cardCanvas();
     track('market_map_share', { 종류: '이미지' });
+    if (cc && S.saveCanvas) {   // 카드 ④: 휴대폰은 공유 창(카톡 등), PC 는 내려받기
+      S.saveCanvas(cc, 'GTX효과_타일지도_' + (st.y === 'all' ? '전체개통' : st.y + '년') + '.png', '한 장으로 보는 수도권 철도 효과', 'card-tiles').then(function (m) { if (m) note(m); }, function () { note('이미지를 만들지 못했습니다'); });
+      return;
+    }
+    var c = pngCanvas(); if (!c) return;
     c.toBlob(function (blob) {
       if (!blob) { note('이미지를 만들지 못했습니다'); return; }
       var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '한국철도맵_타일지도_' + (st.y === 'all' ? '전체' : st.y) + '.png'; a.click();
@@ -1150,7 +1202,7 @@
 
   global.MarketMap = { Logic: Logic, init: init, open: open, close: close, pick: pick,
     isOpen: function () { return isOpen; }, state: function () { return { band: st.band, focus: st.focus, view: st.view, w: st.w, y: st.y, group: st.group, size: st.size, color: st.color, sel: st.sel, tab: st.tab }; },
-    model: function () { return model; }, _pngCanvas: function () { return pngCanvas(); }, playing: function () { return !!playT; } };
+    model: function () { return model; }, _pngCanvas: function () { return pngCanvas(); }, _cardCanvas: function () { return cardCanvas(); }, playing: function () { return !!playT; } };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 if (typeof module !== 'undefined' && module.exports) module.exports = (typeof window !== 'undefined' ? window : globalThis).MarketMap;

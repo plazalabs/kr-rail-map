@@ -29,7 +29,7 @@
     g.fillStyle = '#ffffff'; g.font = '800 104px ' + F; g.fillText(r.name + '역', 80, 250 + D);
     g.fillStyle = '#9fb3d1'; g.font = '500 32px ' + F; g.fillText([r.region, r.sgg].filter(Boolean).join(' ') + ' · 수도권 ' + (WLABEL[o.w] || '') + '순위', 84, 305 + D);
     g.font = '700 46px ' + F; g.fillStyle = '#c8d3e6';
-    g.fillText(r.isNew ? '지금은 철도 없음' : '지금 ' + r.now.rank + '위', 80, 460 + D);
+    g.fillText(r.isNew ? '지금은 철도 없음' : '지금 접근성 ' + r.now.rank + '위', 80, 460 + D);
     g.fillStyle = '#ffffff'; g.font = '800 150px ' + F; g.fillText(r.aft.rank + '위', 80, 620 + D);
     var w1 = g.measureText(r.aft.rank + '위').width;
     g.font = '600 36px ' + F; g.fillStyle = '#c8d3e6'; g.fillText(o.y === 'all' ? '개통 후' : o.y + '년 개통 후', 80 + w1 + 24, 620 + D);
@@ -39,8 +39,9 @@
     g.fillStyle = '#fff'; g.fillText(bt, 108, 724 + D);
     var plan = planLines(o.doc, r);
     if (plan.length) { g.font = '600 30px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('새 노선 ' + plan.join(' · '), 80, 812 + D); }
+    g.fillStyle = '#ffd166'; g.font = '700 26px ' + F; g.fillText('예상 소요 시간 (노선별 평균 속도 추정 · 시간표·급행·지연 미반영)', 80, 870 + D);
     ['도심권 CBD', '여의도권 YBD', '강남권 GBD'].forEach(function (d, j) {
-      var y = 920 + D + j * 80, n = r.now.times ? r.now.times[j] : null, a = r.aft.times ? r.aft.times[j] : null;
+      var y = 930 + D + j * 80, n = r.now.times ? r.now.times[j] : null, a = r.aft.times ? r.aft.times[j] : null;
       g.fillStyle = '#9fb3d1'; g.font = '600 32px ' + F; g.fillText(d, 80, y);
       g.fillStyle = '#ffffff'; g.font = '800 40px ' + F;
       g.fillText((n != null && a != null && n > a) ? n + '분 → ' + a + '분' : (a == null ? '—' : a + '분'), 330, y);
@@ -53,7 +54,7 @@
   function fileName(r) { return 'GTX떡상_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png'; }
 
   // 반환: 안내 글 ('공유했어요' / '이미지를 저장했어요' / '' (취소))
-  function save(r, o) { return saveCanvas(draw(r, o), fileName(r), r.name + ' GTX 개통 후 ' + r.aft.rank + '위'); }
+  function save(r, o) { return saveCanvas(draw(r, o), fileName(r), r.name + ' 개통 후 접근성 ' + r.aft.rank + '위', 'card-station'); }
 
   /* ── 카톡·인스타 공유 카드 (회장님 11-14: 사진이 곧 광고 — 3→1→4→2→5 순서) ──
    * 모두 세로 1080×1350(4:5, 카톡·인스타에서 가장 크게 보임) + 같은 아래 띠(슬로건·주소·'추정·집값 예측 아님·기준일').
@@ -86,7 +87,7 @@
     var k = cardBase(1350), g = k.g;
     var when = o.y === 'all' ? '모두 개통하면' : o.y + '년까지 개통하면';
     g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + FONT; g.fillText('GTX·새 노선 ' + when, 72, 132);
-    g.fillStyle = '#ffffff'; g.font = '800 64px ' + FONT; g.fillText('교통 접근성이 가장 많이 오르는 역', 72, 214);
+    g.fillStyle = '#ffffff'; g.font = '800 64px ' + FONT; g.fillText('개통 후 교통 접근성 개선 TOP 10', 72, 214);   // 계산한 지표 그대로(주식 '오르는' 문법 빼기 — 표시광고법)
     g.fillStyle = '#9fb3d1'; g.font = '500 28px ' + FONT;
     g.fillText('수도권 ' + (WLABEL[o.w] || '') + '접근성 순위 · TOP ' + rows.length, 72, 262);
     var top = 310, rh = 82;
@@ -102,17 +103,19 @@
       g.fillStyle = '#5fe39a'; g.font = '800 40px ' + FONT;   // 어두운 바탕에서 잘 보이는 밝은 초록 (기존 역 카드 '−N분'과 같은 색)
       var cw = g.measureText(chg).width; g.fillText(chg, k.W - 80 - cw, y + 50);
       g.fillStyle = '#c8d3e6'; g.font = '600 26px ' + FONT;
-      var rk = r.now.rank + '위 → ' + r.aft.rank + '위', rw = g.measureText(rk).width; g.fillText(rk, k.W - 80 - cw - 28 - rw, y + 48);
+      var rk = '접근성 ' + r.now.rank + '위 → ' + r.aft.rank + '위', rw = g.measureText(rk).width; g.fillText(rk, k.W - 80 - cw - 28 - rw, y + 48);
     });
     cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구까지' : '타는 시간 + 갈아타며 걷는 시간(기다림 제외) · 업무지구까지', o.asof);
     return k.c;
   }
   function saveTop10(rows, o) {
     var name = 'GTX떡상_TOP10_' + (o.y === 'all' ? '전체개통' : o.y + '년') + '.png';
-    return saveCanvas(drawTop10(rows, o), name, (o.y === 'all' ? '모두 개통하면' : o.y + '년까지') + ' 교통 접근성 TOP 10');
+    return saveCanvas(drawTop10(rows, o), name, (o.y === 'all' ? '모두 개통하면' : o.y + '년까지') + ' 교통 접근성 개선 TOP 10', 'card-top10');
   }
 
-  function saveCanvas(c, name, title) {
+  // tag: 어떤 카드가 퍼졌는지 세려고 공유 주소에 ?from= 이름표 (6차 공유 피드백 — 측정 없는 바이럴은 구멍)
+  function saveCanvas(c, name, title, tag) {
+    if (tag && typeof global.KRTrack === 'function') global.KRTrack('share_card', { 종류: tag });   // Umami: 카드별 공유 단추 횟수
     return new Promise(function (res) { c.toBlob(res, 'image/png'); }).then(function (blob) {
       if (!blob) return '이미지를 만들지 못했어요.';
       var file = (typeof File === 'function') ? new File([blob], name, { type: 'image/png' }) : null;
@@ -123,12 +126,12 @@
         return '이미지를 저장했어요';
       };
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        return navigator.share({ files: [file], title: title, text: location.origin + location.pathname })
+        return navigator.share({ files: [file], title: title, text: location.origin + location.pathname + (tag ? '?from=' + tag : '') })
           .then(function () { return '공유했어요'; }, function (e) { return (e && e.name === 'AbortError') ? '' : download(); });
       }
       return download();
     });
   }
 
-  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, BRAND: BRAND };
+  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, BRAND: BRAND, FONT: FONT, cardBase: cardBase, cardFooter: cardFooter, saveCanvas: saveCanvas };
 })(typeof window !== 'undefined' ? window : globalThis);

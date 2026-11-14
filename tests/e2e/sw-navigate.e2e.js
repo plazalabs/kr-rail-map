@@ -37,7 +37,7 @@ const ROOTURL = BASE.replace(/index\.html.*$/, '');
   R.check('index.html 로 돌아오면 메인이 뜸 (상세 페이지가 아님)', /전국 철도 노선도/.test(t2), t2);
 
   // 오프라인 폴백은 CDP 오프라인 흉내가 서비스워커 쪽 fetch 에 걸리지 않아(재현 실험에서 확인) 판정하지 않는다.
-  R.check('오프라인 폴백 = 메인 (CDP 오프라인 흉내가 서비스워커 fetch 에 적용되지 않아 미검증)', null);
+  // 오프라인 폴백(메인·질문 붙은 주소·노선 페이지 안내)은 offline.e2e.js 가 서버를 실제로 꺼서 검사한다 (11-15) — CDP 오프라인 흉내는 서비스워커 fetch 에 안 걸림
 
   R.finish();
   await b.close();

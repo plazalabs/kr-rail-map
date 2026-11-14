@@ -1460,7 +1460,7 @@ function routePeekBar() {
   if (!bar) {
     bar = document.createElement('div');
     bar.className = 'rp-peekbar';
-    bar.innerHTML = '<span class="rp-peek-sum" aria-live="polite"></span><button type="button" class="rp-peek-open" aria-label="길찾기 결과 자세히 보기">자세히 ▲</button>';
+    bar.innerHTML = '<span class="rp-peek-sum"></span><button type="button" class="rp-peek-open" aria-label="길찾기 결과 자세히 보기">자세히 ▲</button>';
     rp.querySelector('.rp-head').after(bar);
     bar.querySelector('.rp-peek-open').addEventListener('click', () => setRoutePeek(false));
     bar.querySelector('.rp-peek-sum').addEventListener('click', () => setRoutePeek(false));
@@ -1554,7 +1554,8 @@ document.getElementById('route-go').addEventListener('click', () => {
     const found = !document.querySelector('#route-result .rc-noroute');   // H10: 결과가 없으면 '찾았어요'라고 하지 않는다
     if (found) if (window.KRTrack && KRTrack.task) KRTrack.task('route');   // 과업: 길찾기 결과까지 (A③)
     if (!found) setStatus(`${from.properties.name_ko} → ${to.properties.name_ko}: 이어지는 철도 경로가 없어요`);
-    else if (!pair.guessed.length) setStatus(`${from.properties.name_ko} → ${to.properties.name_ko} 경로를 찾았어요`);
+    // 낭독기는 #status 한 줄만 읽는다(결과 칸은 aria-live 없음) — 시간·환승 요약까지 붙여 결과로 안 옮겨 가도 알 수 있게 (11-15)
+    else if (!pair.guessed.length) { const sum = routeSummaryText(); setStatus(`${from.properties.name_ko} → ${to.properties.name_ko} 경로를 찾았어요${sum ? ' · ' + sum : ''}`); }
     return;
   }
   const r = RouteFinder.findRoute(from.properties.id, to.properties.id,

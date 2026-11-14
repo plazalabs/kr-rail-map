@@ -866,7 +866,7 @@ const RouteCompare = (() => {
       html = html.replace(/<div class="rc-nf-delta">([\s\S]*?)<\/div>/, (m, d) =>
         `<div class="rc-nf-delta has-share"><span>${d}</span><button type="button" class="rc-nf-share" title="출퇴근 카드로 공유 (카톡·인스타 세로 그림)" aria-label="출퇴근 카드로 공유"><i data-ic="camera"></i> 카드로 공유</button></div>`);
     html += `<div class="rc-tabs${tabs.length > 3 ? ' four' : ''}">` + tabs.map((t, i) =>
-      `<button class="rc-tab${i === 0 ? ' active' : ''}" data-tab="${t.id}">${t.label}${t.id === fastId ? '<span class="rc-fast" title="표시 시간이 가장 짧은 길">최단</span>' : ''}</button>`).join('') + `</div>`;
+      `<button type="button" class="rc-tab${i === 0 ? ' active' : ''}" data-tab="${t.id}" aria-pressed="${i === 0}" aria-controls="rc-panel-${t.id}">${t.label}${t.id === fastId ? '<span class="rc-fast" title="표시 시간이 가장 짧은 길">최단</span>' : ''}</button>`).join('') + `</div>`;
     if (insight) html += `<div class="rc-insight">${insight}</div>`;
     html += tabs.map((t, i) => {
       const isBest =
@@ -897,10 +897,18 @@ const RouteCompare = (() => {
 
     box.querySelectorAll('.rc-tab').forEach(btn => {
       btn.addEventListener('click', () => {
-        box.querySelectorAll('.rc-tab').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        box.querySelectorAll('.rc-tab').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+        btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true');
         box.querySelectorAll('.rc-panel').forEach(p => p.hidden = true);
-        document.getElementById('rc-panel-' + btn.dataset.tab).hidden = false;
+        const panel = document.getElementById('rc-panel-' + btn.dataset.tab);
+        panel.hidden = false;
+        // 결과 칸은 aria-live 가 없다(목록 통째 낭독 방지) — 바뀐 길의 요약 한 줄만 상태 줄로 읽어 준다 (11-15)
+        const tot = panel.querySelector('.total');
+        if (tot && typeof window.setStatus === 'function') {
+          const c = tot.cloneNode(true); c.querySelectorAll('.rc-badge, .rc-def').forEach(x => x.remove());
+          const lab = btn.cloneNode(true); lab.querySelectorAll('.rc-fast').forEach(x => x.remove());
+          window.setStatus(lab.textContent.trim() + ': ' + c.textContent.replace(/\s+/g, ' ').replace(/^총\s*/, '').trim());
+        }
         // 탭별 경로 하이라이트
         const tab = tabs.find(t => t.id === btn.dataset.tab);
         if (tab && tab.r && typeof highlightRoute === 'function') highlightRoute(tab.r.path, tab.r.legs);

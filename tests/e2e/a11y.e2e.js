@@ -75,5 +75,19 @@ const STATES = [
     R.check('PC 첫 화면 Tab 으로 도는 칸 모두 초점 테 보임 (' + seen.size + '칸)', seen.size > 60 && bad.length === 0, bad.join(', ') || seen.size);
     b.close(); await sleep(400);
   }
+  // 낭독기: 길찾기 결과 전체(역 목록)를 통째로 읽지 않고 상태 줄 한 줄(시간·환승)만, 탭은 눌린 상태(aria-pressed)를 알림 (11-15)
+  {
+    const b = await launch({ port: 9797, w: 1440, h: 900 });
+    await b.send('Network.setBypassServiceWorker', { bypass: true });
+    await b.goto(root + 'index.html?from=' + encodeURIComponent('광화문') + '&to=' + encodeURIComponent('강남') + '#normal', 800);
+    for (let i = 0; i < 80; i++) { await sleep(250); if (await b.evaluate(`typeof dataReady !== 'undefined' && dataReady && !!document.querySelector('#route-result .rc-tab')`).catch(() => false)) break; }
+    await sleep(800);
+    const r1 = await b.evaluate(`({ live: document.getElementById('route-result').getAttribute('aria-live'), peekLive: !!document.querySelector('.rp-peek-sum[aria-live]'), status: document.getElementById('status').textContent, pressed: [...document.querySelectorAll('.rc-tab')].map(t => t.getAttribute('aria-pressed')).join(',') })`);
+    R.check('길찾기: 결과 칸은 aria-live 없음 · 상태 줄에 시간·환승 요약 · 첫 탭 aria-pressed=true', !r1.live && !r1.peekLive && /경로를 찾았어요 · .*분.*환승/.test(r1.status) && /^true(,false)+$/.test(r1.pressed), r1);
+    await b.evaluate(`document.querySelectorAll('.rc-tab')[1].click(); 0`); await sleep(300);
+    const r2 = await b.evaluate(`({ status: document.getElementById('status').textContent, pressed: [...document.querySelectorAll('.rc-tab')].map(t => t.getAttribute('aria-pressed')).join(',') })`);
+    R.check('길찾기: 두 번째 탭 누르면 눌림 상태가 옮겨 가고 상태 줄이 그 길 요약으로 바뀜', /^false,true/.test(r2.pressed) && /분/.test(r2.status) && r2.status !== r1.status, r2);
+    b.close(); await sleep(400);
+  }
   R.finish();
 })().catch(e => { console.error(e); process.exit(1); });

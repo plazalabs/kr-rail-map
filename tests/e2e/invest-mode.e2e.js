@@ -90,8 +90,8 @@ const HAS_HINT = `!!document.querySelector('#sd-panel .sd-mode-on')`;
     mk.cells.every(c => /만|거래 적음|자료 없음/.test(c)) && !mk.yield, mk);
   await b.shot(path.join(OUT, 'invest-mode.png'));
 
-  // C. 새로고침
-  await b.goto(BASE + '#normal', 800); await ready(b);
+  // C. 새로고침 — 11-15: 같은 주소로 goto 하면 다시 안 읽는다 → 빈 쪽을 거쳐 정말 다시 연다
+  await b.goto('about:blank', 200); await b.goto(BASE + '#normal', 800); await ready(b);
   const c1 = await b.evaluate(`({ mode: document.body.dataset.mode, pressed: document.getElementById('mode-btn').getAttribute('aria-pressed') })`);
   await b.evaluate(openGangnam);
   const priceC = await waitFor(b, HAS_PRICE, 20000);

@@ -21,10 +21,21 @@ const R = recorder('offline');
     for (let i = 0; i < 40 && !ctl; i++) { await sleep(250); ctl = await b.evaluate(`!!navigator.serviceWorker.controller`).catch(() => false); }
     await sleep(1500);
     R.check(`${w}px 온라인 첫 방문 뒤 서비스 워커가 페이지를 맡음`, ctl, ctl);
+    // 두 번째 방문(온라인) — 첫 방문의 글꼴 요청은 서비스 워커가 맡기 전에 나가서 캐시를 안 거친다
+    // 주의: 같은 주소(#만 같음)로 goto 하면 크롬은 다시 불러오지 않는다 → Page.reload 로 정말 다시 연다
+    await b.send('Page.reload', {}); await sleep(1000);
+    for (let i = 0; i < 100; i++) { await sleep(250); if (await b.evaluate(`typeof dataReady !== 'undefined' && dataReady`).catch(() => false)) break; }
+    await sleep(1500);
+    // 글꼴 조각(woff2)도 받아 둔다 — 전엔 문서만 넣어 오프라인 재방문 때 글꼴이 시스템 글꼴로 바뀌었다 (11-15)
+    const woff = await b.evaluate(`caches.keys().then(async ks => { let n = 0; for (const k of ks) n += (await (await caches.open(k)).keys()).filter(r => /\.woff2$/.test(r.url)).length; return n; })`).catch(e => 'ERR ' + e.message);
+    R.check(`${w}px 화면에 쓴 글꼴 조각이 캐시에 들어감`, woff > 0, woff);
     srv.close(); if (srv.closeAllConnections) srv.closeAllConnections(); await sleep(300);
     const down = await b.evaluate(`fetch('${ROOT}no-such-file-' + Date.now()).then(() => 'reached', () => 'down')`).catch(() => 'down');
     R.check(`${w}px 서버를 정말 껐음(새 주소 요청이 안 닿음)`, down === 'down', down);
-    await b.goto(ROOT + 'index.html#normal', 1000);
+    await b.evaluate(`window.__stale = 1; 0`);
+    await b.send('Page.reload', {}); await sleep(1000);
+    const fresh = await b.evaluate(`typeof window.__stale === 'undefined'`).catch(() => false);
+    R.check(`${w}px 정말 다시 불러왔음(앞 화면 흔적 없음)`, fresh, fresh);
     let ok = false;
     for (let i = 0; i < 80 && !ok; i++) { await sleep(250); ok = await b.evaluate(`typeof dataReady !== 'undefined' && dataReady && !!map.getLayer('rail-lines') && STATIONS.length > 500`).catch(() => false); }
     R.check(`${w}px 인터넷 끊고 다시 열어도 노선·역 데이터가 뜸`, ok, ok);

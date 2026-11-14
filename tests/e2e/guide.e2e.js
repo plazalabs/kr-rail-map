@@ -34,7 +34,8 @@ const card = b => b.evaluate(`(() => { const e = document.getElementById('guide-
     await b.evaluate(`[...document.querySelectorAll('#guide-card .gd-item')].find(e => e.textContent.includes('통근권')).click()`); await sleep(1200);
     const after = await b.evaluate(`({ card: !!document.getElementById('guide-card'), cm: !!document.getElementById('cm-panel') && document.getElementById('cm-panel').style.display !== 'none' })`);
     R.check(`${w}px '통근권 찾기' → 카드 닫힘·통근권 열림`, !after.card && after.cm, after);
-    await b.goto(BASE + '#normal', 800); await ready(b);
+    // 11-15: 같은 주소(#normal)로 goto 하면 크롬이 다시 안 읽어 이 검사가 그냥 통과했다 → 빈 쪽을 거쳐 정말 다시 연다
+    await b.goto('about:blank', 200); await b.goto(BASE + '#normal', 800); await ready(b);
     R.check(`${w}px 다시 열면 카드가 안 뜬다`, (await card(b)) === null);
     b.close(); await sleep(800);
   }

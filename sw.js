@@ -4,8 +4,8 @@
  *  - GeoJSON 데이터: Cache First (최초 로드 후 캐시)
  *  - 지도 타일: Network First (오프라인이면 캐시된 타일만, 최대 200개)
  */
-const APP_CACHE = 'kr-rail-map-app-v237';
-const DATA_CACHE = 'kr-rail-map-data-v237';
+const APP_CACHE = 'kr-rail-map-app-v238';
+const DATA_CACHE = 'kr-rail-map-data-v238';
 const TILE_CACHE = 'kr-rail-map-tiles-v1';
 const MAX_TILE_ENTRIES = 200;
 
@@ -172,7 +172,9 @@ self.addEventListener('fetch', (event) => {
           // 내비게이션 응답은 **그 요청 주소로** 저장한다 (IMPL12 건 3).
           // 예전엔 고정 키 './index.html' 에 넣어서, 노선 상세(line/*.html)를 본 뒤 index.html 로 오면
           // 메인 대신 상세 페이지가 떴다 (온라인에서도 — 앱 셸은 Cache First 다).
-          if (res.ok && request.mode === 'navigate') {
+          // 11-15: 글꼴 조각(woff2)·늦게 부르는 스크립트·그림도 한 번 받으면 넣어 둔다 — 전엔 문서만 넣어서
+          // 오프라인 재방문 때 글꼴이 시스템 글꼴로 바뀌었다. 판(버전)이 바뀌면 APP_CACHE 째로 지워지니 옛 파일이 남지 않는다.
+          if (res.ok && (request.mode === 'navigate' || /\.(woff2|js|css|png|svg|webp)$/.test(url.pathname))) {
             const copy = res.clone();
             caches.open(APP_CACHE).then((cache) => cache.put(request, copy));
           }

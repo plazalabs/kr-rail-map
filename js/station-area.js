@@ -360,7 +360,7 @@
   function ensureLayers() {
     if (!map || !map.getStyle()) return false;
     if (!map.getSource(SRC)) map.addSource(SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    const before = map.getLayer('rail-lines') ? 'rail-lines' : undefined;
+    const before = map.getLayer('rail-lines-casing') ? 'rail-lines-casing' : (map.getLayer('rail-lines') ? 'rail-lines' : undefined);
     const add = (layer) => { if (!map.getLayer(layer.id)) map.addLayer(layer, before); };
     add({ id: 'station-area-fill', type: 'fill', source: SRC, minzoom: MINZOOM, filter: filterFor(250),
       paint: { 'fill-color': COLORS[250], 'fill-opacity': 0.08 } });

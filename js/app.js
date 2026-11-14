@@ -365,11 +365,23 @@ map.addControl(new StatusLegend(), 'bottom-right');
 function addDataLayers() {
   if (map.getSource('lines')) return; // 스타일 교체 후 중복 방지
   map.addSource('lines', { type: 'geojson', data: { type: 'FeatureCollection', features: LINES } });
+  // K9 (6차 ①A5): 노선 casing — 운행 중 노선 아래에 배경색 띠를 2px 더 넓게 깔아, 겹치는 노선·배경 도로와 갈라 보이게 한다.
+  map.addLayer({
+    id: 'rail-lines-casing', type: 'line', source: 'lines',
+    filter: lineFilterWithStatus([...visibleLines], true),
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: {
+      'line-color': DARK_THEMES.has(theme) ? '#0b0d10' : '#ffffff',
+      'line-width': ['interpolate', ['linear'], ['zoom'], 7, 4.2, 12, 7.5, 16, 11],
+      'line-opacity': CASING_OPACITY
+    }
+  });
   map.addLayer({
     id: 'rail-lines', type: 'line', source: 'lines',
     filter: lineFilterWithStatus([...visibleLines], true),
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: {
-      'line-color': ['coalesce', ['get', 'color'], '#888888'],
+      'line-color': lineColorExpr(),
       'line-width': ['interpolate', ['linear'], ['zoom'], 7, 2.2, 12, 5, 16, 8],
       'line-opacity': 0.9
     }
@@ -383,7 +395,7 @@ function addDataLayers() {
       filter: lineFilterWithStatus([...visibleLines], false, st),
       layout: s.round ? { 'line-cap': 'round' } : {},
       paint: {
-        'line-color': ['coalesce', ['get', 'color'], '#888888'],
+        'line-color': lineColorExpr(),
         'line-width': ['interpolate', ['linear'], ['zoom'], ...s.width],
         'line-opacity': UNOPENED_OPACITY,
         'line-dasharray': s.dash
@@ -406,7 +418,7 @@ function addDataLayers() {
   map.addLayer({
     id: 'rail-lines-highlight', type: 'line', source: 'line-highlight',
     paint: {
-      'line-color': ['coalesce', ['get', 'color'], '#ff0000'],
+      'line-color': lineColorExpr('#ff0000'),
       'line-width': ['interpolate', ['linear'], ['zoom'], 7, 4, 12, 8, 16, 12],
       'line-opacity': 0.6
     }
@@ -451,6 +463,36 @@ function addDataLayers() {
 // 위성 사진·어두운 배경(다크·이클립스·네온 테마)에서는 흰 글자 + 어두운 테두리,
 // 밝은 배경에서는 어두운 글자 + 흰 테두리. 예전에는 다크 테마에서도 검은 글자 + 1px 흰 테두리라
 // 어두운 지도 위에서 글자가 테두리에만 기대어 읽혔다 (2026-11-11 측정).
+// K9 (6차 ①A6) 다크 색: 노선 공식 색 중 어두운 것(1호선 #0052A4 등)은 다크 배경에서 거의 안 보인다.
+// 다크 배경(#121212 가정)과의 대비가 3:1(WCAG 그래픽 요소 기준) 미만이면 흰색 쪽으로 조금씩 섞어 3:1 을 맞춘다.
+// 밝은 테마에서는 공식 색 그대로. 색상(hue)은 유지되므로 노선 구분은 그대로다.
+const CASING_OPACITY = 0.9;
+function relLum(r, g, b) {
+  const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function darkLineColor(hex, bgLum = relLum(18, 18, 18), min = 3) {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return hex;
+  let h = m[1]; if (h.length === 3) h = h.split('').map(x => x + x).join('');
+  const rgb = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+  const ratio = c => (relLum(...c) + 0.05) / (bgLum + 0.05);
+  if (ratio(rgb) >= min) return '#' + h.toLowerCase();
+  for (let t = 0.05; t <= 1.0001; t += 0.05) {
+    const c = rgb.map(v => Math.round(v + (255 - v) * t));
+    if (ratio(c) >= min) return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+  return '#ffffff';
+}
+// 노선 색 식: 밝은 테마 = 공식 색, 다크 = 어두운 색만 밝힌 색 (색 문자열로 match)
+function lineColorExpr(fallback = '#888888') {
+  const base = ['coalesce', ['get', 'color'], fallback];
+  if (!DARK_THEMES.has(theme)) return base;
+  const pairs = [];
+  new Set(LINES.map(f => f.properties.color).filter(Boolean)).forEach(c => { const d = darkLineColor(c); if (d.toLowerCase() !== String(c).toLowerCase()) pairs.push(c, d); });
+  return pairs.length ? ['match', ['coalesce', ['get', 'color'], ''], ...pairs, base] : base;
+}
+
 // 지도에 그릴 역 — 원본 STATIONS 는 그대로 두고 그리기용 값만 붙인 복사본 (K9)
 //   _c: 대표 노선 색 (line_id → 그 노선 색, 없으면 lines 중 색 있는 첫 노선) · _n: 운행 중 노선 수 (환승역 판단)
 function stationRenderFeatures() {
@@ -461,7 +503,8 @@ function stationRenderFeatures() {
     const ls = Array.isArray(p.lines) ? p.lines : [];
     const main = byId.get(p.line_id) && byId.get(p.line_id).color ? p.line_id : ls.find(l => byId.get(l) && byId.get(l).color);
     const n = new Set(ls.filter(open).map(l => (byId.get(l) || {}).name_ko || l)).size;   // 같은 노선의 갈래(GTX-A 연장 등)는 이름으로 묶어 한 번
-    return { type: 'Feature', geometry: f.geometry, properties: Object.assign({}, p, { _c: main ? byId.get(main).color : null, _n: n }) };
+    const c = main ? byId.get(main).color : null;
+    return { type: 'Feature', geometry: f.geometry, properties: Object.assign({}, p, { _c: c && DARK_THEMES.has(theme) ? darkLineColor(c) : c, _n: n }) };
   });
 }
 
@@ -512,6 +555,7 @@ function updateFilters() {
   // 역은 지나는 노선(lines) 중 하나라도 켜져 있으면 보인다 (환승역이 대표 노선만으로 걸러지던 결함 수정)
   const sf = UI.lineFilterExpr(ids);
   if (map.getLayer('rail-lines')) map.setFilter('rail-lines', lineFilterWithStatus(ids, true));
+  if (map.getLayer('rail-lines-casing')) map.setFilter('rail-lines-casing', lineFilterWithStatus(ids, true));
   Object.entries(STATUS_LINE).forEach(([st, s]) => { if (map.getLayer(s.layer)) map.setFilter(s.layer, lineFilterWithStatus(ids, false, st)); });
   if (map.getLayer('rail-lines-unopened-label')) map.setFilter('rail-lines-unopened-label', lineFilterWithStatus(ids, false));
   if (typeof refreshStatusLegend === 'function') refreshStatusLegend();
@@ -1621,6 +1665,7 @@ function highlightRoute(path, legs) {
   const pathSet = new Set(path);
   // 노선 레이어는 전부 숨기고, 경로만 따로 그린다
   if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0);
+  if (map.getLayer('rail-lines-casing')) map.setPaintProperty('rail-lines-casing', 'line-opacity', 0);
   UNOPENED_LINE_LAYERS.forEach(id => { if (map.getLayer(id)) map.setPaintProperty(id, 'line-opacity', 0); });
   if (map.getLayer('rail-lines-unopened-label')) map.setLayoutProperty('rail-lines-unopened-label', 'visibility', 'none');
   if (map.getLayer('rail-stations')) {
@@ -1824,6 +1869,7 @@ function clearRouteHighlight() {
     try { mk.remove(); } catch (e) {}
   }
   if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0.9);
+  if (map.getLayer('rail-lines-casing')) map.setPaintProperty('rail-lines-casing', 'line-opacity', CASING_OPACITY);
   UNOPENED_LINE_LAYERS.forEach(id => { if (map.getLayer(id)) map.setPaintProperty(id, 'line-opacity', UNOPENED_OPACITY); });
   if (map.getLayer('rail-lines-unopened-label')) map.setLayoutProperty('rail-lines-unopened-label', 'visibility', 'visible');
   if (map.getLayer('rail-stations')) {

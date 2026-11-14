@@ -160,8 +160,12 @@ let worst = 0, worstName = '';
 for (const [an, alat, alng, bn, blat, blng, truth] of TRUTH) {
   const a = idAt(an, alat, alng), b = idAt(bn, blat, blng);
   if (!a || !b) { check(an + '→' + bn + ' 역을 찾음', false); continue; }
+  // 앱이 보여 주는 후보 중 가장 빠른 값 — '최적'은 환승마다 4분을 더 얹어 고르므로(환승 피하기) 더 빠른 길이 있으면
+  // 그 탭에 '최단' 표시가 붙는다(R6). 2026-11-14 2호선 왕십리–한양대·신당–상왕십리 연결을 공식 자료대로 고친 뒤
+  // 강남→시청 '최적'은 2호선 직통 40분, 더 빠른 신분당·3호선 34분은 '최단' 후보로 나온다.
   const r = RF.findRoute(a, b, { openOnly: true });
-  const m = r ? r.minutes : null;
+  const r0 = RF.findRoute(a, b, { openOnly: true, transferPenalty: 0 });
+  const m = [r, r0].filter(Boolean).reduce((x, y) => Math.min(x, y.minutes), Infinity);
   const err = m == null ? 1 : Math.abs(m / truth - 1);
   if (err > worst) { worst = err; worstName = an + '→' + bn; }
   check(an + '→' + bn + ' 오차 45% 이내 (' + m + '분 / 실제 ' + truth + '분)', err <= 0.45,

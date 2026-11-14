@@ -9,7 +9,7 @@
 route.js 가 정차역마다 DWELL_MIN(0.5분)을 더한다. 확인: 시청→청량리 공식 12분 + 정차 8번 4분 = 16분.
 
 연속한 두 행(같은 호선)을 한 쌍으로 쓴다. 지선 경계(2호선 성수·신정지선, 5호선 마천지선)에서
-생기는 엉뚱한 쌍은 route.js 가 '실제로 이어진 두 역'에만 붙이므로 쓰이지 않는다.
+첫 행은 BRANCH_PREV 로 실제 갈라지는 역에 잇는다. route.js 는 이 목록을 1~8호선 연결의 기준으로 쓴다(applyOfficialTopology).
 
 실행: python data/build_official_runtimes.py
 """
@@ -44,10 +44,19 @@ try:
 except UnicodeDecodeError:
     text = raw.decode('cp949')
 rows = list(csv.DictReader(io.StringIO(text)))
+# 지선 첫 행: 원자료는 '바로 앞 행'을 앞 역처럼 이어 적는다. 실제로 갈라지는 역으로 바로잡는다 (2026-11-14 A② 요금 회귀표에서 발견).
+#   2호선 성수지선: 시청→용답 2.3km 로 적힘 → 성수→용답  (서울교통공사 노선도: 성수에서 갈라짐)
+#   2호선 신정지선: 신설동→도림천 1.0km → 신도림→도림천
+#   5호선 마천지선: 하남검단산→둔촌동 1.2km → 강동→둔촌동
+# 거리·시간 값은 원자료 그대로 쓴다(지선 첫 구간의 값이다).
+BRANCH_PREV = {('2', '용답'): '성수', ('2', '도림천'): '신도림', ('5', '둔촌동'): '강동'}
 table = {}
 for a, b in zip(rows, rows[1:]):
     if a['호선'] != b['호선']:
         continue
+    fix = BRANCH_PREV.get((b['호선'], b['역명'].strip()))
+    if fix:
+        a = dict(a, 역명=fix)
     m, s = b['소요시간'].split(':')
     sec = int(m) * 60 + int(s)
     if sec <= 0:

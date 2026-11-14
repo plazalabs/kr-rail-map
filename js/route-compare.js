@@ -126,9 +126,17 @@ const RouteCompare = (() => {
   function officialKtxFare(lineId, fromId, toId) {
     const t = ktxFares && ktxFares.lines[lineId];
     if (!t) return null;
-    const k = [fareNorm(sname(fromId)), fareNorm(sname(toId))].sort().join('|');
-    return Object.prototype.hasOwnProperty.call(t.pairs, k) ? t.pairs[k] : null;
+    // 운임표는 같은 이름 역을 '판교(경기)'처럼 지역을 붙여 적는다 → 지역 붙인 이름도 찾아본다
+    // (2026-11-14 A② 요금 회귀표: 판교→충주가 공식 12,300원인데 '추정 15,500원'으로 나왔다)
+    const vars = n => [n].concat(FARE_REGION.map(r => n + r));
+    const has = k => Object.prototype.hasOwnProperty.call(t.pairs, k);
+    for (const a of vars(fareNorm(sname(fromId)))) for (const b of vars(fareNorm(sname(toId)))) {
+      const k = [a, b].sort().join('|');
+      if (has(k)) return t.pairs[k];
+    }
+    return null;
   }
+  const FARE_REGION = ['경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남'];
   function estimatedKtxFare(km) { return Math.round(calcKtxFare(km) * KTX_CUT / 100) * 100; }
 
   // legs 를 보면서 구간 종류별 요금을 합산하고, 어디서 나온 값인지(공식표·계산·추정)를 함께 돌려준다.

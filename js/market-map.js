@@ -499,6 +499,7 @@
       return null;
     };
     model = Logic.build(out.rows, doc.lines, { group: st.group, size: st.size, color: st.color, scope: st.scope, sizeOf: sizeOf, valueOf: valueOf }, RT.tierOf);
+    model.groups.forEach(function (G) { G.tiles.forEach(function (t) { t.mv = valueOf(t.row.id); }); });   // K1: 색 지표 값(평당가·전세가율)
     // H2 묶음 확대: 고른 묶음이 이 조건에 없으면(묶기 기준·범위가 바뀜) 풀어 준다
     if (st.focus) {
       var FG = model.groups.filter(function (G) { return G.name === st.focus; })[0];
@@ -576,12 +577,13 @@
           if (b) { b.style.backgroundColor = '#e5e7eb'; b.style.color = '#374151'; b.classList.add('na'); var s0 = b.querySelector('span'); if (s0) s0.textContent = '아직'; }
           return;
         }
-        t.row = nt.row; t.color = nt.color; t.gain = nt.gain;
+        t.row = nt.row; t.color = nt.color; t.gain = nt.gain; t.mv = nt.mv;
         if (!b) return;
         b.style.backgroundColor = t.color.bg; b.style.color = t.color.fg;
         b.classList.toggle('na', !!t.color.hatch);
         var sp = b.querySelector('span');
-        if (sp) sp.textContent = t.gain == null ? (t.row.isNew ? '신규' : '—') : (t.gain > 0 ? '−' + t.gain + '분' : '0분');
+        if (sp) sp.textContent = metricOf(t).main;
+        var lb = tileLabel(t); b.setAttribute('aria-label', lb); b.title = lb;
       });
     });
     model = prev;
@@ -603,19 +605,43 @@
     var sz = st.size === 'deals' ? ' · 크기 = 역이 속한 법정동 아파트 매매 건수(최근 6개월), 점선 = 자료 없음'
       : st.size === 'supply' ? ' · 크기 = 역이 속한 법정동의 아직 준공 안 된 주택인허가 세대(수록 자료 기준, 입주 물량 그대로는 아님), 점선 = 없음·자료 없음' : ' · 크기 = 모두 같음';
     box.innerHTML = items.map(function (x) { return '<span><i style="background:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
-      '<span>' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표)' : st.color === 'price' ? '평당가 = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상)' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + ((global.KR_WAIT && KR_WAIT.isPeak()) ? ' · 출퇴근 배차 넣음' : ' · 열차 대기 뺌') + sz) + '</span>';
+      '<span>' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표) · 타일 숫자도 전세가율' : st.color === 'price' ? '평당가(만원/평) = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상) · 타일 숫자도 평당가' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위 · 타일 숫자 = 오른 계단(▲)' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + ((global.KR_WAIT && KR_WAIT.isPeak()) ? ' · 출퇴근 배차 넣음' : ' · 열차 대기 뺌') + sz) + '</span>';
   }
 
   // 목록 보기 — 묶음과 상관없이 한 줄로. 색 기준이 '빨라지는 분'이면 분 큰 순(신규는 맨 앞), '순위 변화'면 오른 계단 큰 순
   // 기준 시간은 업무지구 가중 평균이라 소수가 길다 — 소수 첫째 자리까지만 보인다
   function fm(v) { return v == null ? null : Math.round(v * 10) / 10; }
+  /* K1 (6차 피드백, 2026-11-14): 타일·목록의 주 숫자 = 지금 고른 '색' 지표 (색은 평당가인데 숫자는 시간이던 것)
+   * main: 타일·목록 주 숫자(단위 포함), sub: 목록 보조 줄, key: 목록 정렬(큰 값 먼저, 값 없음은 맨 뒤), say: 화면 읽기 앞머리
+   * 시간 앞면은 정수(약 N분) — 소수는 상세 카드에 (모형의 불확실성 ≠ 소수 정밀도) */
+  function metricOf(t) {
+    var r = t.row, c = st.color;
+    var timeTxt = r.isNew ? '지금은 철도로 못 감 → 개통 후 ' + Math.round(r.aft.min) + '분' : '지금 ' + Math.round(r.now.min) + '분 → 개통 후 ' + Math.round(r.aft.min) + '분';
+    if (c === 'price' || c === 'jeonse') {
+      var v = t.mv, raw = c === 'price' ? (typeof StationPrice !== 'undefined' && StationPrice.isReady() ? StationPrice.of(r.id) : null) : null;
+      var miss = c === 'price' && raw && raw.medianPerPyeong != null && raw.deals < 5 ? '거래 적음' : '자료 없음';
+      if (v == null) return { main: miss, sub: timeTxt, key: -1e9, say: (c === 'price' ? '평당가 ' : '전세가율 ') + miss };
+      var main = c === 'price' ? Math.round(v).toLocaleString('ko-KR') + '만' : Math.round(v * 100) + '%';
+      return { main: main, sub: timeTxt, key: v, say: c === 'price' ? '평당 ' + Math.round(v).toLocaleString('ko-KR') + '만원' : '전세가율 ' + Math.round(v * 100) + '%' };
+    }
+    if (c === 'tier') {
+      var m = r.isNew ? '신규' : r.change == null ? '—' : r.change > 0 ? '▲' + r.change : r.change < 0 ? '▼' + (-r.change) : '그대로';
+      return { main: m, sub: (r.isNew ? '' : r.now.rank + '→') + r.aft.rank + '위', key: r.isNew ? 1e6 : (r.change == null ? -1e9 : r.change), say: '순위 ' + (r.isNew ? '신규 ' + r.aft.rank + '위' : r.now.rank + '위→' + r.aft.rank + '위') };
+    }
+    var g = t.gain == null ? null : Math.round(t.gain);
+    return { main: g == null ? (r.isNew ? '신규' : '—') : (g > 0 ? '−' + g + '분' : '0분'), sub: r.isNew ? '개통 후 ' + Math.round(r.aft.min) + '분' : Math.round(r.now.min) + '→' + Math.round(r.aft.min) + '분',
+      key: r.isNew ? 1e6 : (t.gain == null ? -1e9 : t.gain), say: g == null ? (r.isNew ? '신규 역' : '자료 없음') : (g > 0 ? '약 ' + g + '분 빨라짐' : '변화 없음') };
+  }
+  function tileLabel(t) {
+    var r = t.row, M = metricOf(t);
+    return r.name + ' · ' + M.say + ' · ' + (r.isNew ? '지금은 철도로 못 감 → 개통 후 ' + fm(r.aft.min) + '분' : '지금 ' + fm(r.now.min) + '분 → 개통 후 ' + fm(r.aft.min) + '분') +
+      (r.change != null ? ' · 순위 ' + r.now.rank + '→' + r.aft.rank + '위' : '');
+  }
   function listRows() {
     var all = [];
     model.groups.forEach(function (G) { G.tiles.forEach(function (t) { all.push({ t: t, g: G.name }); }); });
-    var key = st.color === 'tier'
-      ? function (x) { return x.t.row.isNew ? 1e6 : (x.t.row.change == null ? -1e6 : x.t.row.change); }
-      : function (x) { return x.t.row.isNew ? 1e6 : (x.t.gain == null ? -1e6 : x.t.gain); };
-    all.sort(function (a, b) { return key(b) - key(a) || (a.t.row.aft.rank - b.t.row.aft.rank); });
+    all.forEach(function (x) { x.m = metricOf(x.t); });
+    all.sort(function (a, b) { return b.m.key - a.m.key || (a.t.row.aft.rank - b.t.row.aft.rank); });
     return all;
   }
   function drawList(board) {
@@ -623,11 +649,9 @@
     tileById = new Map();
     board.style.overflow = 'auto';
     board.innerHTML = '<ol class="mm-list">' + rows.map(function (x, i) {
-      var r = x.t.row, c = x.t.color;
-      var val = st.color === 'tier'
-        ? (r.isNew ? '신규' : (r.change > 0 ? '▲' + r.change : r.change < 0 ? '▼' + (-r.change) : '그대로') + ' · ' + r.now.rank + '→' + r.aft.rank + '위')
-        : (r.isNew ? '신규 · 개통 후 ' + fm(r.aft.min) + '분' : (x.t.gain > 0 ? '−' + x.t.gain + '분' : '0분') + ' · ' + fm(r.now.min) + '→' + fm(r.aft.min) + '분');
-      return '<li><button type="button" class="mm-tile mm-row' + (st.sel === r.id ? ' sel' : '') + '" data-id="' + esc(r.id) + '" tabindex="' + (i === 0 ? 0 : -1) + '">' +
+      var r = x.t.row, c = x.t.color, M = x.m;
+      var val = M.main + (M.sub ? ' · ' + M.sub : '');
+      return '<li><button type="button" class="mm-tile mm-row' + (st.sel === r.id ? ' sel' : '') + '" data-id="' + esc(r.id) + '" tabindex="' + (i === 0 ? 0 : -1) + '" aria-label="' + esc((i + 1) + '위 ' + tileLabel(x.t)) + '">' +
         '<span class="mm-rk">' + (i + 1) + '</span><i style="background:' + c.bg + '"></i><b>' + esc(r.name) + '</b><span class="mm-g">' + esc(x.g) + '</span><span class="mm-v">' + esc(val) + '</span></button></li>';
     }).join('') + '</ol>';
     board.querySelectorAll('.mm-row').forEach(function (b) { tileById.set(b.dataset.id, b); });
@@ -644,7 +668,7 @@
       return '<div class="mm-mxr"><div class="mm-mxh"><b><button type="button" class="mm-gname mm-gname-mx" data-g="' + esc(G.name) + '" aria-label="' + esc(G.name) + (st.focus ? ' — 전체 보기로 돌아가기' : ' — 이 묶음만 보기') + '">' + esc(G.name) + '</button></b><span>' + ts.length + '역' + (avg != null && st.color === 'gain' ? ' · 평균 −' + avg + '분' : '') + '</span></div><div class="mm-mxc">' +
         ts.map(function (t) {
           var r = t.row;
-          var lab = r.name + ' · ' + (r.isNew ? '지금은 철도로 못 감 → 개통 후 ' + fm(r.aft.min) + '분' : '지금 ' + fm(r.now.min) + '분 → 개통 후 ' + fm(r.aft.min) + '분') + (r.change != null ? ' · 순위 ' + r.now.rank + '→' + r.aft.rank + '위' : '');
+          var lab = tileLabel(t);
           var h = '<button type="button" class="mm-tile mm-cell' + (t.color.hatch ? ' na' : '') + (st.sel === r.id ? ' sel' : '') + '" data-id="' + esc(r.id) + '" tabindex="' + (first ? 0 : -1) + '" aria-label="' + esc(lab) + '" title="' + esc(lab) + '" style="background-color:' + t.color.bg + ';color:' + t.color.fg + '">' + esc(r.name.slice(0, 2)) + '</button>';
           first = false; return h;
         }).join('') + '</div></div>';
@@ -751,9 +775,7 @@
         '<button type="button" class="mm-gname" data-g="' + esc(G.name) + '" title="' + esc(G.name) + ' · ' + G.tiles.length + '역 — ' + (st.focus ? '전체 보기로' : '이 묶음만 크게') + '" aria-label="' + esc(G.name) + ' ' + G.tiles.length + '역 — ' + (st.focus ? '전체 보기로 돌아가기' : '이 묶음만 크게 보기') + '">' + esc(G.name) + ' · ' + G.tiles.length + (st.focus ? '' : ' ›') + '</button></div>';
       G.tiles.forEach(function (t) {
         var q = t.rect; if (!q || q.w < 1 || q.h < 1) return;
-        var row = t.row, val = t.gain == null ? (row.isNew ? '신규' : '—') : (t.gain > 0 ? '−' + t.gain + '분' : '0분');
-        var lab = row.name + ' · ' + (row.isNew ? '지금은 철도로 못 감' : '지금 ' + fm(row.now.min) + '분 → 개통 후 ' + fm(row.aft.min) + '분') +
-          (row.change != null ? ' · 순위 ' + row.now.rank + '→' + row.aft.rank + '위' : '');
+        var row = t.row, val = metricOf(t).main, lab = tileLabel(t);
         var cls = 'mm-tile' + (t.color.hatch ? ' na' : '') + (t.sizeMissing ? ' few' : '') + (st.sel === row.id ? ' sel' : '');
         var inner = (q.w > 27 && q.h > 15) ? '<b>' + esc(row.name) + '</b>' + ((q.w > 44 && q.h > 30) ? '<span>' + esc(val) + '</span>' : '') : '';
         html += '<button type="button" class="' + cls + '" data-id="' + esc(row.id) + '" tabindex="-1" role="gridcell" aria-label="' + esc(lab) + '" title="' + esc(lab) + '" ' +

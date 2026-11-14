@@ -23,7 +23,7 @@ const PLAN = {
   'gtx-b': { stage: '공사 중', basis: '민자 구간 착공 보고(2025-03), 공사 72개월 — 2031년 운행 목표 (보도)', url: 'https://news.mtn.co.kr/news-detail/2025080716382129857' },
   'gtx-c': { stage: '공사 중', basis: '국토교통부: 2026-09-15 민간투자 본공사 착수, 공사 60개월 (2031년 목표)', url: 'https://www.sidae.com/article/2026091509243569574' },
   'gtx-c-sangnoksu': { stage: '공사 중', basis: 'GTX-C 본선과 같이 2026-09-15 본공사 착수 (2031년 목표)', url: 'https://www.sidae.com/article/2026091509243569574' },
-  'gtx-d': { stage: '정부 계획(구상)', basis: '정부 2기 GTX 구상(2024-01-25 민생토론회) — 1단계 2035년 개통 목표, 노선·역 확정 전', url: 'https://www.korea.kr/news/policyNewsView.do?newsId=148925218' },
+  'gtx-d': { stage: '정부 계획(구상)', basis: '정부 2기 GTX 구상(2024-01-25 민생토론회) — D·E·F 1단계 2035년 개통 목표(그 발표를 전한 보도, 정부 원문엔 연도 없음), 제5차 국가철도망 구축계획 반영 전, 노선·역 확정 전', url: 'https://biz.newdaily.co.kr/site/data/html/2024/01/26/2024012600139.html' },
   'gtx-e': { stage: '정부 계획(구상)', basis: '정부 2기 GTX 구상(2024-01-25 민생토론회) — 2035년 개통 목표, 노선·역 확정 전', url: 'https://www.korea.kr/news/policyNewsView.do?newsId=148925218' },
   'gtx-f': { stage: '정부 계획(구상)', basis: '정부 2기 GTX 구상(2024-01-25 민생토론회) — 1단계(교산~왕숙2) 2035년 목표, 노선·역 확정 전', url: 'https://www.korea.kr/news/policyNewsView.do?newsId=148925218' },
   'gtx-g': { stage: '지자체 제안', basis: '경기도 GTX 플러스 노선안(2024-04-01) — 정부 계획 반영 전', url: 'https://newsseoul.co.kr/news/view/1065568225789045' },

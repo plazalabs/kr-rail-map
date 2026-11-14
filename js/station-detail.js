@@ -94,7 +94,7 @@
     'font-variant-numeric:tabular-nums}' +
     // 세대수·공급면적은 K-apt 에서 온 값이라 실거래가 줄과 구분해 둔다.
     // 색을 살짝 다르게 해서 '이건 다른 자료에서 왔다'가 눈에 보이게 한다.
-    '.sd-cx-u{grid-column:1/-1;font-size:var(--fs-xs);color:var(--fg-2,#374151);' +
+    '.sd-cx-u{grid-column:1/-1;font-size:var(--fs-xs);color:var(--text-2,#374151);' +
     'font-variant-numeric:tabular-nums;margin-top:1px}' +
     // 평형 구성은 한 단계 더 흐리게. 읽고 싶은 사람만 읽는 줄이다.
     '.sd-cx-b{grid-column:1/-1;font-size:var(--fs-xs);color:var(--muted,#5b6470);' +

@@ -18,6 +18,8 @@ const STATES = [
   ['순위표', 'rank.html', 1280, 900],
   ['다크 순위표', 'rank.html', 1280, 900, 1200, { dark: true }],
   ['노선 페이지', 'line/gtx-c.html', 1280, 900],
+  ['다크 게시판 페이지', 'board.html', 1280, 900, 1200, { dark: true }],
+  ['다크 역 상세', 'index.html#normal', 1440, 900, 1500, { dark: true, act: `StationDetail.show(STATIONS.find(s => s.properties.name_ko === '광화문'))` }],
 ];
 (async () => {
   for (const [nm, url, w, h, wait, o = {}] of STATES) {
@@ -26,6 +28,7 @@ const STATES = [
     if (o.dark) { await b.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] }); await b.send('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('krrail-theme', 'dark'); } catch (e) {}` }); }
     await b.goto(root + url, 800);
     for (let i = 0; i < 80; i++) { await sleep(250); if (await b.evaluate(`document.readyState === 'complete' && (typeof dataReady === 'undefined' || dataReady)`).catch(() => false)) break; }
+    if (o.act) await b.evaluate(o.act + '; 0').catch(() => null);
     await sleep(wait || 1200);
     await b.evaluate(AXE + ';0');
     const v = await b.evaluate(`axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] }, resultTypes: ['violations'] })

@@ -155,16 +155,19 @@ const StationAccess = (() => {
       'text-align:right;white-space:nowrap}' +
       '.sa-tbl th.sa-lab{text-align:left}' +
       '.sa-tbl tr:last-child td{border-bottom:0}' +
-      '.sa-lab{color:var(--fg-2,#374151)}' +
+      '.sa-lab{color:var(--text-2,#374151)}' +   // --fg-2 는 없는 이름이라 다크에서도 짙은 회색(대비 1.7)이었다 (axe 11-15)
       '.sa-now{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}' +
       '.sa-aft{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;' +
       'color:var(--muted,#5b6470);padding-left:8px}' +
       '.sa-gain{text-align:right;font-size:var(--fs-xs);font-weight:600;white-space:nowrap;padding-left:8px;' +
       'color:#0f7b3f}' +
       '.sa-gain.sa-new{color:#1a73e8}' +
+      // 다크 테마(어두운 바탕)에서는 초록·파랑을 밝게 — 대비 4.5:1 (axe 11-15)
+      'body[data-theme="dark"] .sa-gain,body[data-theme="eclipse"] .sa-gain,body[data-theme="neon"] .sa-gain{color:#5fd38d}' +
+      'body[data-theme="dark"] .sa-gain.sa-new,body[data-theme="eclipse"] .sa-gain.sa-new,body[data-theme="neon"] .sa-gain.sa-new{color:#8ab4f8}' +
       '.sa-none{color:var(--muted,#5b6470)}' +
       '.sa-sum{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border,#e5e7eb);' +
-      'font-size:var(--fs-xs);color:var(--fg-2,#374151)}' +
+      'font-size:var(--fs-xs);color:var(--text-2,#374151)}' +
       '.sa-sum b{font-variant-numeric:tabular-nums;white-space:nowrap}' +
       '.sa-sum span{white-space:nowrap}' +
       '.sa-rank{color:var(--muted,#5b6470)}' +

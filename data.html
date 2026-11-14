@@ -22,7 +22,7 @@
 :root{--bg:#fff;--surface:#f6f7f9;--text:#16191d;--text2:#4a5158;--muted:#5b6470;--border:#e3e6ea;--accent:#1b64da;--warn:#8a5300;--warnbg:#fff8e6;
 --r-card:18px;--r-chip:999px;--shadow:0 1px 2px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.06)}
 @media(prefers-color-scheme:dark){
-:root{--bg:#14171a;--surface:#1c2024;--text:#e8eaed;--text2:#b3bac1;--muted:#8b939b;--border:#2c3238;--accent:#8ab0ff;--warn:#e0b060;--warnbg:#2a2416;--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.32)}
+:root{--on-accent:#0b1220;--bg:#14171a;--surface:#1c2024;--text:#e8eaed;--text2:#b3bac1;--muted:#8b939b;--border:#2c3238;--accent:#8ab0ff;--warn:#e0b060;--warnbg:#2a2416;--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.32)}
 }
 *{box-sizing:border-box}
 body{margin:0;font-family: "Pretendard Variable", "Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
@@ -399,7 +399,7 @@ ODbL이 말하는 결과물(Produced Work)이라 지켜야 할 것은 출처 표
 지도 © OpenStreetMap · OpenFreeMap · 위성 © Esri<br>
 표시된 연장은 선형 데이터 기준이며 실제 영업거리와 다를 수 있습니다.</p>
 
-<a class="cta" href="./" style="display:inline-flex;align-items:center;gap:8px;margin:30px 0 0;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 22px;border-radius:11px">지도로 돌아가기 →</a>
+<a class="cta" href="./" style="display:inline-flex;align-items:center;gap:8px;margin:30px 0 0;background:var(--accent);color:var(--on-accent,#fff);text-decoration:none;font-weight:600;font-size:15px;padding:13px 22px;border-radius:11px">지도로 돌아가기 →</a>
 </main>
 <script src="js/page-keys.js"></script>
 </body>

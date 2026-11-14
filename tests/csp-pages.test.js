@@ -11,5 +11,9 @@ check(`공개 페이지 ${pages.length}개 모두 CSP 있음`, none.length === 0
 const weak = pages.filter(p => { const c = csp(p); return c && (!/default-src 'self'/.test(c) || /script-src[^;]*'unsafe-inline'/.test(c) || /script-src[^;]*'unsafe-eval'/.test(c)); });
 check("모두 default-src 'self' · 스크립트 인라인·eval 허용 없음", weak.length === 0, weak.slice(0, 5).join(', '));
 check('노선 페이지 생성기(build_pages.py)에도 CSP', /Content-Security-Policy/.test(fs.readFileSync(path.join(ROOT, 'build_pages.py'), 'utf8')));
+// 검색엔진용 설명(JSON-LD): 메인·순위표·노선 페이지 — 읽을 수 있는 JSON 이어야 한다 (11-15 순위표 추가)
+const ld = p => { const m = fs.readFileSync(path.join(ROOT, p), 'utf8').match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/); if (!m) return null; try { return JSON.parse(m[1]); } catch (e) { return 'BAD'; } };
+const ldBad = ['index.html', 'rank.html', ...pages.filter(p => p.startsWith('line/'))].filter(p => { const j = ld(p); return !j || j === 'BAD'; });
+check('메인·순위표·노선 페이지 모두 JSON-LD 가 있고 올바른 JSON', ldBad.length === 0, ldBad.slice(0, 5).join(', '));
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

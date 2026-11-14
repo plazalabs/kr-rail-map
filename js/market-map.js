@@ -496,7 +496,7 @@
   // 링크: ?market=1&y=&w=&c=&g=&s=&st= — 모르는 값은 무시(기본값)
   var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier', 'jeonse', 'price'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
   function linkQuery() {
-    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.band ? '&b=' + st.band : '') + (global.KR_WAIT && KR_WAIT.isPeak() ? '&wait=1' : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
+    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.band ? '&b=' + st.band : '') + (global.KR_WAIT ? '&wait=' + (KR_WAIT.isPeak() ? '1' : '0') : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
   }
   function note(msg) { var s = document.getElementById('status'); if (s) s.textContent = msg; }
 
@@ -526,7 +526,11 @@
 
   function compute() {
     var RT = RTab();
-    if (st.y !== 'all' && (doc.years || []).map(String).indexOf(String(st.y)) < 0) st.y = 'all';
+    if (st.y !== 'all' && (doc.years || []).map(String).indexOf(String(st.y)) < 0) {
+      // K14: 없어진 연도(옛 공유 링크의 2033 — GTX-D 2035 로 정정)는 그 뒤 첫 연도로, 없으면 전체
+      var ny = (doc.years || []).map(Number).filter(function (y) { return y >= +st.y; })[0];
+      st.y = ny ? String(ny) : 'all';
+    }
     var out = RT.compute(doc, { weight: st.w, region: 'capital', at: st.y, wait: (global.KR_WAIT && KR_WAIT.isPeak()) });   // 공통 '출퇴근 배차 넣기' (D9)
     rowsById = new Map(out.rows.map(function (r) { return [r.id, r]; }));
     var sizeOf = function (id) {

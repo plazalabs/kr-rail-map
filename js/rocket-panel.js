@@ -431,7 +431,7 @@
     if (st.sel) u.searchParams.set('st', st.sel);
     if (st.y) u.searchParams.set('y', st.y);
     if (st.w !== 'avg') u.searchParams.set('w', st.w);
-    if (global.KR_WAIT && KR_WAIT.isPeak()) u.searchParams.set('wait', '1');   // 비교 조건도 같이 (H7)
+    if (global.KR_WAIT) u.searchParams.set('wait', KR_WAIT.isPeak() ? '1' : '0');   // 비교 조건도 같이 (H7) — 뺌도 0 으로 (K14)
     var done = function (ok) { var t = btn.textContent; btn.textContent = ok ? '복사됨' : '복사 실패'; setTimeout(function () { btn.textContent = t; }, 1500); };
     try { navigator.clipboard.writeText(u.toString()).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
   }
@@ -451,6 +451,7 @@
       if (!doc) { if (global.setStatus) global.setStatus('떡상 자료를 불러오지 못했습니다'); return; }
       if (!st.y) st.y = defaultYear(doc);
       if (o.y && (o.y === 'all' || (doc.years || []).map(String).indexOf(String(o.y)) >= 0)) st.y = String(o.y);
+      else if (o.y && /^20\d\d$/.test(String(o.y))) { var ny = (doc.years || []).map(Number).filter(function (y) { return y >= +o.y; })[0]; if (ny) st.y = String(ny); }   // K14: 없어진 연도(옛 링크 2033)는 그 뒤 첫 연도로
       if (o.w && WEIGHT_LABEL[o.w]) st.w = o.w;
       // 열 때마다 공통 '출퇴근 배차' 설정을 다시 읽는다 — 패널을 만들기 전에(역 타일 지도에서) 바뀐 값도 따라가게 (D9)
       if (global.KR_WAIT) st.wait = KR_WAIT.isPeak();

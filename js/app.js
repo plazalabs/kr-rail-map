@@ -1089,7 +1089,8 @@ document.getElementById('share-btn').addEventListener('click', async () => {
     const c = map.getCenter(), z = map.getZoom();
     url.searchParams.set('c', `${c.lng.toFixed(5)},${c.lat.toFixed(5)},${z.toFixed(1)}`);
     // 비교 조건 (H7, 2026-11-14): 배차 포함·개통 예정 노선 포함 — 받은 사람도 같은 조건으로 본다
-    if (window.KR_WAIT && KR_WAIT.isPeak()) url.searchParams.set('wait', '1'); else url.searchParams.delete('wait');
+    // K14 (6차 ②8): 뺌도 wait=0 으로 적는다 — 빠지면 받은 사람의 저장값(배차 넣음)으로 보여 분이 달라졌다
+    if (window.KR_WAIT) url.searchParams.set('wait', KR_WAIT.isPeak() ? '1' : '0'); else url.searchParams.delete('wait');
     if (from && to && routeIncludeUnopened()) url.searchParams.set('unopened', '1'); else url.searchParams.delete('unopened');
     // 노선 보기 (J13, 2026-11-14): 범위(전국)·보기 버튼(운행 중 등) — 받은 사람도 같은 노선을 본다
     if (scope === 'all') url.searchParams.set('scope', 'all'); else url.searchParams.delete('scope');

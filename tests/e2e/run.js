@@ -73,6 +73,7 @@ const CHECKS = [
   ['basemap-down', 'basemap-down.e2e.js', {}, '배경 지도 서버가 죽어도 노선·역·길찾기는 된다 (비상 배경, 2026-11-12)'],
   ['data-fail', 'data-fail.e2e.js', {}, '자료 일부 실패 알림 — 무엇을 못 받았는지·다시 시도 (H4, 2026-11-14)'],
   ['route-edge', 'route-edge.e2e.js', {}, '길찾기 경계 — 출발=도착·못 가는 역 안내·상태 줄 (H10, 2026-11-14)'],
+  ['share-wait', 'share-wait.e2e.js', {}, '공유 링크 wait=0/1 늘 적기 · 옛 링크 y=2033 → 2035 (K14, 2026-11-14)'],
   ['route-mode', 'route-mode.e2e.js', {}, '길찾기 칩 줌 12 미만은 출발·도착·환승만 · 떡상·시세로 바꾸면 경로 지움 · 배경 바꿔도 경로 유지 (K10, 2026-11-14)'],
   ['share-conditions', 'share-conditions.e2e.js', {}, '공유 링크에 비교 조건(배차 포함·개통 예정 포함) (H7, 2026-11-14)'],
   ['board', 'board.e2e.js', {}, '게시판: 설정 없으면 준비 중, 있으면 목록·글쓰기·도배 막기·신고·XSS 막힘 (Supabase 흉내, 2026-11-12)'],

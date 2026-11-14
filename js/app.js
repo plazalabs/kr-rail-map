@@ -417,12 +417,16 @@ function addDataLayers() {
     id: 'my-location-dot', type: 'circle', source: 'my-location',
     paint: { 'circle-radius': 8, 'circle-color': '#4285f4', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 }
   });
-  map.addSource('stations', { type: 'geojson', data: { type: 'FeatureCollection', features: STATIONS } });
+  map.addSource('stations', { type: 'geojson', data: { type: 'FeatureCollection', features: stationRenderFeatures() } });
+  // K9 (6차 ①A3·A4, 2026-11-14): 역 점 테두리 = 그 역 노선 색, 환승역(운행 중 노선 2개 이상)은 더 크고 진한 테두리.
+  // 예전엔 모든 역이 흰 점 + #333 이라 어느 노선 역인지, 어디서 갈아타는지 점만 보고는 몰랐다.
   map.addLayer({
     id: 'rail-stations', type: 'circle', source: 'stations',
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 2, 13, 5],
-      'circle-color': '#ffffff', 'circle-stroke-color': '#333333', 'circle-stroke-width': 1.2
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, ['case', ['>=', ['get', '_n'], 2], 3, 2], 13, ['case', ['>=', ['get', '_n'], 2], 7, 5]],
+      'circle-color': '#ffffff',
+      'circle-stroke-color': ['case', ['>=', ['get', '_n'], 2], DARK_THEMES.has(theme) ? '#e6e8eb' : '#1f2328', ['coalesce', ['get', '_c'], '#333333']],
+      'circle-stroke-width': ['case', ['>=', ['get', '_n'], 2], 2, 1.6]
     }
   });
   map.addLayer({
@@ -431,8 +435,10 @@ function addDataLayers() {
     // 배경지도 글꼴 서버(OpenFreeMap)에는 Noto Sans 만 있다. 404 가 나고
     // 라벨이 통째로 사라진다 — 실제로 역 이름이 안 보이고 있었다.
     layout: {
-      'text-field': ['get', 'name_ko'], 'text-size': 11, 'text-offset': [0, 1.2],
-      'text-font': ['Noto Sans Regular']
+      // 라벨 위계 (K9): 환승역은 굵고 크게, 겹치면 환승역 이름을 먼저 남긴다(symbol-sort-key 작을수록 먼저)
+      'text-field': ['get', 'name_ko'], 'text-size': ['case', ['>=', ['get', '_n'], 2], 12.5, 11], 'text-offset': [0, 1.2],
+      'text-font': ['case', ['>=', ['get', '_n'], 2], ['literal', ['Noto Sans Bold']], ['literal', ['Noto Sans Regular']]],
+      'symbol-sort-key': ['-', 10, ['get', '_n']]
     },
     // 위성 사진 위에서는 검은 글자 + 얇은 흰 테두리가 어두운 지붕·숲에 묻힌다.
     // 위성일 때만 흰 글자 + 어두운 테두리로 바꾼다. 일반·다크·흑백은 그대로.
@@ -445,6 +451,20 @@ function addDataLayers() {
 // 위성 사진·어두운 배경(다크·이클립스·네온 테마)에서는 흰 글자 + 어두운 테두리,
 // 밝은 배경에서는 어두운 글자 + 흰 테두리. 예전에는 다크 테마에서도 검은 글자 + 1px 흰 테두리라
 // 어두운 지도 위에서 글자가 테두리에만 기대어 읽혔다 (2026-11-11 측정).
+// 지도에 그릴 역 — 원본 STATIONS 는 그대로 두고 그리기용 값만 붙인 복사본 (K9)
+//   _c: 대표 노선 색 (line_id → 그 노선 색, 없으면 lines 중 색 있는 첫 노선) · _n: 운행 중 노선 수 (환승역 판단)
+function stationRenderFeatures() {
+  const byId = new Map(LINES.map(f => [f.properties.id, f.properties]));
+  const open = id => { const p = byId.get(id); return !!p && String(p.status || 'open').toLowerCase() === 'open'; };
+  return STATIONS.map(f => {
+    const p = f.properties || {};
+    const ls = Array.isArray(p.lines) ? p.lines : [];
+    const main = byId.get(p.line_id) && byId.get(p.line_id).color ? p.line_id : ls.find(l => byId.get(l) && byId.get(l).color);
+    const n = new Set(ls.filter(open).map(l => (byId.get(l) || {}).name_ko || l)).size;   // 같은 노선의 갈래(GTX-A 연장 등)는 이름으로 묶어 한 번
+    return { type: 'Feature', geometry: f.geometry, properties: Object.assign({}, p, { _c: main ? byId.get(main).color : null, _n: n }) };
+  });
+}
+
 function labelPaint(darkText, haloW) {
   const darkBg = modeFromHash() === 'satellite' || DARK_THEMES.has(theme);
   return darkBg

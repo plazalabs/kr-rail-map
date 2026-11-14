@@ -54,5 +54,43 @@ const root = BASE.replace(/#.*$/, '').replace(/\?.*$/, '');
   const rr = await r2.evaluate(`({ ev: (window.__ev||[]).filter(e => e[0] === '공유로 도착').map(e => e[1].종류), search: location.search, kt: typeof KRTrack, um: typeof umami, all: window.__ev, logs: 0 })`);
   R.check('rank.html?ref=card-rank: 도착 1번·이름표 지움', rr.ev.length === 1 && rr.ev[0] === 'card-rank' && rr.search === '', Object.assign(rr, { logs: r2.logs.slice(0, 6) }));
   r2.close();
+  // 카드 주소에 카드 내용 조건이 붙는다 → 받은 사람이 그 화면을 바로 본다 (11-15)
+  {
+    const b = await launch({ port: 9797, w: 1440, h: 900 });
+    await b.send('Network.setBypassServiceWorker', { bypass: true });
+    await b.send('Page.addScriptToEvaluateOnNewDocument', { source: STUB + `navigator.canShare = function () { return true; }; navigator.share = function (d) { window.__shared = d; return Promise.resolve(); };` });
+    await b.goto(root + '#normal', 800); await ready(b);
+    const gen = await b.evaluate(`(async () => {
+      const sid = STATIONS.find(f => f.properties.name_ko === '서울').properties.id;
+      const out = { sid };
+      RocketPanel.open({ st: sid }); await new Promise(r => setTimeout(r, 1500));
+      const sb = document.querySelector('.rkp [data-act="share"]'); if (sb) { sb.click(); await new Promise(r => setTimeout(r, 2500)); }
+      out.station = window.__shared && window.__shared.text; window.__shared = null;
+      RocketPanel.close();
+      CommuteMap.show(sid, { limit: 60 }); await new Promise(r => setTimeout(r, 1500));
+      out.reach = (CommuteMap.reachCardInfo() || {}).q;
+      out.limitSel = document.getElementById('cm-limit').value;
+      CommuteMap.hide();
+      return out; })()`);
+    R.check('역 카드 주소 = ?ref=card-station&rocket=1&st=그 역', /\?ref=card-station&rocket=1&st=/.test(gen.station || '') && (gen.station || '').includes(encodeURIComponent(gen.sid)), gen);
+    R.check('통근권 카드 조건 = cm=목적지&t=60 (show 의 limit 도 먹음)', (gen.reach || '').startsWith('cm=' + encodeURIComponent(gen.sid) + '&t=60') && gen.limitSel === '60', gen);
+    b.close(); await sleep(800);
+    const sid = gen.sid, e = encodeURIComponent;
+    const cases = [
+      ['역 카드', `?ref=card-station&rocket=1&st=${e(sid)}`, `RocketPanel.isOpen() && RocketPanel.state().sel === ${JSON.stringify(sid)}`],
+      ['통근권 카드', `?ref=card-reach&cm=${e(sid)}&t=60`, `CommuteMap.isActive() && document.getElementById('cm-limit').value === '60' && /서울/.test(document.getElementById('cm-dest').value)`],
+      ['타일 카드', `?ref=card-tiles&market=1&y=all`, `MarketMap.isOpen()`],
+      ['출퇴근 카드', `?ref=card-commute&from=${e('서울')}&from_id=${e(sid)}&to=${e('강남')}&unopened=1`, `/서울/.test(document.getElementById('route-from').value) && /강남/.test(document.getElementById('route-to').value)`],
+    ];
+    for (const [nm, q, cond] of cases) {
+      const c = await launch({ port: 9798, w: 1440, h: 900 });
+      await c.send('Network.setBypassServiceWorker', { bypass: true });
+      await c.send('Page.addScriptToEvaluateOnNewDocument', { source: STUB });
+      await c.goto(root + q + '#normal', 800); await ready(c); await sleep(1500);
+      const r = await c.evaluate(`({ ok: !!(${cond}), ref: !/ref=/.test(location.search), ev: __ev.filter(x => x[0] === '공유로 도착').map(x => x[1].종류) })`);
+      R.check(`${nm} 주소로 들어오면 그 화면이 바로 열림 + 도착 1번 + ref 지움`, r.ok && r.ref && r.ev.length === 1, r);
+      c.close(); await sleep(600);
+    }
+  }
   R.finish();
 })().catch(e => { console.error(e); process.exit(1); });

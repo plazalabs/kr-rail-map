@@ -101,7 +101,9 @@
     const wantPeak = !!(window.KR_WAIT && window.KR_WAIT.isPeak()), hw = !!(RouteFinder.hasHeadways && RouteFinder.hasHeadways());
     return { name: dest.properties.name_ko, coord: dest.geometry.coordinates, limit: maxMin,
       now: compute(destId, maxMin, { withUnopened: false }), aft: compute(destId, maxMin, { withUnopened: true }),
-      lines: (typeof LINES !== 'undefined' ? LINES : []), wait: wantPeak && hw };
+      lines: (typeof LINES !== 'undefined' ? LINES : []), wait: wantPeak && hw,
+      // 받은 사람이 같은 통근권(목적지·분)을 바로 보게 (11-15) — js/app.js restoreFromUrl 이 cm= 를 읽는다
+      q: 'cm=' + encodeURIComponent(destId) + '&t=' + maxMin + (window.KR_WAIT ? '&wait=' + (window.KR_WAIT.isPeak() ? '1' : '0') : '') };
   }
 
   function injectCss() {
@@ -338,9 +340,10 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     if (btn) btn.classList.toggle('active', active);
   }
 
-  function show(stationId) {
+  function show(stationId, opts) {
     ensurePanel();
     if (stationId && byId.has(stationId)) destId = stationId;
+    if (opts && LIMITS.indexOf(+opts.limit) >= 0) { maxMin = +opts.limit; const ls = panel.querySelector('#cm-limit'); if (ls) ls.value = String(maxMin); }
     if (!destId) {
       const g = ST.find(s => s.properties.name_ko === '강남');
       destId = g ? g.properties.id : null;

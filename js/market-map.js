@@ -1098,7 +1098,7 @@
     var S = global.StationShareImage, cc = cardCanvas();
     track('market_map_share', { 종류: '이미지' });
     if (cc && S.saveCanvas) {   // 카드 ④: 휴대폰은 공유 창(카톡 등), PC 는 내려받기
-      S.saveCanvas(cc, 'GTX효과_타일지도_' + (st.y === 'all' ? '전체개통' : st.y + '년') + '.png', '한 장으로 보는 수도권 철도 효과', 'card-tiles').then(function (m) { if (m) note(m); }, function () { note('이미지를 만들지 못했습니다'); });
+      S.saveCanvas(cc, 'GTX효과_타일지도_' + (st.y === 'all' ? '전체개통' : st.y + '년') + '.png', '한 장으로 보는 수도권 철도 효과', 'card-tiles', linkQuery().slice(1)).then(function (m) { if (m) note(m); }, function () { note('이미지를 만들지 못했습니다'); });
       return;
     }
     var c = pngCanvas(); if (!c) return;

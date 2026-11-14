@@ -1127,6 +1127,9 @@ function restoreFromUrl() {
     map.flyTo({ center: sf.geometry.coordinates, zoom: Math.max(map.getZoom(), 13), duration: 0 });
     setTimeout(() => showStation(sf), 300);
   }
+  // ?cm=역ID&t=분 — 통근권 카드(개통 전/후 지도)를 받은 사람은 같은 목적지·분으로 통근권을 연다 (11-15)
+  const cm = q.get('cm'), cmf = cm && stationById(cm);
+  if (cmf && typeof CommuteMap !== 'undefined') setTimeout(() => CommuteMap.show(cm, { limit: q.get('t') }), 300);
   const c = q.get('c');
   if (c) {
     const [lng, lat, z] = c.split(',').map(Number);

@@ -66,7 +66,7 @@
   function fileName(r) { return '접근성_' + r.name + '_' + (r.now.rank || '') + '위→' + r.aft.rank + '위.png'; }
 
   // 반환: 안내 글 ('공유했어요' / '이미지를 저장했어요' / '' (취소))
-  function save(r, o) { return saveCanvas(draw(r, o), fileName(r), r.name + ' 개통 후 접근성 ' + r.aft.rank + '위', 'card-station'); }
+  function save(r, o) { return saveCanvas(draw(r, o), fileName(r), r.name + ' 개통 후 접근성 ' + r.aft.rank + '위', 'card-station', o && o.q); }
 
   /* ── 카톡·인스타 공유 카드 (회장님 11-14: 사진이 곧 광고 — 3→1→4→2→5 순서) ──
    * 모두 세로 1080×1350(4:5, 카톡·인스타에서 가장 크게 보임) + 같은 아래 띠(슬로건·주소·'추정·집값 예측 아님·기준일').
@@ -142,7 +142,7 @@
   function top10Layout(rows, g) { return rows.map(function (r) { var L = top10Row(g, r, 1080); g.font = '800 40px ' + FONT; var nEnd = 150 + g.measureText(topName(g, r.name)).width; return { name: r.name, nameEnd: Math.round(nEnd), region: L.region, regEnd: Math.round(L.regEnd), rkStart: Math.round(L.rkX), overlap: nEnd > L.regX - 8 || (!!L.region && L.regEnd > L.rkX - 8) }; }); }
   function saveTop10(rows, o) {
     var name = '접근성TOP10_' + (o.y === 'all' ? '전체개통' : o.y + '년') + '.png';
-    return saveCanvas(drawTop10(rows, o), name, (o.y === 'all' ? '모두 개통하면' : o.y + '년까지') + ' 교통 접근성 개선 TOP 10', 'card-top10');
+    return saveCanvas(drawTop10(rows, o), name, (o.y === 'all' ? '모두 개통하면' : o.y + '년까지') + ' 교통 접근성 개선 TOP 10', 'card-top10', o.q);
   }
 
   // ② 우리 역 생활권 변화 카드 (종합피드백 12장 B, 2026-11-14) — 킬러 1순위 '생활권 변화'의 무료 미리보기.
@@ -197,7 +197,7 @@
   function saveLife(info, o) {
     var s = lifeSummary(info.rows || []);
     return saveCanvas(drawLife(info, o), '생활권변화_' + info.name + '.png',
-      info.name + '역 생활권 변화 — 30분 안 업무지구 ' + s.n30now + '곳 → ' + s.n30aft + '곳', 'card-life');
+      info.name + '역 생활권 변화 — 30분 안 업무지구 ' + s.n30now + '곳 → ' + s.n30aft + '곳', 'card-life', info.q);
   }
 
   // ② 출퇴근 비교 카드 (회장님 11-14: A) — info: { from, to, status: better|new|same|worse, now:{min,tr}, aft:{min,tr}, lines:[이름] }
@@ -272,7 +272,7 @@
   function saveCommute(info, o) {
     var s = commuteSummary(info);
     return saveCanvas(drawCommute(info, o), '출퇴근_' + info.from + '_' + info.to + '.png',
-      info.from + '역 → ' + info.to + '역 개통 후 ' + s.tag, 'card-commute');
+      info.from + '역 → ' + info.to + '역 개통 후 ' + s.tag, 'card-commute', info.q);
   }
 
   // ⑤ 개통 전/후 지도 카드 (회장님 11-14 B) — "○○역까지 N분 안에 닿는 역" 을 지금 | 개통 후 두 칸에 나란히.
@@ -346,12 +346,13 @@
   function saveReach(info, o) {
     var s = reachSummary(info);
     return saveCanvas(drawReach(info, o), '통근권_' + info.name + '_' + info.limit + '분.png',
-      info.name + '역까지 ' + info.limit + '분 안 — 지금 ' + s.n + '곳 → 개통 후 ' + s.m + '곳', 'card-reach');
+      info.name + '역까지 ' + info.limit + '분 안 — 지금 ' + s.n + '곳 → 개통 후 ' + s.m + '곳', 'card-reach', info.q);
   }
 
   // tag: 어떤 카드가 퍼졌는지 세려고 공유 주소에 ?ref= 이름표 (6차 공유 피드백 — 측정 없는 바이럴은 구멍)
   // 결과도 따로 센다(2026-11-15): 누름(share_card) → 결과(share_result: 공유함·저장함·취소·공유 실패→저장·만들기 실패) → 받은 사람 도착(js/track.js '공유로 도착')
-  function saveCanvas(c, name, title, tag) {
+  // q: 받은 사람이 카드 내용을 바로 보게 하는 주소 조건(예: 'rocket=1&st=…') — 카드를 만든 곳이 채운다 (11-15)
+  function saveCanvas(c, name, title, tag, q) {
     if (tag && typeof global.KRTrack === 'function') global.KRTrack('share_card', { 종류: tag });   // Umami: 카드별 공유 단추 횟수
     var result = function (r) { if (tag && typeof global.KRTrack === 'function') global.KRTrack('share_result', { 종류: tag, 결과: r }); };
     return new Promise(function (res) { c.toBlob(res, 'image/png'); }).then(function (blob) {
@@ -366,7 +367,7 @@
       };
       var why = '';
       if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        return navigator.share({ files: [file], title: title, text: location.origin + location.pathname + (tag ? '?ref=' + tag : '') })
+        return navigator.share({ files: [file], title: title, text: location.origin + location.pathname + (tag ? '?ref=' + tag + (q ? '&' + q : '') : (q ? '?' + q : '')) })
           .then(function () { result('공유함'); return '공유했어요'; }, function (e) {
             if (e && e.name === 'AbortError') { result('취소'); return ''; }
             why = '공유 실패→저장'; return download();

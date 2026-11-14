@@ -927,7 +927,10 @@ const RouteCompare = (() => {
     const v = r => r ? { min: r.minutes, tr: r.transfers } : null;
     return { from: sname(fromId), to: sname(toId), status: st, now: v(cmp.now), aft: st === 'same' ? v(cmp.now) : v(cmp.future),
       lines: st === 'same' ? [] : (cmp.lines || []).map(lineStatusLabel),
-      unsure: st !== 'same' && (cmp.lines || []).some(id => ['planned', 'proposed'].includes((lineMetaOf.get(id) || {}).status)) };
+      unsure: st !== 'same' && (cmp.lines || []).some(id => ['planned', 'proposed'].includes((lineMetaOf.get(id) || {}).status)),
+      // 받은 사람이 같은 길찾기(개통 예정 포함)를 바로 보게 (11-15)
+      q: 'from=' + encodeURIComponent(sname(fromId)) + '&from_id=' + encodeURIComponent(fromId) + '&to=' + encodeURIComponent(sname(toId)) + '&to_id=' + encodeURIComponent(toId) + '&unopened=1' +
+        (window.KR_WAIT ? '&wait=' + (KR_WAIT.isPeak() ? '1' : '0') : '') };
   }
   // 'GTX-D (계획 · 2035년)' — 카드가 퍼질 때 확정된 노선처럼 읽히지 않게 상태·목표 연도를 붙인다
   const STATUS_WORD = { construction: '공사 중', planned: '계획', proposed: '구상' };

@@ -211,7 +211,7 @@
       var top = RankTable.sortRows(R.rows.filter(function (x) { return !x.isNew && x.change != null && x.change > 0; }), 'rise').slice(0, 10);
       if (!top.length || typeof StationShareImage === 'undefined') return;
       var t0 = b.innerHTML; b.disabled = true;
-      StationShareImage.saveTop10(top, { y: st.y, w: st.w, wait: st.wait, asof: doc && doc.updated }).then(function (m) {
+      StationShareImage.saveTop10(top, { y: st.y, w: st.w, wait: st.wait, asof: doc && doc.updated, q: linkQ(null) }).then(function (m) {
         b.disabled = false; if (m) { b.textContent = m; setTimeout(function () { b.innerHTML = t0; }, 1800); }
       }, function () { b.disabled = false; b.textContent = '저장 실패'; setTimeout(function () { b.innerHTML = t0; }, 1800); });
     });
@@ -245,7 +245,7 @@
         var row = res().byId[st.sel];
         if (!row || typeof StationShareImage === 'undefined') return;
         var t0 = b.textContent; b.disabled = true;
-        StationShareImage.save(row, { doc: doc, y: st.y, w: st.w, wait: st.wait }).then(function (m) {
+        StationShareImage.save(row, { doc: doc, y: st.y, w: st.w, wait: st.wait, q: linkQ(row.id) }).then(function (m) {
           b.disabled = false; if (m) { b.textContent = m; setTimeout(function () { b.textContent = t0; }, 1800); }
         }, function () { b.disabled = false; b.textContent = '저장 실패'; setTimeout(function () { b.textContent = t0; }, 1800); });
       }
@@ -422,6 +422,12 @@
     if (b) { b.innerHTML = Icons.svg('play'); b.setAttribute('aria-label', '연도 차례로 보기'); }
   }
 
+  // 공유 카드 주소 조건 (11-15) — 링크 복사와 같은 규칙, 받은 사람이 같은 떡상 화면을 본다
+  function linkQ(sel) {
+    var q = 'rocket=1' + (sel ? '&st=' + encodeURIComponent(sel) : '') + (st.y ? '&y=' + encodeURIComponent(st.y) : '') + (st.w !== 'avg' ? '&w=' + encodeURIComponent(st.w) : '');
+    if (global.KR_WAIT) q += '&wait=' + (KR_WAIT.isPeak() ? '1' : '0');
+    return q;
+  }
   function copyLink(btn) {
     if (global.KRTrack) global.KRTrack('링크 복사', { 곳: '떡상' });
     var u = new URL(location.href);

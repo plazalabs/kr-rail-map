@@ -796,7 +796,7 @@
     if (lfBtn) lfBtn.addEventListener('click', function () {
       var ac = StationAccess.of(sid);
       if (!ac) return;
-      StationShareImage.saveLife({ name: nameKo, rows: ac.rows, asof: StationAccess.asof ? StationAccess.asof() : '' }, { wait: false })   // access.json 은 기다림 뺀 시간
+      StationShareImage.saveLife({ name: nameKo, rows: ac.rows, asof: StationAccess.asof ? StationAccess.asof() : '', q: 'st=' + encodeURIComponent(sid) }, { wait: false })   // access.json 은 기다림 뺀 시간
         .then(function (msg) { if (msg) lfBtn.textContent = msg + ' — 다시 공유 →'; });
     });
     var cmBtn = body.querySelector('.sd-commute');

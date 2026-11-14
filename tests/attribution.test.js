@@ -209,5 +209,7 @@ check('data.html 에 h1 하나', (dataPage.match(/<h1>/g) || []).length === 1);
 check('data.html 이 다크모드 대응', /prefers-color-scheme:dark/.test(dataPage));
 check('data.html 이 루트로 돌아가는 링크', /href="\.\/"/.test(dataPage));
 
+check("위성 배경 출처에 'Powered by Esri'(Esri 표시 규칙, 11-15)", /Powered by Esri/.test(fs.readFileSync(path.join(__dirname, '..', 'js/app.js'), 'utf8')));
+
 console.log('\n결과: ' + pass + ' 통과 / ' + fail + ' 실패');
 process.exit(fail ? 1 : 0);

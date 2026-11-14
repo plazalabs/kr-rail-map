@@ -25,7 +25,8 @@ const STYLES = {
         tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
         tileSize: 256,
         maxzoom: 19,
-        attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
+        // Esri 표시 규칙(developers.arcgis.com basemap-attribution): 'Powered by Esri' + 자료 제공처 (라이선스 점검 11-15)
+        attribution: 'Powered by Esri · Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
       }
     },
     layers: [{ id: 'esri', type: 'raster', source: 'esri' }]

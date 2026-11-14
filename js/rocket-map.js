@@ -19,8 +19,13 @@
   function tok(name, fb) {
     try { var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v || fb; } catch (e) { return fb; }
   }
-  var COLORS = { rocket: tok('--map-rocket', '#0a8f4a'), up: tok('--map-up', '#3aa76d'), flat: tok('--map-flat', '#9aa1a8'),
-    down: tok('--map-down', '#d9701a'), new: tok('--map-new', '#7a3fd0') };
+  // I9 (2026-11-14): 파일을 읽을 때 바로 getComputedStyle 하면 첫 화면 도중 스타일 계산을 강제한다(프로파일 약 49ms) — 처음 쓸 때 한 번만
+  var COLORS_ = null;
+  function colors() {
+    if (!COLORS_) COLORS_ = { rocket: tok('--map-rocket', '#0a8f4a'), up: tok('--map-up', '#3aa76d'), flat: tok('--map-flat', '#9aa1a8'),
+      down: tok('--map-down', '#d9701a'), new: tok('--map-new', '#7a3fd0') };
+    return COLORS_;
+  }
   var CAPITAL = { '서울': 1, '경기': 1, '인천': 1 };
   var mapRef = null, stationsRef = null, layerOn = false, feats = null, loading = null, doc = null;
   var view = { weight: 'avg', at: 'all', wait: false };
@@ -76,14 +81,14 @@
         'circle-radius': ['interpolate', ['linear'], ['zoom'],
           8, ['interpolate', ['linear'], ['get', 's'], 40, 2.2, 80, 3.6, 95, 6.6],
           13, ['interpolate', ['linear'], ['get', 's'], 40, 4.4, 80, 7.5, 95, 13.7]],
-        'circle-color': ['match', ['get', 't'], 'rocket', COLORS.rocket, 'up', COLORS.up, 'down', COLORS.down, 'new', COLORS.new, COLORS.flat],
+        'circle-color': ['match', ['get', 't'], 'rocket', colors().rocket, 'up', colors().up, 'down', colors().down, 'new', colors().new, colors().flat],
         'circle-opacity': ['match', ['get', 't'], 'flat', 0.55, 0.9],
         'circle-stroke-color': '#ffffff', 'circle-stroke-width': ['match', ['get', 't'], 'rocket', 2, 1] } });
       mapRef.addLayer({ id: LAYER + '-label', type: 'symbol', source: LAYER, minzoom: 11,
         filter: ['!=', ['get', 'label'], ''],
         layout: { 'text-field': ['get', 'label'], 'text-size': 11, 'text-offset': [0, -1.5], 'text-font': ['Noto Sans Bold'],
           'text-allow-overlap': false, 'symbol-sort-key': ['-', 0, ['get', 'c']] },
-        paint: { 'text-color': ['match', ['get', 't'], 'rocket', COLORS.rocket, 'up', COLORS.up, COLORS.new],
+        paint: { 'text-color': ['match', ['get', 't'], 'rocket', colors().rocket, 'up', colors().up, colors().new],
           'text-halo-color': '#ffffff', 'text-halo-width': 1.6 } });
       // 고른 역 — 파란 고리
       mapRef.addSource(SEL, { type: 'geojson', data: selData() });
@@ -138,6 +143,6 @@
     features: function () { return feats; },
     doc: function () { return doc; },
     view: function () { return view; },
-    COLORS: COLORS,
+    get COLORS() { return colors(); },
   };
 })(typeof window !== 'undefined' ? window : globalThis);

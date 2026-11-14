@@ -645,6 +645,7 @@ document.querySelectorAll('.scope-btn').forEach(b =>
   b.addEventListener('click', () => setScope(b.dataset.scope)));
 window.setScope = setScope;
 
+const KO_NUM_COLLATOR = new Intl.Collator('ko', { numeric: true });   // localeCompare(…, 'ko', { numeric: true }) 와 같은 순서
 function renderLineList() {
   const box = document.getElementById('line-list');
   box.innerHTML = '';
@@ -663,7 +664,7 @@ function renderLineList() {
     sum.textContent = `${CAT_NAMES[cat] || cat} (${groups[cat].length})`;
     det.appendChild(sum);
     groups[cat]
-      .sort((a, b) => (a.properties.name_ko || '').localeCompare(b.properties.name_ko || '', 'ko', { numeric: true }))
+      .sort((a, b) => KO_NUM_COLLATOR.compare(a.properties.name_ko || '', b.properties.name_ko || ''))   // I9: 비교기 한 번만 (localeCompare 는 부를 때마다 만듦)
       .forEach(f => {
         const p = f.properties;
         const label = document.createElement('label');
@@ -1169,10 +1170,12 @@ function lineLabelOf(lid) {
 }
 function setupRouteFinder() {
   LINES.forEach(f => lineNameOf.set(f.properties.id, f.properties.name_ko));
-  const info = RouteFinder.buildGraph(LINES, STATIONS);
+  // I9 (2026-11-14): 그래프는 첫 화면 뒤에 만든다(lazy) — 길찾기 등 처음 쓸 때 또는 지도 준비 뒤 쉬는 시간(buildRouteGraphIdle)
+  RouteFinder.buildGraph(LINES, STATIONS, { lazy: true });
   // 지도에 따로 그리지 않는 급행 계통(ITX-청춘)도 경로 결과에 이름이 나오게
   if (RouteFinder.extraLines) RouteFinder.extraLines().forEach(x => lineNameOf.set(x.id, x.name_ko));
-  window.__routeGraph = info;   // K11 (6차 ①B1): 콘솔 출력 대신 — 개발 때 콘솔에서 __routeGraph 로 본다
+  // K11 (6차 ①B1): 콘솔 출력 대신 — 개발 때 콘솔에서 __routeGraph 로 본다(보면 그때 만든다)
+  Object.defineProperty(window, '__routeGraph', { configurable: true, get: () => RouteFinder.ensureGraph() });
   attachAutocomplete(document.getElementById('route-from'));
   attachAutocomplete(document.getElementById('route-to'));
 }
@@ -2034,12 +2037,18 @@ function prefetchDetailData() {
   if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(go, { timeout: 5000 });
   else setTimeout(go, 2000);
 }
+function buildRouteGraphIdle() {
+  const go = () => { if (RouteFinder.ensureGraph) RouteFinder.ensureGraph(); };
+  if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(go, { timeout: 3000 });
+  else setTimeout(go, 1000);
+}
 let firstReadyDone = false;
 Promise.all([styleReadyP, dataPromise]).then(() => {
   if (firstReadyDone) return;   // 한 번만
   firstReadyDone = true;
   dataReady = true;
   map.once('idle', prefetchDetailData);   // 첫 화면 준비를 방해하지 않게 준비 완료 뒤에만
+  map.once('idle', buildRouteGraphIdle);   // I9: 길찾기 그래프도 첫 화면 뒤 쉬는 시간에
   // 처음 온 사람 안내 (js/guide.js) — 지도가 다 뜬 뒤 한 번
   map.once('idle', () => { if (typeof Guide !== 'undefined') Guide.show(); });
   addDataLayers(); updateFilters();

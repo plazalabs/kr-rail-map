@@ -341,7 +341,29 @@ const RouteFinder = (() => {
     adj.get(b).push({ to: a, lineId, distKm, walk: !!walk, open });
   }
 
-  function buildGraph(lines, stations) {
+  // 성능 (I9, 2026-11-14): 첫 화면에선 그래프(역 투영·간선, 4배 감속 CPU 프로파일 약 260ms)를 바로 만들지 않는다.
+  // buildGraph(lines, stations, { lazy: true }) 는 값싼 표(노선 상태·분류·역 ID)만 채우고, 무거운 부분은
+  // 그래프를 처음 쓰는 함수(길찾기·통근권 등)가 불릴 때 또는 ensureGraph()(지도 준비 뒤 쉬는 시간)에 만든다.
+  // lazy 없이 부르면 예전처럼 바로 만들고 같은 결과를 돌려준다(시험·data/build_access.js).
+  let pendingGraph = null, graphInfo = null;
+  function ensureGraph() {
+    if (!pendingGraph) return graphInfo;
+    const [l, s] = pendingGraph; pendingGraph = null;
+    graphInfo = buildGraphNow(l, s);
+    return graphInfo;
+  }
+  function buildGraph(lines, stations, opts) {
+    if (!(opts && opts.lazy)) { pendingGraph = null; graphInfo = buildGraphNow(lines, stations); return graphInfo; }
+    lineCat = new Map(); stationsById = new Map(); lineStatus = new Map();
+    lines.forEach(f => {
+      lineCat.set(f.properties.id, f.properties.category || 'etc');
+      lineStatus.set(f.properties.id, (f.properties.status || 'open').toLowerCase());
+    });
+    stations.forEach(s => stationsById.set(s.properties.id, s));
+    pendingGraph = [lines, stations]; graphInfo = null;
+    return null;
+  }
+  function buildGraphNow(lines, stations) {
     adj = new Map(); lineCat = new Map(); stationsById = new Map();
     lineStatus = new Map(); geomAdjacent = new Set(); orderByLine = new Map();
     const activeIds = new Set();
@@ -917,8 +939,8 @@ const RouteFinder = (() => {
     return km;
   }
 
-  return {
-    buildGraph, findRoute, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
+  const api = {
+    buildGraph, ensureGraph, findRoute, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
     loadTransfers, loadHeadways, peakWaitAt, transferMinutes, sameService, countTransfers,
     transferWait, hasHeadways: () => !!headwayDoc,   // I1·I2 (2026-11-14): route-compare 가 같은 대기 시간을 쓰게 · 배차 자료 받았는지
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
@@ -934,5 +956,14 @@ const RouteFinder = (() => {
     TRANSFER_MIN,
     WALK_KMH,
   };
+  // 그래프를 읽는 함수는 부르기 전에 ensureGraph() — 그래프 없이 되는 것(아래 목록)만 그대로 둔다
+  const NO_GRAPH = new Set(['buildGraph', 'ensureGraph', 'loadTransfers', 'loadHeadways', 'hasHeadways',
+    'extraLines', 'lineIsUnopened', 'statusOf', 'stationById', 'hasStation', 'categoryOf']);
+  Object.keys(api).forEach(k => {
+    const f = api[k];
+    if (typeof f !== 'function' || NO_GRAPH.has(k)) return;
+    api[k] = function () { if (pendingGraph) ensureGraph(); return f.apply(this, arguments); };
+  });
+  return api;
 })();
 

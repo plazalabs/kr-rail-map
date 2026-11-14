@@ -44,12 +44,36 @@ const STATES = [
     for (let i = 0; i < 80; i++) { await sleep(250); if (await b.evaluate(`typeof dataReady !== 'undefined' && dataReady`).catch(() => false)) break; }
     await sleep(1200);
     const closed = await b.evaluate(`getComputedStyle(document.getElementById('sidebar')).visibility`);
-    await b.evaluate(`document.getElementById('sidebar-toggle').click(); 0`); await sleep(500);
-    const open = await b.evaluate(`({ v: getComputedStyle(document.getElementById('sidebar')).visibility, s: (() => { const r = document.getElementById('search').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; })() })`);
+    await b.evaluate(`document.getElementById('sidebar-toggle').click(); 0`);
+    // 미끄러져 들어오는 동안(.24s)은 검색칸이 아직 화면 밖 — 다른 시험과 이어 돌면 프레임이 늦어 0.5초로 모자랐다(11-15) → 3초까지 기다림
+    let open;
+    for (let i = 0; i < 30; i++) { await sleep(100); open = await b.evaluate(`({ v: getComputedStyle(document.getElementById('sidebar')).visibility, s: (() => { const r = document.getElementById('search').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; })() })`); if (open.v === 'visible' && open.s) break; }
     await b.evaluate(`document.getElementById('sidebar-close').click(); 0`); await sleep(1000);
     const again = await b.evaluate(`getComputedStyle(document.getElementById('sidebar')).visibility + '/' + document.body.className + '/' + getComputedStyle(document.getElementById('sidebar')).transform`);
     R.check('휴대폰 서랍: 닫힘 hidden → 열면 visible·검색칸 화면 안 → 다시 닫으면 hidden', closed === 'hidden' && open.v === 'visible' && open.s && /^hidden/.test(again), { closed, open, again });
     b.close();
+  }
+  // 키보드 초점 테: PC 첫 화면에서 Tab 으로 도는 모든 칸에 초점 표시가 보여야 한다 (11-15: 배경 지도 단추 3개는 box-shadow:none !important 에 테가 지워져 안 보였다)
+  {
+    const b = await launch({ port: 9798, w: 1440, h: 900 });
+    await b.send('Network.setBypassServiceWorker', { bypass: true });
+    await b.goto(root + 'index.html#normal', 800);
+    for (let i = 0; i < 80; i++) { await sleep(250); if (await b.evaluate(`typeof dataReady !== 'undefined' && dataReady`).catch(() => false)) break; }
+    await sleep(1500);
+    const seen = new Set(), bad = []; let rep = 0;
+    for (let i = 0; i < 300 && rep < 4; i++) {
+      await b.key('Tab', 'Tab', 9); await sleep(40);
+      const r = await b.evaluate(`(() => { const e = document.activeElement; if (!e || e === document.body) return null;
+        if (!e.__fk) e.__fk = (window.__fkN = (window.__fkN || 0) + 1);
+        const cs = getComputedStyle(e);
+        const ring = (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) || (cs.boxShadow && cs.boxShadow !== 'none');
+        return { k: e.__fk, ring, id: (e.id || e.getAttribute('aria-label') || e.textContent || e.tagName).trim().slice(0, 24) }; })()`);
+      if (!r) continue;
+      if (seen.has(r.k)) { rep++; continue; }
+      seen.add(r.k); if (!r.ring) bad.push(r.id);
+    }
+    R.check('PC 첫 화면 Tab 으로 도는 칸 모두 초점 테 보임 (' + seen.size + '칸)', seen.size > 60 && bad.length === 0, bad.join(', ') || seen.size);
+    b.close(); await sleep(400);
   }
   R.finish();
 })().catch(e => { console.error(e); process.exit(1); });

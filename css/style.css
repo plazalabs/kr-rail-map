@@ -432,6 +432,8 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
   font-size: var(--fs-xs) !important;
 }
 .tb-group button:hover { background: var(--hover) !important; }
+/* 위 box-shadow:none !important 가 공통 초점 테(:focus-visible box-shadow)를 지워 키보드로 어디 있는지 안 보였다 (11-15 Tab 점검) */
+.tb-group button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .tb-group button.active {
   background: var(--text) !important; color: var(--bg) !important;
   font-weight: 600 !important;

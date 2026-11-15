@@ -16,7 +16,8 @@ let pass = 0, fail = 0;
 const check = (l, c, d) => { if (c) { pass++; console.log(`  ✓ ${l}`); } else { fail++; console.log(`  ✗ ${l}  ${d === undefined ? '' : JSON.stringify(d).slice(0, 400)}`); } };
 const id = (n, l) => S.features.find(f => f.properties.name_ko === n && (!l || (f.properties.lines || []).includes(l))).properties.id;
 const tabs = all => ['time', 'transfer', 'fare'].map(k => all[k]).filter(Boolean);
-const key = r => (r.path || []).join('>') + '|' + (r.legs || []).map(l => l.lineId).join(',');
+// 갈아타는 역도 경로의 일부 — 경의중앙이 중랑에 서면서(v276 가짜 회기–상봉 지움) 서빙고→별내가 중랑·망우·상봉 어디서 경춘선으로 갈아타느냐로 1분 갈린다
+const key = r => (r.path || []).join('>') + '|' + (r.legs || []).map(l => l.lineId + '@' + l.from).join(',');
 
 console.log('\n[I1] 강남→서울 — 같은 경로면 탭과 상관없이 같은 분');
 const all = RC.findAllOpen(id('강남', 'seoul-subway-line-2'), id('서울', 'seoul-metropolitan-subway-line-4'));

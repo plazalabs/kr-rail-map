@@ -587,6 +587,7 @@ const RouteFinder = (() => {
 
     applyOfficialTopology();
     applyStopOrderFix();
+    applyKricTopology();
     applyOfficialRuntimes();
     addGtxOfficialEdges(activeIds);
     addExpressEdges();
@@ -657,12 +658,37 @@ const RouteFinder = (() => {
     // 광명셔틀: 지도 선이 광명을 석수에 붙여 광명→석수 5분 무환승으로 나왔다(금천구청–광명 간선이 아예 없어 BRANCH_RUNS 광명셔틀도 안 걸림).
     // 시각표: 광명 ↔ 금천구청 300초 → 금천구청에서 갈아탄다. 거리 4.7km = 노선 거리(itwiki 광명역 노선도) — 코레일 공식 영업거리는 아직 못 찾음.
     { lid: 'seoul-metropolitan-subway-line-1', a: '광명', wrong: '석수', right: '금천구청', sec: 300, km: 4.7 },
+    // 서해선 김포공항: 지도 선이 능곡–원종을 바로 이어 김포공항(2023-07 개통 정차역)을 건너뛰었다(역 자료에 서해선 표시도 없음).
+    // 레일포털 시각표(평일 일반 86대)는 능곡 → '신김포'(= 김포공항, 시각표 이름) 390초 → 원종 270초.
+    // 거리는 공식 역간거리를 못 찾아 옛 능곡–원종 지도 선 길이를 곧은 거리 비율로 나눈 값.
+    { lid: 'seoul-metropolitan-subway-seohae-line', a: '능곡', b: '원종', via: '김포공항', secA: 390, secB: 270 },
   ];
   let stopOrderFixed = 0;
   function applyStopOrderFix() {
     stopOrderFixed = 0;
     const idOn = (lid, name) => { const ids = []; stationsById.forEach((s, id) => { if (s.properties.name_ko === name && (s.properties.lines || []).includes(lid)) ids.push(id); }); return ids.length === 1 ? ids[0] : null; };
+    const idCap = name => { const ids = []; stationsById.forEach((s, id) => { const c = s.geometry.coordinates; if (s.properties.name_ko === name && c[0] > 126.3 && c[0] < 127.9 && c[1] > 36.7 && c[1] < 38.2) ids.push(id); }); return ids.length === 1 ? ids[0] : null; };
     STOP_ORDER_FIX.forEach(f => {
+      if (f.via) {   // 건너뛴 정차역 끼워 넣기: a–b 를 지우고 a–via–b
+        const a = idOn(f.lid, f.a), b = idOn(f.lid, f.b), v = idCap(f.via);
+        if (!a || !b || !v) return;
+        const old = (adj.get(a) || []).find(e => !e.walk && e.lineId === f.lid && e.to === b);
+        if (!old) return;
+        [[a, b], [b, a]].forEach(([x, y]) => adj.set(x, (adj.get(x) || []).filter(e => e.walk || e.lineId !== f.lid || e.to !== y)));
+        geomAdjacent.delete(f.lid + ':' + pairKey(a, b));
+        const ll = id => stationsById.get(id).geometry.coordinates, d = (p, q) => Math.hypot((p[0] - q[0]) * 88.2, (p[1] - q[1]) * 111);
+        const dA = d(ll(a), ll(v)), dB = d(ll(v), ll(b)), tot = old.distKm || (dA + dB);
+        [[a, v, f.secA, tot * dA / (dA + dB)], [v, b, f.secB, tot * dB / (dA + dB)]].forEach(([x, y, sec, km]) => {
+          addEdge(x, y, f.lid, false, km);
+          geomAdjacent.add(f.lid + ':' + pairKey(x, y));
+          [[x, y], [y, x]].forEach(([p, q]) => (adj.get(p) || []).forEach(e => {
+            if (e.walk || e.lineId !== f.lid || e.to !== q) return;
+            e.officialMin = sec / 60 + DWELL_MIN; e.official = 'kric';
+          }));
+        });
+        stopOrderFixed++;
+        return;
+      }
       const a = idOn(f.lid, f.a), w = idOn(f.lid, f.wrong), r = idOn(f.lid, f.right);
       if (!a || !w || !r) return;
       const old = (adj.get(a) || []).find(e => !e.walk && e.lineId === f.lid && e.to === w);
@@ -679,6 +705,107 @@ const RouteFinder = (() => {
         e.officialMin = f.sec / 60 + DWELL_MIN; e.official = 'kric';
       }));
       stopOrderFixed++;
+    });
+  }
+
+  // 레일포털 시각표의 '바로 다음 역' 으로 지도 선 연결 바로잡기 (2026-11-15). 1~8호선(서울교통공사 역간거리)과 같은 일을
+  // 코레일·민자 노선에도 한다(1·4호선처럼 서울교통공사·코레일이 나눠 운영하는 노선은 두 목록을 합쳐서). 지도 선 조각에 역이 살짝 떨어져 붙으면 그 역을 건너뛴 가짜 연결이 생겼다 —
+  // 광명→석수 5분(실제는 광명셔틀로 금천구청에서 갈아탐), 구일→가산디지털단지(구로에서 갈아탐), 서동탄→세마(병점),
+  // 경의중앙 한국항공대→홍대입구 10분 한 칸, 서해선 능곡→원종(김포공항 건너뜀) 등.
+  // 지우는 조건: 두 역 이름이 모두 이 노선 시각표에 있고, 시각표에서 둘이 이웃이 아니며, 두 역 모두 시각표대로의 다른 연결이 남을 때.
+  // 빠진 시각표 연결(능곡–김포공항 등)은 먼저 잇고, 지운 뒤 같은 노선으로 6칸 안에 다시 이어지지 않으면 지우지 않는다(고립 방지). 공식 시간이 이미 붙은 간선(GTX·정차 순서 고침)은 건드리지 않는다.
+  let kricTopologyFix = { removed: 0, added: 0, pairs: [], addedPairs: [], kept: [] };
+  function applyKricTopology() {
+    kricTopologyFix = { removed: 0, added: 0, pairs: [], addedPairs: [], kept: [] };
+    if (typeof KRIC_RUNTIMES === 'undefined') return;
+    const nameOf = id => stationsById.get(id) && stationsById.get(id).properties.name_ko;
+    const key = (x, y) => (x < y ? x + '|' + y : y + '|' + x);
+    const inCapital = id => { const c = stationsById.get(id).geometry.coordinates; return c[0] > 126.3 && c[0] < 127.9 && c[1] > 36.7 && c[1] < 38.2; };
+    Object.entries(KRIC_RUNTIMES).forEach(([lid, list]) => {
+      const pairs = new Set(), names = new Set();
+      // 시각표 쌍 — 레일포털 시간은 급행 쌍도 일반 쌍과 같은 값(노량진–영등포 120초)이라 시간으로는 못 가른다 → 역 위치로 가른다.
+      const allPairs = new Set();
+      list.concat(OFFICIAL_RUNTIMES[lid] || []).forEach(([a, b]) => { names.add(a); names.add(b); allPairs.add(key(a, b)); });
+      const pos = new Map();
+      stationsById.forEach((st, id) => {
+        if (!(st.properties.lines || []).includes(lid) || !inCapital(id) || pos.has(st.properties.name_ko)) return;
+        pos.set(st.properties.name_ko, st.geometry.coordinates);
+      });
+      const km = (a, b) => { const p = pos.get(a), q = pos.get(b); const dx = (p[0] - q[0]) * 88.2, dy = (p[1] - q[1]) * 111; return Math.hypot(dx, dy); };
+      const pk = k => k.split('|');
+      // 급행 정차 쌍 거르기: 먼 쌍부터, 남은 쌍들로 6칸 안에 돌아가는 길이 있고 그 길이가 곧은 거리의 1.4배 안이면 사이 역을 건너뛴 급행 —
+      // 노량진–영등포·가산디지털단지–안양·부평–송내·광운대–창동. 진짜 고리(6호선 응암 순환)나 급행을 거쳐 돌아가는 일반 쌍은 훨씬 길어 남는다.
+      const live = new Set([...allPairs].filter(k => pk(k).every(n => pos.has(n)))), express = [];
+      const altKm = (a, b) => {
+        let best = new Map([[a, 0]]);
+        for (let h = 0; h < 6; h++) {
+          const nx = new Map(best);
+          live.forEach(k => {
+            if (k === key(a, b)) return;
+            const [x, y] = pk(k), t = km(x, y);
+            if (best.has(x) && (!nx.has(y) || best.get(x) + t < nx.get(y))) nx.set(y, best.get(x) + t);
+            if (best.has(y) && (!nx.has(x) || best.get(y) + t < nx.get(x))) nx.set(x, best.get(y) + t);
+          });
+          best = nx;
+        }
+        return best.has(b) ? best.get(b) : null;
+      };
+      [...live].sort((p, q) => km(...pk(q)) - km(...pk(p))).forEach(k => {
+        const [a, b] = pk(k), alt = altKm(a, b);
+        if (alt != null && alt <= 1.4 * km(a, b)) { live.delete(k); express.push(k); }
+      });
+      allPairs.forEach(k => { if (!express.includes(k)) pairs.add(k); });
+      kricTopologyFix.express = (kricTopologyFix.express || []).concat(express.map(k => lid + ':' + k));
+      const ok = e => !e.walk && e.lineId === lid;
+      const official = (u, e) => pairs.has(key(nameOf(u), nameOf(e.to)));
+      const hasOfficial = u => (adj.get(u) || []).some(e => ok(e) && official(u, e));
+      const drop = [];
+      adj.forEach((l2, u) => l2.forEach(e => {
+        if (!ok(e) || e.officialMin != null || u > e.to) return;
+        const nu = nameOf(u), nv = nameOf(e.to);
+        if (!names.has(nu) || !names.has(nv) || nu === nv || pairs.has(key(nu, nv))) return;
+        if (!inCapital(u) || !inCapital(e.to)) return;   // 지방 노선은 자료 점검을 맨 끝에 묶어서 (회장님 순서)
+        if (!hasOfficial(u) || !hasOfficial(e.to)) return;
+        drop.push([u, e.to]);
+      }));
+      // 먼저 빠진 시각표 연결을 잇는다 — 두 이름이 이 노선(수도권)에서 역 하나로만 정해질 때 (1~8호선 2) 단계와 같은 규칙)
+      const onLine = new Map();
+      stationsById.forEach((st, id) => {
+        if (!(st.properties.lines || []).includes(lid) || !inCapital(id)) return;
+        const n = st.properties.name_ko; if (!onLine.has(n)) onLine.set(n, new Set()); onLine.get(n).add(id);
+      });
+      pairs.forEach(k => {
+        const [na, nb] = k.split('|'), A = onLine.get(na), B = onLine.get(nb);
+        if (!A || !B || A.size !== 1 || B.size !== 1) return;
+        const a = [...A][0], b = [...B][0];
+        if ((adj.get(a) || []).some(e => ok(e) && e.to === b)) return;
+        addEdge(a, b, lid, false);
+        geomAdjacent.add(lid + ':' + pairKey(a, b));
+        kricTopologyFix.added++;
+        kricTopologyFix.addedPairs.push(lid + ':' + na + '–' + nb);
+      });
+      // 지운 뒤에도 두 역이 같은 노선으로 이어지는지 (6칸 안) — 안 이어지면 지우지 않는다
+      const linked = (u, v) => {
+        let seen = new Set([u]), fr = [u];
+        for (let h = 0; h < 6 && fr.length; h++) {
+          const nx = [];
+          fr.forEach(x => (adj.get(x) || []).forEach(e => {
+            if (!ok(e) || (x === u && e.to === v) || (x === v && e.to === u) || seen.has(e.to)) return;
+            if (e.to === v) nx.found = true;
+            seen.add(e.to); nx.push(e.to);
+          }));
+          if (nx.found) return true;
+          fr = nx;
+        }
+        return false;
+      };
+      drop.forEach(([u, v]) => {
+        if (!linked(u, v)) { kricTopologyFix.kept.push(lid + ':' + nameOf(u) + '–' + nameOf(v)); return; }
+        [[u, v], [v, u]].forEach(([x, y]) => adj.set(x, (adj.get(x) || []).filter(e => !(ok(e) && e.to === y))));
+        geomAdjacent.delete(lid + ':' + pairKey(u, v));
+        kricTopologyFix.removed++;
+        kricTopologyFix.pairs.push(lid + ':' + nameOf(u) + '–' + nameOf(v));
+      });
     });
   }
 

@@ -287,7 +287,35 @@ const RouteFinder = (() => {
     { line: 'seoul-subway-line-5', at: '강동', tag: '하남', toward: '길동' },
     { line: 'seoul-subway-line-5', at: '강동', tag: '마천', toward: '둔촌동' },
   ];
-  const JUNCTION_TAGS = new Set(JUNCTION_TURNS.map(j => j.tag));
+  // 한 방향 고리 (2026-11-15 v280). 6호선 응암 순환: 열차는 응암 → 역촌 → 불광 → 독바위 → 연신내 → 구산 → 응암 한 방향으로만 돈다
+  // (새절 쪽에서 온 열차가 고리를 한 바퀴 돌고 응암에서 다시 새절 쪽으로). 전엔 양방향으로 계산해 연신내→독바위→불광, 구산→응암→역촌
+  // 무환승, 새절→응암→구산 4분이 나왔다(실제는 새절→역촌→…→구산 한 바퀴). 반대 방향 간선을 지우고, 고리 끝(구산→응암)과
+  // 고리 시작(응암→역촌)에 서로 다른 표시를 달아 구산→응암→역촌은 응암에서 갈아타는 것으로 본다(갈아타는 시간은 공식 자료가 없어 기본값).
+  // 근거: 서울교통공사 6호선 열차운행시각표(응암순환 구간 한 방향 운행), 레일포털 시각표(전체_도시철도운행정보) 응암→역촌→…→구산→응암.
+  const ONE_WAY_LOOPS = [
+    { line: 'seoul-subway-line-6', order: ['응암', '역촌', '불광', '독바위', '연신내', '구산', '응암'], startTag: '응암순환', endTag: '응암순환끝' },
+  ];
+  const JUNCTION_TAGS = new Set(JUNCTION_TURNS.map(j => j.tag).concat(...ONE_WAY_LOOPS.map(l => [l.startTag, l.endTag])));
+  let oneWayFixed = 0;
+  function applyOneWayLoops() {
+    oneWayFixed = 0;
+    const cap = id => { const c = stationsById.get(id).geometry.coordinates; return c[0] > 126.3 && c[0] < 127.9 && c[1] > 36.7 && c[1] < 38.2; };
+    const idOf = (lid, name) => { let r = null; stationsById.forEach((s, id) => { if (s.properties.name_ko === name && cap(id) && (s.properties.lines || []).includes(lid)) r = id; }); return r; };
+    ONE_WAY_LOOPS.forEach(L => {
+      const ids = L.order.map(n => idOf(L.line, n));
+      if (ids.some(x => !x)) return;
+      for (let i = 0; i + 1 < ids.length; i++) {
+        const x = ids[i], y = ids[i + 1];
+        const fwd = (adj.get(x) || []).find(e => !e.walk && e.lineId === L.line && e.to === y);
+        if (!fwd) continue;   // 앞 방향 간선이 없으면 손대지 않음(고립 방지)
+        const before = (adj.get(y) || []).length;
+        adj.set(y, (adj.get(y) || []).filter(e => e.walk || e.lineId !== L.line || e.to !== x));
+        if ((adj.get(y) || []).length < before) oneWayFixed++;
+        if (i === 0) fwd.run = L.startTag;
+        if (i === ids.length - 2) fwd.run = L.endTag;
+      }
+    });
+  }
   // 결과 legs 에 보이는 운행: 갈림목 방향 표시는 떼고 원래 노선으로 (갈래 이름처럼 보이면 안 됨)
   const shownRun = r => (r && r.includes('#') && JUNCTION_TAGS.has(r.slice(r.indexOf('#') + 1))) ? r.slice(0, r.indexOf('#')) : r;
   const baseOf = id => (id && id.includes('#')) ? id.slice(0, id.indexOf('#')) : id;
@@ -635,6 +663,7 @@ const RouteFinder = (() => {
     addGtxOfficialEdges(activeIds);
     addExpressEdges();
     tagBranchRuns();
+    applyOneWayLoops();
 
     return { stations: stationsById.size, edges: edgeCount, loopEdges, walkEdges, walkRejected };
   }

@@ -27,5 +27,14 @@ check('최소요금 탭은 요금이 다 정해진 길에서 고름 (정해진 �
 console.log('\n[운행 중 노선만 — 미정 없음, 예전 동작 그대로]');
 const open = RC.findAllOpen(id('강남', 'seoul-subway-line-2'), id('서울', 'seoul-metropolitan-subway-line-4'));
 check('운행 중 경로는 미정 없음', !RC.hasPending(open.time) && !RC.hasPending(open.fare));
+console.log('\n[P17 최소요금 탭 안 한 줄]');
+const n1 = RC.fareTabNote(all);
+check('미정이 끼면 금액 비교 없이 미정이라고 + 성인 교통카드 기준', /미정/.test(n1) && !/원 싸고/.test(n1) && /성인 교통카드/.test(n1), n1);
+const n2 = RC.fareTabNote(open);
+const same = open.time.path.join() === open.fare.path.join();
+check('운행 중만: 같은 길이면 같은 길, 다르면 최적과 비교', same ? /같은 길/.test(n2) : /최적 길(보다|과)/.test(n2), { n2, same });
+const hd = RC.findAllOpen(id('홍대입구', 'seoul-subway-line-2'), id('강남', 'seoul-subway-line-2'));
+const n3 = RC.fareTabNote(hd);
+check('홍대입구→강남: 최적 길과 견준 문장 + 기준', /최적 길/.test(n3) && /성인 교통카드/.test(n3), n3);
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

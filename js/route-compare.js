@@ -520,6 +520,22 @@ const RouteCompare = (() => {
     return { time, transfer, fare, now };
   }
 
+  // P17: '최소요금' 탭 안에 늘 한 줄 — 최적 길과 견주어 무엇이 다른지, 무슨 요금 기준인지.
+  // (탭 위 요약은 다른 탭을 볼 때 안 보이고, 최적 길과 같은 길이 골라지면 아무 설명도 없어 '왜 같은 길?' 이 됐다)
+  function fareTabNote(all) {
+    const t = all && all.time, f = all && all.fare;
+    if (!f) return '';
+    const base = '성인 교통카드 기준 · 할인·정기권 제외';
+    if (!t) return base;
+    if (hasPending(t) || hasPending(f)) return '요금 미정 구간이 있어 얼마 아끼는지는 말할 수 없어요 · ' + base;
+    const samePath = t.path && f.path && t.path.length === f.path.length && t.path.every((x, i) => x === f.path[i]);
+    if (samePath) return '최적 길이 가장 싼 길이에요 (같은 길) · ' + base;
+    const dm = f.minutes - t.minutes, df = t.fare - f.fare;
+    const time = dm > 0 ? dm + '분 더 걸려요' : dm < 0 ? (-dm) + '분 빨라요' : '시간은 같아요';
+    if (df > 0) return '최적 길보다 ' + df.toLocaleString() + '원 싸고 ' + time + ' · ' + base;
+    return '최적 길과 요금이 같아요 · ' + time + ' · ' + base;
+  }
+
   // 탭 위 한 줄 요약. '최적' 보다 다른 길이 빠르면 그 대가(환승)를 같이 적는다 — 숨기면 '최적' 이 거짓말처럼 보인다.
   function insightOf(all) {
     const out = [];
@@ -605,6 +621,7 @@ const RouteCompare = (() => {
       .rc-fast { display: inline-block; margin-left: 3px; padding: 0 4px; border-radius: 4px; font-size: var(--fs-xs); font-weight: bold;
         background: rgba(234, 179, 8, 0.14); color: var(--warn-text, #8a5300); vertical-align: 1px; }
       .rc-tab.active .rc-fast { background: #fff; color: var(--accent, #3388ff); }
+      .rc-fare-note { margin: 0 0 4px; font-size: var(--fs-xs); color: var(--text2, #444); }
       .rc-def { font-size: var(--fs-xs); color: var(--muted, #666); font-weight: normal; margin-left: 2px; }
       .rc-badge { display: inline-block; font-size: var(--fs-xs); background: var(--accent, #3388ff); color:var(--accent-text,#fff);
         border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
@@ -875,7 +892,8 @@ const RouteCompare = (() => {
         (t.id === fastId) ? '가장 빠름' :
         (t.id === 'transfer' && all.transfer && (!all.time || all.transfer.transfers < all.time.transfers)) ? '환승 최소' :
         (t.id === 'fare' && all.fare && all.time && all.fare.fare < all.time.fare) ? '요금 최소' : '';
-      return `<div class="rc-panel" id="rc-panel-${t.id}"${i === 0 ? '' : ' hidden'}>${variantHtml(t.r, t.id, isBest)}</div>`;
+      const note = t.id === 'fare' ? `<p class="rc-fare-note">${escapeHtml(fareTabNote(all))}</p>` : '';
+      return `<div class="rc-panel" id="rc-panel-${t.id}"${i === 0 ? '' : ' hidden'}>${note}${variantHtml(t.r, t.id, isBest)}</div>`;
     }).join('');
     box.innerHTML = html;
     const shareBtn = box.querySelector('.rc-nf-share');
@@ -968,6 +986,6 @@ const RouteCompare = (() => {
   // (UI 없이 calcFareOfRoute 만 호출하려면 legs 모양의 객체만 있으면 된다)
   return { init, findAll, findAllOpen, show, hide, calcFare, calcConvFare, calcKtxFare, calcFareOfRoute, calcFareDetail, loadKtxFares, loadSpecialFares, fareBreakdownHtml,
     // '지금 vs 개통 후' 비교 — UI 없이 검증할 수 있도록 노출
-    compareNowFuture, nowFutureHtml, commuteCardInfo, lineStatusLabel, openOnlyHintHtml, insightOf, fastestTabId, pickCheapest, hasPending,
+    compareNowFuture, nowFutureHtml, commuteCardInfo, lineStatusLabel, openOnlyHintHtml, insightOf, fareTabNote, fastestTabId, pickCheapest, hasPending,
     _debug: { findMinTransfer, findMinFare, buildLegs, markUnopened, enrich, basisHtml } };
 })();

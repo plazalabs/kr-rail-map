@@ -46,6 +46,12 @@ async function run(b, [from, to, un]) {
       R.check(`${w}×${h} ${c[0]}: 결과 칸 안쪽 스크롤 없음`, r.resultInnerScroll <= 1, r);
       R.check(`${w}×${h} ${c[0]}: 창 전체가 화면 안 (내릴 필요 없음)`, r.panelScroll <= 1 && r.bottom <= r.vh, r);
       R.check(`${w}×${h} ${c[0]}: 경로 종류 탭이 한 줄`, r.tabs >= 3 && r.tabRows === 1, r);
+      // P17: 최소요금 탭(안에 한 줄 더)으로 바꿔도 창이 화면 안
+      const rf = await b.evaluate(`(() => { const t = document.querySelector('#route-result .rc-tab[data-tab="fare"]'); if (!t) return null; t.click();
+        const p = document.getElementById('route-panel'), rr = document.getElementById('route-result'), n = rr.querySelector('#rc-panel-fare .rc-fare-note');
+        return { note: n ? n.textContent : '', inner: rr.scrollHeight - rr.clientHeight, ps: p.scrollHeight - p.clientHeight, bottom: Math.round(p.getBoundingClientRect().bottom), vh: innerHeight }; })()`);
+      R.check(`${w}×${h} ${c[0]}: 최소요금 탭 — 기준 한 줄 + 창이 화면 안`, !!rf && /성인 교통카드/.test(rf.note) && rf.inner <= 1 && rf.ps <= 1 && rf.bottom <= rf.vh, rf);
+      await b.evaluate(`(() => { const t = document.querySelector('#route-result .rc-tab[data-tab="time"]'); if (t) t.click(); })()`);
     }
     const exc = b.logs.filter(l => /EXC/.test(l));
     R.check(`${w}×${h} 예외 0`, exc.length === 0, exc.slice(0, 3));

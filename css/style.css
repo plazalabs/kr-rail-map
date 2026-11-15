@@ -474,6 +474,10 @@ body[data-theme="win95"] #toolbar button.active { border-style: inset; }
   color: var(--text) !important;
 }
 .tb-dropmenu button:hover { background: var(--hover) !important; }
+/* Q4 (11-15): 도구·분석 메뉴 항목 밑 목적 한 줄 — 글자만 보고는 무엇을 하는지 몰랐다 (설명은 검색 팔레트 hint 와 같은 말) */
+.tb-dropmenu button { flex-wrap: wrap; align-items: center; gap: 0 4px; }
+.tb-desc { flex-basis: 100%; font-size: var(--fs-xs); color: var(--muted); font-weight: normal; line-height: 1.3; margin-top: 1px; white-space: normal; }
+.tb-dropmenu { min-width: 220px; }
 /* 메뉴 안 다른 페이지 링크 (교통 순위표) — 버튼과 같은 모양 */
 .tb-dropmenu a.tb-menulink { display: flex; width: 100%; padding: 8px 10px; border-radius: 7px; font-size: var(--fs-sm); color: var(--text); text-decoration: none; }
 .tb-dropmenu a.tb-menulink:hover { background: var(--hover); }

@@ -146,7 +146,17 @@ const RankTable = (() => {
     return row.name.replace(/\s+/g, '').includes(s) || (row.sgg || '').includes(s) || (row.region || '').includes(s);
   }
 
-  return { WEIGHTS, TIERS, minutesOf, scoreOf, compute, sortRows, matches, inRegion, tierOf, tierCounts, yearOf };
+  // 기본 연도 — 모두 개통했을 때 떡상 역 수의 80% 를 처음 넘는 해 (지금 자료로는 2031).
+  // 지도 떡상 패널과 순위표 페이지가 같은 기본값을 쓴다 (P11: 같은 '떡상 랭킹' 이 다른 숫자를 보이던 것)
+  function defaultYear(doc) {
+    if (!doc || !doc.years || !doc.years.length) return 'all';
+    const count = at => compute(doc, { weight: 'avg', region: 'capital', at }).rows.filter(r => tierOf(r) === 'rocket').length;
+    const all = count('all');
+    if (!all) return 'all';
+    for (const y0 of doc.years) { const y = String(y0); if (count(y) >= all * 0.8) return y; }
+    return 'all';
+  }
+  return { WEIGHTS, TIERS, minutesOf, scoreOf, compute, sortRows, matches, inRegion, tierOf, tierCounts, yearOf, defaultYear };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = RankTable;

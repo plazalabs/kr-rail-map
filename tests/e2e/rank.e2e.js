@@ -71,9 +71,9 @@ const layout = b => b.evaluate(`(() => ({
       R.check('연도 2031: 광운대 10위 안·GTX-B·C 개통 표시', y31.rank <= 10 && /GTX-B/.test(y31.opens) && /GTX-C/.test(y31.opens), y31);
       await b.goto(RANK, 800); await rows(b);
       // 단추 순서는 자료에 따라 바뀐다(11-15 2028 삼성 정차 추가) — 번호를 박지 않고 '31 눈금 자리를 찾는다
-      await b.evaluate(`(() => { const r = document.getElementById('yr'); const t = [...document.querySelectorAll('#yr-ticks span')].map(s => s.textContent); r.value = String(t.indexOf("'31")); r.dispatchEvent(new Event('input')); })()`); await sleep(300);
+      await b.evaluate(`(() => { const r = document.getElementById('yr'); const t = [...document.querySelectorAll('#yr-ticks span')].map(s => s.textContent); r.value = String(t.indexOf("'27")); r.dispatchEvent(new Event('input')); })()`); await sleep(300);
       const sl3 = await b.evaluate(`({ url: location.search, h: document.getElementById('slope-h').textContent })`);
-      R.check('슬라이더를 밀면 주소에 y= 와 TOP 10 제목이 그 해로', /y=2031/.test(sl3.url) && /2031년까지/.test(sl3.h), sl3);
+      R.check('슬라이더를 밀면 주소에 y= 와 TOP 10 제목이 그 해로 (기본 2031 → 2027)', /y=2027/.test(sl3.url) && /2027년까지/.test(sl3.h), sl3);
       await b.evaluate(`document.getElementById('yr-play').click()`); await sleep(1800);
       const pl = await b.evaluate(`({ btn: document.getElementById('yr-play').getAttribute('aria-label'), stopIc: !!document.querySelector('#yr-play svg.ic-stop'), url: location.search })`);
       R.check('▶ 누르면 연도가 차례로 넘어간다 (멈춤 버튼 = 정지 아이콘·이름표 멈추기)', pl.btn === '멈추기' && pl.stopIc && /y=20(27|28|30)/.test(pl.url), pl);
@@ -96,6 +96,11 @@ const layout = b => b.evaluate(`(() => ({
       await b.evaluate(`document.getElementById('wait').click()`); await sleep(300);
       const w1 = await b.evaluate(`({ tms: document.querySelector('#list .row .tms').textContent, pressed: document.getElementById('wait').getAttribute('aria-pressed'), url: location.search, hint: document.getElementById('hint').textContent })`);
       R.check('⏱ 배차 포함 켜면 주소 wait=1·안내·광운대 9분→12분', w1.pressed === 'true' && /wait=1/.test(w1.url) && /배차 포함/.test(w1.hint) && /9분/.test(w0) && /12분/.test(w1.tms), { w0, w1 });
+      // P11: 기본 연도 = 지도 떡상 패널과 같은 해(RankTable.defaultYear), 숫자가 다른 이유 한 줄, 지도 링크에 같은 연도
+      await b.goto(RANK, 800); await rows(b);
+      const p11 = await b.evaluate(`(async () => { const d = await (await fetch('data/rank.json')).json(); const dy = RankTable.defaultYear(d);
+        const a = document.querySelector('#podium .pod'); return { dy, now: document.getElementById('yr-now').textContent, hint: document.getElementById('hint').textContent, href: a && a.getAttribute('href'), url: location.search }; })()`);
+      R.check('P11 기본 연도 = 떡상 패널 기본(' + p11.dy + ') · 안내에 뒤에 생기는 역 제외 · 지도 링크 &y=', p11.dy !== 'all' && p11.now.indexOf(p11.dy) >= 0 && /새로 생기는 \d+역 제외/.test(p11.hint) && (p11.href || '').indexOf('&y=' + p11.dy) > 0 && !/y=/.test(p11.url), p11);
       // P16: 1~3위 카드에 '서울 서울' 처럼 역 이름과 같은 지역이 겹치지 않는다
       await b.goto(RANK, 800); await rows(b);
       const pd = await b.evaluate(`(() => { const out = []; document.querySelectorAll('#podium .pod').forEach(p => { const nm = p.querySelector('.nm').textContent; const rg = p.querySelector('.rg').textContent; out.push([nm, rg]); }); return out; })()`);
@@ -109,7 +114,7 @@ const layout = b => b.evaluate(`(() => ({
     const sl0 = await b.evaluate(`(() => { const s = document.querySelector('#slope svg'); return { lines: document.querySelectorAll('#slope svg a line').length, chips: document.querySelectorAll('#tiers .tchip').length,
       fits: !!s && s.getBoundingClientRect().right <= innerWidth + 1 && s.getBoundingClientRect().width > 200 }; })()`);
     R.check(`${w}px 떡상 TOP 10 선 10개·등급 칩 6개(전체+5)·그림이 화면 안`, sl0.lines === 10 && sl0.chips === 6 && sl0.fits, sl0);
-    await b.goto(RANK + '?q=' + encodeURIComponent('광운대'), 800); await rows(b);
+    await b.goto(RANK + '?y=all&q=' + encodeURIComponent('광운대'), 800); await rows(b);   // 전체 개통 기준 (기본은 2031 — P11)
     await b.evaluate(`document.querySelector('#list .row').click()`); await sleep(300);
     const card = await b.evaluate(`(() => { const c = document.querySelector('#list .card'); if (!c) return null; const g = c.querySelector('a.go');
       return { big: c.querySelector('.big').textContent.replace(/\\s+/g, ' '), bars: c.querySelectorAll('.bar-row').length, yr: c.textContent.includes('2031년'),

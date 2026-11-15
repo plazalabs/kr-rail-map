@@ -21,17 +21,18 @@
     tier: T[qs.get('tier')] ? qs.get('tier') : '',
     q: qs.get('q') || '',
     open: qs.get('open') || '',
-    y: qs.get('y') || 'all',
+    y: qs.get('y') || '',   // 비어 있으면 자료를 받은 뒤 기본 연도(RankTable.defaultYear, 지도 떡상 패널과 같음 — P11)
     wait: qs.get('wait') === '1',   // 출퇴근 배차 포함 (기본 꺼짐)   // 개통 연도 슬라이더 — 'all' = 전체(시기 미정 노선 포함)
     shown: PAGE,
   };
   let doc = null, lineInfo = {};
+  let DEF_Y = 'all';   // 자료를 받으면 RankTable.defaultYear 로 바뀜
 
   function saveUrl() {
     const u = new URL(location.href);
     const set = (k, v, d) => { if (v === d || !v) u.searchParams.delete(k); else u.searchParams.set(k, v); };
     set('w', st.w, 'avg'); set('t', st.t, 'aft'); set('r', st.r, 'capital'); set('sort', st.sort, 'rank');
-    set('tier', st.tier, ''); set('q', st.q, ''); set('open', st.open, ''); set('y', st.y, 'all'); set('wait', st.wait ? '1' : '', '');
+    set('tier', st.tier, ''); set('q', st.q, ''); set('open', st.open, ''); set('y', st.y, DEF_Y); set('wait', st.wait ? '1' : '', '');
     history.replaceState(null, '', u);
   }
 
@@ -93,7 +94,8 @@
     const txt = c > 0 ? '▲' + c : c < 0 ? '▼' + (-c) : '–';
     return '<span class="badge" title="' + esc(T[t].label + ' · ' + T[t].hint) + '">' + Icons.svg(T[t].ic) + ' ' + txt + '</span>';
   }
-  const link = r => './?rocket=1&st=' + encodeURIComponent(r.id);   // 지도 + 떡상 패널 (v109)
+  // 지도 + 떡상 패널 (v109). 개통 후 기준이면 같은 연도로 연다 (P11: 같은 이름 = 같은 숫자)
+  const link = r => './?rocket=1&st=' + encodeURIComponent(r.id) + (st.t === 'aft' && st.y ? '&y=' + encodeURIComponent(st.y) : '');
 
   // 떡상 TOP 10 — 지금 순위(왼쪽) → 개통 후 순위(오른쪽). 순위는 로그 눈금 (245위와 9위를 한 그림에)
   function slopeSvg(rows, total) {
@@ -210,7 +212,10 @@
     const total = isNow ? res.totalNow : res.total;
     const filtered = rows.filter(r => RankTable.matches(r, st.q));
     $('slope-h').textContent = (st.y === 'all' ? '개통하면' : st.y + '년까지 개통하면') + ' 가장 많이 오르는 역 TOP 10';
-    $('hint').textContent = REGION[st.r] + ' ' + total.toLocaleString() + '역 · ' + LABEL[st.w] + ' · ' +
+    // P11: 연도 기준이면 그 뒤에 새로 생기는 역은 순위에 없다 (전체 696 vs 2031년 675) — 숫자가 다른 이유를 한 줄로
+    let later = 0;
+    if (!isNow && st.y !== 'all') { try { later = Math.max(0, RankTable.compute(doc, { weight: st.w, region: st.r, at: 'all', wait: st.wait }).total - total); } catch (e) { later = 0; } }
+    $('hint').textContent = REGION[st.r] + ' ' + total.toLocaleString() + '역' + (later ? '(' + st.y + '년 뒤 새로 생기는 ' + later + '역 제외)' : '') + ' · ' + LABEL[st.w] + ' · ' +
       (isNow ? '지금' : aftLabel() === '개통 후' ? '개통 후' : aftLabel() + '까지 개통') + ' 기준' + (st.wait ? ' · 출퇴근 배차 포함' : '') + (st.tier ? ' · ' + T[st.tier].label + ' ' + filtered.length + '곳' : '') +
       (st.q ? ' · "' + st.q + '" ' + filtered.length + '곳' : '');
     $('list-h').textContent = st.tier ? T[st.tier].label + ' 역' : (st.sort === 'rise' && !isNow ? '많이 오르는 순' : st.sort === 'gain' && !isNow ? '점수 많이 오르는 순' : '순위');
@@ -388,6 +393,7 @@
   window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(render, 200); });
   fetch('data/rank.json').then(r => r.ok ? r.json() : Promise.reject(r.status)).then(d => {
     doc = d; lineInfo = d.lines || {};
+    DEF_Y = RankTable.defaultYear(d); if (!st.y) st.y = DEF_Y;
     // ?open=역ID 로 들어오면(지도 역 상세의 '떡상 랭킹에서 보기') 그 역 카드를 펼친다 — 목록 밖이면 이름으로 찾고, 수도권 밖이면 전국
     if (st.open) {
       const r = d.rows.find(x => x.id === st.open);

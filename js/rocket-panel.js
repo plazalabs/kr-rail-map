@@ -58,20 +58,10 @@
     return topic(r.name) + ' ' + (y === 'all' ? '개통 후에도' : y + '년에도') + ' ' + rankText(r.aft.rank, r.tie);
   }
 
-  // 기본 연도 — 모두 개통했을 때 떡상 역 수의 80% 를 처음 넘는 해 (지금 자료로는 2031)
+  // 기본 연도 — RankTable.defaultYear 와 같은 값 (순위표 페이지와 공유, P11)
   function defaultYear(doc) {
-    if (!doc || !doc.years || !doc.years.length || typeof RankTable === 'undefined') return 'all';
-    var count = function (at) {
-      return RankTable.compute(doc, { weight: 'avg', region: 'capital', at: at }).rows
-        .filter(function (r) { return RankTable.tierOf(r) === 'rocket'; }).length;
-    };
-    var all = count('all');
-    if (!all) return 'all';
-    for (var i = 0; i < doc.years.length; i++) {
-      var y = String(doc.years[i]);
-      if (count(y) >= all * 0.8) return y;
-    }
-    return 'all';
+    if (!doc || typeof RankTable === 'undefined' || typeof RankTable.defaultYear !== 'function') return 'all';
+    return RankTable.defaultYear(doc);
   }
 
   // 연도별 순위 곡선 점 — [{k:'지금'|'2027'…, rank}]

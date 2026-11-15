@@ -1233,7 +1233,8 @@ function attachAutocomplete(input) {
     items = items.slice(0, 8);
     if (!items.length) { hide(); return; }
     list.innerHTML = items.map((it, i) => {
-      const ln = it.lines.map(lineLabelOf).slice(0, 3).join('·');
+      const lnAll = [...new Set(it.lines.map(lineLabelOf))];   // P16: 3개 넘으면 '+N' (서울역 10개 중 3개만 보이던 것)
+      const ln = lnAll.slice(0, 3).join('·') + (lnAll.length > 3 ? ' +' + (lnAll.length - 3) : '');
       return '<div class="ac-item" role="option" aria-selected="false" id="' + listId + '-o' + i +
         '" data-i="' + i + '">' + it.name +
         (regionOf.has(it.id) ? '<span class="ac-region">· ' + regionOf.get(it.id) + '</span>' : '') +
@@ -1401,7 +1402,9 @@ function resolveRoutePair(fromInput, toInput) {
   return { from: best.a, to: best.b, guessed };
 }
 function stationLinesLabel(s) {
-  return (s.properties.lines || []).map(lid => lineNameOf.get(lid) || lid).slice(0, 3).join('·');
+  // 노선 3개까지 + 나머지는 '+N' (서울역 10개 중 3개만 보여 1·4호선 역이 아닌 줄 알던 것, P16)
+  const names = [...new Set((s.properties.lines || []).map(lid => lineNameOf.get(lid) || lid))];
+  return names.slice(0, 3).join('·') + (names.length > 3 ? ' +' + (names.length - 3) : '');
 }
 document.getElementById('route-btn').addEventListener('click', () => {
   const p = document.getElementById('route-panel');

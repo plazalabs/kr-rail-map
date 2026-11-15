@@ -259,7 +259,7 @@
   function heroHtml(r) {
     if (!r) return '<p class="rkp-hint">목록이나 지도의 역을 누르면 그 역의 순위 변화를 보여 드려요.</p>';
     var t = RankTable.tierOf(r);
-    var where = [r.region, r.sgg].filter(Boolean).join(' ');
+    var where = [r.region, r.sgg].filter(function (x, i, a) { return x && x !== r.name && a.indexOf(x) === i; }).join(' ');   // P16: '서울 서울' 방지
     var chg = r.isNew ? '<span class="rkp-chg is-new">신규</span>'
       : (r.change > 0 ? '<span class="rkp-chg up">접근성 ▲' + r.change + '위</span>'
         : (r.change < 0 ? '<span class="rkp-chg down">접근성 ▼' + (-r.change) + '위</span>' : '<span class="rkp-chg">그대로</span>'));

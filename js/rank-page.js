@@ -68,6 +68,13 @@
     return h.join('');
   }
 
+  // 지역 표시 — 역 이름과 같은 말은 빼고 같은 말 두 번도 빼기 ('서울 서울' → 없음, P16)
+  function whereOf(r) {
+    const out = [];
+    [r.region, r.sgg].forEach(x => { if (x && x !== r.name && out.indexOf(x) < 0) out.push(x); });
+    return out.join(' ');
+  }
+
   function times(r) {
     const cur = st.t === 'aft' ? r.aft.times : r.now.times;
     const hi = HI[st.w];
@@ -214,7 +221,7 @@
     pod.hidden = !podOn;
     pod.innerHTML = podOn ? rows.slice(0, 3).map(r =>
       '<a class="pod" href="' + link(r) + '"><span class="medal">' + (r.tie ? '공동 ' : '') + r.aft.rank + '위</span>' +
-      '<div class="nm">' + esc(r.name) + '</div><div class="rg">' + esc([r.region, r.sgg].filter(Boolean).join(' ')) + '</div>' +
+      '<div class="nm">' + esc(r.name) + '</div><div class="rg">' + esc(whereOf(r)) + '</div>' +
       '<div class="sc">' + r.aft.score.toFixed(1) + '<small>점</small></div>' +
       '<div class="tm">' + DEST.map((d, j) => d + ' ' + (r.aft.times[j] == null ? '—' : r.aft.times[j] + '분')).join(' · ') + '</div></a>').join('') : '';
 
@@ -232,7 +239,7 @@
       const from = (!isNow && r.now.rank != null) ? '<span class="from">' + r.now.rank + '위 →</span>' : '';
       return '<li><button class="row t-' + t + '" data-id="' + esc(r.id) + '" aria-expanded="' + open + '" aria-controls="card-' + esc(r.id) + '">' +
         '<span class="rk">' + from + '<b>' + r.aft.rank + '<span class="tie">' + (r.tie ? ' 공동' : '') + '</span></b>' + (isNow ? '' : badge(r)) + '</span>' +
-        '<span class="who"><span class="nm">' + esc(r.name) + '</span><span class="rg">' + esc([r.region, r.sgg].filter(Boolean).join(' ')) + '</span>' +
+        '<span class="who"><span class="nm">' + esc(r.name) + '</span><span class="rg">' + esc(whereOf(r)) + '</span>' +
         '<span class="lines">' + chips(r.lines) + '</span><span class="tms">' + times(r) + '</span></span>' +
         '<span class="scr"><b>' + r.aft.score.toFixed(1) + '</b><small>점</small>' + (gain ? '<span class="gain">' + gain + '</span>' : '') +
         '<span class="chev" aria-hidden="true">' + (open ? '접기 ▲' : '자세히 ▼') + '</span></span></button>' +
@@ -294,7 +301,7 @@
     g.fillStyle = 'rgba(255,255,255,.06)'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(900 - i * 40, 160 + i * 30, 260 - i * 30, 0, Math.PI * 2); g.fill(); }
     g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText((st.t === 'aft' && st.y !== 'all' ? st.y + '년까지 개통하면' : 'GTX·새 노선 모두 개통하면') + ', 우리 역 접근성은 몇 위?', 80, 120);   // 카드 공통 표기 (2026-11-14)
     g.fillStyle = '#ffffff'; g.font = '800 104px ' + F; g.fillText(r.name + '역', 80, 250);
-    g.fillStyle = '#9fb3d1'; g.font = '500 32px ' + F; g.fillText([r.region, r.sgg].filter(Boolean).join(' ') + ' · ' + REGION[st.r] + ' ' + (st.w === 'avg' ? '' : LABEL[st.w] + ' ') + '순위', 84, 305);
+    g.fillStyle = '#9fb3d1'; g.font = '500 32px ' + F; g.fillText((whereOf(r) ? whereOf(r) + ' · ' : '') + REGION[st.r] + ' ' + (st.w === 'avg' ? '' : LABEL[st.w] + ' ') + '순위', 84, 305);
     // 큰 순위
     g.font = '700 46px ' + F; g.fillStyle = '#c8d3e6';
     const nowTxt = r.isNew ? '지금은 철도 없음' : '지금 ' + r.now.rank + '위';

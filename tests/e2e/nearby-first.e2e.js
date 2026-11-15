@@ -49,6 +49,12 @@ const items = b => b.evaluate(`[...document.getElementById('route-from').parentE
     }
   }
   R.check("동명 그룹 밖 순서는 지도 위치와 무관 ('서' 입력, 서울·부산·대전)", orders['서울'] === orders['부산'] && orders['부산'] === orders['대전'], orders);
+  // P16: 노선이 3개 넘는 역은 '+N' 꼬리 (서울역 — 3개만 보여 1·4호선 역이 아닌 줄 알던 것)
+  await b.evaluate(`map.jumpTo({ center: [126.972, 37.555], zoom: 13 }); 0`); await sleep(300);
+  await typeInto(b, 'route-from', '서울');
+  const seoul = (await items(b)).find(x => x.name === '서울');
+  const nLines = await b.evaluate(`new Set(STATIONS.find(s => s.properties.name_ko === '서울' && s.properties.lines.length > 3).properties.lines.map(lineLabelOf)).size`).catch(e => 'ERR ' + e.message);
+  R.check("'서울' 자동완성: 노선 3개 + '+N' (N = 나머지)", !!seoul && typeof nLines === 'number' && nLines > 3 && seoul.lines.trim().endsWith(' +' + (nLines - 3)), { seoul: seoul && seoul.lines, nLines });
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0', exc.length === 0, exc.slice(0, 3));
   b.close();

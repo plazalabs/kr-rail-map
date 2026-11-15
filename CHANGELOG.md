@@ -1,3 +1,13 @@
+# 변경 사항 (2026-11-16) — 검수 키트
+
+형식: `YYYY-MM-DD · <불변식 ID 또는 기능> · 무엇을 바꿨는지 · 왜`
+코드 안에 날짜·피드백 번호 주석을 다는 대신 여기에 적는다.
+
+## 2026-11-16
+- 검수 키트 도입: CLAUDE.md, 데이터 불변식 19개(tests/data), 화면 불변식 초안(tests/e2e), Stop 훅, /audit /fix-bug /triage.
+- 기준선: 데이터 불변식 실패 13개 (docs/INVARIANTS.md 표 참고).
+- 설치 메모: Windows 의 Node 22 는 `node --test tests/data/`(폴더 이름)를 못 읽어 Stop 훅·package.json 의 명령을 `node --test "tests/data/*.test.mjs"` 로 바꿈. package.json 에 `"type": "module"` 은 넣지 않음(기존 CommonJS 시험·스크립트 148개가 깨짐). 키트 설치 설명서는 docs/KIT-README.md.
+
 # 변경 사항 (2026-11-15) — v221 → v280
 
 | 버전 | 커밋 | 내용 |

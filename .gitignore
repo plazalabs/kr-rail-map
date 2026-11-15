@@ -43,3 +43,6 @@ data/_gov/addr/
 data/_dev/
 
 __pycache__/
+
+# npm 프로그램 (npm i 로 다시 받음)
+node_modules/

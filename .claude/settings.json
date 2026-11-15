@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/stop-check.mjs",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Edit(.claude/baseline-failures.txt)",
+      "Edit(tests/data/invariants.test.mjs)",
+      "Edit(tests/e2e/invariants.spec.mjs)"
+    ]
+  }
+}

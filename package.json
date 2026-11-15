@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "test": "npm run test:data",
-    "test:data": "node --test \"tests/data/*.test.mjs\"",
+    "test:data": "node --test \"tests/data/*.test.mjs\" \"tests/data/regression/*.test.mjs\"",
     "test:e2e": "playwright test",
     "test:e2e:prod": "cross-env BASE_URL=https://plazalabs.github.io/kr-rail-map/ playwright test",
     "test:all": "npm run test:data && npm run test:e2e",

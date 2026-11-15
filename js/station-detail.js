@@ -395,6 +395,11 @@
     // 역 ID 로 찾는다 (IMPL12 — 이름으로 찾으면 부산 시청에 서울 시청 시세가 떴다)
     var price = (typeof StationPrice !== 'undefined' && StationPrice.isReady())
       ? StationPrice.of(sid) : null;
+    if (!price && typeof StationPrice !== 'undefined' && StationPrice.isReady()) {
+      // 자료가 없다고 말한다 — 칸이 말없이 사라지면 '시세가 안 뜬다'인지 '자료가 없다'인지 알 수 없다
+      return '<div class="sd-sec sd-price-sec sd-price-none"><h3>아파트 매매 시세</h3>' +
+        '<span class="mk-none">자료 없음</span> <span class="mk-where">이 역 법정동에 묶인 아파트 매매 실거래가 없습니다 (수도권 밖은 아직 모으지 않았습니다)</span></div>';
+    }
     if (!price || !price.medianPerPyeong) return '';
 
     var pm = StationPrice.meta() || {};

@@ -21,6 +21,7 @@
 import json
 import math
 import pathlib
+import re
 import sys
 from collections import defaultdict
 
@@ -30,6 +31,11 @@ import station_names  # noqa: E402
 from build_station_region import LINE_CODE  # noqa: E402
 
 COORD_KM = 1.0   # 설계값: 좌표 확인 반경
+
+
+def _strip_paren(name):
+    """'새절(신사)' → '새절'."""
+    return re.sub(r"\s*\(.*?\)\s*", "", str(name or "")).strip()
 
 
 def _hav(a, b):
@@ -89,15 +95,24 @@ class Index:
     def _match(self, r):
         """(확정 ID 목록, 모호 후보 ID 목록). build_station_region 과 같은 1차 규칙:
         이름이 지도에 한 곳뿐이면 그 역, 여럿이면 '이름 + 노선 표기'가 딱 한 역에 맞을 때만.
-        이수/총신대입구(이수)처럼 한 역이 두 이름으로 들어 있으면 이름마다 따로 찾는다(resolve_all)."""
+        이수/총신대입구(이수)처럼 한 역이 두 이름으로 들어 있으면 이름마다 따로 찾는다(resolve_all).
+
+        괄호 안에서만 나온 이름(주소 행 '새절(신사)' 의 '신사')은 그 행의 노선이 그 역에 있을 때만 쓴다.
+        괄호 안은 부역명이라 이름이 같은 다른 역(강남 신사·김해 장신대·대전 현충원)으로 새기 때문이다."""
         out, amb = [], []
+        cands = set(LINE_CODE.get(r.get("line"), []))
+        main = set(station_names.resolve_all(_strip_paren(r["name"])) or [])
+        one = station_names.resolve(r["name"])
+        if one:
+            main.add(one)
         for nm in station_names.resolve_all(r["name"]) or []:
             ss = self.by_name.get(nm) or []
+            if nm not in main:
+                ss = [p for p in ss if cands & set(p.get("lines") or [])]
             if len(ss) == 1:
                 out.append(ss[0]["id"])
             elif len(ss) > 1:
-                cands = set(LINE_CODE.get(r.get("line"), []))
-                hit = [p for p in ss if cands & set(p.get("lines") or [])]
+                hit =[p for p in ss if cands & set(p.get("lines") or [])]
                 if len(hit) == 1:
                     out.append(hit[0]["id"])
                 elif len(hit) > 1:

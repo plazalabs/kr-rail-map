@@ -15,14 +15,14 @@ function readStdin() {
 
 function runDataTests() {
   try {
-    const out = execSync('node --test --test-reporter=spec "tests/data/*.test.mjs"', {
+    const out = execSync('node --test --test-reporter=spec "tests/data/*.test.mjs" "tests/data/regression/*.test.mjs"', {
       encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 100_000,
       env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' },
     });
     return { out, failed: [] };
   } catch (e) {
     const out = (e.stdout || '') + (e.stderr || '');
-    const failed = [...out.replace(/\x1b\[[0-9;]*m/g, '').matchAll(/^\s*✖ (\[D-\d+\])/gm)].map(m => m[1]);  // 기준선은 ID(예: [D-31])로 비교
+    const failed = [...out.replace(/\x1b\[[0-9;]*m/g, '').matchAll(/^\s*✖ (\[[A-Z]+-[A-Za-z0-9]+\])/gm)].map(m => m[1]);  // 기준선은 ID(예: [D-31], 회귀 [R-paren])로 비교
     if (!failed.length && e.status) failed.push(`[실행 오류] node --test 종료 코드 ${e.status}`);
     return { out, failed: [...new Set(failed)] };
   }

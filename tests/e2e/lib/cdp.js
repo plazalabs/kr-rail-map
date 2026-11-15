@@ -92,6 +92,8 @@ async function launch({ port = 9555, w = 1440, h = 1000, mobile = false, invest 
   async function goto(url, wait = 4000) { await send('Page.navigate', { url }); await sleep(wait); }
   async function shot(file, clip) {
     const r = await send('Page.captureScreenshot', Object.assign({ format: 'png' }, clip ? { clip } : {}));
+    // 폴더가 없으면 만든다 — CI 는 E2E_OUT 을 다른 곳으로 주고 임시 폴더가 비어 있어 ENOENT 로 시험이 죽었다.
+    fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, Buffer.from(r.data, 'base64'));
   }
   async function click(x, y) {

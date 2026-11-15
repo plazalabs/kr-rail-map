@@ -350,6 +350,72 @@
     cardFooter(k, o.wait ? '타는 시간 + 갈아탈 때 걷기 + 출퇴근 배차 기다림 · 시간표·급행·지연 미반영' : '타는 시간 + 갈아탈 때 걷기·기다림 · 처음 열차 기다림·시간표·급행·지연 미반영', info.asof || linesAsof());
     return k.c;
   }
+  // 맞벌이 통근권 카드 (11-15 킬러 아이디어 '둘 다 출근 가능한 동네') — 지도 한 칸: 두 직장 + 둘 다 N분 안인 역(색 = 둘 중 긴 쪽)
+  // info: { a:{name,coord}, b:{name,coord}, limit, rows:[{name,coord,min,m1,m2}], lines, wait, q, asof }
+  var TWO_BANDS = [[15, '#5fe39a', '15분'], [30, '#b5e86a', '30분'], [45, '#ffd166', '45분'], [60, '#ff9f43', '60분'], [90, '#ff6b6b', '90분']];
+  function twoColor(m) { for (var i = 0; i < TWO_BANDS.length; i++) if (m <= TWO_BANDS[i][0]) return TWO_BANDS[i][1]; return '#ff6b6b'; }
+  // 두 직장 사이 '가운데쯤' 역 — 둘 중 긴 쪽이 짧고, 두 분이 비슷한 순 (카드·시험이 같은 값)
+  function twoBest(rows, n) {
+    return (rows || []).filter(function (r) { return r.m1 > 0 && r.m2 > 0; }).slice()
+      .sort(function (p, q) { return p.min - q.min || Math.abs(p.m1 - p.m2) - Math.abs(q.m1 - q.m2); }).slice(0, n || 4);
+  }
+  function drawTwo(info, o) {
+    o = o || {};
+    var k = cardBase(1350), g = k.g, F = FONT, W = k.W;
+    g.fillStyle = '#9fb3d1'; g.font = '600 34px ' + F; g.fillText('맞벌이 통근권 · 지금 운행 중인 노선', 72, 132);
+    g.fillStyle = '#ffffff'; var size = 72; g.font = '800 ' + size + 'px ' + F;
+    var title = info.a.name + '·' + info.b.name + ' 둘 다 ' + info.limit + '분 안';
+    while (g.measureText(title).width > W - 144 && size > 48) { size -= 4; g.font = '800 ' + size + 'px ' + F; }
+    g.fillText(fitText(g, title, W - 144), 72, 222);
+    var rows = info.rows || [];
+    g.fillStyle = '#ffd166'; g.font = '800 50px ' + F;
+    g.fillText(rows.length ? '함께 살 만한 역 ' + rows.length + '곳' : '두 곳 모두 닿는 역이 없어요', 72, 296);
+    var pts = rows.map(function (r) { return r.coord; }).concat([info.a.coord, info.b.coord]);
+    var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    pts.forEach(function (c) { if (!c) return; x0 = Math.min(x0, c[0]); x1 = Math.max(x1, c[0]); y0 = Math.min(y0, c[1]); y1 = Math.max(y1, c[1]); });
+    var kx = Math.cos(((y0 + y1) / 2) * Math.PI / 180);
+    var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, spanX = Math.max((x1 - x0) * kx, 0.08), spanY = Math.max(y1 - y0, 0.08);
+    var PX = 72, PW = W - 144, PH = 640, PT = 340, pad = 1.15;
+    var sc = Math.min(PW / (spanX * pad), PH / (spanY * pad));
+    var proj = function (c) { return [PX + PW / 2 + (c[0] - cx) * kx * sc, PT + PH / 2 - (c[1] - cy) * sc]; };
+    g.save(); roundRect(g, PX, PT, PW, PH, 24); g.fillStyle = 'rgba(255,255,255,.06)'; g.fill(); g.clip();
+    (info.lines || []).forEach(function (f) {
+      var pr = f.properties || {};
+      if (pr.status !== 'open') return;
+      var geom = f.geometry || {}, parts = geom.type === 'LineString' ? [geom.coordinates] : (geom.type === 'MultiLineString' ? geom.coordinates : []);
+      g.strokeStyle = 'rgba(200,211,230,.25)'; g.lineWidth = 3;
+      parts.forEach(function (cs) { g.beginPath(); cs.forEach(function (c, i) { var q = proj(c); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); }); g.stroke(); });
+    });
+    rows.slice().sort(function (p, q) { return q.min - p.min; }).forEach(function (r) {
+      var q = proj(r.coord); g.beginPath(); g.arc(q[0], q[1], 7, 0, Math.PI * 2); g.fillStyle = twoColor(r.min); g.fill();
+    });
+    [[info.a, 'A'], [info.b, 'B']].forEach(function (x) {
+      var d = proj(x[0].coord);
+      g.beginPath(); g.arc(d[0], d[1], 20, 0, Math.PI * 2); g.fillStyle = '#ffffff'; g.fill();
+      g.fillStyle = '#0b1d3a'; g.font = '800 24px ' + F; var tw = g.measureText(x[1]).width; g.fillText(x[1], d[0] - tw / 2, d[1] + 9);
+    });
+    g.restore();
+    var ly = PT + PH + 50;
+    g.font = '600 26px ' + F;
+    var lx = 72;
+    TWO_BANDS.filter(function (b) { return b[0] <= info.limit; }).forEach(function (b) {
+      g.beginPath(); g.arc(lx + 9, ly - 9, 8, 0, Math.PI * 2); g.fillStyle = b[1]; g.fill();
+      g.fillStyle = '#c8d3e6'; g.fillText(b[2] + ' 안', lx + 24, ly); lx += 24 + g.measureText(b[2] + ' 안').width + 26;
+    });
+    ly += 44; g.fillStyle = '#c8d3e6';
+    g.fillText(fitText(g, '색 = 둘 중 더 먼 쪽 · A ' + info.a.name + ' · B ' + info.b.name, W - 144), 72, ly);
+    var best = twoBest(rows, 3);
+    if (best.length) {
+      ly += 54; g.fillStyle = '#ffffff'; g.font = '700 32px ' + F;
+      g.fillText(fitText(g, '가운데쯤(A·B분): ' + best.map(function (r) { return r.name + ' ' + r.m1 + '·' + r.m2; }).join(' · '), W - 144), 72, ly);
+    }
+    cardFooter(k, o.wait ? '역에서 역까지 · 타는 시간 + 갈아탈 때 걷기 + 출퇴근 배차 기다림 · 집·회사까지 걷는 시간 제외' : '역에서 역까지 · 타는 시간 + 갈아탈 때 걷기·기다림 · 처음 열차 기다림·집·회사까지 걷는 시간 제외', info.asof || linesAsof());
+    return k.c;
+  }
+  function saveTwo(info, o) {
+    return saveCanvas(drawTwo(info, o), '맞벌이통근권_' + info.a.name + '_' + info.b.name + '_' + info.limit + '분.png',
+      info.a.name + '·' + info.b.name + ' 둘 다 ' + info.limit + '분 안 — ' + (info.rows || []).length + '곳', 'card-two', info.q);
+  }
   function saveReach(info, o) {
     var s = reachSummary(info);
     return saveCanvas(drawReach(info, o), '통근권_' + info.name + '_' + info.limit + '분.png',
@@ -384,5 +450,5 @@
     });
   }
 
-  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, top10Layout: top10Layout, scenario: scenario, planLabel: planLabel, CARD_TIER: CARD_TIER, changeText: changeText, drawLife: drawLife, saveLife: saveLife, lifeSummary: lifeSummary, drawCommute: drawCommute, saveCommute: saveCommute, commuteSummary: commuteSummary, drawReach: drawReach, saveReach: saveReach, reachSummary: reachSummary, BRAND: BRAND, FONT: FONT, cardBase: cardBase, cardFooter: cardFooter, saveCanvas: saveCanvas };
+  global.StationShareImage = { draw: draw, save: save, fileName: fileName, drawTop10: drawTop10, saveTop10: saveTop10, top10Layout: top10Layout, scenario: scenario, planLabel: planLabel, CARD_TIER: CARD_TIER, changeText: changeText, drawLife: drawLife, saveLife: saveLife, lifeSummary: lifeSummary, drawCommute: drawCommute, saveCommute: saveCommute, commuteSummary: commuteSummary, drawReach: drawReach, saveReach: saveReach, drawTwo: drawTwo, saveTwo: saveTwo, twoBest: twoBest, reachSummary: reachSummary, BRAND: BRAND, FONT: FONT, cardBase: cardBase, cardFooter: cardFooter, saveCanvas: saveCanvas };
 })(typeof window !== 'undefined' ? window : globalThis);

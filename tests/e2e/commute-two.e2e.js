@@ -29,6 +29,13 @@ const state = `(() => { const s = document.getElementById('cm-summary'); const l
   const two = await b.evaluate(state);
   R.check("두 곳: 요약 '강남·여의도 둘 다 45분 안', 역 수는 한 곳보다 적음", /강남·여의도 둘 다 45분 안/.test(two.sum) && two.n > 5 && two.n < one.n && !!two.d2, { one: one.n, two: two.n, sum: two.sum });
   R.check("목록 분 옆에 '첫째·둘째' 분, 지도 직장 점 2개", two.both.every(x => /^\d+·\d+$/.test(x || '')) && two.dests === 2, two);
+  // 맞벌이 공유 카드: 단추가 보이고(한 곳 카드 단추는 숨김), 카드 그림은 1080×1350, 카드 역 수 = 요약 역 수
+  const card = await b.evaluate(`(() => { const btn = document.querySelector('#cm-summary .cm-two-share'); const one = document.querySelector('#cm-summary .cm-reach-share');
+    const ti = CommuteMap.twoCardInfo(); const c = ti && StationShareImage.drawTwo(ti, { wait: ti.wait });
+    const best = ti ? StationShareImage.twoBest(ti.rows, 4) : [];
+    return { btn: !!btn && /둘 다 출근 지도/.test(btn.textContent), one: !!one, w: c && c.width, h: c && c.height, n: ti ? ti.rows.length : -1,
+      best: best.map(r => r.name + r.m1 + '·' + r.m2), q: ti && ti.q }; })()`);
+  R.check("맞벌이 카드: '둘 다 출근 지도 카드' 단추, 그림 1080×1350, 카드 역 수 = 요약, 링크에 cm2", card.btn && !card.one && card.w === 1080 && card.h === 1350 && card.n === two.n && card.best.length === 4 && /cm2=/.test(card.q || ''), card);
   await b.evaluate(`(() => { const i = document.getElementById('cm-dest2'); i.value = ''; i.dispatchEvent(new Event('change')); })()`); await sleep(1000);
   const back = await b.evaluate(state);
   R.check('두 번째 칸을 비우면 한 곳으로 돌아감', /강남까지 45분 안/.test(back.sum) && !back.d2 && back.n === one.n, back);

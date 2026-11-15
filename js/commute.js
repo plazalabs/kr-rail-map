@@ -149,8 +149,8 @@ background:var(--bg,#fff);color:var(--text,#222);font-size:var(--fs-sm);box-sizi
 .cm-legend{display:flex;flex-wrap:wrap;gap:8px;font-size:var(--fs-xs);margin:6px 0}
 .cm-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:3px;vertical-align:-1px}
 #cm-summary{background:var(--bg,#f5f5f5);border-radius:8px;padding:8px 10px;margin-bottom:8px;line-height:1.6}
-.cm-reach-share{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:6px;padding:7px 10px;border:1px solid var(--accent,#1b64da);border-radius:9px;background:var(--panel-bg,#fff);color:var(--accent,#1b64da);font:inherit;font-weight:700;cursor:pointer}
-.cm-reach-share:hover{background:var(--hover,#eef2f7)}
+.cm-reach-share,.cm-two-share{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:6px;padding:7px 10px;border:1px solid var(--accent,#1b64da);border-radius:9px;background:var(--panel-bg,#fff);color:var(--accent,#1b64da);font:inherit;font-weight:700;cursor:pointer}
+.cm-reach-share:hover,.cm-two-share:hover{background:var(--hover,#eef2f7)}
 #cm-list{list-style:none;margin:0;padding:0}
 #cm-list li button{display:flex;width:100%;justify-content:space-between;gap:8px;padding:5px 4px;border:0;
 border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
@@ -222,6 +222,11 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     if (window.KR_WAIT) window.KR_WAIT.onChange(() => { cw.checked = window.KR_WAIT.isPeak(); if (active) render(false); });
     panel.querySelector('#cm-sort').addEventListener('change', e => { sortBy = e.target.value; renderList(); });
     panel.querySelector('#cm-summary').addEventListener('click', e => {
+      if (e.target.closest('.cm-two-share')) {
+        const ti = twoCardInfo();
+        if (ti) StationShareImage.saveTwo(ti, { wait: ti.wait }).then(msg => { if (msg && typeof window.setStatus === 'function') window.setStatus(msg); });
+        return;
+      }
       if (!e.target.closest('.cm-reach-share')) return;
       const info = reachCardInfo();
       if (info) StationShareImage.saveReach(info, { wait: info.wait }).then(msg => { if (msg && typeof window.setStatus === 'function') window.setStatus(msg); });
@@ -316,6 +321,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
       : `<b>${esc(dest.properties.name_ko)}</b>까지 ${maxMin}분 안: <b>${lastRows.length}</b>역`) +
       (withUnopened ? ' (개통 예정 포함)' : '') + hwNote + '<br>' + per +
       // 회장님 11-14 B: 같은 목적지·같은 분으로 '지금 | 개통 후' 두 칸 지도 카드 (station-share.js drawReach)
+      (d2 && typeof StationShareImage !== 'undefined' && StationShareImage.saveTwo ? '<button type="button" class="cm-two-share"><i data-ic="camera"></i> 둘 다 출근 지도 카드로 공유</button>' : '') +
       (!d2 && typeof StationShareImage !== 'undefined' && StationShareImage.saveReach ? '<button type="button" class="cm-reach-share"><i data-ic="camera"></i> 개통 전/후 지도 카드로 공유</button>' : '');
     renderList();
   }
@@ -427,6 +433,15 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     map.on('style.load', () => { if (active) render(false); });
   }
 
+  // 맞벌이 카드 값 — 화면 목록과 같은 줄(lastRows)을 그대로 쓴다 (카드 값 = 화면 값)
+  function twoCardInfo() {
+    const a = byId.get(destId), b = dest2Id ? byId.get(dest2Id) : null;
+    if (!a || !b) return null;
+    const wantPeak = !!(window.KR_WAIT && window.KR_WAIT.isPeak()), hw = !!(RouteFinder.hasHeadways && RouteFinder.hasHeadways());
+    return { a: { name: a.properties.name_ko, coord: a.geometry.coordinates }, b: { name: b.properties.name_ko, coord: b.geometry.coordinates },
+      limit: maxMin, rows: lastRows.slice(), lines: (typeof LINES !== 'undefined' ? LINES : []), wait: wantPeak && hw,
+      q: shareQuery() + (window.KR_WAIT ? '&wait=' + (window.KR_WAIT.isPeak() ? '1' : '0') : '') };
+  }
   function shareQuery() { return destId ? 'cm=' + encodeURIComponent(destId) + (dest2Id ? '&cm2=' + encodeURIComponent(dest2Id) : '') + '&t=' + maxMin : ''; }
-  window.CommuteMap = { init, show, hide, isActive, compute, computeBoth, reachCardInfo, shareQuery, dest2: () => dest2Id, _debug: { bandOf, optionLabel, findByLabel } };
+  window.CommuteMap = { init, show, hide, isActive, compute, computeBoth, reachCardInfo, twoCardInfo, shareQuery, dest2: () => dest2Id, _debug: { bandOf, optionLabel, findByLabel } };
 })();

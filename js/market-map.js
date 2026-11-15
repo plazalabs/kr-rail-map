@@ -295,6 +295,10 @@
   function invest() { return typeof KR_MODE === 'undefined' || (KR_MODE.isInvest && KR_MODE.isInvest()); }
   function track(name, data) { try { if (global.KRTrack) global.KRTrack(name, data); } catch (e) { /* 통계 실패는 무시 */ } }
   function isMobile() { return global.matchMedia ? global.matchMedia('(max-width: 768px)').matches : false; }
+  // 낮은 PC 화면(높이 720 미만 — 1280×649 노트북 등)은 타일과 분석 카드를 위아래로 나누면 둘 다 좁아져 타일 숫자가 사라졌다
+  // (정반합 8차 A12). 휴대폰처럼 '타일 / 분석' 탭으로 바꿔 보여 준다 — '지도' 탭은 PC 에선 필요 없어 숨김
+  var SHORT_Q = '(min-width: 769px) and (max-height: 719px)';
+  function isShort() { return global.matchMedia ? global.matchMedia(SHORT_Q).matches : false; }
 
   function css() {
     if (document.getElementById('mm-style')) return;
@@ -391,6 +395,8 @@
       '@media (max-width:768px){#mm-panel .mm-legend{flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;padding-bottom:4px}#mm-panel .mm-legend>span.mm-lgx{display:none}}' +
       '@media (max-width:768px){#mm-panel{left:0;right:0;top:auto;bottom:0;width:auto;min-width:0;height:min(78vh,640px);border-radius:16px 16px 0 0}' +
       '.mm-tabs{display:flex}.mm-head h2{font-size:var(--fs-md)}.mm-def{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}#mm-panel[data-tab="card"] .mm-board,#mm-panel[data-tab="card"] .mm-legend,#mm-panel[data-tab="card"] .mm-years,#mm-panel[data-tab="card"] .mm-ctrl{display:none}' +
+      '#mm-panel[data-tab="tiles"] .mm-card{display:none}#mm-panel[data-tab="card"] .mm-card{max-height:none;flex:1 1 auto;border-top:0}}' +
+      '@media ' + SHORT_Q + '{.mm-tabs{display:flex}.mm-tabs button[data-tab="map"]{display:none}#mm-panel[data-tab="card"] .mm-board,#mm-panel[data-tab="card"] .mm-legend,#mm-panel[data-tab="card"] .mm-years,#mm-panel[data-tab="card"] .mm-ctrl{display:none}' +
       '#mm-panel[data-tab="tiles"] .mm-card{display:none}#mm-panel[data-tab="card"] .mm-card{max-height:none;flex:1 1 auto;border-top:0}}';
     document.head.appendChild(s);
   }
@@ -1152,7 +1158,7 @@
       if (global.KRTrack && global.KRTrack.task) global.KRTrack.task('price');   // 과업: 시세 상세 — 타일에서 역 카드 (A③)
       flyTo(id);
       // K6 (6차 ③5·②5): 상세는 한 곳만 — 패널 카드. 큰 역 상세 창은 카드의 '역 상세 열기'로(예전엔 카드와 상세 창이 같이 떠 같은 내용이 두 번)
-      if (isMobile()) setTab('card');
+      if (isMobile() || isShort()) setTab('card');
       // 큰 역 상세가 이미 다른 역으로 열려 있으면 같이 바꾼다 — 카드는 인천대입구인데 상세는 파주로 남아 두 역이 섞여 보이던 것 (평가① P5, 11-15).
       // 상세가 닫혀 있으면 열지 않는다(K6: 상세는 한 곳만 — 카드).
       else if (typeof StationDetail !== 'undefined' && StationDetail.openId) { var oid = StationDetail.openId(); if (oid && oid !== id) openDetail(id); }
@@ -1186,6 +1192,8 @@
     if ((st.color === 'jeonse' || st.color === 'price') && !invest()) st.color = 'gain';
     if (st.color === 'jeonse' || st.color === 'price' || st.size === 'deals') ensurePrice();
     isOpen = true;
+    // 타일과 통근권 창이 함께 열리면 지도가 316px 만 남는다 (정반합 8차 A13) — 타일을 열면 통근권 창을 닫는다(P2 '창 하나' 확장)
+    try { if (global.CommuteMap && CommuteMap.isActive && CommuteMap.isActive()) CommuteMap.hide(); } catch (e) { /* 무시 */ }
     el.hidden = false;
     setTab('tiles');
     // K7 (6차 ②2·②4): 설정은 처음엔 접어 판을 넓게 — 접힌 줄에 지금 조건 요약(.mm-sum)이 보인다. 펼치고 접은 것은 기억(이 브라우저만)

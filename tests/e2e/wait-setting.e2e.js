@@ -47,6 +47,12 @@ async function ready(b) {
   await b.evaluate(`KR_WAIT.set('peak'); 0`); await sleep(900);
   const rp3 = await b.evaluate(rtot);
   R.check("다른 화면에서 켜면 길찾기 체크·결과도 따라감", rp3.ck && rp3.min === rp1.min, rp3);
+  // A5 (11-15): 시간대 '평시 10~16시' — 평시 배차를 받아 다시 찾고 결과에 '· 평시', 출근보다 같거나 김(같은 2호선 길), 기억
+  await b.evaluate(`(() => { const s = document.getElementById('route-band'); s.value = 'off'; s.dispatchEvent(new Event('change')); })()`);
+  for (let i = 0; i < 30; i++) { if (/평시/.test((await b.evaluate(rtot)).t)) break; await sleep(300); }
+  const rb = await b.evaluate(rtot);
+  R.check("시간대 평시 → 결과에 '· 평시', 분은 출근보다 같거나 김, 이 브라우저에 기억", /평시/.test(rb.t) && rb.min >= rp3.min && (await b.evaluate(`localStorage.getItem('krrail-route-band')`)) === 'off', { peak: rp3.min, off: rb });
+  await b.evaluate(`(() => { const s = document.getElementById('route-band'); s.value = 'peak'; s.dispatchEvent(new Event('change')); })()`); await sleep(900);
   await b.goto(BASE + '#normal', 1500); await ready(b);
   const kept = await b.evaluate(`KR_WAIT.isPeak()`);
   R.check('새로고침해도 남음 (이 브라우저)', kept === true);

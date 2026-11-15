@@ -117,12 +117,38 @@ const RouteFinder = (() => {
     if (h.dir && nm && nn && h.dir[nm + '>' + nn] != null) return h.dir[nm + '>' + nn];
     if (h.south_min && nm && (h.south_stations || []).includes(nm)) return h.south_min;
     if (h.stations && nm && h.stations[nm] != null) return h.stations[nm];
+    // 역 값이 없는데 방향 값은 있으면(그 시간대 열차 0대 = 999 — 역 값은 열차가 있을 때만 적힌다) 그 역에서 떠나는 방향 중
+    // 가장 촘촘한 값. 전엔 '자료 없음'으로 보고 기다림 0 이 되어, 평시 0대인 광운대 경춘선이 가장 빠른 길로 뽑혔다 (2026-11-15 A5 시험)
+    if (h.dir && nm) {
+      const v = dirMinOf(h).get(nm);
+      if (v != null) return v;
+    }
     return null;
+  }
+  // 배차표마다 '역 → 떠나는 방향 값 중 최소' 를 한 번만 만든다 (탐색 중 수만 번 불림)
+  const dirMinCache = new WeakMap();
+  function dirMinOf(h) {
+    let m = dirMinCache.get(h);
+    if (!m) {
+      m = new Map();
+      for (const k in h.dir) { const a = k.slice(0, k.indexOf('>')); const v = h.dir[k]; if (!m.has(a) || v < m.get(a)) m.set(a, v); }
+      dirMinCache.set(h, m);
+    }
+    return m;
   }
   // 출퇴근 배차 (data/headways.json, 2026-11-12) — 떡상 랭킹 '배차 포함' 스위치용. 기다리는 시간 = 배차 ÷ 2.
   // 처음 탈 때와 갈아탈 때 붙인다 (같은 열차로 이어 가기·같은 승강장 맞은편 환승은 0).
   let headwayDoc = null;
   function loadHeadways(doc) { headwayDoc = (doc && doc.lines) ? doc : null; return !!headwayDoc; }
+  // 평시(평일 10~16시) 배차 (정반합 8차 A5, 2026-11-15 — data/headways-off.json). 길찾기 '시간대: 평시'를 고른 계산 동안만
+  // 출근 배차 자리에 끼운다(withBand). 역 순위·타일·통근권은 출근 시간 기준 그대로.
+  let headwayOff = null;
+  function loadHeadwaysOff(doc) { headwayOff = (doc && doc.lines) ? doc : null; return !!headwayOff; }
+  function withBand(band, fn) {
+    if (band !== 'off' || !headwayOff) return fn();
+    const old = headwayDoc; headwayDoc = headwayOff;
+    try { return fn(); } finally { headwayDoc = old; }
+  }
   function peakWaitAt(lineId, stationId, toId) {
     if (!headwayDoc || !lineId) return 0;
     lineId = baseOf(lineId);
@@ -198,7 +224,9 @@ const RouteFinder = (() => {
       name_ko: 'ITX-청춘', color: '#2f7d5b', category: 'conventional', accessMin: 10,
       via: ['gyeongui-jungang-line', 'seoul-metropolitan-subway-gyeongchun-line'],
       // [구간 첫 역, 구간 끝 역, 분] — 구간 안의 정차역은 stops 순서대로
-      stops: ['용산', '옥수', '왕십리', '청량리', '평내호평', '청평', '가평', '강촌', '남춘천', '춘천'],
+      // 옥수(미타사)는 정차역이지만(2012-11 추가) 하루 몇 대만 선다(시간표 사이트 기준 하루 3대 안팎 — 코레일 공식 정차 자료는
+      // 활용신청 대기). 길찾기가 '춘천→옥수 ITX → 3호선'처럼 드문 열차를 기본 길로 고르지 않게 길찾기에서는 뺀다 (정반합 8차 A4, 2026-11-15)
+      stops: ['용산', '왕십리', '청량리', '평내호평', '청평', '가평', '강촌', '남춘천', '춘천'],
       spans: [['용산', '청량리', 18], ['청량리', '춘천', 60]],
     },
   };
@@ -1088,7 +1116,7 @@ const RouteFinder = (() => {
 
   const api = {
     buildGraph, ensureGraph, findRoute, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
-    loadTransfers, loadHeadways, peakWaitAt, boardWait, transferMinutes, sameService, countTransfers,
+    loadTransfers, loadHeadways, loadHeadwaysOff, withBand, hasHeadwaysOff: () => !!headwayOff, peakWaitAt, boardWait, transferMinutes, sameService, countTransfers,
     transferWait, stopStages, stageIds, hasHeadways: () => !!headwayDoc,   // I1·I2 (2026-11-14): route-compare 가 같은 대기 시간을 쓰게 · 배차 자료 받았는지
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
     // 예전에는 route-compare 가 그래프를 따로 만들었는데, 그쪽은 선형 조각을 이어붙여
@@ -1104,7 +1132,7 @@ const RouteFinder = (() => {
     WALK_KMH,
   };
   // 그래프를 읽는 함수는 부르기 전에 ensureGraph() — 그래프 없이 되는 것(아래 목록)만 그대로 둔다
-  const NO_GRAPH = new Set(['buildGraph', 'ensureGraph', 'loadTransfers', 'loadHeadways', 'hasHeadways',
+  const NO_GRAPH = new Set(['buildGraph', 'ensureGraph', 'loadTransfers', 'loadHeadways', 'hasHeadways', 'loadHeadwaysOff', 'hasHeadwaysOff', 'withBand',
     'extraLines', 'lineIsUnopened', 'statusOf', 'stationById', 'hasStation', 'categoryOf']);
   Object.keys(api).forEach(k => {
     const f = api[k];

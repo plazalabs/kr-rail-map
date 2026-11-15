@@ -1155,6 +1155,7 @@ document.getElementById('share-btn').addEventListener('click', async () => {
     // K14 (6차 ②8): 뺌도 wait=0 으로 적는다 — 빠지면 받은 사람의 저장값(배차 넣음)으로 보여 분이 달라졌다
     if (window.KR_WAIT) url.searchParams.set('wait', KR_WAIT.isPeak() ? '1' : '0'); else url.searchParams.delete('wait');
     if (from && to && routeIncludeUnopened()) url.searchParams.set('unopened', '1'); else url.searchParams.delete('unopened');
+    if (from && to && routeBand() === 'off') url.searchParams.set('band', 'off'); else url.searchParams.delete('band');   // 시간대 평시 (A5)
     // 노선 보기 (J13, 2026-11-14): 범위(전국)·보기 버튼(운행 중 등) — 받은 사람도 같은 노선을 본다
     if (scope === 'all') url.searchParams.set('scope', 'all'); else url.searchParams.delete('scope');
     const vp = document.querySelector('#line-presets .lp-btn[aria-pressed="true"]');
@@ -1514,6 +1515,31 @@ if (routeUnopenedEl) {
   });
 }
 function routeIncludeUnopened() { return !!(routeUnopenedEl && routeUnopenedEl.checked); }
+// 길찾기 '시간대' (정반합 8차 A5, 2026-11-15): 출근(07~09시, 기본) / 평시(10~16시). 평시 배차(data/headways-off.json)는 고를 때 한 번 받는다.
+// 이 브라우저에 기억. 공유 링크 ?band=off 는 이번 방문에만
+const BAND_KEY = 'krrail-route-band';
+const routeBandEl = document.getElementById('route-band');
+let headwaysOffP = null;
+function ensureHeadwaysOff() {
+  if (typeof RouteFinder === 'undefined' || !RouteFinder.loadHeadwaysOff) return Promise.resolve(false);
+  if (RouteFinder.hasHeadwaysOff()) return Promise.resolve(true);
+  if (!headwaysOffP) headwaysOffP = watchData('평시 배차', fetch('data/headways-off.json').then(r => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+    .then(doc => RouteFinder.loadHeadwaysOff(doc)));
+  return headwaysOffP;
+}
+function routeBand() { return routeBandEl && routeBandEl.value === 'off' ? 'off' : 'peak'; }
+if (routeBandEl) {
+  try { if (localStorage.getItem(BAND_KEY) === 'off') routeBandEl.value = 'off'; } catch (e) { /* 저장소 없음 */ }
+  const qb = new URLSearchParams(location.search).get('band');
+  if (qb === 'off' || qb === 'peak') routeBandEl.value = qb;
+  if (routeBand() === 'off') ensureHeadwaysOff();
+  routeBandEl.addEventListener('change', () => {
+    try { localStorage.setItem(BAND_KEY, routeBand()); } catch (e) {}
+    const rerun = () => { const box = document.getElementById('route-result'); if (box && box.innerHTML.trim()) document.getElementById('route-go').click(); };
+    if (routeBand() === 'off') ensureHeadwaysOff().then(rerun); else rerun();
+  });
+}
+window.KR_routeBand = routeBand;
 // 길찾기 '배차 넣기' (정반합 8차 A6, 2026-11-15) — 떡상 순위·역 타일·통근권과 같은 설정(KR_WAIT) 하나. 켜면 처음 탈 때도 배차 절반
 const routePeakEl = document.getElementById('route-peak');
 if (routePeakEl && window.KR_WAIT) {
@@ -1643,7 +1669,7 @@ document.getElementById('route-go').addEventListener('click', () => {
     const peek = isMobileSheet();
     if (peek) clearMobileOverlays();   // 키보드·서랍·역 상세·더보기·검색 목록 닫기 (지도가 보이게)
     if (peek) setRoutePeek(true, '경로를 찾는 중…');   // 먼저 접어야 지도 맞춤이 접힌 창 높이로 여백을 잡는다
-    RouteCompare.show(from.properties.id, to.properties.id, { includeUnopened: routeIncludeUnopened() });
+    RouteCompare.show(from.properties.id, to.properties.id, { includeUnopened: routeIncludeUnopened(), band: routeBand() });
     if (peek) setRoutePeek(true);
     if (peek) { setTimeout(refitLastRoute, 450); setTimeout(refitLastRoute, 1000); }   // 키보드가 내려간 뒤 화면 높이로 다시 맞춤
     if (window.KRTrack) KRTrack('길찾기', { 개통예정포함: routeIncludeUnopened() ? '예' : '아니오' });

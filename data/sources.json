@@ -546,10 +546,11 @@
       "licence": "data-go-kr-open",
       "obtained": "서울교통공사 서울 도시철도 열차운행시각표(2026.9.1.), 공공데이터포털",
       "snapshot": "2026-09-01",
-      "used_for": "출퇴근 배차 (1~9호선)",
+      "used_for": "출퇴근·평시 배차 (1~9호선)",
       "feeds": [],
       "affects": [
         "data/headways.json",
+        "data/headways-off.json",
         "data/rank.json",
         "data/rank-top.json"
       ],
@@ -564,12 +565,13 @@
       "licence": "site-terms-unverified",
       "obtained": "레일포털 전체_도시철도운행정보(데이터 기준 2026.5.31.), 전국도시철도운영기관",
       "snapshot": "2026-05-31",
-      "used_for": "길찾기 역 사이 시간 · 출퇴근 배차 (광역·민자·경전철·지방 도시철도)",
+      "used_for": "길찾기 역 사이 시간 · 출퇴근·평시 배차 (광역·민자·경전철·지방 도시철도)",
       "feeds": [],
       "affects": [
         "js/route.js",
         "data/access.json",
         "data/headways.json",
+        "data/headways-off.json",
         "data/rank.json",
         "data/rank-top.json"
       ],

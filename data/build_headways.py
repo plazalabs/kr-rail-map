@@ -35,8 +35,13 @@ KRIC_LINES = {
     '부산 도시철도 3호선': 'busan-metro-line-3-brown-line', '부산 도시철도 4호선': 'busan-metro-line-4-blue-line',
     '부산김해경전철': 'busan-gimhae-light-rail-transit', '광주1호선': 'gwangju-metro-line-1-pyeongdong-nokdong',
 }
-SRC_SM = '서울교통공사 열차운행시각표 2026-09-01 (공공데이터포털 15098251), 평일 07~09시 출발 횟수로 계산'
-SRC_KRIC = '레일포털 전체 도시철도운행정보 (data.kric.go.kr id=900, 데이터 기준 2026-05-31), 평일 07~09시 출발 횟수로 계산'
+# 시간대 (정반합 8차 A5, 2026-11-15): HW_BAND=off 이면 평시(평일 10~16시) → data/headways-off.json. 기본은 출근(07~09시) → headways.json
+BAND = os.environ.get('HW_BAND', 'peak')
+T0, T1 = (600, 960) if BAND == 'off' else (420, 540)
+WIN = T1 - T0
+BAND_TXT = '평일 10~16시' if BAND == 'off' else '평일 07~09시'
+SRC_SM = '서울교통공사 열차운행시각표 2026-09-01 (공공데이터포털 15098251), ' + BAND_TXT + ' 출발 횟수로 계산'
+SRC_KRIC = '레일포털 전체 도시철도운행정보 (data.kric.go.kr id=900, 데이터 기준 2026-05-31), ' + BAND_TXT + ' 출발 횟수로 계산'
 
 
 def norm(n):
@@ -52,12 +57,12 @@ def eff_headway(ts, n):
     if not n:
         return 999
     if n == 1 or len(ts) < 2:
-        return 120 / n
+        return WIN / n
     ts = sorted(ts)
     g = [b - a for a, b in zip(ts, ts[1:]) if b > a]
     if not g:
-        return 120 / n
-    return max(120 / n, sum(x * x for x in g) / sum(g))
+        return WIN / n
+    return max(WIN / n, sum(x * x for x in g) / sum(g))
 
 
 def seoul_metro(path):
@@ -88,12 +93,12 @@ def seoul_metro(path):
             if nxt == st:
                 continue
             day[(ln, st, nxt)] += 1
-            if 420 <= m < 540:
+            if T0 <= m < T1:
                 cnt[(ln, st, nxt)] += 1
                 deps[(ln, st, nxt)].append(m)
             if ex not in ('', '0'):
                 exp_day[(ln, st, d, nxt)] += 1
-                if 420 <= m < 540:
+                if T0 <= m < T1:
                     exp_cnt[(ln, st, d, nxt)] += 1
                     exp_deps[(ln, st, d, nxt)].append(m)
             else:
@@ -195,15 +200,27 @@ def main():
         lines[lid] = {'min': 5, 'src': 'estimate', 'source': '개통 전 — 공식 배차 없음 (추정)'}
     doc = {
         'schema': 'kr-rail-map/headways/3', 'updated': '2026-11-15',
-        'basis': '출퇴근(평일 07~09시) 배차 간격(분). 운영기관 공식 시간표 기준, 개통 전 노선은 추정. dir = 방향별(역>다음역) 환산 배차(불규칙하면 Σ간격²÷Σ간격 — 평균 기다림의 2배), 999 = 출근 시간 열차 없음.',
+        'band': BAND,
+        'basis': ('평시(평일 10~16시)' if BAND == 'off' else '출퇴근(평일 07~09시)') + ' 배차 간격(분). 운영기관 공식 시간표 기준, 개통 전 노선은 추정. dir = 방향별(역>다음역) 환산 배차(불규칙하면 Σ간격²÷Σ간격 — 평균 기다림의 2배), 999 = 그 시간대 열차 없음.',
         'default': {'urban': 5, 'metro': 5, 'conventional': 30, 'ktx': 0},
         'lines': lines,
     }
-    out = os.path.join(ROOT, 'data', 'headways.json')
+    if BAND == 'off':
+        # 평시 공식 값이 없는 손 입력 노선(에버라인·인천 2호선 글, GTX 발표)은 출퇴근 값을 그대로 쓰되 '추정'으로 표시
+        for lid, v in lines.items():
+            if v['src'] == 'official' and not v.get('stations') and not v.get('dir'):
+                v['src'] = 'estimate'; v['source'] = v['source'] + ' — 평시 공식 값 없음, 출퇴근 값 그대로 (추정)'
+        # GTX-A 운정중앙~서울역: 2025-03 증편은 출퇴근만 10분 → 6.25분 (국토교통부 2025-02-28 발표, 뉴시스 보도) — 평시는 10분 그대로
+        lines['great-train-express-line-a'].update({'min': 10, 'src': 'official',
+            'source': '국토교통부 2025-02-28 발표: 출퇴근 배차만 10분→6.25분, 평시는 개통 때 10분 그대로 (뉴시스 NISX20250228_0003083102)',
+            'south_source': 'GTX-A 수서~동탄 평시 공식 값 없음 — 출퇴근 17분 그대로 (추정)'})
+        for lid in ['gtx-a-seoul-suseo', 'gtx-a-changneung', 'gtx-b', 'gtx-c', 'gtx-d', 'gtx-e', 'gtx-f', 'gtx-g', 'gtx-h']:
+            lines[lid].update({'min': 10, 'source': 'GTX-A 운정중앙~서울역 평시 10분과 같게 (개통 전 — 공식 배차 없음, 추정)'})
+    out = os.path.join(ROOT, 'data', 'headways-off.json' if BAND == 'off' else 'headways.json')
     with open(out, 'w', encoding='utf-8') as f:
         json.dump(doc, f, ensure_ascii=False, separators=(',', ':'))
     off = sum(1 for v in lines.values() if v['src'] == 'official')
-    print('headways.json', len(lines), '노선 (공식', off, ', 개통 전 추정', len(lines) - off, ')', round(os.path.getsize(out) / 1024), 'KB')
+    print(os.path.basename(out), len(lines), '노선 (공식', off, ', 개통 전 추정', len(lines) - off, ')', round(os.path.getsize(out) / 1024), 'KB')
     for lid in ['seoul-subway-line-2', 'seoul-metropolitan-subway-line-1', 'gyeongui-jungang-line', 'seoul-metropolitan-subway-gyeongchun-line', 'arex']:
         print(' ', lid, lines[lid]['min'], '역', len(lines[lid].get('stations', {})))
 

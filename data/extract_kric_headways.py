@@ -1,6 +1,9 @@
 # 실행: python -I data/extract_kric_headways.py <kric.pkl> <hw_kric.json>  → python data/build_headways.py <서울교통공사 CSV> <hw_kric.json>
 # 레일포털 전체 도시철도운행정보 → 노선·역·방향별 평일 07:00~09:00 출발 횟수 → 배차(분)
-import sys, pickle, collections, statistics, json, datetime
+import sys, os, pickle, collections, statistics, json, datetime
+# 시간대 (A5): HW_BAND=off 이면 평시 평일 10~16시
+T0, T1 = (600, 960) if os.environ.get('HW_BAND') == 'off' else (420, 540)
+WIN = T1 - T0
 sys.stdout.reconfigure(encoding='utf-8')
 data = pickle.load(open(sys.argv[1], 'rb'))
 # 열차별로 순서대로 (같은 열차번호·요일·노선)
@@ -47,7 +50,7 @@ for (lname, tno, a, b), seq in trains.items():
             continue   # 종착역 도착은 출발이 아니다
         day[(lname, st, nxt)] += 1
         m = t.hour * 60 + t.minute
-        if 7 * 60 <= m < 9 * 60:
+        if T0 <= m < T1:
             cnt[(lname, st, nxt)] += 1
             deps[(lname, st, nxt)].append(m + t.second / 60)
 # 2026-11-15 (회장님 지적 — 청량리 수인분당): 예전엔 출근 시간 열차가 1대뿐인 역을 버려(n < 2) 노선 평균 6분이 대신 들어갔다.
@@ -60,12 +63,12 @@ def eff_headway(ts, n):
     if not n:
         return 999
     if n == 1 or len(ts) < 2:
-        return 120 / n
+        return WIN / n
     ts = sorted(ts)
     g = [b - a for a, b in zip(ts, ts[1:]) if b > a]
     if not g:
-        return 120 / n
-    return max(120 / n, sum(x * x for x in g) / sum(g))
+        return WIN / n
+    return max(WIN / n, sum(x * x for x in g) / sum(g))
 per = collections.defaultdict(dict); dirs = collections.defaultdict(dict)
 for (ln, st, nxt), nd in day.items():
     n = cnt.get((ln, st, nxt), 0)

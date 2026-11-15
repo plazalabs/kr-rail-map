@@ -65,6 +65,12 @@ const nw = RF.allTimesFrom(kw, { openOnly: true, noWait: true });
 const wt = RF.allTimesFrom(kw, { openOnly: true });
 check(`광운대→선릉 순위용 ${nw.get(by('선릉'))}분 ≤ 길찾기용 ${wt.get(by('선릉'))}분`, nw.get(by('선릉')) <= wt.get(by('선릉')));
 check(`광운대→선릉 순위용이 예전 가짜 값(청량리 수인분당, 기다림 0) 보다 짧지 않음 ≥ 32`, nw.get(by('선릉')) >= 32, nw.get(by('선릉')));
+// 정반합 8차 A4 (11-15): 옥수(미타사)는 ITX-청춘이 하루 몇 대만 서는 역 — 길찾기가 '옥수에서 내려 3호선'을 기본 길로 고르지 않는다
+{
+  const cc = S.features.find(f => f.properties.name_ko === '춘천').properties.id;
+  const r = RF.findRoute(cc, by('강남'), { openOnly: true });
+  check(`춘천→강남: ITX-청춘을 옥수에서 내리지 않음 (${r.minutes}분 · ${desc(r)})`, !r.legs.some(l => nm[l.to] === '옥수' || nm[l.from] === '옥수'));
+}
 
 console.log(`\n결과: ${pass}개 통과, ${fail}개 실패`);
 process.exit(fail ? 1 : 0);

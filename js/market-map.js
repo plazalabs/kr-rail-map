@@ -501,7 +501,11 @@
   // 링크: ?market=1&y=&w=&c=&g=&s=&st= — 모르는 값은 무시(기본값)
   var ALLOWED = { w: ['avg', 'cbd', 'ybd', 'gbd'], color: ['gain', 'tier', 'jeonse', 'price'], group: ['line', 'sgg'], scope: ['new', 'affected', 'all'] };
   function linkQuery() {
-    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.band ? '&b=' + st.band : '') + (st.more ? '&m=1' : '') + (global.KR_WAIT ? '&wait=' + (KR_WAIT.isPeak() ? '1' : '0') : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '');
+    return '?market=1&y=' + encodeURIComponent(st.y) + '&w=' + st.w + '&c=' + st.color + '&g=' + st.group + '&s=' + st.scope + (st.view !== 'tiles' ? '&v=' + st.view : '') + (st.focus ? '&f=' + encodeURIComponent(st.focus) : '') + (st.band ? '&b=' + st.band : '') + (st.more ? '&m=1' : '') + (global.KR_WAIT ? '&wait=' + (KR_WAIT.isPeak() ? '1' : '0') : '') + (st.sel ? '&st=' + encodeURIComponent(st.sel) : '') +
+      (st.size !== 'equal' ? '&z=' + st.size : '') +
+      // 투자 모드에서만 되는 조건(시세·전세가율 색, 거래·입주 크기, 산점도)은 받는 사람이 투자 모드를 꺼 두었으면 조용히 기본값으로 바뀌었다 →
+      // 링크가 그 방문만 투자 모드로 연다(js/mode.js ?mode=invest — 받는 사람 저장 설정은 안 바꿈) (평가① P3, 11-15)
+      ((st.color === 'price' || st.color === 'jeonse' || st.size !== 'equal' || st.view === 'scatter') ? '&mode=invest' : '');
   }
   function note(msg) { var s = document.getElementById('status'); if (s) s.textContent = msg; }
 
@@ -1144,6 +1148,9 @@
       flyTo(id);
       // K6 (6차 ③5·②5): 상세는 한 곳만 — 패널 카드. 큰 역 상세 창은 카드의 '역 상세 열기'로(예전엔 카드와 상세 창이 같이 떠 같은 내용이 두 번)
       if (isMobile()) setTab('card');
+      // 큰 역 상세가 이미 다른 역으로 열려 있으면 같이 바꾼다 — 카드는 인천대입구인데 상세는 파주로 남아 두 역이 섞여 보이던 것 (평가① P5, 11-15).
+      // 상세가 닫혀 있으면 열지 않는다(K6: 상세는 한 곳만 — 카드).
+      else if (typeof StationDetail !== 'undefined' && StationDetail.openId) { var oid = StationDetail.openId(); if (oid && oid !== id) openDetail(id); }
     } else {
       var b = tileById.get(id);
       if (b && b.scrollIntoView) { try { b.scrollIntoView({ block: 'nearest' }); } catch (e) { /* 무시 */ } }
@@ -1231,12 +1238,12 @@
       b.addEventListener('click', function () { open({}); });
     });
     var q = new URLSearchParams(location.search);
-    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s'), view: q.get('v'), focus: q.get('f'), band: q.get('b'), more: q.get('m') === '1' });
+    if (q.get('market') === '1') open({ sel: q.get('st'), y: q.get('y'), w: q.get('w'), color: q.get('c'), group: q.get('g'), scope: q.get('s'), view: q.get('v'), focus: q.get('f'), band: q.get('b'), more: q.get('m') === '1', size: q.get('z') });
   }
 
   global.MarketMap = { Logic: Logic, init: init, open: open, close: close, pick: pick,
     isOpen: function () { return isOpen; }, state: function () { return { band: st.band, focus: st.focus, view: st.view, w: st.w, y: st.y, group: st.group, size: st.size, color: st.color, sel: st.sel, tab: st.tab }; },
-    model: function () { return model; }, _pngCanvas: function () { return pngCanvas(); }, _cardCanvas: function () { return cardCanvas(); }, playing: function () { return !!playT; } };
+    model: function () { return model; }, link: function () { return linkQuery(); }, _pngCanvas: function () { return pngCanvas(); }, _cardCanvas: function () { return cardCanvas(); }, playing: function () { return !!playT; } };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 if (typeof module !== 'undefined' && module.exports) module.exports = (typeof window !== 'undefined' ? window : globalThis).MarketMap;

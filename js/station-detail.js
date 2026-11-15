@@ -878,6 +878,8 @@
     selectTab: function (k) { var b = panel && panel.querySelector('.sd-tab[data-tab="' + k + '"]'); if (!b) return false; b.click(); return true; },
     hide: hide,
     refresh: refresh,
+    // 지금 열려 있는 역 id (닫혀 있으면 null) — 타일에서 다른 역을 고르면 열린 상세도 따라 바꾸려고 (평가① P5, 11-15)
+    openId: function () { return panel && panel.classList.contains('sd-open') && current && current.properties ? current.properties.id : null; },
     onAction: null,   // (action, stationName, stationId) => void — 호스트가 주입 가능
     beforeShow: null, // (feature) => void — 패널을 열기 직전 호출 (데이터 지연 로딩)
     // 테스트/디버깅용

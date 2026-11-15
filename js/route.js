@@ -654,6 +654,9 @@ const RouteFinder = (() => {
   // 거리(요금용)는 공식 역간거리를 못 찾아 지도 선 길이(광운대–망우)에서 상봉–망우를 뺀 값.
   const STOP_ORDER_FIX = [
     { lid: 'seoul-metropolitan-subway-gyeongchun-line', a: '광운대', wrong: '망우', right: '상봉', sec: 480 },
+    // 광명셔틀: 지도 선이 광명을 석수에 붙여 광명→석수 5분 무환승으로 나왔다(금천구청–광명 간선이 아예 없어 BRANCH_RUNS 광명셔틀도 안 걸림).
+    // 시각표: 광명 ↔ 금천구청 300초 → 금천구청에서 갈아탄다. 거리 4.7km = 노선 거리(itwiki 광명역 노선도) — 코레일 공식 영업거리는 아직 못 찾음.
+    { lid: 'seoul-metropolitan-subway-line-1', a: '광명', wrong: '석수', right: '금천구청', sec: 300, km: 4.7 },
   ];
   let stopOrderFixed = 0;
   function applyStopOrderFix() {
@@ -668,7 +671,7 @@ const RouteFinder = (() => {
       [[a, w], [w, a]].forEach(([x, y]) => adj.set(x, (adj.get(x) || []).filter(e => e.walk || e.lineId !== f.lid || e.to !== y)));
       geomAdjacent.delete(f.lid + ':' + pairKey(a, w));
       if (!(adj.get(a) || []).some(e => !e.walk && e.lineId === f.lid && e.to === r)) {
-        addEdge(a, r, f.lid, false, Math.max(0.5, old.distKm - (seg ? seg.distKm : 0)));
+        addEdge(a, r, f.lid, false, f.km || Math.max(0.5, old.distKm - (seg ? seg.distKm : 0)));
         geomAdjacent.add(f.lid + ':' + pairKey(a, r));
       }
       [[a, r], [r, a]].forEach(([x, y]) => (adj.get(x) || []).forEach(e => {

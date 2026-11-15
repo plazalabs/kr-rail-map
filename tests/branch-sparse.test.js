@@ -79,6 +79,15 @@ check(`광운대→선릉 순위용이 예전 가짜 값(청량리 수인분당,
   const r = RF.findRoute(kw, by('망우'), { openOnly: true });
   check(`광운대→망우 10분 이상 (상봉 8분 + 망우 2분 — 전엔 4.4분) (${r.minutes}분 · ${desc(r)})`, r.minutes >= 10);
 }
+// 광명셔틀 (11-15): 1호선 광명의 이웃은 금천구청 하나(시각표 300초, 갈래 '광명셔틀'). 전엔 지도 선이 광명–석수를 이어 5분 무환승이었다
+{
+  const L1 = 'seoul-metropolitan-subway-line-1', gm = by('광명');
+  const nb = RF.adjacency().get(gm).filter(e => !e.walk && e.lineId === L1);
+  check(`1호선 광명의 이웃은 금천구청(광명셔틀) 하나, 거리 4.7km (${nb.map(e => nm[e.to] + '#' + e.run + ' ' + e.distKm + 'km').join(',')})`,
+    nb.length === 1 && nm[nb[0].to] === '금천구청' && nb[0].run === '광명셔틀' && nb[0].distKm === 4.7);
+  const r = RF.findRoute(gm, by('석수'), { openOnly: true });
+  check(`광명→석수가 5분 무환승이 아님 (${r.minutes}분 · ${desc(r)})`, r.minutes > 10 && !(r.legs.length === 1 && r.legs[0].lineId === L1));
+}
 
 console.log(`\n결과: ${pass}개 통과, ${fail}개 실패`);
 process.exit(fail ? 1 : 0);

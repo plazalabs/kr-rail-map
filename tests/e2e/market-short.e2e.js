@@ -45,5 +45,13 @@ const vis = sel => `(() => { const e = document.querySelector('${sel}'); if (!e)
   exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0 (보통 화면)', exc.length === 0, exc.slice(0, 3));
   b.close();
+  // 3) A17: 투자 모드 평당가 색 — 범례에 '역 N곳 = 법정동 M곳 값'과 기준 달 (타일 수를 독립 표본으로 읽지 않게)
+  b = await launch({ port: 9794, w: 1440, h: 900, invest: true });
+  await b.goto(BASE + '?market=1&mode=invest#normal', 1500); await ready(b); await tilesUp(b);
+  await b.evaluate(`(() => { const s = document.querySelector('#mm-panel select[data-k="color"]'); s.value = 'price'; s.dispatchEvent(new Event('change')); })()`);
+  let lg = '';
+  for (let i = 0; i < 40; i++) { lg = await b.evaluate(`(document.querySelector('#mm-panel .mm-legend') || {}).textContent || ''`); if (/법정동 \d+곳 값/.test(lg)) break; await sleep(300); }
+  R.check("평당가 범례: '역 N곳 = 법정동 M곳 값(같은 동 역은 같은 숫자)' · 기준 달 (A17)", /역 \d+곳 = 법정동 \d+곳 값/.test(lg) && /\d{4}-\d{2}까지 거래/.test(lg), lg.slice(-160));
+  b.close();
   R.finish();
 })().catch(e => { console.error(e); process.exit(1); });

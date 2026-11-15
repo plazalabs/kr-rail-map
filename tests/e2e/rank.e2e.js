@@ -70,12 +70,18 @@ const layout = b => b.evaluate(`(() => ({
       R.check('연도 2027: 광운대 200위 밖·동북선 개통 표시', y27.rank > 200 && /2027년까지/.test(y27.now) && /동북선/.test(y27.opens), y27);
       R.check('연도 2031: 광운대 10위 안·GTX-B·C 개통 표시', y31.rank <= 10 && /GTX-B/.test(y31.opens) && /GTX-C/.test(y31.opens), y31);
       await b.goto(RANK, 800); await rows(b);
-      await b.evaluate(`(() => { const r = document.getElementById('yr'); r.value = '2'; r.dispatchEvent(new Event('input')); })()`); await sleep(300);
+      // 단추 순서는 자료에 따라 바뀐다(11-15 2028 삼성 정차 추가) — 번호를 박지 않고 '31 눈금 자리를 찾는다
+      await b.evaluate(`(() => { const r = document.getElementById('yr'); const t = [...document.querySelectorAll('#yr-ticks span')].map(s => s.textContent); r.value = String(t.indexOf("'31")); r.dispatchEvent(new Event('input')); })()`); await sleep(300);
       const sl3 = await b.evaluate(`({ url: location.search, h: document.getElementById('slope-h').textContent })`);
       R.check('슬라이더를 밀면 주소에 y= 와 TOP 10 제목이 그 해로', /y=2031/.test(sl3.url) && /2031년까지/.test(sl3.h), sl3);
       await b.evaluate(`document.getElementById('yr-play').click()`); await sleep(1800);
       const pl = await b.evaluate(`({ btn: document.getElementById('yr-play').getAttribute('aria-label'), stopIc: !!document.querySelector('#yr-play svg.ic-stop'), url: location.search })`);
-      R.check('▶ 누르면 연도가 차례로 넘어간다 (멈춤 버튼 = 정지 아이콘·이름표 멈추기)', pl.btn === '멈추기' && pl.stopIc && /y=20(27|30)/.test(pl.url), pl);
+      R.check('▶ 누르면 연도가 차례로 넘어간다 (멈춤 버튼 = 정지 아이콘·이름표 멈추기)', pl.btn === '멈추기' && pl.stopIc && /y=20(27|28|30)/.test(pl.url), pl);
+      // 2028 = GTX-A 삼성역 정차 단계 (2027 개통 땐 무정차) — 연도 줄에 이름이 나온다 (평가① P1, 11-15)
+      await b.evaluate(`document.getElementById('yr-play').click()`); await sleep(200);
+      await b.evaluate(`(() => { const r = document.getElementById('yr'); const t = [...document.querySelectorAll('#yr-ticks span')].map(s => s.textContent); r.value = String(t.indexOf("'28")); r.dispatchEvent(new Event('input')); })()`); await sleep(300);
+      const y28 = await b.evaluate(`({ url: location.search, opens: document.getElementById('yr-opens').textContent })`);
+      R.check('2028 단계: "2028년 개통: GTX-A 삼성역 정차" 가 보인다', /y=2028/.test(y28.url) && /삼성역 정차/.test(y28.opens), y28);
       await b.evaluate(`document.getElementById('yr-play').click()`);
       // ?open=역ID (지도 역 상세 '떡상 랭킹에서 보기') — 그 역 카드가 펼쳐져 있다. 수도권 밖(부산 서면)이면 전국으로
       await b.goto(RANK + '?open=st-355172776', 800); await rows(b);

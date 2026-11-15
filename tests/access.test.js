@@ -90,7 +90,8 @@ for (const id of Object.keys(access.stations)) {
     const a = r.now[i], b = r.after[i];
     if ((a != null && (a < 0 || a > 600)) || (b != null && (b < 0 || b > 600))) neg++;
     // 개통으로 느려지는 일은 없어야 한다. 있으면 선형·속도표가 깨진 신호다.
-    if (a != null && b != null && b > a + 1) worse++;
+    // 새 역 정차(창릉·삼성)가 생기면 그 구간을 지나던 열차가 서므로 정차 손실(1.79분 → 반올림 2분)만큼은 느려질 수 있다 (11-15)
+    if (a != null && b != null && b > a + 2) worse++;
     if (a != null && !Number.isInteger(a)) weird++;
     n++;
   }
@@ -98,7 +99,7 @@ for (const id of Object.keys(access.stations)) {
 check('배열 길이가 5로 맞는다', weird === 0, weird + '건');
 check('값이 0~600분 정수다', neg === 0, neg + '건');
 check('도달 불가(null)만 있는 역은 싣지 않는다', allNull === 0, allNull + '건');
-check('개통 후가 지금보다 느린 역이 없다', worse === 0, worse + '건');
+check('개통 후가 지금보다 정차 손실(2분) 넘게 느린 역이 없다', worse === 0, worse + '건');
 
 // ── 3. 원본과 같은가 (낡음 방지) ────────────────────────────────
 section('route.js 로 다시 계산한 값과 같은가');
@@ -119,12 +120,17 @@ for (const [name, lat, lng] of SAMPLE) {
   if (!id || !access.stations[id]) continue;
   const nowMap = RF.allTimesFrom(id, { openOnly: true, noWait: true });
   const aftMap = RF.allTimesFrom(id, { openOnly: false, noWait: true });
+  // 바닥값 = 개통 후에도 남는 지금 길 (정차 단계를 모두 넣은 지금 노선) — build_access.js 와 같은 규칙 (11-15)
+  const stages = new Set(RF.stageIds ? RF.stageIds() : []);
+  const baseMap = stages.size ? RF.allTimesFrom(id, { openOnly: true, allow: stages, noWait: true }) : nowMap;
   access.destinations.forEach((d, i) => {
     // 업무지구 묶음(member_ids) 안 가장 빠른 값, 개통 후는 지금보다 길지 않게 — build_access.js 와 같은 규칙
     const best = m => { let v = null; for (const x of (d.member_ids || [d.station_id])) { const t = m.get(x); if (t != null && (v == null || t < v)) v = t; } return v; };
     const wantNow = best(nowMap);
     const wantAft0 = best(aftMap);
-    const wantAft = wantAft0 == null ? wantNow : (wantNow == null ? wantAft0 : Math.min(wantNow, wantAft0));
+    const f0 = best(baseMap), cap = wantNow == null ? null : wantNow + 2 * stages.size;   // 정차 손실 상한 (build_access STAGE_LOSS)
+    const floor = f0 == null ? cap : (cap == null ? f0 : Math.min(f0, cap));
+    const wantAft = wantAft0 == null ? floor : (floor == null ? wantAft0 : Math.min(floor, wantAft0));
     const got = access.stations[id];
     if (got.now[i] !== wantNow || got.after[i] !== wantAft) {
       stale++;

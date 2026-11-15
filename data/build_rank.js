@@ -151,6 +151,9 @@ const doc = {
   })),
   rows,
 };
+// 노선이 아닌 '정차 단계'(js/route.js STOP_STAGES)도 연도 칩에 이름이 나오게 — 2028 '개통:' 줄이 비지 않게 (11-15)
+const STAGE_META = { 'gtx-a-samseong-stop': { n: 'GTX-A 삼성역 정차', c: '#9A6292', s: 'construction', o: '2028년 예정 (2027 개통 땐 무정차 통과)' } };
+Object.values(doc.year_lines).forEach(ids => ids.forEach(id => { if (!doc.lines[id] && STAGE_META[id]) doc.lines[id] = STAGE_META[id]; }));
 fs.writeFileSync(path.join(ROOT, 'data/rank.json'), JSON.stringify(doc));
 const bySido = {};
 rows.forEach(r => { bySido[r.r || '?'] = (bySido[r.r || '?'] || 0) + 1; });

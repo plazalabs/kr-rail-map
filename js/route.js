@@ -671,10 +671,42 @@ const RouteFinder = (() => {
       if (!a || !b) return;
       [[a, b], [b, a]].forEach(([x, y]) => (adj.get(x) || []).forEach(e => { if (e.to === y && e.lineId === lid) { e.nowOnly = true; e.nowOnlyBy = by; } }));
     });
+    STOP_STAGES.forEach(({ lid, stop, a: na, b: nb, expressMin, by }) => {
+      if (activeIds && !activeIds.has(lid)) return;
+      const s = resolveOn(lid, stop), a = resolveOn(lid, na), b = resolveOn(lid, nb);
+      if (!s || !a || !b) return;
+      // 그 역에 닿는 이 노선 간선(양방향)에 표시
+      adj.forEach((list, from) => list.forEach(e => { if (e.lineId === lid && (from === s || e.to === s)) e.stopBy = by; }));
+      const ca = stationsById.get(a).geometry.coordinates, cb = stationsById.get(b).geometry.coordinates;
+      const gkm = hav(ca[0], ca[1], cb[0], cb[1]);
+      const open = !isUnopened(lid);
+      [[a, b], [b, a]].forEach(([x, y]) => {
+        if (!adj.has(x)) adj.set(x, []);
+        adj.get(x).push({ to: y, lineId: lid, distKm: gkm, officialMin: expressMin, open, expressUntil: by });
+      });
+    });
   }
   const NOW_ONLY_SPANS = [
     { lid: 'great-train-express-line-a', a: '대곡', b: '연신내', by: 'gtx-a-changneung' },
   ];
+  // 삼성역 정차는 개통(2027 상반기 전망)보다 늦다 — 국토부 2026-11-03: 2027 개통 땐 삼성 무정차 통과, 정차는 2028.
+  // '그 해까지 개통'(allow) 계산에서 이 단계가 아직이면 삼성에서 타고 내릴 수 없고 서울역↔수서는 직행만 있다.
+  // 직행 = 서울역→삼성 6.1 + 삼성→수서 3.6 − 정차 1.79(창릉과 같은 정차 손실) = 7.9분.
+  // '개통 후(전체)' 와 길찾기 '개통 예정 포함' 은 최종 계획(삼성 정차) 그대로 — 직행은 거기서 안 쓴다.
+  const STOP_STAGES = [
+    { lid: 'gtx-a-seoul-suseo', stop: '삼성', a: '서울역', b: '수서', expressMin: 7.9, by: 'gtx-a-samseong-stop', year: 2028 },
+  ];
+  // 들어 있는 노선(allow)에 단계 id 를 더해도 되는지 — 빌드 스크립트가 연도표를 만들 때 쓴다
+  function stopStages() { return STOP_STAGES.map(s => ({ lid: s.lid, by: s.by, year: s.year })); }
+  // 지금 길 일부를 없애는 단계 id 전부 (창릉 정차·삼성 정차) — 이 단계가 들어오면 '지금보다 길어질 수 없다' 바닥값을 다시 잡아야 한다
+  function stageIds() { return NOW_ONLY_SPANS.map(s => s.by).concat(STOP_STAGES.map(s => s.by)); }
+  // 이 간선을 지금 계산에서 못 쓰는가 (nowOnly·삼성 정차 단계)
+  function stageBlocked(e, openOnly, allow) {
+    if (e.nowOnly && (!openOnly || (allow && allow.has(e.nowOnlyBy)))) return true;
+    if (e.stopBy && openOnly && allow && !allow.has(e.stopBy)) return true;      // 정차 전: 그 역에서 타고 내릴 수 없음
+    if (e.expressUntil && !(openOnly && allow && !allow.has(e.expressUntil))) return true;   // 직행은 정차 전 연도 계산에만
+    return false;
+  }
 
   // GTX·고속 계통은 category 가 urban 이라 표의 속도(48km/h)를 쓰면
   // 일반철도(62km/h)보다 느려져 엉뚱한 우회 경로가 잡힌다. 따로 처리한다.
@@ -773,7 +805,7 @@ const RouteFinder = (() => {
         // 미개통 노선은 지금 탈 수 없다. 도보 환승은 언제나 열려 있다.
         if (openOnly && !e.open && !(allow && allow.has(e.lineId))) continue;
         // 개통 후엔 새 역에 선다 (창릉) — '그 해까지 개통' 계산(allow)에서도 새 역이 열렸으면 무정차 길은 없다
-        if (e.nowOnly && (!openOnly || (allow && allow.has(e.nowOnlyBy)))) continue;
+        if (stageBlocked(e, openOnly, allow)) continue;
         const nl = e.lineId || null;
         let cost = edgeMinutes(e);
         // 환승 비용: 앞뒤 모두 노선이 있고 서로 다를 때만. 환승은 지금 있는
@@ -904,7 +936,7 @@ const RouteFinder = (() => {
       for (const e of (adj.get(u) || [])) {
         if (openOnly && !e.open && !(allow && allow.has(e.lineId))) continue;
         // 개통 후엔 새 역에 선다 (창릉) — '그 해까지 개통' 계산(allow)에서도 새 역이 열렸으면 무정차 길은 없다
-        if (e.nowOnly && (!openOnly || (allow && allow.has(e.nowOnlyBy)))) continue;
+        if (stageBlocked(e, openOnly, allow)) continue;
         const nl = e.lineId || null;
         let cost = edgeMinutes(e), shown = edgeMinutes(e);
         if (line !== START && line !== null && nl !== null && !sameService(nl, line)) {
@@ -955,7 +987,7 @@ const RouteFinder = (() => {
   const api = {
     buildGraph, ensureGraph, findRoute, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
     loadTransfers, loadHeadways, peakWaitAt, transferMinutes, sameService, countTransfers,
-    transferWait, hasHeadways: () => !!headwayDoc,   // I1·I2 (2026-11-14): route-compare 가 같은 대기 시간을 쓰게 · 배차 자료 받았는지
+    transferWait, stopStages, stageIds, hasHeadways: () => !!headwayDoc,   // I1·I2 (2026-11-14): route-compare 가 같은 대기 시간을 쓰게 · 배차 자료 받았는지
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
     // 예전에는 route-compare 가 그래프를 따로 만들었는데, 그쪽은 선형 조각을 이어붙여
     // 평탄화하는 바람에 GTX-D 분기(팔당 ↔ 삼성)에 없는 엣지가 생겼다.

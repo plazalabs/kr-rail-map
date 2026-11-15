@@ -115,9 +115,20 @@ const inCapital = c => c[0] > 126.3 && c[0] < 127.9 && c[1] > 36.85 && c[1] < 38
 const capitalLines = new Set();
 stations.features.forEach(s => { if (inCapital(s.geometry.coordinates)) (s.properties.lines || []).forEach(l => capitalLines.add(l)); });
 unopened.forEach(f => { if (capitalLines.has(f.properties.id)) lineYear[f.properties.id] = openYear(f.properties); });
+// 노선은 열렸어도 역 정차가 늦는 단계 (삼성역 2028 — js/route.js STOP_STAGES). 노선 연도표에 같이 넣어야 2027 계산이 삼성 무정차가 된다.
+(RF.stopStages ? RF.stopStages() : []).forEach(s => { if (s.lid in lineYear) lineYear[s.by] = s.year; });
 const YEARS = Array.from(new Set(Object.values(lineYear).filter(y => y != null))).sort((a, b) => a - b);
 const allowOf = y => new Set(Object.keys(lineYear).filter(id => lineYear[id] != null && lineYear[id] <= y));
 const CORE_IDX = ['cbd', 'ybd', 'gbd'].map(c => dests.findIndex(d => d.id === c));
+// 지금 길을 없애는 정차 단계 (창릉 2030·삼성 2028 — js/route.js). 연도 계산의 바닥값을 단계가 바뀔 때 다시 잡는 데 쓴다
+const STAGE_IDS = RF.stageIds ? RF.stageIds() : [];
+const ALL_STAGES = new Set(STAGE_IDS);
+const stagesAt = y => new Set([...allowOf(y)].filter(i => ALL_STAGES.has(i)));
+const stageKey = y => [...stagesAt(y)].sort().join(',');
+// 정차역 하나가 생길 때 어떤 길이든 늘 수 있는 최대치 = 정차 손실 1.79분(창릉과 같은 값, js/route.js) → 정수 분이라 2.
+// 앞 해에 갈 수 있던 길은 다음 해에도 (그 역에 서느라 이만큼 늦을 뿐) 남는다 — 탐색 오차가 이보다 크게 늘리는 걸 막는다.
+const STAGE_LOSS = 2;
+const coreTimes = m => dests.filter((d, i) => CORE_IDX.includes(i)).map(d => bestOf(m, d));
 
 // --- 계산 ---------------------------------------------------------------
 const ids = stations.features.map(f => f.properties.id);
@@ -129,13 +140,19 @@ for (const id of ids) {
   // 두 번의 다익스트라로 5개 거점을 한꺼번에 얻는다.
   const nowMap = RF.allTimesFrom(id, { openOnly: true, noWait: true });
   const aftMap = RF.allTimesFrom(id, { openOnly: false, noWait: true });
+  // 바닥값 = '개통 후에도 남는 지금 길'. 새 역 정차(창릉·삼성)가 생기면 그 구간을 서지 않고 지나던 지금 길은 없어진다
+  // (모든 열차가 선다) → 지금 값을 바닥으로 쓰면 느려진 몫이 숨는다 (11-15: 운정중앙→도심 개통 후 22분이 20분으로 남던 것).
+  const aftBase = ALL_STAGES.size ? RF.allTimesFrom(id, { openOnly: true, allow: ALL_STAGES, noWait: true }) : nowMap;
+  const capAft = t => t == null ? null : t + STAGE_LOSS * ALL_STAGES.size;   // 지금 길 + 정차 손실 상한
   dests.forEach(d => {
     const a = bestOf(nowMap, d);
     const b = bestOf(aftMap, d);
+    const f0 = bestOf(aftBase, d), c = capAft(a);
+    const f = f0 == null ? c : (c == null ? f0 : Math.min(f0, c));
     out[id].now.push(a == null ? null : a);
-    // 개통은 길을 더할 뿐 빼지 않는다 — 개통 후에도 지금 길로 갈 수 있다. 탐색이 환승이 적은 길을
-    // 고르느라(환승 판단 여유분) 표시 분이 지금보다 길게 나오는 경우(2026-11-11, 19역)는 지금 값을 쓴다.
-    out[id].after.push(b == null ? (a == null ? null : a) : (a == null ? b : Math.min(a, b)));
+    // 개통은 길을 더할 뿐 빼지 않는다 — 개통 후에도 (남는) 지금 길로 갈 수 있다. 탐색이 환승이 적은 길을
+    // 고르느라(환승 판단 여유분) 표시 분이 그보다 길게 나오는 경우(2026-11-11, 19역)는 그 값을 쓴다.
+    out[id].after.push(b == null ? (f == null ? null : f) : (f == null ? b : Math.min(f, b)));
   });
   // GBD 기준 역 번호 [지금, 개통 후] — 개통 후 값이 지금 길로 정해졌으면(같거나 지금이 빠름) 지금 번호
   if (GBD_I >= 0) {
@@ -146,7 +163,16 @@ for (const id of ids) {
   // 연도별 — CBD·YBD·GBD 셋만. 개통은 길을 더할 뿐이므로 앞 해(또는 지금)보다 길면 앞 값을 쓴다
   out[id].y = {};
   let prev = CORE_IDX.map(i => out[id].now[i]);
+  let prevStage = '';
   for (const y of YEARS) {
+    // 그 해에 정차 단계가 새로 들어오면 앞 해 값은 바닥이 될 수 없다(없어진 직행 길) → 지금 노선 + 그 해 정차로 다시 잡는다
+    const sk = stageKey(y);
+    if (sk !== prevStage) {
+      const k = stagesAt(y).size - (prevStage ? prevStage.split(',').length : 0);   // 이 해에 새로 들어온 정차 단계 수
+      const base = coreTimes(RF.allTimesFrom(id, { openOnly: true, allow: stagesAt(y), noWait: true }));
+      prev = base.map((b, i) => { const c = prev[i] == null ? null : prev[i] + STAGE_LOSS * k; return b == null ? c : (c == null ? b : Math.min(b, c)); });
+      prevStage = sk;
+    }
     const m = RF.allTimesFrom(id, { openOnly: true, allow: allowOf(y), noWait: true });
     const v = dests.filter((d, i) => CORE_IDX.includes(i)).map((d, k) => {
       const t = bestOf(m, d); const p = prev[k];
@@ -158,10 +184,20 @@ for (const id of ids) {
   const coreOf = m => dests.filter((d, i) => CORE_IDX.includes(i)).map(d => bestOf(m, d));
   const minOf = (t, p) => t == null ? p : (p == null ? t : Math.min(t, p));
   const wn = coreOf(RF.allTimesFrom(id, { openOnly: true, peakWait: true }));
-  const wa = coreOf(RF.allTimesFrom(id, { openOnly: false, peakWait: true })).map((t, k) => minOf(t, wn[k]));
+  const wf = (ALL_STAGES.size ? coreOf(RF.allTimesFrom(id, { openOnly: true, allow: ALL_STAGES, peakWait: true })) : wn)
+    .map((b, i) => { const c = wn[i] == null ? null : wn[i] + STAGE_LOSS * ALL_STAGES.size; return b == null ? c : (c == null ? b : Math.min(b, c)); });
+  const wa = coreOf(RF.allTimesFrom(id, { openOnly: false, peakWait: true })).map((t, k) => minOf(t, wf[k]));
   out[id].w = { now: wn, aft: wa, y: {} };
   let pw = wn;
+  let pws = '';
   for (const y of YEARS) {
+    const sk = stageKey(y);
+    if (sk !== pws) {
+      const k = stagesAt(y).size - (pws ? pws.split(',').length : 0);
+      const base = coreOf(RF.allTimesFrom(id, { openOnly: true, allow: stagesAt(y), peakWait: true }));
+      pw = base.map((b, i) => { const c = pw[i] == null ? null : pw[i] + STAGE_LOSS * k; return b == null ? c : (c == null ? b : Math.min(b, c)); });
+      pws = sk;
+    }
     const v = coreOf(RF.allTimesFrom(id, { openOnly: true, allow: allowOf(y), peakWait: true })).map((t, k) => minOf(t, pw[k]));
     out[id].w.y[y] = v; pw = v;
   }

@@ -60,7 +60,9 @@ check('개통 연도 읽기', RT.yearOf('2031년 목표 (2026년 9월 착공)') 
   check('광운대는 떡상', RT.tierOf(k) === 'rocket', k && k.change);
   // 개통 연도별 (2026-11-12) — 그 해까지 개통한 노선만
   // 2026-11-13: 수도권에 역이 있는 노선만 연도 단계 — 2028(광주2·대전2)·2026(양산선)은 수도권 순위를 안 바꾸는 빈 단추였다
-  check('연도 단계 2027·2030·2031·2035 (GTX-D 1단계 2035 — K13)', JSON.stringify(doc.years) === '[2027,2030,2031,2035]', JSON.stringify(doc.years));
+  // 2026-11-15: 2028 = GTX-A 삼성역 정차(2027 개통 땐 무정차 통과 — 국토부 11-03). 수도권 순위를 실제로 바꾸는 단계라 단추가 생긴다
+  check('연도 단계 2027·2028·2030·2031·2035 (GTX-D 1단계 2035 — K13, 삼성 정차 2028)', JSON.stringify(doc.years) === '[2027,2028,2030,2031,2035]', JSON.stringify(doc.years));
+  check('2028 단계 = GTX-A 삼성역 정차 (이름 칩 있음)', (doc.year_lines['2028'] || []).join() === 'gtx-a-samseong-stop' && /삼성역 정차/.test((doc.lines['gtx-a-samseong-stop'] || {}).n || ''), JSON.stringify(doc.year_lines['2028']));
   check('2031년 개통 노선 = GTX-B·C·C 상록수 갈래', (doc.year_lines['2031'] || []).sort().join() === 'gtx-b,gtx-c,gtx-c-sangnoksu', JSON.stringify(doc.year_lines['2031']));
   check('시기 미정 노선은 연도 단계에 없음 (평택 연장·동부선·GTX-G·H)', ['gtx-a-pyeongtaek', 'dongbu-line', 'gtx-g', 'gtx-h'].every(x => doc.undated_lines.includes(x)));
   const at = y => RT.compute(doc, { weight: 'avg', region: 'capital', at: y }).rows.find(r => r.name === '광운대');
@@ -69,7 +71,12 @@ check('개통 연도 읽기', RT.yearOf('2031년 목표 (2026년 9월 착공)') 
   check('광운대 2027년: 아직 GTX-C 전 — 지금과 같은 시간', k27 && k27.aft.times.join() === k27.now.times.join(), k27 && k27.aft.times.join() + ' / 지금 ' + k27.now.times.join());
   check('광운대 2031년: GTX-C 개통 — 9/15/9분, 10위 안', k31 && k31.aft.times.join() === '9,15,9' && k31.aft.rank <= 10, k31 && k31.aft.rank);
   const kRow = doc.rows.find(r => r.n === '광운대');
-  check('연도별 시간은 해가 갈수록 늘지 않는다 (개통은 길을 더할 뿐)', doc.rows.every(r => { let p = r.now; return doc.years.every(y => { const v = r.y[y]; const ok = v.every((t, i) => t == null || p[i] == null || t <= p[i]); p = v; return ok; }); }), kRow && JSON.stringify(kRow.y));
+  // 개통은 길을 더할 뿐 — 단, 새 역 정차 단계(창릉 2030·삼성 2028)가 들어온 해에는 그 구간을 지나던 열차가 서므로
+  // 정차 손실(1.79분 → 반올림 2분)만큼 늘 수 있다 (11-15). 그 밖의 해에 느는 건 버그.
+  const STAGES = ['gtx-a-changneung', 'gtx-a-samseong-stop'];
+  const stageYear = y => (doc.year_lines[y] || []).some(l => STAGES.includes(l));
+  let badRow = null;
+  check('연도별 시간은 해가 갈수록 늘지 않는다 (정차 단계 해만 2분까지)', doc.rows.every(r => { let p = r.now; return doc.years.every(y => { const v = r.y[y]; const slack = stageYear(String(y)) ? 2 : 0; const ok = v.every((t, i) => t == null || p[i] == null || t <= p[i] + slack); if (!ok && !badRow) badRow = JSON.stringify({ n: r.n, y, p, v }); p = v; return ok; }); }), badRow || (kRow && JSON.stringify(kRow.y)));
   const cn = doc.rows.find(r => r.n === '창릉');
   check('창릉은 2030년부터 생긴다', cn && cn.y['2027'].every(v => v == null) && cn.y['2030'].every(v => v != null), cn && JSON.stringify(cn.y));
   check('GTX-C 개통 연도가 2031년 (2026-09 착공·60개월)', RT.yearOf((doc.lines['gtx-c'] || {}).o) === 2031, (doc.lines['gtx-c'] || {}).o);

@@ -74,7 +74,7 @@
     return DEST.map((d, i) => {
       const v = cur[i];
       const before = st.t === 'aft' ? r.now.times[i] : null;
-      const old = (before != null && v != null && before > v) ? '<s>' + before + '</s>' : '';
+      const old = (before != null && v != null && before > v) ? '<s aria-hidden="true">' + before + '</s><span class="sr-only">' + before + '분에서 </span>' : '';   // P9: 낭독기가 '34 6분'을 '346분'으로 읽지 않게
       return '<span' + (i === hi ? ' class="hi"' : '') + '>' + d + ' ' + old + '<b>' + (v == null ? '—' : v + '분') + '</b></span>';
     }).join('');
   }

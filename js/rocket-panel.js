@@ -263,7 +263,8 @@
     var chg = r.isNew ? '<span class="rkp-chg is-new">신규</span>'
       : (r.change > 0 ? '<span class="rkp-chg up">접근성 ▲' + r.change + '위</span>'
         : (r.change < 0 ? '<span class="rkp-chg down">접근성 ▼' + (-r.change) + '위</span>' : '<span class="rkp-chg">그대로</span>'));
-    var before = r.now.rank == null ? '<s class="rkp-was">지금 못 감</s>' : (r.change ? '<s class="rkp-was">' + r.now.rank + '위</s>' : '');
+    // P9: 취소선은 낭독기에 숨기고 '지금 N위에서'로 읽힌다 ('12위 3위' 로 섞여 들리지 않게)
+    var before = r.now.rank == null ? '<s class="rkp-was" aria-hidden="true">지금 못 감</s><span class="sr-only">지금은 못 가다가 개통 후 </span>' : (r.change ? '<s class="rkp-was" aria-hidden="true">' + r.now.rank + '위</s><span class="sr-only">지금 ' + r.now.rank + '위에서 개통 후 </span>' : '');
     // 순위 곡선
     var pts = curvePoints(doc, r.id, { weight: st.w, wait: st.wait });
     var cp = curvePath(pts, 132, 52, 6);
@@ -284,7 +285,7 @@
       var pct = function (v) { return v == null ? 0 : Math.max(3, Math.round(100 * v / mx)); };
       return '<div class="rkp-bar"><span class="rkp-bar-l">' + nm + '</span>' +
         '<span class="rkp-track"><i class="was" style="width:' + pct(n) + '%"></i><i class="aft" style="width:' + pct(a) + '%"></i></span>' +
-        '<span class="rkp-bar-v">' + (n == null ? '—' : n) + ' → <b>' + (a == null ? '—' : a) + '분</b></span></div>';
+        '<span class="rkp-bar-v">' + (n == null ? '—' : n) + '<span aria-hidden="true"> → </span><span class="sr-only">분에서 </span><b>' + (a == null ? '—' : a) + '분</b></span></div>';
     }).join('');
     return '<div class="rkp-hero t-' + t + '">' +
       '<p class="rkp-hero-where">선택한 역 · ' + esc(where || '수도권') + '</p>' +

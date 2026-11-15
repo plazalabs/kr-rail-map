@@ -96,6 +96,9 @@ const layout = b => b.evaluate(`(() => ({
       await b.evaluate(`document.getElementById('wait').click()`); await sleep(300);
       const w1 = await b.evaluate(`({ tms: document.querySelector('#list .row .tms').textContent, pressed: document.getElementById('wait').getAttribute('aria-pressed'), url: location.search, hint: document.getElementById('hint').textContent })`);
       R.check('⏱ 배차 포함 켜면 주소 wait=1·안내·광운대 9분→12분', w1.pressed === 'true' && /wait=1/.test(w1.url) && /배차 포함/.test(w1.hint) && /9분/.test(w0) && /12분/.test(w1.tms), { w0, w1 });
+      // P9: 개통 후 시간의 취소선(지금 분)은 낭독기에 숨기고 'N분에서' 로 읽힌다 ('346분' 방지)
+      const s9 = await b.evaluate(`(() => { const s = document.querySelector('#list .tms s'); return s ? { hid: s.getAttribute('aria-hidden'), sr: (s.nextElementSibling || {}).textContent || '', cls: (s.nextElementSibling || {}).className } : null })()`);
+      R.check('P9 순위표 취소선 aria-hidden + sr-only N분에서', !s9 || (s9.hid === 'true' && s9.cls === 'sr-only' && /^\d+분에서 $/.test(s9.sr)), s9);
     }
     // 줄을 누르면 역 카드가 펼쳐지고, '지도에서 보기' 를 누르면 지도에서 그 역 상세
     await b.goto(RANK, 800); await rows(b);

@@ -69,7 +69,7 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
     return { open: !p.hidden, layer: !!map.getLayer('rocket-tier'), sel: !!map.getLayer('rocket-sel'), pressed: document.getElementById('rocket-btn').getAttribute('aria-pressed'),
       title: q('#rkp-title').textContent, was: (q('.rkp-was')||{}).textContent, now: (q('.rkp-now')||{}).textContent, name: (q('.rkp-name')||{}).textContent,
       curve: !!q('.rkp-curve path'), pts: p.querySelectorAll('.rkp-curve circle').length, bars: p.querySelectorAll('.rkp-bar').length,
-      barv: [...p.querySelectorAll('.rkp-bar-v')].map(x => x.textContent), yon: (q('#rkp-chips .on')||{}).getAttribute && q('#rkp-chips .on').getAttribute('data-y'),
+      barv: [...p.querySelectorAll('.rkp-bar-v')].map(x => { const c = x.cloneNode(true); c.querySelectorAll('.sr-only').forEach(e => e.remove()); return c.textContent; }), barsr: [...p.querySelectorAll('.rkp-bar-v')].map(x => x.textContent), wasHidden: (q('.rkp-was')||{getAttribute:()=>null}).getAttribute('aria-hidden'), yon: (q('#rkp-chips .on')||{}).getAttribute && q('#rkp-chips .on').getAttribute('data-y'),
       list: p.querySelectorAll('.rkp-row').length, first: (q('.rkp-row b')||{}).textContent, tip: (document.querySelector('.rkp-tip')||{}).textContent,
       font: getComputedStyle(p).fontFamily, state: RocketPanel.state() }; })()`);
   R.check('패널 열림 + 떡상 레이어·고른 역 고리 켜짐 + 버튼 눌림 표시', s1.open && s1.layer && s1.sel && s1.pressed === 'true', s1);
@@ -78,6 +78,7 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
   R.check(`문장형 제목 '${RP.Logic.titleOf(KW, DY)}'`, s1.title === RP.Logic.titleOf(KW, DY) && s1.title.includes(KW.aft.times[kwBest.i] + '분'), s1.title);
   R.check(`광운대 카드: 취소선 ${KW.now.rank}위 → ${RP.Logic.rankText(KW.aft.rank, KW.tie)} (rank.json 과 같음)`, s1.name === '광운대' && s1.was === KW.now.rank + '위' && s1.now === RP.Logic.rankText(KW.aft.rank, KW.tie), s1);
   R.check('순위 곡선(지금+연도 점) + 업무지구 막대 3개', s1.curve && s1.pts === DOC.years.length + 1 && s1.bars === 3, [s1.pts, s1.bars]);
+  R.check('P9 낭독: 취소선 순위 aria-hidden + 막대는 N분에서 M분', s1.wasHidden === 'true' && s1.barsr.every((t, i) => t.replace(/\s/g, '').startsWith(KW.now.times[i] + '→분에서')), [s1.wasHidden, s1.barsr[0]]);
   R.check('막대 숫자 = 지금 → 개통 후 분', s1.barv.every((t, i) => t.replace(/\s/g, '') === (KW.now.times[i] + '→' + KW.aft.times[i] + '분')), s1.barv);
   R.check(`TOP 10 목록, 1위 ${TOP1.name}`, s1.list === 10 && s1.first === TOP1.name, [s1.list, s1.first]);
   R.check("지도 말풍선 '광운대 N위 → M위 ▲'", /광운대/.test(s1.tip || '') && (s1.tip || '').includes(KW.aft.rank + '위') && (s1.tip || '').includes('▲' + KW.change), s1.tip);

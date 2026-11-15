@@ -153,7 +153,7 @@ const want = s => !ONLY.length || ONLY.includes(s);
         row.route = rt;
         rec('⑤ 노선도 카드', '서울 시청(카드) → 강남 경로', rt.f === st.sid && !/부산|KTX 경부/.test(rt.txt), JSON.stringify(rt));
       }
-      rec('⑤ 노선도 카드', `${nm}(${nth}) ${which}`, st.value === nm && st.routeOpen && !st.diagram && lineOk,
+      rec('⑤ 노선도 카드', `${nm}(${nth}) ${which}`, (st.value === nm || (nm === '서울' && st.value === '서울역')) && st.routeOpen && !st.diagram && lineOk,
         `값='${st.value}' sid=${st.sid} 노선일치=${lineOk} 길찾기열림=${st.routeOpen} 노선도닫힘=${!st.diagram} 버튼최상단=${bi.onTop} 노드노선=${tgt.lines} 노선도버튼active=${st.dgBtnActive}`);
     }
   }

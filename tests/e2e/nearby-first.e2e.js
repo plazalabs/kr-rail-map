@@ -55,6 +55,18 @@ const items = b => b.evaluate(`[...document.getElementById('route-from').parentE
   const seoul = (await items(b)).find(x => x.name === '서울');
   const nLines = await b.evaluate(`new Set(STATIONS.find(s => s.properties.name_ko === '서울' && s.properties.lines.length > 3).properties.lines.map(lineLabelOf)).size`).catch(e => 'ERR ' + e.message);
   R.check("'서울' 자동완성: 노선 3개 + '+N' (N = 나머지)", !!seoul && typeof nLines === 'number' && nLines > 3 && seoul.lines.trim().endsWith(' +' + (nLines - 3)), { seoul: seoul && seoul.lines, nLines });
+  // P4: '서울역' 을 치고 목록에서 고르지 않은 채 경로 찾기 → 서울역으로 찾고, 입력칸은 '서울역' 그대로(자료 이름 '서울' 로 바뀌지 않음)
+  await b.evaluate(`document.querySelectorAll('.ac-list').forEach(l => l.hidden = true); setRouteStation(document.getElementById('route-from'), STATIONS.find(s => s.properties.name_ko === '강남' && s.properties.lines.includes('seoul-subway-line-2'))); 0`);
+  await typeInto(b, 'route-to', '서울역');
+  await b.evaluate(`document.querySelectorAll('.ac-list').forEach(l => l.hidden = true); document.getElementById('route-go').click(); 0`); await sleep(900);
+  const p4 = await b.evaluate(`(() => { const t = document.getElementById('route-to'); const s = routeInputStation(t); return { v: t.value, sid: t.dataset.sid || null, name: s && s.properties.name_ko, res: !!document.querySelector('#route-result .total') }; })()`);
+  R.check("'서울역' 입력 → 경로 나옴, 입력칸 '서울역' 유지, 역 = 서울", p4.res && p4.v === '서울역' && p4.name === '서울' && !!p4.sid, p4);
+  // 목록에서 '서울' 을 골라도 입력칸에는 '서울역'
+  await typeInto(b, 'route-to', '서울');
+  const sItem = await b.evaluate(`(() => { const e = [...document.querySelectorAll('#route-to-list:not([hidden]) .ac-item')].find(e => e.childNodes[0].textContent.trim() === '서울'); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x + 30, y: r.y + r.height / 2 }; })()`);
+  if (sItem) { await b.click(sItem.x, sItem.y); await sleep(300); }
+  const p4b = await b.evaluate(`document.getElementById('route-to').value`);
+  R.check("목록에서 '서울' 고르면 입력칸 '서울역'", p4b === '서울역', p4b);
   const exc = b.logs.filter(l => /EXC/.test(l));
   R.check('예외 0', exc.length === 0, exc.slice(0, 3));
   b.close();

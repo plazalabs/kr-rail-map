@@ -1348,9 +1348,13 @@ function stationsNamed(name) {
   return [];
 }
 // 입력칸에 역을 넣는다. 역(feature)이면 ID 까지, 이름(문자열)이면 이름만.
+// 화면에 보일 역 이름 — 자료 이름은 그대로 두고(공식 역명 '서울', station_names 연결) 입력칸에는 '서울역'.
+// '서울' 만 보이면 도시 이름처럼 읽혀 '서울역' 을 쳤는데 다른 게 골라진 줄 안다 (P4, 평가① 68점)
+const ROUTE_DISPLAY = { '서울': '서울역' };
+function routeDisplayName(st) { const n = st.properties.name_ko; return ROUTE_DISPLAY[n] || n; }
 function setRouteStation(input, st) {
   if (st && typeof st === 'object') {
-    input.value = st.properties.name_ko;
+    input.value = routeDisplayName(st);
     input.dataset.sid = st.properties.id;
   } else {
     input.value = st || '';
@@ -1361,7 +1365,7 @@ function setRouteStation(input, st) {
 // (다른 코드가 value 만 바꿔 놓았으면 ID 는 낡은 것이다).
 function routeInputStation(input) {
   const s = stationById(input.dataset.sid);
-  if (s && s.properties.name_ko === input.value.trim()) return s;
+  if (s && (s.properties.name_ko === input.value.trim() || routeDisplayName(s) === input.value.trim())) return s;
   const c = stationsNamed(input.value);
   return c.length === 1 ? c[0] : null;
 }

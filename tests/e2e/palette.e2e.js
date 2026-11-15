@@ -54,7 +54,7 @@ const enter = async b => { await b.key('Enter', 'Enter', 13); await sleep(900); 
   await enter(b); await sleep(800);
   const rt = await b.evaluate(`({ open: !document.getElementById('route-panel').hidden, from: document.getElementById('route-from').value, to: document.getElementById('route-to').value,
     res: /총 약 \\d+분/.test(document.getElementById('route-result').textContent) })`);
-  R.check('Enter → 길찾기 칸이 채워지고 결과가 나옴', rt.open && rt.from === '강남' && rt.to === '서울' && rt.res, rt);
+  R.check('Enter → 길찾기 칸이 채워지고 결과가 나옴 (서울 → 입력칸엔 서울역, P4)', rt.open && rt.from === '강남' && rt.to === '서울역' && rt.res, rt);
 
   // I6 (2026-11-14, 감사6): '시청→강남' — 동명역이면 반대편(강남)에 가까운 서울 시청, 줄에 지역 표시
   top = await typeSearch(b, '시청→강남');

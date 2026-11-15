@@ -490,7 +490,8 @@ function addDataLayers() {
     // 라벨이 통째로 사라진다 — 실제로 역 이름이 안 보이고 있었다.
     layout: {
       // 라벨 위계 (K9): 환승역은 굵고 크게, 겹치면 환승역 이름을 먼저 남긴다(symbol-sort-key 작을수록 먼저)
-      'text-field': ['get', 'name_ko'], 'text-size': ['case', ['>=', ['get', '_n'], 2], 12.5, 11], 'text-offset': [0, 1.2],
+      // P13 (11-15): 크기 3단계 — 보통 11 / 환승 13 / 큰 허브(운행 노선 3개 이상) 14.5 (전엔 12.5 vs 11, 1.5px 차이라 위계가 안 보였다)
+      'text-field': ['get', 'name_ko'], 'text-size': ['case', ['>=', ['get', '_n'], 3], 14.5, ['>=', ['get', '_n'], 2], 13, 11], 'text-offset': [0, 1.2],
       'text-font': ['case', ['>=', ['get', '_n'], 2], ['literal', ['Noto Sans Bold']], ['literal', ['Noto Sans Regular']]],
       'symbol-sort-key': ['-', 10, ['get', '_n']]
     },
@@ -535,6 +536,22 @@ function lineColorExpr(fallback = '#888888') {
   return pairs.length ? ['match', ['coalesce', ['get', 'color'], ''], ...pairs, base] : base;
 }
 
+// P12 (11-15): 밝은 지도에서 역 점 테두리(노선색)가 바탕과 3:1 이 안 되면(59색 중 22색 — 9호선 금색·우이신설 연두 등)
+// 같은 색을 검정 쪽으로 조금씩 섞어 3:1 이 되는 첫 값. 노선 선 색은 그대로, 역 점 테두리만 (노선도 관례 '흰 점 + 노선색 테')
+function lightRingColor(hex, bgLum = relLum(242, 242, 240), min = 3) {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return hex;
+  let h = m[1]; if (h.length === 3) h = h.split('').map(x => x + x).join('');
+  const rgb = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+  const ratio = c => (bgLum + 0.05) / (relLum(...c) + 0.05);
+  if (ratio(rgb) >= min) return '#' + h.toLowerCase();
+  for (let t = 0.05; t <= 1.0001; t += 0.05) {
+    const c = rgb.map(v => Math.round(v * (1 - t)));
+    if (ratio(c) >= min) return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+  return '#000000';
+}
+
 // 지도에 그릴 역 — 원본 STATIONS 는 그대로 두고 그리기용 값만 붙인 복사본 (K9)
 //   _c: 대표 노선 색 (line_id → 그 노선 색, 없으면 lines 중 색 있는 첫 노선) · _n: 운행 중 노선 수 (환승역 판단)
 function stationRenderFeatures() {
@@ -546,7 +563,7 @@ function stationRenderFeatures() {
     const main = byId.get(p.line_id) && byId.get(p.line_id).color ? p.line_id : ls.find(l => byId.get(l) && byId.get(l).color);
     const n = new Set(ls.filter(open).map(l => (byId.get(l) || {}).name_ko || l)).size;   // 같은 노선의 갈래(GTX-A 연장 등)는 이름으로 묶어 한 번
     const c = main ? byId.get(main).color : null;
-    return { type: 'Feature', geometry: f.geometry, properties: Object.assign({}, p, { _c: c && DARK_THEMES.has(theme) ? darkLineColor(c) : c, _n: n }) };
+    return { type: 'Feature', geometry: f.geometry, properties: Object.assign({}, p, { _c: c && DARK_THEMES.has(theme) ? darkLineColor(c) : lightRingColor(c), _n: n }) };
   });
 }
 

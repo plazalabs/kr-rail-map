@@ -245,7 +245,13 @@ const RouteFinder = (() => {
   function sameService(a, b) {
     if (a === b) return true;
     if (a == null || b == null) return false;
-    if (a.includes('#') || b.includes('#')) return false;   // 갈래(지선) 운행 ↔ 본선 = 갈아탄다
+    if (a.includes('#') || b.includes('#')) {
+      // 갈림목 방향 표시(JUNCTION_TURNS)는 본선과 이어 달린다 — 서로 다른 방향 표시끼리만 갈아탄다(구일→구로→가산디지털단지)
+      const ta = branchOf(a), tb = branchOf(b);
+      const ja = !ta || JUNCTION_TAGS.has(ta), jb = !tb || JUNCTION_TAGS.has(tb);
+      if (!ja || !jb || (ta && tb && ta !== tb)) return false;   // 갈래(지선) 운행 ↔ 본선 = 갈아탄다
+      return serviceOf(baseOf(a)) === serviceOf(baseOf(b));
+    }
     return serviceOf(a) === serviceOf(b);
   }
   // 갈래(지선) 운행 (2026-11-15, 회장님 지적 — 성수지선을 본선과 한 줄로 이어 성수에서 안 갈아타는 것으로 계산했다).
@@ -260,6 +266,26 @@ const RouteFinder = (() => {
     { line: 'seoul-subway-line-2', tag: '신정지선', stations: ['신도림', '도림천', '양천구청', '신정네거리', '까치산'], xfer: 2 },
     { line: 'seoul-metropolitan-subway-line-1', tag: '광명셔틀', stations: ['금천구청', '광명'], xfer: null },
   ];
+  // 갈림목 방향 제한 (2026-11-15 v277). 같은 노선(같은 색)이 한 역에서 두 갈래로 나뉘는데, 열차는 갈래마다 서울 쪽 본선으로만
+  // 이어 달리고 두 갈래 사이를 바로 잇는 열차는 없다 — 갈래끼리는 갈림목 역에서 갈아탄다. 전엔 같은 노선이라 그냥 지나가
+  // 구일→가산디지털단지 7분 무환승(실제는 구로에서 경인선 → 경부선 갈아탐), 서동탄→세마 무환승(병점 갈아탐)으로 나왔다.
+  // at = 갈림목 역, toward = 그 갈래 쪽 바로 다음 역. 갈림목에 붙은 간선 하나에만 방향 표시를 달고, 표시끼리 다르면 환승으로 본다.
+  // 근거: 레일포털 시각표(전체_도시철도운행정보) — 1호선 경인선 열차는 구일→구로→신도림(서울 방면), 경부선 열차는 가산디지털단지→구로→신도림,
+  // 서동탄 출발은 병점→세류(서울 방면)로만 / 경춘선 광운대 출발은 상봉→망우(춘천 방면), 청량리 출발은 중랑→상봉→망우 /
+  // 경의선 서울역 출발은 신촌→가좌→디지털미디어시티(문산 방면). 두 갈래를 잇는 열차는 없음.
+  const JUNCTION_TURNS = [
+    { line: 'seoul-metropolitan-subway-line-1', at: '구로', tag: '경인', toward: '구일' },
+    { line: 'seoul-metropolitan-subway-line-1', at: '구로', tag: '경부', toward: '가산디지털단지' },
+    { line: 'seoul-metropolitan-subway-line-1', at: '병점', tag: '서동탄', toward: '서동탄' },
+    { line: 'seoul-metropolitan-subway-line-1', at: '병점', tag: '세마', toward: '세마' },
+    { line: 'seoul-metropolitan-subway-gyeongchun-line', at: '상봉', tag: '광운대', toward: '광운대' },
+    { line: 'seoul-metropolitan-subway-gyeongchun-line', at: '상봉', tag: '청량리', toward: '중랑' },
+    { line: 'gyeongui-line-seoul', at: '가좌', tag: '서울역', toward: '신촌' },
+    { line: 'gyeongui-jungang-line', at: '가좌', tag: '용산', toward: '홍대입구' },
+  ];
+  const JUNCTION_TAGS = new Set(JUNCTION_TURNS.map(j => j.tag));
+  // 결과 legs 에 보이는 운행: 갈림목 방향 표시는 떼고 원래 노선으로 (갈래 이름처럼 보이면 안 됨)
+  const shownRun = r => (r && r.includes('#') && JUNCTION_TAGS.has(r.slice(r.indexOf('#') + 1))) ? r.slice(0, r.indexOf('#')) : r;
   const baseOf = id => (id && id.includes('#')) ? id.slice(0, id.indexOf('#')) : id;
   const runOf = e => (e.lineId && e.run) ? e.lineId + '#' + e.run : (e.lineId || null);
   function branchOf(id) { return (id && id.includes('#')) ? id.slice(id.indexOf('#') + 1) : null; }
@@ -278,12 +304,24 @@ const RouteFinder = (() => {
         }
       });
     }
+    // 갈림목 방향 표시 — 갈림목 역과 그 갈래 쪽 다음 역 사이 간선(양방향)에만
+    const cap = id => { const c = stationsById.get(id).geometry.coordinates; return c[0] > 126.3 && c[0] < 127.9 && c[1] > 36.7 && c[1] < 38.2; };
+    JUNCTION_TURNS.forEach(j => adj.forEach((list, a) => {
+      if (!cap(a)) return;
+      const na = nameOfId(a);
+      if (na !== j.at && na !== j.toward) return;
+      for (const e of list) {
+        if (e.walk || e.lineId !== j.line || e.run) continue;
+        const nb = nameOfId(e.to);
+        if ((na === j.at && nb === j.toward) || (na === j.toward && nb === j.at)) { e.run = j.tag; branchTagged++; }
+      }
+    }));
   }
   // legs 가운데 실제로 갈아타는 횟수 (걷는 구간·이어 달리는 구간은 세지 않는다)
   function countTransfers(legs) {
     const ride = legs.filter(l => !l.walk && l.lineId !== null);
     let n = 0;
-    for (let i = 1; i < ride.length; i++) if (!sameService(ride[i - 1].run || ride[i - 1].lineId, ride[i].run || ride[i].lineId)) n++;
+    for (let i = 1; i < ride.length; i++) if (!sameService(ride[i - 1].endRun || ride[i - 1].run || ride[i - 1].lineId, ride[i].startRun || ride[i].run || ride[i].lineId)) n++;   // endRun·startRun = 갈림목 방향 표시까지 (v277)
     return n;
   }
 
@@ -358,6 +396,7 @@ const RouteFinder = (() => {
     return ls.includes(base) ? base : lid;
   }
   function transferMinutes(stationId, a0, b0, fromId, toId) {
+    if (a0 && b0 && a0 !== b0 && (a0.includes('#') || b0.includes('#')) && sameService(a0, b0)) return 0;   // 갈림목 방향 표시 ↔ 본선 = 이어 달림
     if (a0 && b0 && a0 !== b0 && baseOf(a0) === baseOf(b0)) {   // 같은 노선의 갈래 - 본선 (성수·신도림·금천구청)
       const br = BRANCH_RUNS.find(x => x.tag === (branchOf(a0) || branchOf(b0)));
       return (br && br.xfer != null) ? br.xfer : TRANSFER_MIN;
@@ -1084,6 +1123,9 @@ const RouteFinder = (() => {
         // 개통 후엔 새 역에 선다 (창릉) — '그 해까지 개통' 계산(allow)에서도 새 역이 열렸으면 무정차 길은 없다
         if (stageBlocked(e, openOnly, allow)) continue;
         const nl = runOf(e);
+        // 같은 열차로 왔던 역으로 되돌아가기 금지 — 되돌아가려면 내려서 반대편 열차를 타야 한다. 전엔 구일→구로→신도림→구로→가산디지털단지처럼
+        // 한 정거장 더 갔다 돌아와 갈림목 갈아타기를 공짜로 피했다 (v277)
+        if (e.to === pu && line !== START && line !== null && nl !== null && sameService(nl, line)) continue;
         let cost = edgeMinutes(e);
         // 환승 비용: 앞뒤 모두 노선이 있고 서로 다를 때만. 환승은 지금 있는
         // 역(u)에서 일어난다. 역마다 실제 도보 시간이 다르므로 그 값을 쓴다.
@@ -1131,31 +1173,37 @@ const RouteFinder = (() => {
     minutes += accessMinutes(curLine);
     let firstWait = curLine ? boardWait(curLine, path[0], path[1], peak) : 0;   // 드문 열차 (위 SPARSE_HW) · 배차 넣기면 모든 열차
     minutes += firstWait;
+    let legStartRun = curLine;
+    let lastRun = curLine;   // 바로 앞 간선의 운행 (갈림목 방향 표시 포함) — 환승 판정은 이것으로, 구간(leg) 이름은 curLine 으로
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
       minutes += edgeMinutes(e);
       const lid = runOf(e);
-      if (lid !== curLine) {
+      if (lid !== lastRun && lid && lastRun && baseOf(lid) === baseOf(lastRun) && sameService(lid, lastRun)) {
+        lastRun = lid;   // 갈림목에서 본선으로 이어 달림 — 같은 구간
+      } else if (lid !== lastRun) {
+        const prevRun = lastRun;
+        lastRun = lid;
         // 환승은 지금 역(path[i])에서 일어난다. 역·노선쌍마다 실제 도보
         // 시간이 다르므로 그 값을 표시 시간에 넣는다. transferAfter 는
         // '이 구간을 내린 뒤 갈아타는 데 걸리는 시간' 이다.
-        const tm = (curLine !== null && lid !== null)
-          ? transferMinutes(path[i], curLine, lid, path[i - 1], path[i + 1]) : 0;
-        const bw = (curLine === null && lid) ? boardWait(lid, path[i], path[i + 1], peak) : 0;   // 걸어온 뒤 처음 타는 열차
+        const tm = (prevRun !== null && lid !== null)
+          ? transferMinutes(path[i], prevRun, lid, path[i - 1], path[i + 1]) : 0;
+        const bw = (prevRun === null && lid) ? boardWait(lid, path[i], path[i + 1], peak) : 0;   // 걸어온 뒤 처음 타는 열차
         if (bw && legs.every(l => l.walk)) firstWait += bw;
-        const wt = transferWait(lid, curLine, path[i], path[i - 1], path[i + 1]) + bw;
-        legs.push({ lineId: baseOf(curLine), run: curLine, branch: branchOf(curLine), from: path[legStart], to: path[i],
+        const wt = transferWait(lid, prevRun, path[i], path[i - 1], path[i + 1]) + bw;
+        legs.push({ lineId: baseOf(curLine), run: shownRun(curLine), branch: branchOf(shownRun(curLine)), startRun: legStartRun, endRun: prevRun, from: path[legStart], to: path[i],
                     walk: curLine === null, distKm: legKm, transferAfter: tm, waitAfter: wt, segs,
-                    platform: !!(curLine && lid && isPlatformTransfer(path[i], curLine, lid, path[i - 1], path[i + 1])) });
+                    platform: !!(prevRun && lid && isPlatformTransfer(path[i], prevRun, lid, path[i - 1], path[i + 1])) });
         if (tm) minutes += tm;
         minutes += wt;
         minutes += accessMinutes(lid);
-        legStart = i; curLine = lid; legKm = 0; segs = [];
+        legStart = i; curLine = lid; legStartRun = lid; legKm = 0; segs = [];
       }
       legKm += e.distKm;
       segs.push({ a: path[i], b: path[i + 1], km: e.distKm || 0 });
     }
-    legs.push({ lineId: baseOf(curLine), run: curLine, branch: branchOf(curLine), from: path[legStart], to: path[path.length - 1],
+    legs.push({ lineId: baseOf(curLine), run: shownRun(curLine), branch: branchOf(shownRun(curLine)), startRun: legStartRun, endRun: lastRun, from: path[legStart], to: path[path.length - 1],
                 walk: curLine === null, distKm: legKm, transferAfter: 0, segs });
 
     // 각 leg 에 개통 상태를 실어 보낸다 → 화면에서 '미개통' 배지로 표시.
@@ -1222,6 +1270,9 @@ const RouteFinder = (() => {
         // 개통 후엔 새 역에 선다 (창릉) — '그 해까지 개통' 계산(allow)에서도 새 역이 열렸으면 무정차 길은 없다
         if (stageBlocked(e, openOnly, allow)) continue;
         const nl = runOf(e);
+        // 같은 열차로 왔던 역으로 되돌아가기 금지 — 되돌아가려면 내려서 반대편 열차를 타야 한다. 전엔 구일→구로→신도림→구로→가산디지털단지처럼
+        // 한 정거장 더 갔다 돌아와 갈림목 갈아타기를 공짜로 피했다 (v277)
+        if (e.to === pu && line !== START && line !== null && nl !== null && sameService(nl, line)) continue;
         let cost = edgeMinutes(e), shown = edgeMinutes(e);
         if (line !== START && line !== null && nl !== null && !sameService(nl, line)) {
           cost += transferMinutes(u, line, nl, pu, e.to) + TRANSFER_DECISION_EXTRA;

@@ -155,6 +155,8 @@
     if (!el) build();
     opener = document.activeElement;
     if (global.RocketPanel && RocketPanel.isOpen && RocketPanel.isOpen()) RocketPanel.close();   // 같은 자리를 쓰므로 하나만
+    if (global.CommuteMap && CommuteMap.isActive && CommuteMap.isActive()) CommuteMap.hide();   // 오른쪽 작업 창은 하나만 (P2, 11-15)
+    if (global.leaveRouteMode) global.leaveRouteMode();
     if (global.UI && UI.closeDrawer && document.body.classList.contains('drawer-open')) UI.closeDrawer();
     var on = !!(B() && B().ready && B().ready());
     $('.bdp-off').hidden = on; $('.bdp-on').hidden = !on;

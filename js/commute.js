@@ -147,6 +147,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     panel = document.createElement('div');
     panel.id = 'cm-panel';
     panel.style.display = 'none';
+    panel.hidden = true;   // 오른쪽 창 접기 손잡이(js/panel-fold.js)·'하나만' 규칙이 hidden 으로 본다
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', '통근권 찾기');
     panel.innerHTML = `
@@ -348,7 +349,16 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
       const g = ST.find(s => s.properties.name_ko === '강남');
       destId = g ? g.properties.id : null;
     }
+    // 오른쪽 작업 창은 한 번에 하나 (평가① P2, 11-15) — 길찾기 결과·그리기·떡상·게시판을 닫고 경로 선도 지운다.
+    // 전엔 길찾기 창 위에 통근권 창이 320×566px 겹쳐 앞 작업의 선·숫자가 새 결과처럼 보였다.
+    try {
+      if (window.RocketPanel && RocketPanel.isOpen && RocketPanel.isOpen()) RocketPanel.close();
+      if (window.BoardPanel && BoardPanel.isOpen && BoardPanel.isOpen()) BoardPanel.close();
+      if (typeof window.leaveRouteMode === 'function') window.leaveRouteMode();
+      const dp = document.getElementById('draw-panel'); if (dp && !dp.hidden) dp.hidden = true;
+    } catch (e) { /* 무시 */ }
     panel.style.display = 'block';
+    panel.hidden = false;
     active = true;
     syncButton();
     render(true);
@@ -365,7 +375,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
   function hide() {
     active = false;
     syncButton();
-    if (panel) panel.style.display = 'none';
+    if (panel) { panel.style.display = 'none'; panel.hidden = true; }
     if (map) for (const id of ['cm-stations', 'cm-dest']) {
       try { if (map.getSource(id)) map.getSource(id).setData({ type: 'FeatureCollection', features: [] }); } catch (e) { /* 무시 */ }
     }

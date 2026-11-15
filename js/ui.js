@@ -189,6 +189,8 @@ const UI = (() => {
           return;
         }
         if (!wasOpen) { wasOpen = true; onSidePanelOpen(el); }
+        // 오른쪽 작업 창은 하나만 (P2, 11-15) — 길찾기·그리기를 열면 통근권 창을 닫는다
+        if (typeof CommuteMap !== 'undefined' && CommuteMap.isActive && CommuteMap.isActive()) CommuteMap.hide();
         ['route-panel', 'draw-panel'].forEach(other => {
           if (other === id) return;
           const o = document.getElementById(other);

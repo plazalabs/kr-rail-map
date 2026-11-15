@@ -452,6 +452,7 @@
     o = o || {};
     if (global.BoardPanel && BoardPanel.isOpen()) BoardPanel.close();   // 게시판 패널과 같은 자리 — 하나만 (회장님 11-14)
     if (global.leaveRouteMode) global.leaveRouteMode();   // K10: 떡상으로 바꾸면 길찾기 경로를 지운다
+    if (global.CommuteMap && CommuteMap.isActive && CommuteMap.isActive()) CommuteMap.hide();   // 오른쪽 작업 창은 하나만 (P2, 11-15)
     if (!el) build();
     var go = function () {
       doc = StationRocket.doc();

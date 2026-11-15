@@ -1637,7 +1637,7 @@ body.map-ready #map-skeleton .sk { animation: none; }
     transform: translateX(-2px) rotate(-135deg);
   }
   body.rpanel-hidden #rpanel-toggle::after { transform: translateX(2px) rotate(45deg); }
-  body.rpanel-hidden .rkp, body.rpanel-hidden #route-panel, body.rpanel-hidden #draw-panel { display: none !important; }
+  body.rpanel-hidden .rkp, body.rpanel-hidden #route-panel, body.rpanel-hidden #draw-panel, body.rpanel-hidden #cm-panel { display: none !important; }
 }
 /* '지도만 보기' 단추 (js/panel-fold.js, 11-15) — PC 도구막대 '투자' 옆. 휴대폰은 창이 시트·서랍이라 필요 없음 */
 @media (max-width: 980px) { #maponly-btn { display: none !important; } }

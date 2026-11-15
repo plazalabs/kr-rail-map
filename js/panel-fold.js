@@ -1,4 +1,4 @@
-/* PanelFold — 오른쪽 창(떡상·게시판·길찾기·그리기) 접기·펼치기 손잡이 (회장님 피드백 11-15)
+/* PanelFold — 오른쪽 창(떡상·게시판·길찾기·그리기·통근권) 접기·펼치기 손잡이 (회장님 피드백 11-15)
  *
  * "지도가 한눈에 다 보여야 편하다" — 왼쪽 패널에만 있던 접기 손잡이(#sidebar-toggle)를 오른쪽 창에도 붙인다.
  *   - PC(981px 이상)에서 오른쪽 창이 열려 있으면 그 창 왼쪽 가장자리에 › 손잡이 → 누르면 창이 접히고(닫히지 않음, 고른 역·순위 그대로)
@@ -10,7 +10,7 @@
 (function () {
   'use strict';
   if (typeof document === 'undefined') return;
-  var SEL = '.rkp:not([hidden]), #route-panel:not([hidden]), #draw-panel:not([hidden])';
+  var SEL = '.rkp:not([hidden]), #route-panel:not([hidden]), #draw-panel:not([hidden]), #cm-panel:not([hidden])';
   var btn = null, raf = 0, seen = '';
   var mq = window.matchMedia ? window.matchMedia('(min-width: 981px)') : { matches: true };
 
@@ -27,14 +27,14 @@
     raf = 0;
     if (!btn) return;
     // 새 창이 열리면(떡상 접어 둔 채 길찾기를 여는 등) 펼친다 — 접힌 채 열려 안 보이면 고장처럼 보인다
-    var now = Array.prototype.map.call(document.querySelectorAll('.rkp:not([hidden]), #route-panel:not([hidden]), #draw-panel:not([hidden])'), function (e) { return e.id || e.className.split(' ').pop(); }).join(',');
+    var now = Array.prototype.map.call(document.querySelectorAll('.rkp:not([hidden]), #route-panel:not([hidden]), #draw-panel:not([hidden]), #cm-panel:not([hidden])'), function (e) { return e.id || e.className.split(' ').pop(); }).join(',');
     if (folded() && now.split(',').some(function (k) { return k && (',' + seen + ',').indexOf(',' + k + ',') < 0; })) document.body.classList.remove('rpanel-hidden');
     seen = now;
     if (typeof syncMapBtn === 'function') syncMapBtn();
     if (!mq.matches) { setHidden(true); return; }   // 휴대폰은 손잡이 없음 — 계산(스타일·크기 재기) 건너뜀
     // 접힌 동안은 창이 display:none 이라 접히기 전 '열린 창'을 기억해 둔 것으로 판단
     var p = folded() ? null : openPanel();
-    var any = folded() ? !!document.querySelector('.rkp:not([hidden]), #route-panel:not([hidden]), #draw-panel:not([hidden])') : !!p;
+    var any = folded() ? !!document.querySelector('.rkp:not([hidden]), #route-panel:not([hidden]), #draw-panel:not([hidden]), #cm-panel:not([hidden])') : !!p;
     if (!mq.matches || !any) {
       setHidden(true);
       if (folded() && !any) document.body.classList.remove('rpanel-hidden');   // 창을 닫으면 다음엔 펼친 채로
@@ -85,12 +85,24 @@
     new MutationObserver(schedule).observe(document.body, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('resize', schedule);
     if (mq.addEventListener) mq.addEventListener('change', schedule);
+    var ro = null;
     if (window.ResizeObserver) {
-      var ro = new ResizeObserver(schedule);
+      ro = new ResizeObserver(schedule);
       var watch = function () { document.querySelectorAll('.rkp, #route-panel, #draw-panel').forEach(function (el) { if (!el.dataset.pfObs) { el.dataset.pfObs = '1'; ro.observe(el); } }); };
       new MutationObserver(watch).observe(wrap, { childList: true });
       watch();
     }
+    // 통근권 창(#cm-panel)은 #map-wrap 밖(body)에 붙는다 — 따로 지켜본다 (P2, 11-15)
+    var watchCm = function () {
+      var c = document.getElementById('cm-panel');
+      if (!c || c.dataset.pfCm) return;
+      c.dataset.pfCm = '1';
+      new MutationObserver(schedule).observe(c, { attributes: true, attributeFilter: ['hidden'] });
+      if (ro) ro.observe(c);
+      schedule();
+    };
+    new MutationObserver(watchCm).observe(document.body, { childList: true });
+    watchCm();
     schedule();
     initMapOnly();
     restoreLeft();
@@ -100,7 +112,7 @@
   var LEFT_KEY = 'kr-rail-map-left-folded';
   var mapBtn = null;
   function leftHidden() { return document.body.classList.contains('sidebar-hidden'); }
-  function anyRight() { return !!document.querySelector('.rkp:not([hidden]), #route-panel:not([hidden]), #draw-panel:not([hidden])'); }
+  function anyRight() { return !!document.querySelector('.rkp:not([hidden]), #route-panel:not([hidden]), #draw-panel:not([hidden]), #cm-panel:not([hidden])'); }
   function mapOnly() { return leftHidden() && (!anyRight() || folded()); }
   function clickLeft() { var st = document.getElementById('sidebar-toggle'); if (st && st.dataset.bound) st.click(); }
   function toggleMapOnly() {

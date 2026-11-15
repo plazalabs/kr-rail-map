@@ -334,6 +334,8 @@ class StatusLegend {
     el.className = 'maplibregl-ctrl status-legend';
     el.id = 'status-legend';
     el.innerHTML = `<button type="button" class="sl-toggle" aria-expanded="false" aria-controls="sl-rows">범례</button>` +
+      // Q1 (11-15): 지금 지도 조건 한 줄 — '수도권 · 전체 노선(계획 포함)'. 공유 링크(?scope=·?view=)에 같은 조건이 담긴다
+      `<div class="sl-cond" id="sl-cond" title="지금 지도에 보이는 범위·노선 — 링크 복사에도 같은 조건이 담겨요"></div>` +
       `<div class="sl-rows" id="sl-rows" role="group" aria-label="노선 상태 — 눌러서 켜고 끄기">` +
       STATUS_ORDER.map(([st, label, dash]) =>
         `<button type="button" class="sl-row" data-status="${st}" aria-pressed="true">${statusSwatch(dash, st === 'proposed')}<span class="sl-label">${label}</span><span class="sl-n"></span></button>`).join('') +
@@ -344,6 +346,7 @@ class StatusLegend {
       el.querySelector('.sl-toggle').setAttribute('aria-expanded', String(open));
     });
     el.querySelectorAll('.sl-row').forEach(b => b.addEventListener('click', () => toggleStatusLines(b.dataset.status)));
+    el.querySelector('.sl-cond').addEventListener('click', () => el.querySelector('.sl-toggle').click());   // 휴대폰: 조건 글자를 눌러도 펼침
     this._el = el;
     return el;
   }
@@ -373,6 +376,28 @@ function refreshStatusLegend() {
     b.querySelector('.sl-n').textContent = on === ids.length ? `${ids.length}` : `${on}/${ids.length}`;
     b.title = `${b.querySelector('.sl-label').textContent} 노선 ${ids.length}개 — 눌러서 ${on > 0 ? '숨기기' : '보이기'}`;
   });
+  refreshMapCondition();
+}
+// Q1 (11-15): 지도 조건 한 줄. 노선 보기 버튼과 똑같으면 그 이름, 아니면 '노선 N개 골라 봄'
+function mapConditionParts() {
+  const where = scope === 'all' ? '전국' : '수도권';
+  const n = visibleLines.size;
+  if (!n) return { where, view: '노선 모두 끔', extra: '' };
+  const same = key => { const ids = presetIds(key); return ids.length > 0 && ids.length === n && ids.every(id => visibleLines.has(id)); };
+  if (same('all')) {
+    const unopened = scopeLines().some(f => lineStatusOf(f.properties) !== 'open');
+    return { where, view: '전체 노선', extra: unopened ? '(계획 포함)' : '' };
+  }
+  const names = { open: '운행 중 노선만', construction: '공사 중 노선만', plan: '계획·구상 노선만', hsr: '고속철도만' };
+  for (const k of Object.keys(names)) if (same(k)) return { where, view: names[k], extra: '' };
+  return { where, view: `노선 ${n}개 골라 봄`, extra: '' };
+}
+function refreshMapCondition() {
+  const el = document.getElementById('sl-cond');
+  if (!el) return;
+  let c;
+  try { c = mapConditionParts(); } catch (e) { return; }   // 첫 그리기 때 노선 보기 표가 아직 없을 수 있다
+  el.innerHTML = `<span class="slc-where">${c.where}</span> · <span class="slc-view">${c.view}</span>` + (c.extra ? `<span class="slc-x">${c.extra}</span>` : '');
 }
 map.addControl(new StatusLegend(), 'bottom-right');
 

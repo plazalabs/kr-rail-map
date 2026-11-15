@@ -783,6 +783,14 @@ const RouteCompare = (() => {
       (links.length ? ` · 확인: ${links.join(' · ')}` : '') + '</p>';
   }
 
+  // Q2 (11-15): 추정이 섞인 숫자에만 작은 '추정' — 시간은 공식 운행시간이 다 있으면 안 붙인다(요금은 '(일부 추정)'이 이미 있음)
+  function timeEstTag(r) {
+    const s = r && r.officialShare;
+    if (s != null && s >= 0.995) return '';
+    const why = (s == null || s <= 0.005) ? '공식 운행시간 자료가 없어 평균 속도로 어림한 시간' : `${Math.round(s * 100)}%만 공식 운행시간, 나머지는 평균 속도로 어림`;
+    return ` <span class="rc-est" title="${why}">추정</span>`;
+  }
+
   function variantHtml(r, tabId, badge) {
     const fd = r.fareDetail;
     // 미정 운임(개통 전 GTX 등)이 있으면 합계가 확정처럼 보이지 않게 '+ ○○ 요금 미정' 을 합계 옆에 직접 적는다 (68점 감사 7번)
@@ -790,7 +798,7 @@ const RouteCompare = (() => {
     const fareTxt = pend.length
       ? `예상 요금 ${r.fare.toLocaleString()}원 <span class="rc-est">+ ${escapeHtml(pend.join('·'))} 요금 미정</span>`
       : `예상 요금 ${r.fare.toLocaleString()}원${fd && fd.estimated ? ' <span class="rc-est">(일부 추정)</span>' : ''}`;
-    let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분<span class="rc-def" title="공식 운행시간으로 낸 시간(자료 없는 구간은 어림) — 갈아탈 때 기다리는 시간은 넣고, 처음 열차를 기다리는 시간은 뺐습니다">(환승 대기 포함)</span> · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
+    let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분${timeEstTag(r)}<span class="rc-def" title="공식 운행시간으로 낸 시간(자료 없는 구간은 어림) — 갈아탈 때 기다리는 시간은 넣고, 처음 열차를 기다리는 시간은 뺐습니다">(환승 대기 포함)</span> · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
     html += fareBreakdownHtml(fd);
     html += basisHtml(r);
     // 미개통 노선을 지나는 경로는 명시한다.

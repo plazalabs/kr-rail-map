@@ -332,10 +332,16 @@
       g.fillText(txt, 330, y);
       if (n != null && a != null && n > a) { g.fillStyle = '#5fe39a'; g.font = '800 34px ' + F; g.fillText('−' + (n - a) + '분', 720, y); }
     });
+    // Q3·Q7 (11-15): 앱 카드(StationShare 아래 띠)와 같이 '집값 예측 아님'·자료 기준일 — 전엔 이 카드에만 빠져 있었다
+    g.fillStyle = '#ffd166'; g.font = '700 26px ' + F;
+    g.fillText('교통 접근성 추정 · 집값·투자수익 예측 아님' + (doc && doc.updated ? ' · 자료 기준 ' + doc.updated : ''), 80, 988);
     g.fillStyle = '#7f93b3'; g.font = '500 24px ' + F;
-    g.fillText(st.wait ? '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림' : '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1000);
+    g.fillText(st.wait ? '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림' : '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1020);
+    // 28px 이면 끝의 'rank.html' 이 카드 밖으로 잘렸다(11-15 사진 확인) — 폭에 맞게 줄인다
     g.fillStyle = '#c8d3e6'; g.font = '700 28px ' + F;
-    g.fillText('한국철도맵 · 개통 후 교통 접근성 순위 · plazalabs.github.io/kr-rail-map/rank.html', 80, 1044);
+    const brand = '한국철도맵 · 개통 후 교통 접근성 순위 · plazalabs.github.io/kr-rail-map/rank.html';
+    for (let fs = 28; fs > 18 && g.measureText(brand).width > S - 160; fs--) g.font = '700 ' + (fs - 1) + 'px ' + F;
+    g.fillText(brand, 80, 1056);
     return c;
   }
   async function shareStation(id, msgEl) {

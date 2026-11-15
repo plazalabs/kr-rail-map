@@ -1600,6 +1600,10 @@ body.map-ready #map-skeleton .sk { animation: none; }
 .status-legend .sl-sw { flex: none; }
 .status-legend .sl-label { flex: 1; white-space: nowrap; }
 .status-legend .sl-n { color: var(--muted, #5b6470); font-variant-numeric: tabular-nums; }
+/* Q1 (11-15): 지도 조건 한 줄 — 범례 맨 위 */
+.status-legend .sl-cond { padding: 3px 8px 4px; margin-bottom: 2px; border-bottom: 1px solid var(--border, #d6dae0); font-weight: 600; white-space: nowrap; }
+.status-legend .sl-cond:empty { display: none; }
+.status-legend .slc-x { font-weight: normal; color: var(--muted, #5b6470); margin-left: 1px; }
 /* 휴대폰·좁은 화면: '범례' 버튼 하나로 접혀 있다가 누르면 펼친다 (지도를 덜 가린다) */
 @media (max-width: 980px) {
   .status-legend .sl-toggle {
@@ -1608,6 +1612,9 @@ body.map-ready #map-skeleton .sk { animation: none; }
   }
   .status-legend .sl-toggle:focus-visible { outline: 2px solid var(--accent, #1b64da); }
   .status-legend:not(.open) .sl-rows { display: none; }
+  /* 접혀 있을 때도 조건은 보이되 짧게 — '(계획 포함)'은 펼치면 */
+  .status-legend:not(.open) .slc-x { display: none; }
+  .status-legend:not(.open) .sl-cond { border-bottom: 0; margin: 0; padding: 0 10px 4px; font-weight: normal; color: var(--muted, #5b6470); }
   .status-legend .sl-row { min-height: 36px; }
 }
 

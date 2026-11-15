@@ -82,6 +82,13 @@
     g.fillStyle = '#7fb0ff'; g.font = '700 26px ' + FONT; g.fillText('축을 읽으면, 도시의 미래가 보인다', 72, 70);
     return { c: c, g: g, W: W, H: H };
   }
+  // Q7 (11-15): 길찾기·통근권 카드 기준일 — 노선 단계(개통 시기·사업 단계)를 마지막으로 확인한 날 (data.html 기준일 표 '미래 노선'과 같은 값)
+  function linesAsof() {
+    try {
+      var d = (typeof LINES !== 'undefined' ? LINES : []).map(function (f) { return f.properties && f.properties.plan_checked; }).filter(Boolean).sort();
+      return d.length ? '노선 단계 ' + d[d.length - 1] + ' 확인' : '';
+    } catch (e) { return ''; }
+  }
   // 아래 띠 — note: 계산 방식 한 줄, asof: 자료 기준일
   function cardFooter(k, note, asof) {
     var g = k.g, y = k.H - 150;
@@ -266,7 +273,7 @@
       bar(by, '지금', nm, 'rgba(200,211,230,.45)');
       bar(by + 60, '개통 후', am, s.good ? '#5fe39a' : 'rgba(200,211,230,.45)');
     }
-    cardFooter(k, '타는 시간 + 갈아탈 때 걷기·기다림 · 처음 열차 기다림·시간표·급행·지연 미반영', info.asof);
+    cardFooter(k, '타는 시간 + 갈아탈 때 걷기·기다림 · 처음 열차 기다림·시간표·급행·지연 미반영', info.asof || linesAsof());
     return k.c;
   }
   function saveCommute(info, o) {
@@ -340,7 +347,7 @@
     }
     ly += 46; g.fillStyle = '#ffd166'; g.font = '600 26px ' + F;
     g.fillText('점선 = 아직 없는 노선(공사·계획·구상) — 바뀌거나 늦어질 수 있어요', 72, ly);
-    cardFooter(k, o.wait ? '타는 시간 + 갈아탈 때 걷기 + 출퇴근 배차 기다림 · 시간표·급행·지연 미반영' : '타는 시간 + 갈아탈 때 걷기·기다림 · 처음 열차 기다림·시간표·급행·지연 미반영', info.asof);
+    cardFooter(k, o.wait ? '타는 시간 + 갈아탈 때 걷기 + 출퇴근 배차 기다림 · 시간표·급행·지연 미반영' : '타는 시간 + 갈아탈 때 걷기·기다림 · 처음 열차 기다림·시간표·급행·지연 미반영', info.asof || linesAsof());
     return k.c;
   }
   function saveReach(info, o) {

@@ -85,6 +85,9 @@ const overlap = (a, c) => a && c && a.left < c.right && c.left < a.right && a.to
     await b.evaluate(`(() => { const cb = document.querySelector('#line-list .line-item input:checked'); cb.click(); return 0; })()`); await sleep(300);
     q = await b.evaluate(STATE);
     R.check('C5 노선 하나 직접 바꾸면 버튼 눌림 풀림', q.pressed.length === 0, JSON.stringify(q.pressed));
+    // Q1 (11-15): 지도 조건 한 줄이 따라 바뀜
+    const c5 = await b.evaluate(`(document.getElementById('sl-cond') || {}).textContent`);
+    R.check("Q1a 직접 고르면 조건 줄 '노선 N개 골라 봄'", /^(수도권|전국) · 노선 \d+개 골라 봄$/.test(c5), c5);
     p = await press(b, '#line-presets .lp-btn[data-preset="all"]');
     q = await b.evaluate(STATE);
     R.check('C6 전체 → 모두 켜짐', p.ok && q.n === q.total && q.pressed.join() === 'all', JSON.stringify({ p, n: q.n, t: q.total }));
@@ -100,11 +103,15 @@ const overlap = (a, c) => a && c && a.left < c.right && c.left < a.right && a.to
       await sleep(600);
       const e2 = await b.evaluate(STATE);
       R.check('E2 그 링크로 열면 전국·공사 중 노선만·버튼 눌림', e2.statuses === 'construction' && e2.pressed.join() === 'construction' && e2.total > 80, JSON.stringify(e2));
+      const c2 = await b.evaluate(`(document.getElementById('sl-cond') || {}).textContent`);
+      R.check("Q1b 그 링크로 열면 조건 줄도 '전국 · 공사 중 노선만'", c2 === '전국 · 공사 중 노선만', c2);
     }
     await press(b, '#line-presets .lp-btn[data-preset="all"]');
     const shared2 = await b.evaluate(`new Promise(res => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { res(t); return Promise.resolve(); } } });
       document.getElementById('share-btn').click(); setTimeout(() => res(null), 3000); })`);
     R.check("E3 '전체'면 view 를 안 붙임", !!shared2 && !new URL(shared2).searchParams.has('view'), shared2);
+    const c3 = await b.evaluate(`(document.getElementById('sl-cond') || {}).textContent`);
+    R.check("Q1c '전체'면 조건 줄 '전국 · 전체 노선(계획 포함)'", c3 === '전국 · 전체 노선(계획 포함)', c3);
     const exc = b.logs.filter(x => /EXC/.test(x));
     R.check('예외 0 (PC)', exc.length === 0, exc.slice(0, 3));
     b.close(); b = null;

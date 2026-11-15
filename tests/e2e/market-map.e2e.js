@@ -214,6 +214,11 @@ async function until(b, expr, n = 40) {
     return { color: st.color, keys, legend: document.querySelector('#mm-panel .mm-legend').textContent.slice(0, 80) }; })()`);
   const jk = Object.keys(jv.keys).filter(k => /^j\d$/.test(k)).length;
   R.check('투자 모드: 색 = 전세가율 → 전세가율 구간 색 3개 이상 + 범례', jv.color === 'jeonse' && jk >= 3 && /전세가율|50%/.test(jv.legend), jv);
+  // P6: 단위 칸이 범례 맨 앞에 늘 보임 (휴대폰에서 숨는 긴 설명과 따로)
+  const un = await b.evaluate(`(() => { const u = document.querySelector('#mm-panel .mm-legend .mm-unit'); return u ? { t: u.textContent, first: u === u.parentElement.firstElementChild, vis: u.getBoundingClientRect().width > 0 } : null; })()`);
+  await b.evaluate(`MarketMap.open({ color: 'price' }); 0`).catch(() => {}); await sleep(600);
+  const unP = await b.evaluate(`(() => { const u = document.querySelector('#mm-panel .mm-legend .mm-unit'); return u ? u.textContent : null; })()`);
+  R.check('P6 범례 맨 앞 단위 칸: 전세가율 %, 평당가 만원/평', !!un && un.first && un.vis && /%/.test(un.t) && /만원\/평/.test(unP || ''), { un, unP });
   // K4: 시세를 쓰면 타일 바로 위에 출처 기관·기간(자료 파일에서 자동)·'법정동 기준'
   const srcLine = await b.evaluate(`(() => { const p = document.querySelector('#mm-panel .mm-src'); return p && !p.hidden ? p.textContent : null; })()`);
   R.check('K4: 전세가율 색 → 타일 위에 국토교통부·기간(년 월)·법정동 기준', !!srcLine && /국토교통부/.test(srcLine) && /\d{4}년 \d+~\d+월/.test(srcLine) && /법정동 기준/.test(srcLine), srcLine);

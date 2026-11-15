@@ -316,6 +316,7 @@
       '.mm-years button,.mm-tabs button{font:inherit;font-size:var(--fs-xs);padding:3px 9px;border-radius:999px;border:1px solid var(--border,#ccd);background:var(--panel-bg,#fff);color:var(--text,#222);cursor:pointer}' +
       '.mm-years button[aria-pressed="true"],.mm-tabs button[aria-selected="true"]{background:var(--accent,#1565c0);border-color:var(--accent,#1565c0);color:var(--accent-text,#fff);font-weight:700}' +
       '.mm-legend{display:flex;flex-wrap:wrap;gap:3px 9px;padding:0 14px 6px;font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
+      '.mm-unit{font-weight:600;color:var(--text,#1d232b)}.mm-unit b{font-weight:800;margin-right:3px}' +
       '.mm-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:-1px}' +
       '.mm-board{position:relative;flex:1 1 auto;min-height:200px;margin:0 10px 8px;overflow:hidden}' +
       '.mm-more{margin:0 10px 8px;padding:8px 12px;border:1px solid var(--border,#cfd5dc);border-radius:10px;background:var(--surface,#f3f5f7);color:inherit;font:inherit;font-size:var(--fs-sm);font-weight:600;cursor:pointer;text-align:center}' +
@@ -680,7 +681,9 @@
     }
     var sz = st.size === 'deals' ? ' · 크기 = 역이 속한 법정동 아파트 매매 건수(최근 6개월), 점선 = 자료 없음, 작은 값은 최소 크기로 보임'
       : st.size === 'supply' ? ' · 크기 = 역이 속한 법정동의 아직 준공 안 된 주택인허가 세대(수록 자료 기준, 입주 물량 그대로는 아님), 점선 = 없음·자료 없음, 작은 값은 최소 크기로 보임' : ' · 크기 = 모두 같음';
-    box.innerHTML = items.map(function (x) { return '<span><i' + (x[0] === Logic.NA_COLOR.bg ? ' class="na"' : '') + ' style="background-color:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
+    // P6: 단위는 휴대폰에서도 늘 보이게 맨 앞 칸에 (긴 설명 mm-lgx 는 휴대폰에서 숨는다). 타일 칸은 좁아 '만' 만 쓴다
+    var unit = st.color === 'price' ? '<span class="mm-unit"><b>단위</b> 만원/평(전용)</span>' : st.color === 'jeonse' ? '<span class="mm-unit"><b>단위</b> 전세가÷매매가 %</span>' : '';
+    box.innerHTML = unit + items.map(function (x) { return '<span><i' + (x[0] === Logic.NA_COLOR.bg ? ' class="na"' : '') + ' style="background-color:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
       '<span class="mm-lgx">' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표) · 타일 숫자도 전세가율' : st.color === 'price' ? '평당가(만원/평) = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상) · 타일 숫자도 평당가' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위 · 타일 숫자 = 오른 계단(▲)' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + ((global.KR_WAIT && KR_WAIT.isPeak()) ? ' · 출퇴근 배차 넣음' : ' · 열차 대기 뺌') + sz) + '</span>';
   }
 

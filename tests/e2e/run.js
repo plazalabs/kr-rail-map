@@ -89,6 +89,7 @@ const CHECKS = [
   ['panel-fold', 'panel-fold.e2e.js', {}, '오른쪽 창 접기·펼치기 손잡이(상태 유지, 새 창은 펼친 채) + Esc 두 번이면 왼쪽 패널도 접힘, 휴대폰은 손잡이 없음 (회장님 11-15)'],
   ['ui-fixes', 'ui-fixes.e2e.js', {}, '노선 비교·노선도 카드·노선도 툴바·영향권·style=local·그린 노선/위치 (IMPL7, 데스크톱)'],
   ['ui-fixes-mobile', 'ui-fixes.e2e.js', { MOBILE: '1' }, '같은 항목, 모바일 390×844'],
+  ['route-tap', 'route-tap.e2e.js', {}, "휴대폰 '경로 찾기' 첫 탭: 키보드 떠 있으면 손가락 대는 순간 찾기, 찾기 1회 (P10)"],
   ['tabbar', 'tabbar.e2e.js', {}, '휴대폰 아래 탭 5칸(길찾기·떡상·시세·게시판·더보기)·더보기 시트·PC 엔 없음 (작업 1)'],
 ];
 

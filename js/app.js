@@ -1529,6 +1529,25 @@ function setRoutePeek(on, text) {
   if (on && window.KRTrack) { /* 접기는 세지 않는다 — 너무 잦음 */ }
 }
 
+// P10: 휴대폰에서 입력칸에 글자를 넣은 채 '경로 찾기'를 누르면, 손을 대는 순간 화면 키보드·후보 목록이 내려가며
+// 단추가 손가락 밑에서 빠져나가 첫 탭이 헛도는 일이 있다 → 손가락이 닿는 순간(pointerdown) 바로 실행하고,
+// 뒤따라오는 진짜 click 한 번은 버린다 (두 번 찾지 않게)
+(function () {
+  const go = document.getElementById('route-go');
+  let firedAt = 0;
+  go.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' || e.button > 0) return;
+    const a = document.activeElement;
+    if (!a || a.tagName !== 'INPUT') return;   // 키보드가 떠 있을 때만 (자리 바뀜이 없으면 평소 click 그대로)
+    firedAt = Date.now();
+    go.click();
+  });
+  // 뒤따르는 진짜 click 은 어디에 떨어지든 하나 버린다 — 결과가 그려지며 화면이 밀려 '미개통 포함' 스위치 같은
+  // 다른 단추 위에 떨어지면 사용자 설정이 몰래 바뀌기 때문 (시험에서 실제로 그랬다)
+  document.addEventListener('click', e => {
+    if (e.isTrusted && firedAt && Date.now() - firedAt < 800) { e.preventDefault(); e.stopImmediatePropagation(); firedAt = 0; }
+  }, true);
+})();
 document.getElementById('route-go').addEventListener('click', () => {
   const box = document.getElementById('route-result');
   const pair = resolveRoutePair(document.getElementById('route-from'), document.getElementById('route-to'));

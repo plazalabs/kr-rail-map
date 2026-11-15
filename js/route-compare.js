@@ -798,7 +798,7 @@ const RouteCompare = (() => {
     if (r.unopenedLines && r.unopenedLines.length) {
       const names = r.unopenedLines.map(id => lineNameOf.get(id) || id).join(', ');
       html += `<div class="unopened-notice"><i data-ic="alert"></i> 미개통 구간 포함 — ${escapeHtml(names)}` +
-        `<span class="unopened-sub">개통 전이므로 실제로는 이용할 수 없습니다.</span></div>`;
+        `<span class="unopened-sub">가정: 계획 노선 모두 개통(시기 미정 포함) — 지금은 탈 수 없어요</span></div>`;
     }
     r.legs.forEach((leg, idx) => {
       const a = stLink(leg.from), b = stLink(leg.to);

@@ -87,6 +87,8 @@ async function route(b, from, to) {
     const C = await b.evaluate(RESULT);
     const saved = await b.evaluate(`localStorage.getItem('krrail-route-unopened')`);
     R.check('C2 켜면 개통 후 경로(미개통 배지 + 지금 vs 개통 후)', C.badge && C.nf && !C.hint, C.total);
+    // Q8 (11-15): 개통 후 경로에는 '무엇을 가정했는지' 한 줄 — 계획 노선 모두 개통(시기 미정 포함)
+    R.check('C2b 가정 한 줄(계획 노선 모두 개통·시기 미정 포함)', /가정: 계획 노선 모두 개통\(시기 미정 포함\)/.test(C.text), (C.text.match(/가정:[^요]*/) || [''])[0]);
     R.check('C3 저장됨', saved === '1', saved);
     // E. 경로를 그리는 동안 미개통 점선·글자 숨김
     const E = await b.evaluate(`({ op: map.getPaintProperty('rail-lines-unopened', 'line-opacity'), vis: map.getLayoutProperty('rail-lines-unopened-label', 'visibility') })`);

@@ -817,8 +817,8 @@ const RouteCompare = (() => {
       ? `예상 요금 ${r.fare.toLocaleString()}원 <span class="rc-est">+ ${escapeHtml(pend.join('·'))} 요금 미정</span>`
       : `예상 요금 ${r.fare.toLocaleString()}원${fd && fd.estimated ? ' <span class="rc-est">(일부 추정)</span>' : ''}`;
     let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분${timeEstTag(r)}${r.peakWait
-      ? `<span class="rc-def" title="공식 운행시간 + ${BAND_TXT[r.band || 'peak']} 공식 배차의 절반을 처음 탈 때·갈아탈 때 기다린다고 본 시간">(처음 열차 기다림${r.firstWait >= 0.5 ? ' ' + Math.round(r.firstWait) + '분' : ''} 포함${r.band === 'off' ? ' · 평시' : ''})</span>`
-      : `<span class="rc-def" title="공식 운행시간으로 낸 시간(자료 없는 구간은 어림) — 갈아탈 때 기다리는 시간(${BAND_TXT[r.band || 'peak']} 공식 배차의 절반)은 넣고, 처음 열차를 기다리는 시간은 뺐습니다">(환승 대기 포함${r.band === 'off' ? ' · 평시' : ''})</span>`} · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
+      ? `<span class="rc-def" title="공식 운행시간 + ${BAND_TXT[r.band || 'peak']} 공식 배차의 절반을 처음 탈 때·갈아탈 때 기다린다고 본 시간">(처음 열차 기다림${r.firstWait >= 0.5 ? ' ' + Math.round(r.firstWait) + '분' : ''} 포함${r.band === 'off' ? ' · 평시 배차' : ' · 출근 배차'})</span>`
+      : `<span class="rc-def" title="공식 운행시간으로 낸 시간(자료 없는 구간은 어림) — 갈아탈 때 기다리는 시간(${BAND_TXT[r.band || 'peak']} 공식 배차의 절반)은 넣고, 처음 열차를 기다리는 시간은 뺐습니다">(환승 대기 포함${r.band === 'off' ? ' · 평시 배차' : ' · 출근 배차'})</span>`} · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
     html += fareBreakdownHtml(fd);
     html += basisHtml(r);
     // 미개통 노선을 지나는 경로는 명시한다.
@@ -991,7 +991,7 @@ const RouteCompare = (() => {
       unsure: st !== 'same' && (cmp.lines || []).some(id => ['planned', 'proposed'].includes((lineMetaOf.get(id) || {}).status)),
       // 받은 사람이 같은 길찾기(개통 예정 포함)를 바로 보게 (11-15)
       q: 'from=' + encodeURIComponent(sname(fromId)) + '&from_id=' + encodeURIComponent(fromId) + '&to=' + encodeURIComponent(sname(toId)) + '&to_id=' + encodeURIComponent(toId) + '&unopened=1' +
-        (window.KR_WAIT ? '&wait=' + (KR_WAIT.isPeak() ? '1' : '0') : '') + (window.KR_routeBand && KR_routeBand() === 'off' ? '&band=off' : '') };
+        (window.KR_WAIT ? '&wait=' + (KR_WAIT.isPeak() ? '1' : '0') : '') + (window.KR_routeBand ? '&band=' + KR_routeBand() : '') };
   }
   // 'GTX-D (계획 · 2035년)' — 카드가 퍼질 때 확정된 노선처럼 읽히지 않게 상태·목표 연도를 붙인다
   const STATUS_WORD = { construction: '공사 중', planned: '계획', proposed: '구상' };

@@ -47,6 +47,12 @@ async function ready(b) {
   await b.evaluate(`KR_WAIT.set('peak'); 0`); await sleep(900);
   const rp3 = await b.evaluate(rtot);
   R.check("다른 화면에서 켜면 길찾기 체크·결과도 따라감", rp3.ck && rp3.min === rp1.min, rp3);
+  // 11-15 20:10 회장님 지적: 시간대 기본 = 지금 시각(평일 07~09·18~20시 출근, 그 밖·주말 평시)
+  const ab = await b.evaluate(`({ v: document.getElementById('route-band').value, same: KR_routeBand() === KR_autoBand(),
+    mon2015: KR_autoBand(new Date(2026, 10, 16, 20, 15)), mon0830: KR_autoBand(new Date(2026, 10, 16, 8, 30)), mon1830: KR_autoBand(new Date(2026, 10, 16, 18, 30)),
+    sat0830: KR_autoBand(new Date(2026, 10, 14, 8, 30)), mon1200: KR_autoBand(new Date(2026, 10, 16, 12, 0)),
+    lab: document.querySelector('#route-band option[value="auto"]').textContent })`);
+  R.check("시간대 기본 '지금 시각' — 월 20:15 평시·08:30 출근·18:30 출근·토 08:30 평시·12시 평시, 이름에 지금 값", ab.v === 'auto' && ab.same && ab.mon2015 === 'off' && ab.mon0830 === 'peak' && ab.mon1830 === 'peak' && ab.sat0830 === 'off' && ab.mon1200 === 'off' && /^지금\((평시|출근)\)$/.test(ab.lab), ab);
   // A5 (11-15): 시간대 '평시 10~16시' — 평시 배차를 받아 다시 찾고 결과에 '· 평시', 출근보다 같거나 김(같은 2호선 길), 기억
   await b.evaluate(`(() => { const s = document.getElementById('route-band'); s.value = 'off'; s.dispatchEvent(new Event('change')); })()`);
   for (let i = 0; i < 30; i++) { if (/평시/.test((await b.evaluate(rtot)).t)) break; await sleep(300); }

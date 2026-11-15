@@ -1155,7 +1155,7 @@ document.getElementById('share-btn').addEventListener('click', async () => {
     // K14 (6차 ②8): 뺌도 wait=0 으로 적는다 — 빠지면 받은 사람의 저장값(배차 넣음)으로 보여 분이 달라졌다
     if (window.KR_WAIT) url.searchParams.set('wait', KR_WAIT.isPeak() ? '1' : '0'); else url.searchParams.delete('wait');
     if (from && to && routeIncludeUnopened()) url.searchParams.set('unopened', '1'); else url.searchParams.delete('unopened');
-    if (from && to && routeBand() === 'off') url.searchParams.set('band', 'off'); else url.searchParams.delete('band');   // 시간대 평시 (A5)
+    if (from && to) url.searchParams.set('band', routeBand()); else url.searchParams.delete('band');   // 시간대 (A5) — '지금 시각'이면 보낸 사람 시각의 값으로 적어 받은 사람도 같은 분
     // 노선 보기 (J13, 2026-11-14): 범위(전국)·보기 버튼(운행 중 등) — 받은 사람도 같은 노선을 본다
     if (scope === 'all') url.searchParams.set('scope', 'all'); else url.searchParams.delete('scope');
     const vp = document.querySelector('#line-presets .lp-btn[aria-pressed="true"]');
@@ -1516,7 +1516,7 @@ if (routeUnopenedEl) {
   });
 }
 function routeIncludeUnopened() { return !!(routeUnopenedEl && routeUnopenedEl.checked); }
-// 길찾기 '시간대' (정반합 8차 A5, 2026-11-15): 출근(07~09시, 기본) / 평시(10~16시). 평시 배차(data/headways-off.json)는 고를 때 한 번 받는다.
+// 길찾기 '시간대' (정반합 8차 A5, 2026-11-15): 지금 시각(기본) / 출근(07~09시) / 평시(10~16시). 평시 배차(data/headways-off.json)는 고를 때 한 번 받는다.
 // 이 브라우저에 기억. 공유 링크 ?band=off 는 이번 방문에만
 const BAND_KEY = 'krrail-route-band';
 const routeBandEl = document.getElementById('route-band');
@@ -1528,18 +1528,38 @@ function ensureHeadwaysOff() {
     .then(doc => RouteFinder.loadHeadwaysOff(doc)));
   return headwaysOffP;
 }
-function routeBand() { return routeBandEl && routeBandEl.value === 'off' ? 'off' : 'peak'; }
+// 11-15 20:10 회장님 지적(광운대→강남 저녁 47분 vs 카카오 53분): 기본값이 늘 '출근'이라 저녁·밤에도 출근 배차로 셈 →
+// 기본 '지금 시각'(auto): 평일 07~09시·18~20시(공식 출퇴근 시간) = 출근 배차, 그 밖·주말 = 평시 배차. 사용자가 출근/평시를 고르면 그 값 기억
+function autoBand(d) {
+  d = d || new Date();
+  const h = d.getHours(), wd = d.getDay();
+  return (wd >= 1 && wd <= 5 && ((h >= 7 && h < 9) || (h >= 18 && h < 20))) ? 'peak' : 'off';
+}
+function routeBand() {
+  const v = routeBandEl ? routeBandEl.value : 'peak';
+  if (v === 'auto') return autoBand();
+  return v === 'off' ? 'off' : 'peak';
+}
+function syncAutoLabel() {
+  const o = routeBandEl && routeBandEl.querySelector('option[value="auto"]');
+  if (o) o.textContent = '지금(' + (autoBand() === 'off' ? '평시' : '출근') + ')';
+}
 if (routeBandEl) {
-  try { if (localStorage.getItem(BAND_KEY) === 'off') routeBandEl.value = 'off'; } catch (e) { /* 저장소 없음 */ }
+  syncAutoLabel();
+  try { const sv = localStorage.getItem(BAND_KEY); if (sv === 'off' || sv === 'peak' || sv === 'auto') routeBandEl.value = sv; } catch (e) { /* 저장소 없음 */ }
   const qb = new URLSearchParams(location.search).get('band');
   if (qb === 'off' || qb === 'peak') routeBandEl.value = qb;
-  if (routeBand() === 'off') ensureHeadwaysOff();
+  const rerun = () => { const box = document.getElementById('route-result'); if (box && box.innerHTML.trim()) document.getElementById('route-go').click(); };
+  // 평시 자료가 늦게 오면(지금=평시로 이미 찾은 뒤) 한 번 다시 찾음
+  if (routeBand() === 'off') ensureHeadwaysOff().then(ok => { if (ok && routeBand() === 'off') rerun(); });
   routeBandEl.addEventListener('change', () => {
-    try { localStorage.setItem(BAND_KEY, routeBand()); } catch (e) {}
-    const rerun = () => { const box = document.getElementById('route-result'); if (box && box.innerHTML.trim()) document.getElementById('route-go').click(); };
+    try { localStorage.setItem(BAND_KEY, routeBandEl.value); } catch (e) {}
     if (routeBand() === 'off') ensureHeadwaysOff().then(rerun); else rerun();
   });
+  // 창을 오래 열어 두면 시각이 바뀜 — 10분마다 '지금' 이름 맞춤 (다음 찾기부터 반영)
+  setInterval(() => { syncAutoLabel(); if (routeBand() === 'off') ensureHeadwaysOff(); }, 600000);
 }
+window.KR_autoBand = autoBand;
 window.KR_routeBand = routeBand;
 // 길찾기 '배차 넣기' (정반합 8차 A6, 2026-11-15) — 떡상 순위·역 타일·통근권과 같은 설정(KR_WAIT) 하나. 켜면 처음 탈 때도 배차 절반
 const routePeakEl = document.getElementById('route-peak');

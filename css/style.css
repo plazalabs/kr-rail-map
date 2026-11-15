@@ -584,6 +584,8 @@ body[data-theme="hospital"] .layer-opt .sa-approx { color: #526c6b; }
 #route-panel .rp-opt input { width: auto; flex: 0 0 auto; margin: 0; padding: 0; border: 0; box-shadow: none; accent-color: var(--accent); }
 #route-panel .rp-opt input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .rp-opt-sub { color: var(--muted); font-size: var(--fs-xs); }
+/* 길찾기 선택 두 개(개통 예정 · 배차 넣기)는 한 줄에 — 자리가 모자라면 아래로 (A6, 2026-11-15) */
+.rp-opts { display: flex; flex-wrap: wrap; column-gap: 14px; align-items: center; }
 .rp-note { font-size: var(--fs-xs); color: var(--muted); line-height: 1.5; }
 
 /* 그리기 */

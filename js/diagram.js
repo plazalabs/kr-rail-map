@@ -624,14 +624,23 @@ const DiagramMode = (() => {
         scroll.appendChild(canvas);
         viewW = out.W; viewH = out.H;
         bar.querySelector('.dg-hint').textContent =
-          '노선 ' + out.lineCount + '개 · 역 ' + out.nodeCount + '곳 · ' + Math.round(performance.now() - t0) + 'ms';
+          '노선 ' + out.lineCount + '개 · 역 ' + out.nodeCount + '곳';
+        // 만든 시간(ms)은 사용자에게 뜻이 없다 — 개발 확인용으로 콘솔에만 (정반합 8차 A15, 2026-11-15)
+        try { if (/[?&]dev=1/.test(location.search)) console.log('[노선도] ' + Math.round(performance.now() - t0) + 'ms'); } catch (e) { /* 무시 */ }
         centerOnCore();
         bindStationClick(scroll);
         rendered = true;
         const pick = bar.querySelector('#dg-pick');
         if (pick) {
           [...new Map(net.lines.map(ls => [ls.line.properties.id, ls.line.properties])).values()].sort((a, c) => (a.name_ko || '').localeCompare(c.name_ko || '', 'ko', { numeric: true }))
-            .forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name_ko || p.id; pick.appendChild(o); });
+            .forEach((p, i, arr) => {
+              // 같은 이름 두 항목(서해선 광역전철·일반철도)은 무엇이 다른지 붙인다 (A15)
+              const dup = arr.filter(q => q.name_ko === p.name_ko).length > 1;
+              const kind = { metro: '광역전철', conventional: '일반철도', urban: '도시철도', ktx: '고속철도' }[p.category] || '';
+              const o = document.createElement('option'); o.value = p.id;
+              o.textContent = (p.name_ko || p.id) + (dup && kind ? ' (' + kind + ')' : '');
+              pick.appendChild(o);
+            });
           pick.onchange = () => focusLine(pick.value || null);
         }
         if (pendingSid) { const s = pendingSid; pendingSid = null; focusStation(s); }

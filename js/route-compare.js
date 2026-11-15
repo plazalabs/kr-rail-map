@@ -288,11 +288,17 @@ const RouteCompare = (() => {
   }
 
   // 경로 → legs 분해 (route.js findRoute와 동일 로직)
+  // 길찾기 '배차 넣기'(A6, 2026-11-15) — findAll 이 도는 동안만 켠다. 세 탭이 같은 규칙으로 처음 탈 때 기다림을 넣게
+  let PEAK = false;
+  function withPeak(peak, fn) { const old = PEAK; PEAK = !!peak; try { return fn(); } finally { PEAK = old; } }
   function buildLegs(stations, edges) {
     if (stations.length <= 1) return { legs: [], minutes: 0, transfers: 0 };
     const legs = [];
     let legStart = 0, curLine = edges[0].lineId;
     let minutes = RF.accessMinutes(curLine);   // 첫 구간이 KTX 면 접근 시간
+    // 처음 탈 때 기다림 — findRoute 와 같은 규칙(드문 열차만, 배차 넣기면 모든 열차). 예전엔 여기만 빠져 있었다
+    let firstWait = (curLine && RF.boardWait) ? RF.boardWait(curLine, stations[0], stations[1], PEAK) : 0;
+    minutes += firstWait;
     // leg 별 거리도 남긴다 — 요금 계산에서 KTX 구간만 따로 떼어내야 한다
     let km = 0, segs = [];   // segs: 이 구간에서 지난 역 쌍과 거리 — 공항철도 독립구간 요금에 쓴다 (2026-11-13)
     edges.forEach((e, i) => {
@@ -302,7 +308,9 @@ const RouteCompare = (() => {
         const tm = (curLine !== null && e.lineId !== null)
           ? RF.transferMinutes(stations[i], curLine, e.lineId, stations[i - 1], stations[i + 1]) : 0;
         // 갈아탈 때 기다리는 시간 — findRoute(route.js)와 같은 정의. 예전엔 여기만 빠져 같은 경로가 탭마다 31분/28분으로 달랐다 (감사1, 2026-11-14)
-        const wt = (curLine !== null && e.lineId !== null && RF.transferWait) ? RF.transferWait(e.lineId, curLine, stations[i], stations[i - 1], stations[i + 1]) : 0;
+        const bw = (curLine === null && e.lineId !== null && RF.boardWait) ? RF.boardWait(e.lineId, stations[i], stations[i + 1], PEAK) : 0;   // 걸어온 뒤 처음 타는 열차
+        if (bw && legs.every(l => l.walk)) firstWait += bw;
+        const wt = ((curLine !== null && e.lineId !== null && RF.transferWait) ? RF.transferWait(e.lineId, curLine, stations[i], stations[i - 1], stations[i + 1]) : 0) + bw;
         legs.push({ lineId: curLine, from: stations[legStart], to: stations[i],
                     walk: curLine === null, distKm: km, transferAfter: tm, waitAfter: wt, segs,
                     platform: !!(curLine && e.lineId && RF.isPlatformTransfer(stations[i], curLine, e.lineId, stations[i - 1], stations[i + 1])) });
@@ -317,7 +325,7 @@ const RouteCompare = (() => {
     legs.push({ lineId: curLine, from: stations[legStart], to: stations[stations.length - 1],
                 walk: curLine === null, distKm: km, transferAfter: 0, segs });
     const transfers = RF.countTransfers(legs);   // 이어 달리는 구간(GTX-A 미개통 구간)은 환승이 아니다
-    return { legs, minutes: Math.round(minutes), transfers };
+    return { legs, minutes: Math.round(minutes), transfers, firstWait, peakWait: PEAK };
   }
 
   // 최소환승: (역,노선) 상태 다익스트라, 비용=(환승,분) 사전식
@@ -494,30 +502,38 @@ const RouteCompare = (() => {
 
   // 운행 중인 노선만 쓰는 3종 (길찾기 기본 — 2026-11-09 결정 1: 미개통은 켠 사람에게만).
   // future 는 '개통 예정 노선까지 쓰면' 의 최단시간 — 결과에 '켜면 몇 분' 한 줄을 붙이는 데만 쓴다.
-  function findAllOpen(fromId, toId) {
+  // opts.peakWait: 길찾기 '배차 넣기'(KR_WAIT 'peak') — 처음 탈 때도 출퇴근 배차 절반 (A6)
+  function findAllOpen(fromId, toId, opts) {
     if (!RF) return { time: null, transfer: null, fare: null, now: null, future: null, openOnly: true };
-    const time = enrich(RF.findRoute(fromId, toId, { openOnly: true }));
-    const transfer = enrich(findMinTransfer(fromId, toId, true));
-    const fare = pickCheapest([enrich(findMinFare(fromId, toId, true)), enrich(findMinFare(fromId, toId, true, true)), time, transfer]);
-    const future = enrich(RF.findRoute(fromId, toId));
-    return { time, transfer, fare, now: time, future, openOnly: true };
+    const peak = !!(opts && opts.peakWait);
+    return withPeak(peak, () => {
+      const time = enrich(RF.findRoute(fromId, toId, { openOnly: true, peakWait: peak }));
+      const transfer = enrich(findMinTransfer(fromId, toId, true));
+      const fare = pickCheapest([enrich(findMinFare(fromId, toId, true)), enrich(findMinFare(fromId, toId, true, true)), time, transfer]);
+      const future = enrich(RF.findRoute(fromId, toId, { peakWait: peak }));
+      return { time, transfer, fare, now: time, future, openOnly: true, peakWait: peak };
+    });
   }
 
   function findAll(fromId, toId, opts) {
-    if (opts && opts.openOnly) return findAllOpen(fromId, toId);
+    if (opts && opts.openOnly) return findAllOpen(fromId, toId, opts);
     if (!RF) return { time: null, transfer: null, fare: null, now: null };
+    const peak = !!(opts && opts.peakWait);
+    return withPeak(peak, () => findAllCore(fromId, toId, peak));
+  }
+  function findAllCore(fromId, toId, peak) {
     // 최단시간 탐색에는 환승 페널티를 더 세게 준다 — route.js 기본값이
     // '역의 실제 도보 시간 + 4분' 이므로, 표시 시간과 같은 잣대로 고른다.
     // (예전에는 8분 고정이었는데, 표시는 실제 값이라 둘이 어긋났다)
     // (환승 3회로 2분 아끼는 경로가 '최단시간'으로 뽑히던 문제)
-    const time = RF ? enrich(RF.findRoute(fromId, toId)) : null;
+    const time = RF ? enrich(RF.findRoute(fromId, toId, { peakWait: peak })) : null;
     const transfer = enrich(findMinTransfer(fromId, toId));
-    const now = RF ? enrich(RF.findRoute(fromId, toId, { openOnly: true })) : null;
+    const now = RF ? enrich(RF.findRoute(fromId, toId, { openOnly: true, peakWait: peak })) : null;
     const fare = pickCheapest([enrich(findMinFare(fromId, toId)), enrich(findMinFare(fromId, toId, false, true)), time, transfer, now]);   // '지금 바로' 길도 후보 (2026-11-13)
     // '지금' — 미개통 노선을 한 개도 쓰지 않는 가장 빠른 경로.
     // 부동산에서 이게 핵심이다: 개통 전에 그 집에 살면 실제로 몇 분 걸리는가.
     // 목적지가 미개통 노선에만 있는 역이면 null 이 된다 (지금은 갈 수 없다).
-    return { time, transfer, fare, now };
+    return { time, transfer, fare, now, peakWait: peak };
   }
 
   // P17: '최소요금' 탭 안에 늘 한 줄 — 최적 길과 견주어 무엇이 다른지, 무슨 요금 기준인지.
@@ -798,7 +814,9 @@ const RouteCompare = (() => {
     const fareTxt = pend.length
       ? `예상 요금 ${r.fare.toLocaleString()}원 <span class="rc-est">+ ${escapeHtml(pend.join('·'))} 요금 미정</span>`
       : `예상 요금 ${r.fare.toLocaleString()}원${fd && fd.estimated ? ' <span class="rc-est">(일부 추정)</span>' : ''}`;
-    let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분${timeEstTag(r)}<span class="rc-def" title="공식 운행시간으로 낸 시간(자료 없는 구간은 어림) — 갈아탈 때 기다리는 시간은 넣고, 처음 열차를 기다리는 시간은 뺐습니다">(환승 대기 포함)</span> · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
+    let html = `<div class="total">${badge ? `<span class="rc-badge">${badge}</span>` : ''}총 약 ${r.minutes}분${timeEstTag(r)}${r.peakWait
+      ? `<span class="rc-def" title="공식 운행시간 + 출퇴근 시간 공식 배차의 절반을 처음 탈 때·갈아탈 때 기다린다고 본 시간">(처음 열차 기다림${r.firstWait >= 0.5 ? ' ' + Math.round(r.firstWait) + '분' : ''} 포함)</span>`
+      : `<span class="rc-def" title="공식 운행시간으로 낸 시간(자료 없는 구간은 어림) — 갈아탈 때 기다리는 시간은 넣고, 처음 열차를 기다리는 시간은 뺐습니다">(환승 대기 포함)</span>`} · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
     html += fareBreakdownHtml(fd);
     html += basisHtml(r);
     // 미개통 노선을 지나는 경로는 명시한다.
@@ -859,7 +877,9 @@ const RouteCompare = (() => {
     const box = document.getElementById('route-result');
     if (!box) return;
     const include = !!(opts && opts.includeUnopened);
-    const all = include ? findAll(fromId, toId) : findAllOpen(fromId, toId);
+    // 배차 넣기(A6): 떡상 순위·타일·통근권과 같은 설정(KR_WAIT) 하나를 쓴다
+    const peakWait = opts && opts.peakWait != null ? !!opts.peakWait : !!(window.KR_WAIT && KR_WAIT.isPeak());
+    const all = include ? findAll(fromId, toId, { peakWait }) : findAllOpen(fromId, toId, { peakWait });
     if (!all.time && !all.transfer && !all.fare) {
       // H10 (2026-11-14): 왜 못 가는지까지 — 이 지도에 그린 철도망 안에서 두 역이 이어지지 않는다(버스·배·지도에 없는 노선은 안 셈)
       const why = '<p class="rc-nr-why">이 지도에 그린 철도 노선만으로는 두 역이 이어지지 않습니다. ' +

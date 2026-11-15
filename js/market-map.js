@@ -285,7 +285,8 @@
   /* ---------------- 화면 ---------------- */
   var CORE = ['GTX-A', 'GTX-B', 'GTX-C'], hiddenN = 0;   // 기본으로 보이는 묶음 (회장님 11-14)
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
-  var WLABEL = { avg: '평균', cbd: '도심', ybd: '여의도', gbd: '강남' };
+  // '평균' 만 쓰면 '−57분'이 무엇의 평균인지 모른다 (정반합 8차 A16) — 세 업무지구를 밝힌다
+  var WLABEL = { avg: '도심·여의도·강남 평균', cbd: '도심', ybd: '여의도', gbd: '강남' };
   var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', view: 'tiles', sel: null, cmp: [], tab: 'tiles', focus: null, band: null };
   var el = null, isOpen = false, model = null, doc = null, rowsById = new Map(), tileById = new Map(), opener = null;
 

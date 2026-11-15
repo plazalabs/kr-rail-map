@@ -99,6 +99,12 @@ const RouteFinder = (() => {
     const hw = headwayAt(lineId, stationId, toId);
     return (hw != null && hw > SPARSE_HW) ? Math.min(hw, 120) / 2 : 0;
   }
+  // 처음 탈 때(출발역·걸어온 뒤) 기다림 — 기본은 드문 열차만, '배차 넣기'(peak)를 켜면 그 방향 출퇴근 배차의 절반
+  // (정반합 8차 A6, 2026-11-15). 길찾기 세 탭(route-compare.js buildLegs)도 이 함수 하나를 쓴다.
+  function boardWait(lineId, stationId, toId, peak) {
+    if (!lineId) return 0;
+    return (peak && headwayDoc) ? peakWaitAt(lineId, stationId, toId) : sparseWait(lineId, stationId, toId);
+  }
   // 그 역에서 그 방향(다음 역 toId)으로 떠나는 열차 배차(분) — 방향 값 → 역 값 순. 없으면 null
   function headwayAt(lineId, stationId, toId) {
     if (!headwayDoc || !lineId || !stationId) return null;
@@ -124,6 +130,9 @@ const RouteFinder = (() => {
     if (hw0 != null) return Math.min(hw0, 120) / 2;
     const cat = lineCat.get(lineId);
     if (cat === 'ktx' || (typeof EXPRESS !== 'undefined' && EXPRESS[lineId])) return 0;   // KTX·급행은 접근 시간으로 따로
+    // 일반열차(무궁화 등)도 접근 시간(RAIL_ACCESS_MIN 12분 — 표·개찰·드문 배차)에 기다림이 들어 있다. 배차 자료가 없는데
+    // 기본 30분÷2 를 또 얹으면 27분을 이중으로 센다 (2026-11-15 A6 시험에서 발견: 시청→수원 순위 66 vs 길찾기 57)
+    if (cat === 'conventional') return 0;
     const h = headwayDoc.lines[lineId] || headwayDoc.lines[serviceOf(lineId)];
     let min = h ? h.min : ((headwayDoc.default || {})[cat] != null ? headwayDoc.default[cat] : 5);
     const s = stationId && stationsById.get(stationId);
@@ -863,6 +872,8 @@ const RouteFinder = (() => {
     // allow: openOnly 일 때 '지금 운행 중' 에 더해 탈 수 있는 노선 (Set) — 연도별 순위(그 해까지 개통한 노선)
     const openOnly = !!(opts && opts.openOnly);
     const allow = (opts && opts.allow) || null;
+    // peakWait: '배차 넣기' — 처음 탈 때도 출퇴근 배차 절반 (갈아탈 때는 늘 넣음). 떡상 순위 '배차 포함'과 같은 규칙 (A6)
+    const peak = !!(opts && opts.peakWait) && !!headwayDoc;
 
     const dist = new Map([[skey(fromId, START), 0]]);
     const prev = new Map();      // key -> {fromKey, fromId, edge}
@@ -897,7 +908,7 @@ const RouteFinder = (() => {
         // '3.8km KTX' 같은 경로가 애초에 후보로 뽑히지 않는다.
         if (nl !== line) cost += accessMinutes(nl);
         cost += transferWait(nl, line, u, pu, e.to);
-        if (nl !== null && (line === START || line === null)) cost += sparseWait(nl, u, e.to);   // 드문 열차는 처음 탈 때도
+        if (nl !== null && (line === START || line === null)) cost += boardWait(nl, u, e.to, peak);   // 드문 열차는 처음 탈 때도 (배차 넣기면 모든 열차)
         const nk = stateKey(e.to, nl, u);
         const nd = d + cost;
         if (nd < (dist.get(nk) ?? Infinity)) {
@@ -928,7 +939,7 @@ const RouteFinder = (() => {
     let minutes = 0, legKm = 0, segs = [];   // segs: 지난 역 쌍·거리 (공항철도 독립구간 요금)
     // 첫 구간부터 KTX 면 접근 시간을 붙인다
     minutes += accessMinutes(curLine);
-    const firstWait = curLine ? sparseWait(curLine, path[0], path[1]) : 0;   // 드문 열차 (위 SPARSE_HW)
+    let firstWait = curLine ? boardWait(curLine, path[0], path[1], peak) : 0;   // 드문 열차 (위 SPARSE_HW) · 배차 넣기면 모든 열차
     minutes += firstWait;
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
@@ -940,7 +951,9 @@ const RouteFinder = (() => {
         // '이 구간을 내린 뒤 갈아타는 데 걸리는 시간' 이다.
         const tm = (curLine !== null && lid !== null)
           ? transferMinutes(path[i], curLine, lid, path[i - 1], path[i + 1]) : 0;
-        const wt = transferWait(lid, curLine, path[i], path[i - 1], path[i + 1]) + (curLine === null && lid ? sparseWait(lid, path[i], path[i + 1]) : 0);
+        const bw = (curLine === null && lid) ? boardWait(lid, path[i], path[i + 1], peak) : 0;   // 걸어온 뒤 처음 타는 열차
+        if (bw && legs.every(l => l.walk)) firstWait += bw;
+        const wt = transferWait(lid, curLine, path[i], path[i - 1], path[i + 1]) + bw;
         legs.push({ lineId: baseOf(curLine), run: curLine, branch: branchOf(curLine), from: path[legStart], to: path[i],
                     walk: curLine === null, distKm: legKm, transferAfter: tm, waitAfter: wt, segs,
                     platform: !!(curLine && lid && isPlatformTransfer(path[i], curLine, lid, path[i - 1], path[i + 1])) });
@@ -971,6 +984,8 @@ const RouteFinder = (() => {
       minutes: Math.round(minutes),
       transfers: Math.max(0, transfers),
       unopenedLines: Array.from(new Set(unopenedNames)),
+      firstWait,          // 처음 열차 기다림(분) — 화면 '처음 열차 기다림 N분 포함' 표시용
+      peakWait: peak,
     };
   }
 
@@ -1025,9 +1040,11 @@ const RouteFinder = (() => {
         if (line !== START && line !== null && nl !== null && nl !== line) shown += transferMinutes(u, line, nl, pu, e.to);
         if (nl !== line) { cost += accessMinutes(nl); shown += accessMinutes(nl); }
         if (peakWait) {
-          // 출퇴근 배차 — 처음 탈 때(출발역·걸어온 뒤) 와 갈아탈 때. 같은 열차·맞은편 환승은 0
-          const boarding = nl && (line === START || line === null || (nl !== line && !sameService(nl, line) && !isPlatformTransfer(u, line, nl, pu, e.to)));
-          if (boarding) { const w = peakWaitAt(nl, u, e.to); cost += w; shown += w; }
+          // 출퇴근 배차 — 처음 탈 때(출발역·걸어온 뒤)는 배차 절반, 갈아탈 때는 길찾기와 같은 값(transferWait).
+          // 같은 열차·맞은편 환승은 0. 길찾기 '배차 넣기'(findRoute peakWait)와 같은 분이 나오게 한 규칙 (A6, 2026-11-15)
+          const first = nl && (line === START || line === null);
+          const w = first ? boardWait(nl, u, e.to, true) : transferWait(nl, line, u, pu, e.to);
+          cost += w; shown += w;
         } else if (!noWait) { const w = transferWait(nl, line, u, pu, e.to); cost += w; shown += w; }   // 기다리는 시간 (findRoute 와 같음)
         if (!peakWait && nl) {
           // 드문 열차(SPARSE_HW): 처음 탈 때는 늘, 기다림 빼는 순위 계산(noWait)에서는 갈아탈 때도 배차 절반을 넣는다
@@ -1071,7 +1088,7 @@ const RouteFinder = (() => {
 
   const api = {
     buildGraph, ensureGraph, findRoute, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
-    loadTransfers, loadHeadways, peakWaitAt, transferMinutes, sameService, countTransfers,
+    loadTransfers, loadHeadways, peakWaitAt, boardWait, transferMinutes, sameService, countTransfers,
     transferWait, stopStages, stageIds, hasHeadways: () => !!headwayDoc,   // I1·I2 (2026-11-14): route-compare 가 같은 대기 시간을 쓰게 · 배차 자료 받았는지
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
     // 예전에는 route-compare 가 그래프를 따로 만들었는데, 그쪽은 선형 조각을 이어붙여

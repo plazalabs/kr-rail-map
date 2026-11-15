@@ -1514,6 +1514,18 @@ if (routeUnopenedEl) {
   });
 }
 function routeIncludeUnopened() { return !!(routeUnopenedEl && routeUnopenedEl.checked); }
+// 길찾기 '배차 넣기' (정반합 8차 A6, 2026-11-15) — 떡상 순위·역 타일·통근권과 같은 설정(KR_WAIT) 하나. 켜면 처음 탈 때도 배차 절반
+const routePeakEl = document.getElementById('route-peak');
+if (routePeakEl && window.KR_WAIT) {
+  routePeakEl.checked = KR_WAIT.isPeak();
+  routePeakEl.addEventListener('change', () => KR_WAIT.set(routePeakEl.checked ? 'peak' : 'none'));
+  KR_WAIT.onChange(v => {
+    routePeakEl.checked = v === 'peak';
+    // 이미 결과가 떠 있으면 바뀐 기준으로 다시 찾는다 (다른 화면에서 바꿔도)
+    const box = document.getElementById('route-result');
+    if (box && box.innerHTML.trim() && !document.getElementById('route-panel').hidden) document.getElementById('route-go').click();
+  });
+}
 
 /* 휴대폰 길찾기 '요약 한 줄' (2026-11-13, 회장님: 결과가 나와도 창이 지도를 가려 경로가 안 보인다)
  *   휴대폰(≤768px)에서 경로 찾기를 누르면 결과를 그리기 '전에' 창을 접는다 — 지도 맞춤(fitBounds)이 접힌 창 높이로 여백을 잡게.
@@ -1782,6 +1794,7 @@ function routeLineInfo(lineId) {
 }
 
 let lastRoute = null;   // 배경 바꿀 때(스타일 통째 교체) 경로를 다시 그리려고 기억 (K10)
+const ROUTE_BG_OPACITY = 0.18;   // 경로 표시 중 배경 노선 (A7)
 function highlightRoute(path, legs, opt) {
   if (!map || !path || !path.length) return;
   clearRouteHighlight();
@@ -1796,8 +1809,9 @@ function highlightRoute(path, legs, opt) {
   });
 
   const pathSet = new Set(path);
-  // 노선 레이어는 전부 숨기고, 경로만 따로 그린다
-  if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', 0);
+  // 노선 레이어는 흐리게(18%) 남기고, 경로만 따로 진하게 그린다 — 다 지우면 경로가 도시 어디쯤인지 감이 없다
+  // (정반합 8차 A7, 2026-11-15 실측: 예전엔 0 — 완전히 지워졌음). 테두리·미개통 점선은 그대로 숨김(경로와 헷갈림)
+  if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', ROUTE_BG_OPACITY);
   if (map.getLayer('rail-lines-casing')) map.setPaintProperty('rail-lines-casing', 'line-opacity', 0);
   UNOPENED_LINE_LAYERS.forEach(id => { if (map.getLayer(id)) map.setPaintProperty(id, 'line-opacity', 0); });
   if (map.getLayer('rail-lines-unopened-label')) map.setLayoutProperty('rail-lines-unopened-label', 'visibility', 'none');

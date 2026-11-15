@@ -29,6 +29,24 @@ async function ready(b) {
   await b.evaluate(`RocketPanel.close(); document.getElementById('commute-btn').click(); 0`); await sleep(800);
   const cm = await b.evaluate(`(() => { const c = document.getElementById('cm-wait'); return c ? c.checked : null; })()`);
   R.check('통근권 체크도 켜짐', cm === true, cm);
+  // A6 (11-15): 길찾기 '배차 넣기'도 같은 값 — 켜져 있으면 체크, 결과에 '처음 열차 기다림 N분 포함'. 길찾기에서 끄면 분이 줄고 다른 화면도 꺼짐
+  const route = async () => {
+    await b.evaluate(`(() => { document.getElementById('route-panel').hidden = false;
+      const f = n => STATIONS.find(s => s.properties.name_ko === n && s.properties.lines.includes('seoul-subway-line-2'));
+      const a = document.getElementById('route-from'), z = document.getElementById('route-to');
+      a.value = '시청'; a.dataset.sid = f('시청').properties.id; z.value = '강남'; z.dataset.sid = f('강남').properties.id;
+      document.getElementById('route-go').click(); })()`); await sleep(900);
+  };
+  const rtot = `(() => { const t = document.querySelector('#route-result .rc-panel:not([hidden]) .total'); return { ck: document.getElementById('route-peak').checked, t: t ? t.textContent : '', min: t ? +((t.textContent.match(/총 약 (\\d+)분/) || [])[1]) : null }; })()`;
+  await route();
+  const rp1 = await b.evaluate(rtot);
+  R.check("길찾기 '배차 넣기'도 켜짐 + 결과에 '처음 열차 기다림 N분 포함'", rp1.ck && /처음 열차 기다림 \d+분 포함/.test(rp1.t), rp1);
+  await b.evaluate(`(() => { const c = document.getElementById('route-peak'); c.click(); })()`); await sleep(900);
+  const rp2 = await b.evaluate(rtot);
+  R.check("길찾기에서 끄면 → 다시 찾아 '(환승 대기 포함)', 분이 줄어듦, 공통 설정도 꺼짐", !rp2.ck && /환승 대기 포함/.test(rp2.t) && rp2.min < rp1.min && (await b.evaluate(`KR_WAIT.isPeak()`)) === false, { rp1: rp1.min, rp2 });
+  await b.evaluate(`KR_WAIT.set('peak'); 0`); await sleep(900);
+  const rp3 = await b.evaluate(rtot);
+  R.check("다른 화면에서 켜면 길찾기 체크·결과도 따라감", rp3.ck && rp3.min === rp1.min, rp3);
   await b.goto(BASE + '#normal', 1500); await ready(b);
   const kept = await b.evaluate(`KR_WAIT.isPeak()`);
   R.check('새로고침해도 남음 (이 브라우저)', kept === true);

@@ -54,7 +54,8 @@ async function route(b, from, to) {
 
     const B = await route(b, '서울', '부산');
     R.check('B1 길찾기 실클릭', B.go.ok, B.go.why);
-    R.check('B2 서울→부산 예상 요금 54,400원', /예상 요금 54,400원/.test(B.total) && !/추정/.test(B.total), B.total);
+    // 요금만 '추정' 아님을 본다 — v264(Q2)부터 시간 옆에는 공식 운행시간이 다 없을 때 '추정'이 붙는다(KTX 서울→부산 시간은 어림)
+    R.check('B2 서울→부산 예상 요금 54,400원 (요금은 추정 아님)', /예상 요금 54,400원/.test(B.total) && !/예상 요금[^·]*추정/.test(B.total), B.total);
     // 종합12장 A① (11-14): KTX 사이 역은 '선로상 지나는 역' — 'N개역'(모든 열차가 서는 것처럼) 아님 + 코레일 정차역 확인 링크
     const pass = await b.evaluate(`(() => { const p = document.querySelector('#route-result .rc-panel:not([hidden])'); if (!p) return null;
       const L = [...p.querySelectorAll('.leg')].find(l => l.querySelector('.leg-passnote')); if (!L) return { legs: [...p.querySelectorAll('.leg')].map(l => l.textContent.slice(0, 60)) };

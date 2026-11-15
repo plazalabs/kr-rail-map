@@ -163,7 +163,11 @@ function applyView() {
   if (location.hash !== '#' + mode) history.replaceState(null, '', '#' + mode);
 }
 document.querySelectorAll('#toolbar [data-style]').forEach(b =>
-  b.addEventListener('click', () => { history.replaceState(null, '', '#' + b.dataset.style); applyView(); }));
+  b.addEventListener('click', () => {
+    // P15: 개략 노선도가 떠 있으면 배경 단추가 아무 일도 안 하는 것처럼 보였다 → 노선도를 닫고 그 배경 지도로
+    if (window.DiagramMode && DiagramMode.isActive()) { try { DiagramMode.exit(); } catch (e) { /* 무시 */ } }
+    history.replaceState(null, '', '#' + b.dataset.style); applyView();
+  }));
 window.addEventListener('hashchange', applyView);
 
 // 첫 화면 단순화 (68점 감사 12번 · 회장님 결정 2026-11-13): 라이트·다크만 보이고 나머지 5개는 '더보기' 안에.
@@ -417,8 +421,11 @@ function addDataLayers() {
     filter: lineFilterWithStatus([...visibleLines], false),
     layout: {
       'symbol-placement': 'line', 'symbol-spacing': 400,
-      'text-field': ['concat', ['get', 'name_ko'], ' 개통 예정',
-        ['match', ['get', 'status'], 'construction', ' (공사중)', 'planned', ' (계획중)', 'proposed', ' (구상중)', '']],
+      // P14: GTX-D 는 한 노선의 갈래(구상안) 여럿이라 강남 부근에 같은 글자 점선 2개가 엇갈려 서로 다른 노선처럼 보였다
+      //      → 'GTX-D 구상 (갈래 여러 안)' 으로 같은 노선의 갈래임을 밝힌다
+      'text-field': ['match', ['get', 'id'], 'gtx-d', 'GTX-D 구상 (갈래 여러 안)',
+        ['concat', ['get', 'name_ko'], ' 개통 예정',
+          ['match', ['get', 'status'], 'construction', ' (공사중)', 'planned', ' (계획중)', 'proposed', ' (구상중)', '']]],
       'text-size': 11, 'text-font': ['Noto Sans Regular']
     },
     paint: labelPaint('#333333', 1.4)

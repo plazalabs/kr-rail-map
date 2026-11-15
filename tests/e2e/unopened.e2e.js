@@ -68,6 +68,7 @@ async function route(b, from, to) {
     R.check('A2 미개통 레이어에 운행 중 노선 없음 + 동북선 보임', A.unN > 0 && A.unBad.length === 0 && A.unNames.includes('동북선'), A.unNames.join(','));
     R.check('A3 미개통은 점선', Array.isArray(A.dash) && A.dash.length >= 2, JSON.stringify(A.dash));
     R.check('A4 글자에 "개통 예정"', JSON.stringify(A.label).includes('개통 예정'));
+    R.check('A5 GTX-D 는 갈래 여러 안임을 밝힘 (P14)', JSON.stringify(A.label).includes('GTX-D 구상 (갈래 여러 안)'));
     await b.shot(path.join(OUT, 'a-map.png'));
 
     // B. 기본 길찾기 (꺼짐)

@@ -93,6 +93,13 @@ async function runA(b, tag) {
     const st = await b.evaluate(`document.getElementById('status').textContent`);
     R.check('D1 노선 꺼진 역 → 찾지 못함 + 안내(노선 켜기)', okD2 === false && /노선 목록에서 그 노선을 켜/.test(st), JSON.stringify({ okD, okD2, st }));
     await b.evaluate(`DiagramMode.exit(); 0`);
+    // P15: 노선도가 떠 있을 때 툴바 '위성' 실클릭 → 노선도 닫히고 위성 지도 (전엔 아무 반응 없음)
+    await b.evaluate(`DiagramMode.enter(); 0`); await sleep(800);
+    const pr = await press(b, '#toolbar [data-style="satellite"]');
+    await sleep(800);
+    const p15 = await b.evaluate(`({ dg: DiagramMode.isActive(), hash: location.hash, pressed: document.querySelector('#toolbar [data-style="satellite"]').getAttribute('aria-pressed') })`);
+    R.check('P15 노선도 중 위성 단추 → 노선도 닫힘 + 위성', pr.ok && !p15.dg && p15.hash === '#satellite' && p15.pressed === 'true', JSON.stringify({ pr, p15 }));
+    await press(b, '#toolbar [data-style="normal"]'); await sleep(500);
     const exc = b.logs.filter(x => /EXC/.test(x));
     R.check('예외 0 (PC)', exc.length === 0, exc.slice(0, 3));
     b.close(); b = null;

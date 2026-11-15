@@ -264,8 +264,8 @@ async function until(b, expr, n = 40) {
   const m2 = await b.evaluate(`({ tab: document.getElementById('mm-panel').dataset.tab, card: document.querySelector('#mm-panel .mm-card').offsetHeight > 40 })`);
   R.check("휴대폰: 타일 누르면 '분석' 탭에 카드", m2.tab === 'card' && m2.card, m2);
   await b.evaluate(`document.querySelector('#mm-panel .mm-tabs button[data-tab="map"]').click(); 0`); await sleep(300);
-  const m3 = await b.evaluate(`({ hidden: document.getElementById('mm-panel').hidden, back: !document.getElementById('mm-return').hidden })`);
-  R.check("휴대폰: '지도' 탭 → 시트 숨고 '타일로 돌아가기'", m3.hidden && m3.back, m3);
+  const m3 = await b.evaluate(`({ hidden: document.getElementById('mm-panel').hidden, back: !document.getElementById('mm-return').hidden, sel: (document.querySelector('#mm-panel .mm-tabs [aria-selected="true"]') || {dataset:{}}).dataset.tab })`);
+  R.check("휴대폰: '지도' 탭 → 시트 숨고 '타일로 돌아가기' + 지도 탭이 선택 표시(P8)", m3.hidden && m3.back && m3.sel === 'map', m3);
   await b.evaluate(`document.getElementById('mm-return').click(); 0`); await sleep(300);
   const m4 = await b.evaluate(`!document.getElementById('mm-panel').hidden && document.getElementById('mm-panel').dataset.tab === 'tiles'`);
   R.check("휴대폰: '타일로 돌아가기' → 타일 탭", m4);

@@ -526,10 +526,11 @@
   function setTab(tab) {
     st.tab = tab;
     var back = document.getElementById('mm-return');
+    // P8: 탭 표시(aria-selected)는 '지도' 로 갈 때도 먼저 바꾼다 (전엔 return 이 먼저라 이전 탭이 선택된 채 남음)
+    el.querySelectorAll('.mm-tabs button').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false'); });
     if (tab === 'map') { el.hidden = true; if (back) back.hidden = false; return; }
     el.hidden = false; if (back) back.hidden = true;
     el.dataset.tab = tab;
-    el.querySelectorAll('.mm-tabs button').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false'); });
     if (tab === 'tiles') draw();
   }
 

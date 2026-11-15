@@ -1591,8 +1591,8 @@ body.map-ready #map-skeleton .sk { animation: none; }
   display: flex; align-items: center; gap: 4px; width: 100%; min-height: 26px; padding: 2px 8px; border: 0; background: none;
   color: inherit; font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px; text-align: left;
 }
-.status-legend .sl-toggle::after { content: "BE"; margin-left: auto; font-size: .9em; color: var(--muted, #5b6470); }
-.status-legend:not(.open) .sl-toggle::after { content: "B8"; }
+.status-legend .sl-toggle::after { content: "\25BE"; margin-left: auto; color: var(--muted, #5b6470); }
+.status-legend:not(.open) .sl-toggle::after { content: "\25B8"; }
 .status-legend .sl-toggle:hover { background: var(--surface, #f2f4f7); }
 .status-legend .sl-toggle:focus-visible { outline: 2px solid var(--accent, #1b64da); outline-offset: 1px; }
 .status-legend:not(.open) .sl-rows { display: none; }

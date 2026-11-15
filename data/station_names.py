@@ -50,6 +50,20 @@ def load():
             # 정식 이름이 우선이다. 별칭이 다른 역의 정식 이름과 겹치면
             # (개명 전 이름을 다른 역이 쓰는 경우) 정식 이름을 남긴다.
             alias.setdefault(a, n)
+    # 괄호 붙은 지도 이름은 괄호 앞·괄호 안 이름도 별칭으로 본다.
+    # 이수역은 11-13(e3df4aa)에 '총신대입구(이수)' 하나로 합쳐졌다 — 원본이
+    # '이수'·'총신대입구'만 써도 이어져야 시세가 안 빠진다. 같은 짧은 이름이
+    # 두 역 이상을 가리키면(모호) 쓰지 않는다.
+    paren = {}
+    for n in names:
+        if "(" not in n:
+            continue
+        for a in {_norm(n)} | {m.strip() for m in re.findall(r"\(([^)]+)\)", n)}:
+            if a and a != n:
+                paren.setdefault(a, set()).add(n)
+    for a, ns in paren.items():
+        if len(ns) == 1 and a not in alias:
+            alias[a] = next(iter(ns))
     for a in list(alias):
         if a in names:
             alias.pop(a, None)
@@ -119,7 +133,8 @@ if __name__ == "__main__":
     cases = [
         ("서울역", "서울"),
         ("김포공항역", "김포공항"),
-        ("총신대입구", "이수"),
+        ("총신대입구", "총신대입구(이수)"),   # 11-13 한 역으로 합침(e3df4aa)
+        ("이수", "총신대입구(이수)"),
         ("잠실(송파구청)", "잠실"),
         ("강남", "강남"),
         ("없는역이름", None),
@@ -131,9 +146,10 @@ if __name__ == "__main__":
         print(("  ✓ " if ok else "  ✗ ") + src + " → " + str(got) + ("" if ok else " (기대 " + str(want) + ")"))
         bad += 0 if ok else 1
 
-    # 한 이름이 여러 지도 이름을 가리키는 경우 — 이수역은 지도에 두 번 있다.
+    # 한 이름이 여러 지도 이름을 가리키는 경우 — 이수역은 11-13 에 한 역으로 합쳐져 이제 하나다.
     multi = [
-        ("총신대입구(이수)", {"이수", "총신대입구(이수)"}),
+        ("총신대입구(이수)", {"총신대입구(이수)"}),
+        ("이수", {"총신대입구(이수)"}),
         ("강남", {"강남"}),
     ]
     for src, want in multi:

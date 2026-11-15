@@ -71,6 +71,14 @@ check(`광운대→선릉 순위용이 예전 가짜 값(청량리 수인분당,
   const r = RF.findRoute(cc, by('강남'), { openOnly: true });
   check(`춘천→강남: ITX-청춘을 옥수에서 내리지 않음 (${r.minutes}분 · ${desc(r)})`, !r.legs.some(l => nm[l.to] === '옥수' || nm[l.from] === '옥수'));
 }
+// 경춘선 광운대 열차 정차 순서 (11-15, 레일포털 시각표): 광운대 → 상봉(달리는 시간 480초) → 망우. 지도 선만 보고 광운대–망우를 바로 잇지 않는다
+{
+  const GC = 'seoul-metropolitan-subway-gyeongchun-line';
+  const nb = RF.adjacency().get(kw).filter(e => !e.walk && e.lineId === GC).map(e => nm[e.to]);
+  check(`경춘선 광운대의 다음 역은 상봉 하나 (${nb.join(',')})`, nb.length === 1 && nb[0] === '상봉');
+  const r = RF.findRoute(kw, by('망우'), { openOnly: true });
+  check(`광운대→망우 10분 이상 (상봉 8분 + 망우 2분 — 전엔 4.4분) (${r.minutes}분 · ${desc(r)})`, r.minutes >= 10);
+}
 
 console.log(`\n결과: ${pass}개 통과, ${fail}개 실패`);
 process.exit(fail ? 1 : 0);

@@ -586,6 +586,7 @@ const RouteFinder = (() => {
     });
 
     applyOfficialTopology();
+    applyStopOrderFix();
     applyOfficialRuntimes();
     addGtxOfficialEdges(activeIds);
     addExpressEdges();
@@ -644,6 +645,37 @@ const RouteFinder = (() => {
         geomAdjacent.add(lid + ':' + pairKey(a, b));
         officialTopologyFix.added++;
       });
+    });
+  }
+
+  // 시각표 정차 순서 바로잡기 (2026-11-15). 지도 선(망우선)은 광운대에서 망우 쪽으로 바로 붙지만, 레일포털 시각표
+  // (전체_도시철도운행정보, 경춘선 광운대 출발·도착 평일 열차)는 광운대 → 상봉(달리는 시간 480초) → 망우 순서로 선다.
+  // 광운대–망우 4.4분 간선을 지우고 광운대–상봉 8분으로 잇는다 — 전엔 광운대→춘천 방향이 약 6분 짧게 나왔다.
+  // 거리(요금용)는 공식 역간거리를 못 찾아 지도 선 길이(광운대–망우)에서 상봉–망우를 뺀 값.
+  const STOP_ORDER_FIX = [
+    { lid: 'seoul-metropolitan-subway-gyeongchun-line', a: '광운대', wrong: '망우', right: '상봉', sec: 480 },
+  ];
+  let stopOrderFixed = 0;
+  function applyStopOrderFix() {
+    stopOrderFixed = 0;
+    const idOn = (lid, name) => { const ids = []; stationsById.forEach((s, id) => { if (s.properties.name_ko === name && (s.properties.lines || []).includes(lid)) ids.push(id); }); return ids.length === 1 ? ids[0] : null; };
+    STOP_ORDER_FIX.forEach(f => {
+      const a = idOn(f.lid, f.a), w = idOn(f.lid, f.wrong), r = idOn(f.lid, f.right);
+      if (!a || !w || !r) return;
+      const old = (adj.get(a) || []).find(e => !e.walk && e.lineId === f.lid && e.to === w);
+      if (!old) return;
+      const seg = (adj.get(r) || []).find(e => !e.walk && e.lineId === f.lid && e.to === w);
+      [[a, w], [w, a]].forEach(([x, y]) => adj.set(x, (adj.get(x) || []).filter(e => e.walk || e.lineId !== f.lid || e.to !== y)));
+      geomAdjacent.delete(f.lid + ':' + pairKey(a, w));
+      if (!(adj.get(a) || []).some(e => !e.walk && e.lineId === f.lid && e.to === r)) {
+        addEdge(a, r, f.lid, false, Math.max(0.5, old.distKm - (seg ? seg.distKm : 0)));
+        geomAdjacent.add(f.lid + ':' + pairKey(a, r));
+      }
+      [[a, r], [r, a]].forEach(([x, y]) => (adj.get(x) || []).forEach(e => {
+        if (e.walk || e.lineId !== f.lid || e.to !== y) return;
+        e.officialMin = f.sec / 60 + DWELL_MIN; e.official = 'kric';
+      }));
+      stopOrderFixed++;
     });
   }
 

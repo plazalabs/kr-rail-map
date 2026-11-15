@@ -26,7 +26,8 @@ RTMS = ROOT / "data" / "_rtms"
 OUT = ROOT / "data" / "station-trend.json"
 MIN_DEALS = 5
 FIRST = "202301"
-LAST_CLOSED = "202609"   # 신고 마감된 마지막 달 (2026-11-13 기준: 10월 거래는 11-30 마감)
+import rtms_period  # noqa: E402
+LAST_CLOSED = rtms_period.last_closed()   # 신고 마감된 마지막 달 (2026-11-13 기준: 10월 거래는 11-30 마감)
 
 
 def half_of(ym):

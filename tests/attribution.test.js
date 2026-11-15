@@ -194,7 +194,8 @@ check('서비스워커 앱 셸에 data.html', /'\.\/data\.html'/.test(sw));
   check('앱 캐시 버전 20 이상', Number(v) >= 20, 'v' + v);
 }
 {
-  const dv = (sw.match(/DATA_CACHE = 'kr-rail-map-data-v(\d+)'/) || [])[1];
+  const dv = (sw.match(/DATA_CACHE = 'kr-rail-map-data-v(\d+)-r' \+ DATA_REV;/) || [])[1];
+  check('데이터 캐시 이름에 자료 달(DATA_REV = YYYYMM)', /const DATA_REV = '\d{6}';/.test(sw));
   check('데이터 캐시 버전 일치', dv === (sw.match(/APP_CACHE = 'kr-rail-map-app-v(\d+)'/) || [])[1],
     'v' + dv);
 }

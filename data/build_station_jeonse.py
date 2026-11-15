@@ -35,7 +35,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 RTMS = ROOT / "data" / "_rtms"
 OUT = ROOT / "data" / "station-jeonse.json"
-PERIOD = ("202604", "202609")
+import rtms_period  # noqa: E402
+PERIOD = rtms_period.period()
 MIN_PAIRS = 3
 MAX_RATIO = 1.5
 RISK = 0.8

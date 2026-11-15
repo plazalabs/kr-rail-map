@@ -31,7 +31,8 @@ DONG = ROOT / "data" / "_station_dong.json"
 RTMS = ROOT / "data" / "_rtms"
 OUT = ROOT / "data" / "station-market.json"
 MIN_DEALS = 5
-PERIOD = ("202604", "202609")   # 아파트 매매 시세와 같은 기간 — 비교가 되게
+import rtms_period  # noqa: E402
+PERIOD = rtms_period.period()   # 아파트 매매 시세와 같은 기간 — 비교가 되게
 
 import fetch_rtms  # noqa: E402  (KINDS 표 한 곳)
 

@@ -20,7 +20,12 @@ function check(label, cond, detail) {
 const ids = Object.keys(T.stations);
 check('역 ID 로 묶여 있다 (keyed_by station_id) · 역 300곳 이상', T.keyed_by === 'station_id' && ids.length >= 300, ids.length);
 check('모든 키가 실제 역 ID', ids.every(id => byId.has(id)), ids.filter(id => !byId.has(id)).slice(0, 3));
-check('반기 8개 2023H1~2026H2, 마감월 202609', JSON.stringify(T.halves) === JSON.stringify(['2023H1', '2023H2', '2024H1', '2024H2', '2025H1', '2025H2', '2026H1', '2026H2']) && T.lastClosed === '202609', T.halves);
+// 매달 자동 갱신(11-15)으로 마감월이 바뀐다 → 2023H1 부터 마감월이 든 반기까지 빠짐없이 이어지는지 본다
+{
+  const lc = String(T.lastClosed || ''), want = [];
+  if (/^\d{6}$/.test(lc)) for (let y = 2023, h = 1; y * 10 + h <= +lc.slice(0, 4) * 10 + (+lc.slice(4) <= 6 ? 1 : 2); h === 1 ? (h = 2) : (h = 1, y++)) want.push(y + 'H' + h);
+  check('반기 2023H1~마감월 반기 빠짐없이, 마감월 YYYYMM (' + lc + ')', want.length >= 8 && JSON.stringify(T.halves) === JSON.stringify(want), T.halves);
+}
 const bad = [];
 ids.forEach(id => {
   const s = T.stations[id].s;

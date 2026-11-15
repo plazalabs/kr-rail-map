@@ -28,14 +28,16 @@ data/_rtms/
 # K-apt 단지 정보 캐시 — 활용신청 뒤 fetch_kapt.py 로 받는다.
 # 결과(세대수·공급면적)는 build_station_complex.py 가 station-complex.json
 # 에 구워 넣으므로, 그 파일만 추적하면 사이트는 그대로 돌아간다.
-data/_kapt/
+data/_kapt/*
+# 단지 세대수 표는 매달 자동 갱신(Actions)이 단지 시세를 다시 만들 때 필요해서 추적한다 (2026-11-15)
+!data/_kapt/units.json
 # 역 주소 원본(28개 CSV, 373K)과 그 중간산출물
 # 역위치 CSV(data/_gov/*역위치*.csv)는 테스트가 정답지로 쓰므로 추적한다.
 # 주소 CSV 는 build_station_dong.py 가 필요할 때 다시 받는다.
 # 반드시 하위 폴더에 둔다 — _gov 에 두면 official.test.js 가 정답지로 읽어서
 # '1호선' 하나에 전국 1호선이 섞인다 (실제로 그렇게 깨졌다).
 data/_gov/addr/
-data/_station_dong.json
+# data/_station_dong.json — 매달 자동 갱신이 역→법정동 짝을 읽어야 해서 추적한다 (2026-11-15). 역 주소는 공개 자료
 # 주택인허가 원본 캐시 — 활용신청 승인 뒤 fetch_dev.py 로 받는다.
 # 결과는 build_station_dev.py 가 station-dev.json 에 구워 넣는다.
 data/_dev/

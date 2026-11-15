@@ -28,7 +28,8 @@ OUT = ROOT / "data" / "station-price.json"
 # 이보다 거래가 적으면 중위값을 믿기 어렵다
 # 이 기간의 범위 파일만 읽는다 (2026-11-13): _rtms 에 다른 기간(예: 시계열용 2023~) 범위 파일이 생기면
 # 예전엔 *_*_*.json 을 전부 읽어 최근 6개월 시세에 섞였다. 실거래 7종·전세가율과 같은 기간.
-PERIOD = ("202604", "202609")
+import rtms_period  # noqa: E402
+PERIOD = rtms_period.period()   # 다 모인 마지막 달까지 6개월 (11-15 기준 202604~202609)
 MIN_DEALS = 5
 
 

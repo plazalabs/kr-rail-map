@@ -36,7 +36,8 @@ OUT = ROOT / "data" / "station-complex.json"
 # 단지 하나를 목록에 올리려면 최소 이만큼의 거래가 필요하다
 # 이 기간의 범위 파일만 읽는다 (2026-11-13): _rtms 에 다른 기간(예: 시계열용 2023~) 범위 파일이 생기면
 # 예전엔 *_*_*.json 을 전부 읽어 최근 6개월 시세에 섞였다. 실거래 7종·전세가율과 같은 기간.
-PERIOD = ("202604", "202609")
+import rtms_period  # noqa: E402
+PERIOD = rtms_period.period()
 MIN_DEALS = 2
 
 # 평형대 경계(전용면적 m²). 위에서부터 내려오며 첫 경계에 넣는다.

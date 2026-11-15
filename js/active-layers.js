@@ -6,7 +6,7 @@
 (function (global) {
   'use strict';
   var ITEMS = [
-    { id: 'rocket', label: '떡상 지도', hint: '색 = 개통 후 순위가 오른 계단', on: function () { if (global.StationRocket && StationRocket.isOn) return !!StationRocket.isOn(); var c = document.getElementById('layer-rocket'); return !!(c && c.checked); } },
+    { id: 'rocket', label: '개통 효과 지도', hint: '색 = 개통 후 순위가 오른 계단', on: function () { if (global.StationRocket && StationRocket.isOn) return !!StationRocket.isOn(); var c = document.getElementById('layer-rocket'); return !!(c && c.checked); } },
     { id: 'jeonse', label: '전세가율 색칠', hint: '법정동 집계 · 80% 이상 주의', on: function () { var c = document.getElementById('layer-jeonse'); return !!(c && c.checked); } },
     { id: 'area', label: '역세권 범위', hint: '근사', on: function () { var c = document.getElementById('layer-station-area'); return !!(c && c.checked); } },
     { id: 'commute', label: '통근권', hint: '색 = 목적지 역까지 분', on: function () { return !!(global.CommuteMap && CommuteMap.isActive && CommuteMap.isActive()); } },

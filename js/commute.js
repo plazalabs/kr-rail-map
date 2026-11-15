@@ -21,6 +21,8 @@
   let map = null, ST = [], byId = new Map();
   let panel = null, active = false;
   let destId = null, maxMin = 45, withUnopened = false, sortBy = 'time';
+  // 두 번째 직장 (맞벌이 — 2026-11-15 킬러 아이디어 '둘 다 출근 가능한 동네'). 고르면 두 곳 모두 N분 안인 역만, 분 = 둘 중 긴 쪽
+  let dest2Id = null;
   let headwayTried = false, headwayFailed = false;
   // 대기 시간 설명 (K12) — route.js allTimesFrom 이 실제로 넣는 것과 같게:
   //  배차 넣음(출퇴근 배차 자료 있음) → 처음 탈 때·갈아탈 때 출퇴근 배차의 절반 (KTX·급행·같은 승강장 맞은편 환승은 0)
@@ -94,6 +96,27 @@
     return rows;
   }
 
+  // 두 직장 모두 limitMin 안인 역. 각 직장 역 자신은 그 직장까지 0분. 분(min) = 둘 중 긴 쪽, m1·m2 = 각 직장까지
+  // idA·idB 를 주면 그 두 역으로(시험용), 안 주면 지금 고른 두 직장
+  function computeBoth(limitMin, opts, idA, idB) {
+    const A = idA || destId, Bd = idB === undefined ? dest2Id : idB;
+    const a = compute(A, limitMin, opts);
+    if (!Bd || !byId.has(Bd) || Bd === A) return a;
+    const b = compute(Bd, limitMin, opts);
+    const m1 = new Map(a.map(r => [r.id, r.min])), m2 = new Map(b.map(r => [r.id, r.min]));
+    m1.set(A, 0); m2.set(Bd, 0);
+    const rows = [];
+    m1.forEach((x, id) => {
+      const y = m2.get(id);
+      if (y == null) return;
+      const s = byId.get(id);
+      if (!s) return;
+      rows.push({ id, name: s.properties.name_ko, min: Math.max(x, y), m1: x, m2: y, coord: s.geometry.coordinates });
+    });
+    rows.sort((p, q) => p.min - q.min || (p.m1 + p.m2) - (q.m1 + q.m2) || p.name.localeCompare(q.name, 'ko'));
+    return rows;
+  }
+
   // B 카드 값 — 지금(운행 중만) · 개통 후(모두) 를 같은 목적지·같은 분·같은 배차 설정으로 따로 센다
   function reachCardInfo() {
     const dest = byId.get(destId);
@@ -159,6 +182,10 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     <div class="ac-wrap"><input id="cm-dest" placeholder="예: 강남" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"><div class="ac-list" hidden></div></div>
   </div>
   <div class="cm-row">
+    <label for="cm-dest2">두 번째 직장 <small>(맞벌이 · 선택)</small></label>
+    <div class="ac-wrap"><input id="cm-dest2" placeholder="예: 여의도 — 비우면 한 곳만" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"><div class="ac-list" hidden></div></div>
+  </div>
+  <div class="cm-row">
     <label for="cm-limit">최대 소요 시간</label>
     <select id="cm-limit">${LIMITS.map(m => `<option value="${m}"${m === maxMin ? ' selected' : ''}>${m}분 안</option>`).join('')}</select>
   </div>
@@ -181,6 +208,12 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     // 목록을 고르지 않고 이름만 쳐서 Enter/변경: 예전처럼 이름(또는 '시청 · 부산 연제구')으로 찾는다
     dest.addEventListener('change', () => { if (dest.dataset.sid) return; const s = findByLabel(dest.value); if (s) { destId = s.properties.id; render(true); } });
     dest.addEventListener('keydown', e => { if (e.key === 'Enter' && !dest.dataset.sid) { const s = findByLabel(dest.value); if (s) { destId = s.properties.id; render(true); } } });
+    const dest2 = panel.querySelector('#cm-dest2');
+    if (typeof window.KR_attachAutocomplete === 'function') window.KR_attachAutocomplete(dest2);
+    const setDest2 = id => { dest2Id = id && byId.has(id) && id !== destId ? id : null; render(true); };
+    dest2.addEventListener('ac:pick', () => setDest2(dest2.dataset.sid));
+    dest2.addEventListener('change', () => { if (!dest2.value.trim()) return setDest2(null); if (dest2.dataset.sid) return; const s = findByLabel(dest2.value); setDest2(s ? s.properties.id : null); });
+    dest2.addEventListener('keydown', e => { if (e.key === 'Enter' && !dest2.dataset.sid) { const s = dest2.value.trim() ? findByLabel(dest2.value) : null; setDest2(s ? s.properties.id : null); } });
     panel.querySelector('#cm-limit').addEventListener('change', e => { maxMin = +e.target.value; render(true); });
     panel.querySelector('#cm-unopened').addEventListener('change', e => { withUnopened = e.target.checked; render(false); });
     const cw = panel.querySelector('#cm-wait');
@@ -249,17 +282,20 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
       headwayTried = true;
       window.KR_ensureHeadways().then(ok => { headwayFailed = !ok; if (active) render(false); });
     }
-    lastRows = compute(destId, maxMin, { withUnopened });
+    const d2 = dest2Id ? byId.get(dest2Id) : null;
+    const d2in = panel.querySelector('#cm-dest2');
+    if (d2in) { if (d2) d2in.value = optionLabel(d2); else if (document.activeElement !== d2in) { d2in.value = ''; delete d2in.dataset.sid; } }
+    lastRows = computeBoth(maxMin, { withUnopened });
     try {
       ensureLayers();
       map.getSource('cm-stations').setData({
         type: 'FeatureCollection',
         features: lastRows.map(r => ({ type: 'Feature', properties: { id: r.id, min: r.min, color: bandOf(r.min)[1] }, geometry: { type: 'Point', coordinates: r.coord } }))
       });
-      map.getSource('cm-dest').setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: dest.geometry.coordinates } }] });
+      map.getSource('cm-dest').setData({ type: 'FeatureCollection', features: [dest].concat(d2 ? [d2] : []).map(s => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: s.geometry.coordinates } })) });
       if (fit && lastRows.length) {
         let a = 1e9, b = 1e9, c = -1e9, d = -1e9;
-        for (const r of lastRows.concat([{ coord: dest.geometry.coordinates }])) {
+        for (const r of lastRows.concat([{ coord: dest.geometry.coordinates }], d2 ? [{ coord: d2.geometry.coordinates }] : [])) {
           a = Math.min(a, r.coord[0]); b = Math.min(b, r.coord[1]); c = Math.max(c, r.coord[0]); d = Math.max(d, r.coord[1]);
         }
         map.fitBounds([[a, b], [c, d]], { padding: 60, duration: 500, maxZoom: 13 });
@@ -276,10 +312,11 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     const defEl = panel.querySelector('#cm-def'), noteEl = panel.querySelector('#cm-wait-note');
     if (defEl) defEl.textContent = wc.def;
     if (noteEl) noteEl.textContent = wc.note;
-    sum.innerHTML = `<b>${esc(dest.properties.name_ko)}</b>까지 ${maxMin}분 안: <b>${lastRows.length}</b>역` +
+    sum.innerHTML = (d2 ? `<b>${esc(dest.properties.name_ko)}</b>·<b>${esc(d2.properties.name_ko)}</b> <b>둘 다</b> ${maxMin}분 안: <b>${lastRows.length}</b>역 <small>(분 = 둘 중 긴 쪽)</small>`
+      : `<b>${esc(dest.properties.name_ko)}</b>까지 ${maxMin}분 안: <b>${lastRows.length}</b>역`) +
       (withUnopened ? ' (개통 예정 포함)' : '') + hwNote + '<br>' + per +
       // 회장님 11-14 B: 같은 목적지·같은 분으로 '지금 | 개통 후' 두 칸 지도 카드 (station-share.js drawReach)
-      (typeof StationShareImage !== 'undefined' && StationShareImage.saveReach ? '<button type="button" class="cm-reach-share"><i data-ic="camera"></i> 개통 전/후 지도 카드로 공유</button>' : '');
+      (!d2 && typeof StationShareImage !== 'undefined' && StationShareImage.saveReach ? '<button type="button" class="cm-reach-share"><i data-ic="camera"></i> 개통 전/후 지도 카드로 공유</button>' : '');
     renderList();
   }
 
@@ -310,7 +347,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
       const pp = pOn ? `<span class="cm-pp">${r.pp != null ? '평당 ' + StationPrice.pp(r.pp) : '시세 —'}` +
         (r.jr != null ? ` · 전세가율 ${Math.round(r.jr * 100)}%${r.jr >= 0.8 ? ' (주의)' : ''}` : '') + `</span>` : '';
       return `<li><button type="button" data-id="${esc(r.id)}"><span>${esc(r.name)}${reg ? ' <small>· ' + esc(reg) + '</small>' : ''}</span>` +
-        `<span>${pp} <span class="cm-min">${r.min}분</span></span></button></li>`;
+        `<span>${pp} <span class="cm-min">${r.min}분</span>${r.m1 != null ? ` <small class="cm-both" title="첫째·둘째 직장까지">${r.m1}·${r.m2}</small>` : ''}</span></button></li>`;
     }).join('') + (rows.length > shown.length ? `<li class="cm-note">외 ${rows.length - shown.length}역 — 시간을 줄이면 목록이 짧아집니다</li>` : '');
     syncSort(pOn);
   }
@@ -320,10 +357,10 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     const btn = 'style="margin-top:6px;padding:5px 10px;border:1px solid var(--border,#ddd);border-radius:6px;background:var(--input,#fff);color:inherit;font-weight:600;cursor:pointer"';
     const maxL = LIMITS[LIMITS.length - 1];
     // 시간을 늘리면 나오는 가장 짧은 한도
-    const up = LIMITS.filter(m => m > maxMin).map(m => [m, compute(destId, m, { withUnopened }).length]).find(x => x[1] > 0);
+    const up = LIMITS.filter(m => m > maxMin).map(m => [m, computeBoth(m, { withUnopened }).length]).find(x => x[1] > 0);
     // 개통 예정을 넣으면 나오는 가장 짧은 한도(지금 한도부터) — 버튼이 그 한도까지 같이 맞춘다
-    const unop = up || withUnopened ? null : [maxMin].concat(LIMITS.filter(m => m > maxMin)).map(m => [m, compute(destId, m, { withUnopened: true }).length]).find(x => x[1] > 0);
-    let h = `<li class="cm-empty" style="padding:8px 4px;line-height:1.5">${maxMin}분 안에 갈 수 있는 다른 역이 없어요.`;
+    const unop = up || withUnopened ? null : [maxMin].concat(LIMITS.filter(m => m > maxMin)).map(m => [m, computeBoth(m, { withUnopened: true }).length]).find(x => x[1] > 0);
+    let h = `<li class="cm-empty" style="padding:8px 4px;line-height:1.5">${dest2Id ? '두 직장 모두 ' : ''}${maxMin}분 안에 갈 수 있는 다른 역이 없어요.`;
     if (up) h += `<br>${up[0]}분으로 늘리면 <b>${up[1]}</b>역이 나와요.<br><button type="button" data-more="${up[0]}" ${btn}>${up[0]}분으로 늘리기</button>`;
     else if (unop) h += `<br>개통 예정 노선을 넣으면 ${unop[0]}분 안에 <b>${unop[1]}</b>역이 나와요.<br><button type="button" data-unopened="1" data-limit="${unop[0]}" ${btn}>개통 예정 노선 포함${unop[0] !== maxMin ? ' · ' + unop[0] + '분' : ''}</button>`;
     else h += `<br>${Math.max(maxMin, maxL)}분 안에도 이어지는 역이 없어요. 길찾기로 직접 찾아 보세요.`;
@@ -344,6 +381,7 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
   function show(stationId, opts) {
     ensurePanel();
     if (stationId && byId.has(stationId)) destId = stationId;
+    if (opts && opts.dest2 !== undefined) dest2Id = opts.dest2 && byId.has(opts.dest2) && opts.dest2 !== destId ? opts.dest2 : null;
     if (opts && LIMITS.indexOf(+opts.limit) >= 0) { maxMin = +opts.limit; const ls = panel.querySelector('#cm-limit'); if (ls) ls.value = String(maxMin); }
     if (!destId) {
       const g = ST.find(s => s.properties.name_ko === '강남');
@@ -389,5 +427,6 @@ border-bottom:1px solid var(--border,#eee);background:none;color:inherit;font:in
     map.on('style.load', () => { if (active) render(false); });
   }
 
-  window.CommuteMap = { init, show, hide, isActive, compute, reachCardInfo, _debug: { bandOf, optionLabel, findByLabel } };
+  function shareQuery() { return destId ? 'cm=' + encodeURIComponent(destId) + (dest2Id ? '&cm2=' + encodeURIComponent(dest2Id) : '') + '&t=' + maxMin : ''; }
+  window.CommuteMap = { init, show, hide, isActive, compute, computeBoth, reachCardInfo, shareQuery, dest2: () => dest2Id, _debug: { bandOf, optionLabel, findByLabel } };
 })();

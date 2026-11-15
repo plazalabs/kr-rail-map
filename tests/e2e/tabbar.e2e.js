@@ -32,7 +32,7 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
     return { tabs, bottom: Math.round(r.bottom), h: Math.round(r.height), vis: getComputedStyle(bar).display,
       tb: getComputedStyle(document.getElementById('toolbar')).display };
   })()`);
-  R.check('탭 5칸 이름', lay.tabs.join(',') === '길찾기,떡상,시세,게시판,더보기', lay.tabs);
+  R.check('탭 5칸 이름', lay.tabs.join(',') === '길찾기,개통효과,시세,게시판,더보기', lay.tabs);
   R.check('탭 바가 화면 맨 아래', lay.vis !== 'none' && lay.bottom === 844 && lay.h >= 56, lay);
   R.check('평소엔 툴바 숨김', lay.tb === 'none', lay.tb);
 
@@ -82,7 +82,7 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
       tabs: [...t.querySelectorAll('[data-tab]')].filter(e => getComputedStyle(e).display !== 'none').map(e => (e.querySelector('span') || e).textContent.trim()),
       tb: getComputedStyle(document.getElementById('toolbar')).display, sbLeft: Math.round(document.getElementById('sidebar').getBoundingClientRect().left) }; })()`);
   R.check('PC: 왼쪽 세로 레일 + 툴바 보임', rail.disp !== 'none' && rail.x === 0 && rail.w <= 72 && rail.h === rail.vh && rail.tb !== 'none' && rail.sbLeft >= rail.w, rail);
-  R.check('PC 레일 항목', rail.tabs.join(',') === '노선,길찾기,떡상,시세,게시판,사용법', rail.tabs);
+  R.check('PC 레일 항목', rail.tabs.join(',') === '노선,길찾기,개통효과,시세,게시판,사용법', rail.tabs);
   const sideP = await d.evaluate(center('#tabbar [data-tab="side"]'));
   await d.click(sideP.x, sideP.y); await sleep(500);
   const hid = await d.evaluate(`document.body.classList.contains('sidebar-hidden') && getComputedStyle(document.getElementById('sidebar')).display === 'none'`);

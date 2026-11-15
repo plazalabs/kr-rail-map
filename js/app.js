@@ -862,7 +862,7 @@ const clickId = id => () => { const b = document.getElementById(id); if (b) b.cl
 const PALETTE = [
   { id: 'route', label: '길찾기', hint: '출발·도착 역으로 경로·요금', keys: ['길찾기', '경로', '가는 길', '환승', '요금'], ic: 'route',
     run: () => { const p = document.getElementById('route-panel'); if (p) p.hidden = false; const f = document.getElementById('route-from'); if (f) f.focus(); } },
-  { id: 'rocket', label: 'GTX 떡상 랭킹', hint: '개통하면 우리 역은 몇 등?', keys: ['떡상', '랭킹', '순위', 'gtx', '개통 후'], ic: 'trend', run: clickId('rocket-menu-btn') },
+  { id: 'rocket', label: 'GTX 개통 효과 순위', hint: '개통하면 우리 역은 몇 등? (떡상 랭킹)', keys: ['떡상', '랭킹', '순위', 'gtx', '개통 후', '개통 효과'], ic: 'trend', run: clickId('rocket-menu-btn') },
   { id: 'market', label: 'RAIL MARKET MAP (역 타일)', hint: '노선별로 얼마나 빨라지나 한눈에', keys: ['타일', '마켓', 'market', '히트맵', '한눈에'], ic: 'chart',
     run: () => { if (typeof MarketMap !== 'undefined') MarketMap.open({}); } },
   { id: 'quiz', label: '나에게 맞는 역 찾기', hint: '질문 4개로 직장·예산에 맞는 역 TOP 3', keys: ['추천', '나에게', '맞는 역', '어디 살', '이사', '유형', '테스트', '질문'], ic: 'help',
@@ -1192,7 +1192,8 @@ function restoreFromUrl() {
   }
   // ?cm=역ID&t=분 — 통근권 카드(개통 전/후 지도)를 받은 사람은 같은 목적지·분으로 통근권을 연다 (11-15)
   const cm = q.get('cm'), cmf = cm && stationById(cm);
-  if (cmf && typeof CommuteMap !== 'undefined') setTimeout(() => CommuteMap.show(cm, { limit: q.get('t') }), 300);
+  // cm2 = 두 번째 직장 (맞벌이 통근권, 11-15)
+  if (cmf && typeof CommuteMap !== 'undefined') setTimeout(() => CommuteMap.show(cm, { limit: q.get('t'), dest2: q.get('cm2') || null }), 300);
   const c = q.get('c');
   if (c) {
     const [lng, lat, z] = c.split(',').map(Number);

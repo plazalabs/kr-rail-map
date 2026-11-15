@@ -60,5 +60,19 @@ console.log('\n[색 구간]');
 const B = CM._debug.bandOf;
 check('15분 → 첫 구간, 46분 → 60분 구간, 91분 → 없음', B(15)[0] === 15 && B(46)[0] === 60 && B(91) === null);
 
+console.log('\n[두 직장 — 맞벌이 통근권 (11-15)]');
+{
+  const yd = byName('여의도').find(f => (f.properties.lines || []).includes('seoul-subway-line-5'));
+  const A = gangnam.properties.id, Bid = yd.properties.id;
+  const both = CM.computeBoth(45, {}, A, Bid);
+  const ra = new Map(CM.compute(A, 45, {}).map(r => [r.id, r.min])), rb = new Map(CM.compute(Bid, 45, {}).map(r => [r.id, r.min]));
+  ra.set(A, 0); rb.set(Bid, 0);
+  check(`강남·여의도 둘 다 45분 안 역이 있고(${both.length}) 한 곳만보다 적다`, both.length > 10 && both.length < ra.size && both.length < rb.size, both.length);
+  check('모든 역이 두 직장 각각 45분 안, 분 = 둘 중 긴 쪽', both.every(r => r.m1 === ra.get(r.id) && r.m2 === rb.get(r.id) && r.min === Math.max(r.m1, r.m2) && r.min <= 45));
+  check('긴 쪽 분이 짧은 순으로 정렬', both.every((r, i) => i === 0 || both[i - 1].min <= r.min));
+  check('두 직장 역 자신도 들어감(자기 직장 0분)', both.some(r => r.id === A && r.m1 === 0) && both.some(r => r.id === Bid && r.m2 === 0));
+  check('두 번째 직장이 없으면 한 곳 계산과 같음', CM.computeBoth(45, {}, A, null).length === CM.compute(A, 45, {}).length);
+}
+
 console.log(`\n통근권: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

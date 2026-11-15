@@ -64,7 +64,8 @@ const root = BASE.replace(/#.*$/, '').replace(/\?.*$/, '');
       const sid = STATIONS.find(f => f.properties.name_ko === '서울').properties.id;
       const out = { sid };
       RocketPanel.open({ st: sid }); await new Promise(r => setTimeout(r, 1500));
-      const sb = document.querySelector('.rkp [data-act="share"]'); if (sb) { sb.click(); await new Promise(r => setTimeout(r, 2500)); }
+      // 카드 그림 만들기는 느린 CI 러너에서 2.5초를 넘긴다(v267 CI 실패) — 고정 대기 대신 공유될 때까지 최대 10초
+      const sb = document.querySelector('.rkp [data-act="share"]'); if (sb) { sb.click(); for (let i = 0; i < 50 && !window.__shared; i++) await new Promise(r => setTimeout(r, 200)); }
       out.station = window.__shared && window.__shared.text; window.__shared = null;
       RocketPanel.close();
       CommuteMap.show(sid, { limit: 60 }); await new Promise(r => setTimeout(r, 1500));

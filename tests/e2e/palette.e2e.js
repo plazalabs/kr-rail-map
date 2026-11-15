@@ -33,7 +33,8 @@ const enter = async b => { await b.key('Enter', 'Enter', 13); await sleep(900); 
   R.check("빈 검색창 → '빠른 실행' 5개", /빠른 실행/.test(quick.head) && quick.acts.length === 5 && /길찾기/.test(quick.acts[0]), quick);
 
   let top = await typeSearch(b, '떡상');
-  R.check("'떡상' → 맨 위 'GTX 떡상 랭킹'", top[0] && top[0].action && /떡상 랭킹/.test(top[0].name), top);
+  // 메뉴 이름은 '개통 효과'(회장님 11-15) — '떡상'으로 찾아도 맨 위에 나온다
+  R.check("'떡상' → 맨 위 'GTX 개통 효과 순위'", top[0] && top[0].action && /개통 효과 순위/.test(top[0].name), top);
   await enter(b);
   const rk = await b.evaluate(`typeof RocketPanel !== 'undefined' && RocketPanel.isOpen()`);
   R.check("Enter → 떡상 패널 열림", rk === true);

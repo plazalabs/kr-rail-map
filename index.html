@@ -87,7 +87,7 @@
     <div class="panel-head">지도 레이어</div>
     <div class="layer-row">
       <label class="layer-opt"><input type="checkbox" id="layer-station-area"> 역세권 범위 <span class="sa-approx">근사</span></label>
-      <label class="layer-opt"><input type="checkbox" id="layer-rocket"> <i data-ic="trend"></i> 떡상 지도 <span class="sa-approx">GTX 개통 후</span></label>
+      <label class="layer-opt"><input type="checkbox" id="layer-rocket"> <i data-ic="trend"></i> 개통 효과 지도 <span class="sa-approx">GTX 개통 후</span></label>
       <div id="rk-legend" class="jn-legend" hidden><span><i style="background:var(--map-rocket)"></i>떡상 ▲100+</span><span><i style="background:var(--map-up)"></i>상승 ▲10+</span><span><i style="background:var(--map-flat)"></i>보합</span><span><i style="background:var(--map-down)"></i>상대 하락</span><span><i style="background:var(--map-new)"></i>신규</span><span class="rk-more">▲ = 개통 후 접근성 <b>순위가 오른 계단 수</b> (집값 아님) · 상대 하락 = 다른 역이 더 좋아져 밀림 · 수도권 역만 · 점이 클수록 업무지구에 가깝다</span></div>
       <label class="layer-opt"><input type="checkbox" id="layer-jeonse"> 전세가율 색칠 <span class="sa-approx">투자</span></label>
       <div id="jn-legend" class="jn-legend" hidden><span><i style="background:#1e63d6"></i>50% 미만</span><span><i style="background:#2e9e4f"></i>50~70%</span><span><i style="background:#f59e0b"></i>70~80%</span><span><i style="background:#c62828"></i>80% 이상</span></div>
@@ -130,7 +130,7 @@
     <button id="m-search" type="button" class="mob-only" aria-label="역 검색 열기"><i data-ic="search"></i><span>역 이름 검색</span></button>
 
     <div id="toolbar" role="toolbar" aria-label="지도 도구">
-      <button id="rocket-btn" class="tb-rocket j7-off" data-rocket-open aria-pressed="false" title="GTX 개통하면 우리 역은 몇 등이 될까 — 지도 안 떡상 랭킹"><i data-ic="trend"></i> GTX 떡상</button>
+      <button id="rocket-btn" class="tb-rocket j7-off" data-rocket-open aria-pressed="false" title="GTX 개통하면 우리 역은 몇 등이 될까 — 지도 안 개통 효과 순위"><i data-ic="trend"></i> GTX 개통 효과</button>
       <div class="tb-group" role="group" aria-label="배경 지도">
         <button data-style="normal" class="active" title="일반 지도" aria-label="일반 지도로 보기" aria-pressed="true">일반</button>
         <button data-style="satellite" title="위성 지도" aria-label="위성 지도로 보기" aria-pressed="false">위성</button>
@@ -157,7 +157,7 @@
           <button id="invest-btn" role="menuitem">역세권 투자분석<small class="tb-desc">지도 한 곳을 눌러 역 접근성 보기</small></button>
           <button id="coverage-btn" role="menuitem">노선 영향권<small class="tb-desc">한 노선 역마다 걸어갈 수 있는 범위</small></button>
           <button id="commute-btn" role="menuitem">통근권 찾기<small class="tb-desc">직장 역까지 N분 안의 역</small></button>
-          <button id="rocket-menu-btn" class="j7-off" role="menuitem" data-rocket-open><i data-ic="trend"></i> GTX 떡상 랭킹<small class="tb-desc">개통하면 우리 역은 몇 등?</small></button>
+          <button id="rocket-menu-btn" class="j7-off" role="menuitem" data-rocket-open><i data-ic="trend"></i> GTX 개통 효과 순위<small class="tb-desc">개통하면 우리 역은 몇 등?</small></button>
           <button id="market-btn" role="menuitem" data-market-open><i data-ic="chart"></i> RAIL MARKET MAP (역 타일)<small class="tb-desc">노선별로 얼마나 빨라지나 한눈에</small></button>
           <button id="quiz-btn" role="menuitem" data-quiz-open><i data-ic="help"></i> 나에게 맞는 역 찾기<small class="tb-desc">질문 4개로 직장·예산에 맞는 역 TOP 3</small></button>
         </div>
@@ -179,7 +179,7 @@
     <nav id="tabbar" aria-label="주요 메뉴">
       <button type="button" data-tab="side" title="노선·검색 패널 열고 닫기"><i data-ic="layers"></i><span>노선</span></button>
       <button type="button" data-tab="route"><i data-ic="route"></i><span>길찾기</span></button>
-      <button type="button" data-tab="rocket"><i data-ic="trend"></i><span>떡상</span></button>
+      <button type="button" data-tab="rocket"><i data-ic="trend"></i><span>개통효과</span></button>
       <button type="button" data-tab="price"><i data-ic="won"></i><span>시세</span></button>
       <a href="board.html" data-tab="board"><i data-ic="message"></i><span>게시판</span></a>
       <button type="button" data-tab="more" aria-expanded="false" aria-controls="toolbar"><i data-ic="more"></i><span>더보기</span></button>
@@ -214,7 +214,7 @@
       <div class="rp-opts">
         <label class="rp-opt" for="route-unopened"><input type="checkbox" id="route-unopened"> 개통 예정 노선 포함 <span class="rp-opt-sub">(기본: 지금 운행 중인 노선만)</span></label>
         <label class="rp-opt" for="route-band" title="갈아탈 때(배차 넣기면 처음 탈 때도) 기다리는 시간을 어느 시간대 공식 배차로 셀지"><span class="rp-opt-sub">시간대</span> <select id="route-band" aria-label="시간대"><option value="peak">출근 7~9시</option><option value="off">평시 10~16시</option></select></label>
-        <label class="rp-opt" for="route-peak" title="켜면 처음 탈 때도 출퇴근 시간 공식 배차의 절반을 기다린다고 봅니다 — 떡상 순위·역 타일·통근권과 같은 설정"><input type="checkbox" id="route-peak"> 배차 넣기 <span class="rp-opt-sub">(처음 열차 기다림까지)</span></label>
+        <label class="rp-opt" for="route-peak" title="켜면 처음 탈 때도 출퇴근 시간 공식 배차의 절반을 기다린다고 봅니다 — 개통 효과 순위·역 타일·통근권과 같은 설정"><input type="checkbox" id="route-peak"> 배차 넣기 <span class="rp-opt-sub">(처음 열차 기다림까지)</span></label>
       </div>
       <!-- 결과 전체(역 목록)를 낭독기가 통째로 읽지 않게 aria-live 는 뺐다 — 요약 한 줄은 #status 가 읽는다 (11-15) -->
       <div id="route-result" role="region" aria-label="경로 검색 결과"></div>

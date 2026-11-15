@@ -1,5 +1,5 @@
 /* e2e: 공통 '출퇴근 배차 넣기' (js/wait-setting.js · D9, 2026-11-13)
- *  - 기본 꺼짐: 역 타일 범례 '열차 대기 뺌'
+ *  - 기본 꺼짐: 역 타일 범례 '처음 열차 대기 뺌'
  *  - 역 타일에서 켜면 → 범례 '출퇴근 배차 넣음', 떡상 패널 '배차 포함' 눌림, 통근권 체크 켜짐 (한 값 공유)
  *  - 새로고침해도 남음(이 브라우저) → 끄면 다시 기본
  * 실행: node tests/e2e/run.js --only wait-setting
@@ -18,7 +18,7 @@ async function ready(b) {
   await b.goto(BASE + '?market=1#normal', 1500); await ready(b);
   for (let i = 0; i < 40; i++) { if (await b.evaluate(`document.querySelectorAll('#mm-panel .mm-tile').length > 30`)) break; await sleep(300); }
   const l0 = await b.evaluate(`({ peak: KR_WAIT.isPeak(), legend: document.querySelector('#mm-panel .mm-legend').textContent })`);
-  R.check("기본 꺼짐 — 범례 '열차 대기 뺌'", !l0.peak && /열차 대기 뺌/.test(l0.legend), l0);
+  R.check("기본 꺼짐 — 범례 '처음 열차 대기 뺌'", !l0.peak && /처음 열차 대기 뺌/.test(l0.legend), l0);
   const before = await b.evaluate(`(() => { const m = MarketMap.model(); let s = 0; m.groups.forEach(G => G.tiles.forEach(t => { s += t.row.aft.min || 0; })); return s; })()`);
   await b.evaluate(`(() => { const c = document.querySelector('#mm-panel .mm-wait'); c.checked = true; c.dispatchEvent(new Event('change')); })()`); await sleep(600);
   const l1 = await b.evaluate(`(() => { const m = MarketMap.model(); let s = 0; m.groups.forEach(G => G.tiles.forEach(t => { s += t.row.aft.min || 0; })); return { peak: KR_WAIT.isPeak(), legend: document.querySelector('#mm-panel .mm-legend').textContent, sum: s }; })()`);

@@ -46,6 +46,20 @@ def norm(n):
     return n
 
 
+def eff_headway(ts, n):
+    """불규칙 배차 (11-15): 아무 때나 닿는 사람의 평균 기다림 = Σ간격² ÷ (2·Σ간격) → 환산 배차 = Σ간격² ÷ Σ간격.
+    고르게 오면 120/n 과 같고, 몰려 오면 커진다. 1대면 120, 0대면 999"""
+    if not n:
+        return 999
+    if n == 1 or len(ts) < 2:
+        return 120 / n
+    ts = sorted(ts)
+    g = [b - a for a, b in zip(ts, ts[1:]) if b > a]
+    if not g:
+        return 120 / n
+    return max(120 / n, sum(x * x for x in g) / sum(g))
+
+
 def seoul_metro(path):
     """(역별 촘촘한 쪽, 방향별 '역>다음역') — 열차코드마다 시각 순으로 늘어놓아 다음 역을 안다 (2026-11-15).
     출근 시간 1대뿐인 역도 남긴다(120분), 낮엔 서는데 출근 시간 0대면 999."""
@@ -64,8 +78,8 @@ def seoul_metro(path):
         m = int(t[:2]) * 60 + int(t[3:5])
         if m < 180: m += 1440   # 자정 넘은 열차
         trains[(r['호선'], r['열차코드'], r['방향'], r['출발역'], r['도착역'], r['급행여부'])].append((m, norm(r['역사명']), bool(r['열차출발시간'])))
-    cnt = collections.Counter(); day = collections.Counter()
-    exp_cnt = collections.Counter(); exp_day = collections.Counter()   # 급행: (호선, 역, 방향) — 일반 열차의 다음 역 쪽에도 센다
+    cnt = collections.Counter(); day = collections.Counter(); deps = collections.defaultdict(list)
+    exp_cnt = collections.Counter(); exp_day = collections.Counter(); exp_deps = collections.defaultdict(list)   # 급행: (호선, 역, 방향) — 일반 열차의 다음 역 쪽에도 센다
     local_next = collections.defaultdict(collections.Counter)          # (호선, 역, 방향) → 일반 열차 다음 역
     for (ln, tno, d, a, b, ex), seq in trains.items():
         seq.sort()
@@ -76,9 +90,12 @@ def seoul_metro(path):
             day[(ln, st, nxt)] += 1
             if 420 <= m < 540:
                 cnt[(ln, st, nxt)] += 1
+                deps[(ln, st, nxt)].append(m)
             if ex not in ('', '0'):
                 exp_day[(ln, st, d, nxt)] += 1
-                if 420 <= m < 540: exp_cnt[(ln, st, d, nxt)] += 1
+                if 420 <= m < 540:
+                    exp_cnt[(ln, st, d, nxt)] += 1
+                    exp_deps[(ln, st, d, nxt)].append(m)
             else:
                 local_next[(ln, st, d)][nxt] += 1
     # 급행은 일반 열차가 서는 다음 역을 지나쳐 같은 방향으로 간다 → 그 방향(일반 열차 다음 역) 배차에도 더한다.
@@ -87,10 +104,11 @@ def seoul_metro(path):
         for nxt in local_next.get((ln, st, d), {}):
             if nxt != enxt:   # 급행이 그 역에 서면 이미 셌다
                 cnt[(ln, st, nxt)] += exp_cnt.get((ln, st, d, enxt), 0)
+                deps[(ln, st, nxt)].extend(exp_deps.get((ln, st, d, enxt), []))
     per = collections.defaultdict(dict); dirs = collections.defaultdict(dict)
     for (ln, st, nxt), nd in day.items():
         n = cnt.get((ln, st, nxt), 0)
-        hw = 120 / n if n else 999
+        hw = eff_headway(deps.get((ln, st, nxt), []), n)
         dirs[ln][st + '>' + nxt] = hw
         if n:
             per[ln][st] = min(per[ln].get(st, 999), hw)
@@ -152,8 +170,17 @@ def main():
         if not k:
             continue
         sts = match_names({norm(s): v for s, v in k['stations'].items()}, ours_of[lid])
+        kd = {'>'.join(norm(x) for x in kk.split('>', 1)): v for kk, v in k.get('dir', {}).items()}
         lines[lid] = {'min': k['median'], 'src': 'official', 'source': SRC_KRIC, 'stations': sts,
-                      'dir': match_dir({'>'.join(norm(x) for x in kk.split('>', 1)): v for kk, v in k.get('dir', {}).items()}, ours_of[lid])}
+                      'dir': match_dir(kd, ours_of[lid])}
+        if lid == 'gyeongui-jungang-line':
+            # 경의선 서울역 방면(지도에선 다른 노선 id) — 예전엔 이 노선 역(서울·신촌)이 이름 맞추기에서 빠져 배차가 없었다 (11-15, 리뷰 2-1)
+            gs = 'gyeongui-line-seoul'
+            gst = match_names({norm(s): v for s, v in k['stations'].items()}, ours_of[gs])
+            gdir = match_dir(kd, ours_of[gs])
+            if gst or gdir:
+                v = sorted(gst.values()) or [k['median']]
+                lines[gs] = {'min': round(statistics.median(v), 2), 'src': 'official', 'source': SRC_KRIC, 'stations': gst, 'dir': gdir}
     lines['yongin-light-rail-transit'] = {'min': 4, 'src': 'official', 'source': "레일포털 전체 도시철도운행정보 — 에버라인 평일 '운영시간 17:00~20:00 운행간격 4분' (퇴근)"}
     lines['incheon-subway-line-2'] = {'min': 2.5, 'src': 'official', 'source': "레일포털 전체 도시철도운행정보 — 인천 2호선 평일 '운행시격 2분30초~10분' 중 가장 짧은 값(출퇴근)"}
     gtx_a = "국토교통부: GTX-A 운정중앙~서울역 출퇴근 배차 10분 → 6.25분 (2025-03-01 시행)"
@@ -168,7 +195,7 @@ def main():
         lines[lid] = {'min': 5, 'src': 'estimate', 'source': '개통 전 — 공식 배차 없음 (추정)'}
     doc = {
         'schema': 'kr-rail-map/headways/3', 'updated': '2026-11-15',
-        'basis': '출퇴근(평일 07~09시) 배차 간격(분). 운영기관 공식 시간표 기준, 개통 전 노선은 추정. dir = 방향별(역>다음역), 999 = 출근 시간 열차 없음.',
+        'basis': '출퇴근(평일 07~09시) 배차 간격(분). 운영기관 공식 시간표 기준, 개통 전 노선은 추정. dir = 방향별(역>다음역) 환산 배차(불규칙하면 Σ간격²÷Σ간격 — 평균 기다림의 2배), 999 = 출근 시간 열차 없음.',
         'default': {'urban': 5, 'metro': 5, 'conventional': 30, 'ktx': 0},
         'lines': lines,
     }

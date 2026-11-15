@@ -68,7 +68,9 @@ check('개통 연도 읽기', RT.yearOf('2031년 목표 (2026년 9월 착공)') 
   const at = y => RT.compute(doc, { weight: 'avg', region: 'capital', at: y }).rows.find(r => r.name === '광운대');
   const k27 = at(2027), k31 = at(2031);
   // 2026-11-12 코레일 구간 공식 시각표 시간: 광운대 지금 25/42/28분 (전엔 추정 26/44/24)
-  check('광운대 2027년: 아직 GTX-C 전 — 지금과 같은 시간', k27 && k27.aft.times.join() === k27.now.times.join(), k27 && k27.aft.times.join() + ' / 지금 ' + k27.now.times.join());
+  // 2026-11-15: 순위에 환승 기다림을 넣자 2027 동북선(광운대→월계 1호선 → 동북선 → 왕십리 → 수인분당 선릉)이
+  // 지금 길(회기 경의중앙 → 왕십리)보다 1분 빨라짐 — GTX-C 전이라 도심·여의도는 그대로, 강남권만 40→39
+  check('광운대 2027년: 아직 GTX-C 전 — 도심·여의도 그대로, 강남권은 동북선으로 1분', k27 && k27.aft.times[0] === k27.now.times[0] && k27.aft.times[1] === k27.now.times[1] && k27.aft.times[2] === k27.now.times[2] - 1, k27 && k27.aft.times.join() + ' / 지금 ' + k27.now.times.join());
   check('광운대 2031년: GTX-C 개통 — 9/15/9분, 10위 안', k31 && k31.aft.times.join() === '9,15,9' && k31.aft.rank <= 10, k31 && k31.aft.rank);
   const kRow = doc.rows.find(r => r.n === '광운대');
   // 개통은 길을 더할 뿐 — 단, 새 역 정차 단계(창릉 2030·삼성 2028)가 들어온 해에는 그 구간을 지나던 열차가 서므로
@@ -93,7 +95,9 @@ console.log('\n[⏱ 출퇴근 배차] data/headways.json — 공식 시간표로
   check('추정은 개통 전 노선뿐 (운행 중 노선 추정 0)', est.every(([id]) => status.get(id) && status.get(id) !== 'open'), est.filter(([id]) => status.get(id) === 'open').map(([id]) => id).join(','));
   check('공식 값마다 출처가 적혀 있음', official.every(([, v]) => /시각표|운행정보|국토교통부/.test(v.source || '')));
   const st = (id, n) => (H.lines[id].stations || {})[n];
-  check('2호선 강남 3.2분 · 1호선 수원 6.7분 · 경춘선 중앙 20분 (시각표에서 센 값)', st('seoul-subway-line-2', '강남') === 3.16 && st('seoul-metropolitan-subway-line-1', '수원') === 6.67 && H.lines['seoul-metropolitan-subway-gyeongchun-line'].min === 20);
+  // 2026-11-15 불규칙 배차(A10): 평균 간격이 아니라 기다림 기준 실효 배차 Σ간격²÷Σ간격 — 간격이 고르지 않을수록 길어진다
+  //   (전 값 강남 3.16·수원 6.67·경춘 중앙값 20 → 3.48·7.28·22.21)
+  check('2호선 강남 3.5분 · 1호선 수원 7.3분 · 경춘선 중앙값 22.2분 (시각표 실효 배차)', st('seoul-subway-line-2', '강남') === 3.48 && st('seoul-metropolitan-subway-line-1', '수원') === 7.28 && H.lines['seoul-metropolitan-subway-gyeongchun-line'].min === 22.21);
   check('GTX-A 운정중앙~서울역 6.25분 (국토부), 수서~동탄 17분', H.lines['great-train-express-line-a'].min === 6.25 && H.lines['great-train-express-line-a'].south_min === 17);
   const c0 = RT.compute(doc, { weight: 'avg', region: 'capital' }), c1 = RT.compute(doc, { weight: 'avg', region: 'capital', wait: true });
   const k0 = c0.rows.find(r => r.name === '광운대'), k1 = c1.rows.find(r => r.name === '광운대');

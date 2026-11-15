@@ -59,7 +59,7 @@
       g.fillText((n != null && a != null && n > a) ? n + '분 → ' + a + '분' : (a == null ? '—' : a + '분'), 330, y);
       if (n != null && a != null && n > a) { g.fillStyle = '#5fe39a'; g.font = '800 34px ' + F; g.fillText('−' + (n - a) + '분', 720, y); }
     });
-    cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구까지' : '타는 시간 + 갈아타며 걷는 시간(기다림 제외) · 업무지구까지', o.doc && o.doc.updated);
+    cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구까지' : '타는 시간 + 갈아탈 때 걷기·기다림(처음 열차 대기 제외) · 업무지구까지', o.doc && o.doc.updated);
     return k.c;
   }
 
@@ -123,7 +123,7 @@
       g.fillText(L.chg, L.chgX, y + 50);
       g.fillStyle = '#c8d3e6'; g.font = '600 26px ' + FONT; g.fillText(L.rk, L.rkX, y + 48);
     });
-    cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구까지' : '타는 시간 + 갈아타며 걷는 시간(기다림 제외) · 업무지구까지', o.asof);
+    cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구까지' : '타는 시간 + 갈아탈 때 걷기·기다림(처음 열차 대기 제외) · 업무지구까지', o.asof);
     return k.c;
   }
   /* TOP10 한 행의 열 위치 (뮤즈 카드 검수 1순위: '인천 연수'+'접근성' 겹침). 오른쪽 끝부터 ▲N → '접근성 N위 → M위' 를 놓고,
@@ -198,7 +198,7 @@
       g.font = '800 30px ' + F; g.fillStyle = good ? '#5fe39a' : '#9fb3d1';
       g.fillText(tag, k.W - 72 - g.measureText(tag).width, y + 48);
     });
-    cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구 안 가장 가까운 역까지' : '타는 시간 + 갈아타며 걷는 시간(기다림 제외) · 업무지구 안 가장 가까운 역까지', info.asof);
+    cardFooter(k, o.wait ? '타는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림 · 업무지구 안 가장 가까운 역까지' : '타는 시간 + 갈아탈 때 걷기·기다림(처음 열차 대기 제외) · 업무지구 안 가장 가까운 역까지', info.asof);
     return k.c;
   }
   function saveLife(info, o) {

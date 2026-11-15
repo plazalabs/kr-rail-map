@@ -192,7 +192,7 @@ const StationAccess = (() => {
         '계산하지 못했습니다. (지방 일반철도 일부 구간이 여기 해당합니다.)</div>';
     }
     // 68점 감사 5번: 길찾기(환승 대기 포함)와 숫자가 다른 이유를 표 바로 위에
-    let h = '<div class="sa-def">열차 기다리는 시간은 뺀 <b>역끼리 비교용</b> 시간 — 길찾기 시간보다 짧을 수 있어요</div>' +
+    let h = '<div class="sa-def">갈아탈 때 기다림까지 넣은 시간 — <b>길찾기와 같은 기준</b>(처음 열차 기다림은 뺌)</div>' +
       '<table class="sa-tbl"><thead><tr>' +
       '<th class="sa-lab"><span class="sr-only">업무지구</span></th>' +
       '<th class="sa-now">지금</th>' +
@@ -245,8 +245,8 @@ const StationAccess = (() => {
       (inCapital(stationId) ? ' · <a class="sa-rocket" href="./?market=1&st=' + encodeURIComponent(stationId) + '" data-market-st="' + stationId + '"><i data-ic="chart"></i> 타일 지도에서 보기 →</a>' : '') + '</div>';
 
     const tot = (a.rank.after ? a.rank.after.total : 0).toLocaleString();
-    h += '<div class="sa-note">※ 실제 시각표가 아니라 추정값입니다. 열차를 <b>기다리는 시간은 빼고</b> ' +
-      '타고 가는 시간과 갈아타며 걷는 시간만 더했습니다. 두 번째 숫자가 <b>개통 후</b>이고 −N분은 그 차이입니다. ' +
+    h += '<div class="sa-note">※ 실제 시각표가 아니라 추정값입니다. 타고 가는 시간 + 갈아탈 때 걷는 시간 + <b>갈아탈 때 기다리는 시간</b>(공식 출근 시간 배차의 절반)을 ' +
+      '더했습니다. 처음 열차를 기다리는 시간은 뺐습니다(역에 닿는 때에 따라 매번 달라서 — 길찾기와 같은 기준). 두 번째 숫자가 <b>개통 후</b>이고 −N분은 그 차이입니다. ' +
       '순위는 CBD(도심·서울역)·YBD(여의도)·GBD(강남) 세 곳 평균, ' +
       'GBD 중시는 강남을 두 번 센 평균으로 매긴 것으로, ' +
       '전국 ' + tot + '역 가운데 몇 번째인지입니다.</div>';

@@ -684,7 +684,7 @@
     // P6: 단위는 휴대폰에서도 늘 보이게 맨 앞 칸에 (긴 설명 mm-lgx 는 휴대폰에서 숨는다). 타일 칸은 좁아 '만' 만 쓴다
     var unit = st.color === 'price' ? '<span class="mm-unit"><b>단위</b> 만원/평(전용)</span>' : st.color === 'jeonse' ? '<span class="mm-unit"><b>단위</b> 전세가÷매매가 %</span>' : '';
     box.innerHTML = unit + items.map(function (x) { return '<span><i' + (x[0] === Logic.NA_COLOR.bg ? ' class="na"' : '') + ' style="background-color:' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') +
-      '<span class="mm-lgx">' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표) · 타일 숫자도 전세가율' : st.color === 'price' ? '평당가(만원/평) = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상) · 타일 숫자도 평당가' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위 · 타일 숫자 = 오른 계단(▲)' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + ((global.KR_WAIT && KR_WAIT.isPeak()) ? ' · 출퇴근 배차 넣음' : ' · 열차 대기 뺌') + sz) + '</span>';
+      '<span class="mm-lgx">' + esc((st.color === 'jeonse' ? '전세가율 = 역이 속한 법정동, 같은 단지·면적 매매·신규 전세 짝 중위 (집계상 주의 지표) · 타일 숫자도 전세가율' : st.color === 'price' ? '평당가(만원/평) = 역이 속한 법정동 아파트 매매 중위(전용면적, 최근 6개월, 5건 이상) · 타일 숫자도 평당가' : st.color === 'tier' ? '순위 변화 = 지금 순위 → 개통 후 순위 · 타일 숫자 = 오른 계단(▲)' : '빨라지는 분 = 지금 → 개통 후, ' + WLABEL[st.w] + ' 기준') + ((global.KR_WAIT && KR_WAIT.isPeak()) ? ' · 출퇴근 배차 넣음' : ' · 처음 열차 대기 뺌') + sz) + '</span>';
   }
 
   // 목록 보기 — 묶음과 상관없이 한 줄로. 색 기준이 '빨라지는 분'이면 분 큰 순(신규는 맨 앞), '순위 변화'면 오른 계단 큰 순
@@ -1098,7 +1098,7 @@
     var lx = 72, ly = Y + BH + 46; g.font = '600 22px ' + F;
     leg.forEach(function (L) { var w = g.measureText(L[1]).width; if (lx + 30 + w > k.W - 72) return; g.fillStyle = L[0]; g.fillRect(lx, ly - 18, 22, 22); g.fillStyle = '#c8d3e6'; g.fillText(L[1], lx + 30, ly); lx += 30 + w + 22; });
     var src = srcParts().map(function (t) { return t.replace(/: (\S+).*?(?= · \d|$)/, ': $1'); }).join(' · ');
-    S.cardFooter(k, src ? src + ' · 법정동 기준' : '타는 시간 + 갈아타며 걷는 시간(기다림 제외) · 업무지구까지', doc && doc.updated);
+    S.cardFooter(k, src ? src + ' · 법정동 기준' : '타는 시간 + 갈아탈 때 걷기·기다림(처음 열차 대기 제외) · 업무지구까지', doc && doc.updated);
     return k.c;
   }
 

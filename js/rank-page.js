@@ -336,7 +336,7 @@
     g.fillStyle = '#ffd166'; g.font = '700 26px ' + F;
     g.fillText('교통 접근성 추정 · 집값·투자수익 예측 아님' + (doc && doc.updated ? ' · 자료 기준 ' + doc.updated : ''), 80, 988);
     g.fillStyle = '#7f93b3'; g.font = '500 24px ' + F;
-    g.fillText(st.wait ? '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림' : '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 (기다리는 시간 제외)', 80, 1020);
+    g.fillText(st.wait ? '추정값 · 타고 가는 시간 + 갈아타며 걷는 시간 + 출퇴근 배차 기다림' : '추정값 · 타는 시간 + 갈아탈 때 걷기·기다림 (처음 열차 대기 제외)', 80, 1020);
     // 28px 이면 끝의 'rank.html' 이 카드 밖으로 잘렸다(11-15 사진 확인) — 폭에 맞게 줄인다
     g.fillStyle = '#c8d3e6'; g.font = '700 28px ' + F;
     const brand = '한국철도맵 · 개통 후 교통 접근성 순위 · plazalabs.github.io/kr-rail-map/rank.html';

@@ -39,7 +39,7 @@ for r in data:
     if not isinstance(t, datetime.time):
         continue
     trains[(lname, tno, a, b)].append((st, t))
-cnt = collections.Counter(); day = collections.Counter()
+cnt = collections.Counter(); day = collections.Counter(); deps = collections.defaultdict(list)
 for (lname, tno, a, b), seq in trains.items():
     for i, (st, t) in enumerate(seq):
         nxt = seq[i + 1][0] if i + 1 < len(seq) else None
@@ -49,13 +49,27 @@ for (lname, tno, a, b), seq in trains.items():
         m = t.hour * 60 + t.minute
         if 7 * 60 <= m < 9 * 60:
             cnt[(lname, st, nxt)] += 1
+            deps[(lname, st, nxt)].append(m + t.second / 60)
 # 2026-11-15 (회장님 지적 — 청량리 수인분당): 예전엔 출근 시간 열차가 1대뿐인 역을 버려(n < 2) 노선 평균 6분이 대신 들어갔다.
 # 이제 1대도 남기고(120분), 낮에는 서는데 출근 시간엔 0대면 999(출근 시간 열차 없음).
 # 'dir' = 방향별('역>다음역') 값 — 길찾기 환승 대기는 실제로 탈 방향의 배차를 쓴다.
+# 불규칙 배차 (11-15, 회장님 지적 — 경의중앙은 3분 뒤 오기도 하고 13분 비기도 한다):
+# 아무 때나 역에 닿는 사람의 평균 기다림 = Σ간격² ÷ (2 × Σ간격). 고르게 오면 '배차 ÷ 2' 와 같고, 몰려 오면 길어진다.
+# 길찾기는 '배차 ÷ 2' 를 쓰므로 여기서는 그에 맞는 '환산 배차' = Σ간격² ÷ Σ간격 을 남긴다.
+def eff_headway(ts, n):
+    if not n:
+        return 999
+    if n == 1 or len(ts) < 2:
+        return 120 / n
+    ts = sorted(ts)
+    g = [b - a for a, b in zip(ts, ts[1:]) if b > a]
+    if not g:
+        return 120 / n
+    return max(120 / n, sum(x * x for x in g) / sum(g))
 per = collections.defaultdict(dict); dirs = collections.defaultdict(dict)
 for (ln, st, nxt), nd in day.items():
     n = cnt.get((ln, st, nxt), 0)
-    hw = 120 / n if n else 999
+    hw = eff_headway(deps.get((ln, st, nxt), []), n)
     dirs[ln][st + '>' + nxt] = round(hw, 2)
     if n:
         per[ln][st] = min(per[ln].get(st, 999), hw)   # 두 방향 중 촘촘한 쪽

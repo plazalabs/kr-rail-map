@@ -138,11 +138,11 @@ ids.forEach(id => { out[id] = { now: [], after: [] }; });
 const t0 = Date.now();
 for (const id of ids) {
   // 두 번의 다익스트라로 5개 거점을 한꺼번에 얻는다.
-  const nowMap = RF.allTimesFrom(id, { openOnly: true, noWait: true });
-  const aftMap = RF.allTimesFrom(id, { openOnly: false, noWait: true });
+  const nowMap = RF.allTimesFrom(id, { openOnly: true, noWait: false });
+  const aftMap = RF.allTimesFrom(id, { openOnly: false, noWait: false });
   // 바닥값 = '개통 후에도 남는 지금 길'. 새 역 정차(창릉·삼성)가 생기면 그 구간을 서지 않고 지나던 지금 길은 없어진다
   // (모든 열차가 선다) → 지금 값을 바닥으로 쓰면 느려진 몫이 숨는다 (11-15: 운정중앙→도심 개통 후 22분이 20분으로 남던 것).
-  const aftBase = ALL_STAGES.size ? RF.allTimesFrom(id, { openOnly: true, allow: ALL_STAGES, noWait: true }) : nowMap;
+  const aftBase = ALL_STAGES.size ? RF.allTimesFrom(id, { openOnly: true, allow: ALL_STAGES, noWait: false }) : nowMap;
   const capAft = t => t == null ? null : t + STAGE_LOSS * ALL_STAGES.size;   // 지금 길 + 정차 손실 상한
   dests.forEach(d => {
     const a = bestOf(nowMap, d);
@@ -169,11 +169,11 @@ for (const id of ids) {
     const sk = stageKey(y);
     if (sk !== prevStage) {
       const k = stagesAt(y).size - (prevStage ? prevStage.split(',').length : 0);   // 이 해에 새로 들어온 정차 단계 수
-      const base = coreTimes(RF.allTimesFrom(id, { openOnly: true, allow: stagesAt(y), noWait: true }));
+      const base = coreTimes(RF.allTimesFrom(id, { openOnly: true, allow: stagesAt(y), noWait: false }));
       prev = base.map((b, i) => { const c = prev[i] == null ? null : prev[i] + STAGE_LOSS * k; return b == null ? c : (c == null ? b : Math.min(b, c)); });
       prevStage = sk;
     }
-    const m = RF.allTimesFrom(id, { openOnly: true, allow: allowOf(y), noWait: true });
+    const m = RF.allTimesFrom(id, { openOnly: true, allow: allowOf(y), noWait: false });
     const v = dests.filter((d, i) => CORE_IDX.includes(i)).map((d, k) => {
       const t = bestOf(m, d); const p = prev[k];
       return t == null ? p : (p == null ? t : Math.min(p, t));

@@ -119,11 +119,11 @@ let stale = 0, checked = 0;
 for (const [name, lat, lng] of SAMPLE) {
   const id = idAt(name, lat, lng);
   if (!id || !access.stations[id]) continue;
-  const nowMap = RF.allTimesFrom(id, { openOnly: true, noWait: true });
-  const aftMap = RF.allTimesFrom(id, { openOnly: false, noWait: true });
+  const nowMap = RF.allTimesFrom(id, { openOnly: true, noWait: false });
+  const aftMap = RF.allTimesFrom(id, { openOnly: false, noWait: false });
   // 바닥값 = 개통 후에도 남는 지금 길 (정차 단계를 모두 넣은 지금 노선) — build_access.js 와 같은 규칙 (11-15)
   const stages = new Set(RF.stageIds ? RF.stageIds() : []);
-  const baseMap = stages.size ? RF.allTimesFrom(id, { openOnly: true, allow: stages, noWait: true }) : nowMap;
+  const baseMap = stages.size ? RF.allTimesFrom(id, { openOnly: true, allow: stages, noWait: false }) : nowMap;
   access.destinations.forEach((d, i) => {
     // 업무지구 묶음(member_ids) 안 가장 빠른 값, 개통 후는 지금보다 길지 않게 — build_access.js 와 같은 규칙
     const best = m => { let v = null; for (const x of (d.member_ids || [d.station_id])) { const t = m.get(x); if (t != null && (v == null || t < v)) v = t; } return v; };
@@ -286,7 +286,7 @@ check('자료 없는 역은 그렇다고 말한다', /계산하지 못했습니�
   const withG = Object.values(access.stations).filter(r => Array.isArray(r.g)).length;
   check('모든 역에 강남권 기준 역 번호(g)가 있다', withG === Object.keys(access.stations).length, withG);
   const kw = access.stations['st-355172776'];
-  check('광운대: 지금은 선릉, 개통 후는 삼성 기준 (33→9분 — 11-15 방향별 공식 배차·드문 열차 뒤 32→33)', kw && nm(gd.member_ids[kw.g[0]]) === '선릉' && nm(gd.member_ids[kw.g[1]]) === '삼성' && kw.now[2] === 33 && kw.after[2] === 9, kw && kw.g);
+  check('광운대: 지금은 선릉, 개통 후는 삼성 기준 (40→9분 — 11-15 순위에도 환승 기다림 넣음 33→40)', kw && nm(gd.member_ids[kw.g[0]]) === '선릉' && nm(gd.member_ids[kw.g[1]]) === '삼성' && kw.now[2] === 40 && kw.after[2] === 9, kw && kw.g);
   const sd = fs.readFileSync(path.join(ROOT, 'js/station-detail.js'), 'utf8');
   check("역 상세 칩은 '강남권까지' + 기준 역 안내", /'강남권까지'/.test(sd) && /강남·역삼·선릉·삼성 중 가장 빠른 역/.test(sd) && !/\['강남까지'/.test(sd));
 }

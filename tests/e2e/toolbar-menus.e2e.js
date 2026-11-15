@@ -13,8 +13,9 @@ const VPS = (process.env.VPS || 'm390,t768,d1440').split(',');
 const VP = { m390: { w: 390, h: 844, mobile: true }, t768: { w: 768, h: 1024, mobile: true }, d1440: { w: 1440, h: 1000, mobile: false } };
 const MENUS = [
   ['도구', ['draw-btn', 'measure-btn', 'radius-btn', 'memo-btn']],
-  ['분석', ['compare-btn', 'stats-btn', 'timeline-btn', 'invest-btn', 'coverage-btn', 'commute-btn']],
-  ['저장', ['diagram-save-btn', 'save-btn', 'share-btn', 'report-btn']],
+  // Q5 (11-15): 새로 생긴 항목도 누른다 — 시장 타일·맞춤 역 찾기·게시판 링크 (전엔 시험이 안 눌렀다. 떡상 랭킹 항목은 j7-off 로 숨김 — 툴바 단추가 대신)
+  ['분석', ['compare-btn', 'stats-btn', 'timeline-btn', 'invest-btn', 'coverage-btn', 'commute-btn', 'market-btn', 'quiz-btn']],
+  ['저장', ['diagram-save-btn', 'save-btn', 'share-btn', 'report-btn', 'board-link']],
 ];
 
 async function ready(b) {
@@ -55,7 +56,7 @@ const ddSel = name => `[...document.querySelectorAll('#toolbar .tb-dropdown')].f
             top: t === e || (t && e.contains(t)), topEl: t ? (t.id || t.className || t.tagName) : null, overlapsToolbar: mr.bottom > tb.top + 1 && mr.top < tb.bottom - 1, cx, cy }; })()`);
         let hit = false, effect = null;
         if (st.open && st.inVp) {
-          await b.evaluate(`window.__hit = 0; document.getElementById('${id}').addEventListener('click', () => { __hit++; }, { capture: true, once: true }); window.__st0 = (document.getElementById('status')||{}).textContent; 0`);
+          await b.evaluate(`window.__hit = 0; document.getElementById('${id}').addEventListener('click', (e) => { __hit++; if (e.currentTarget.tagName === 'A') { e.preventDefault(); window.__href = e.currentTarget.getAttribute('href'); } }, { capture: true, once: true }); window.__st0 = (document.getElementById('status')||{}).textContent; 0`);
           await b.click(st.cx, st.cy); await sleep(900);
           const r = await b.evaluate(`({ hit: __hit, open: ${ddSel(menu)}.classList.contains('open'), status: (document.getElementById('status')||{}).textContent, stChanged: (document.getElementById('status')||{}).textContent !== __st0, winOpen: __open.slice(), active: document.getElementById('${id}').classList.contains('active') })`);
           hit = r.hit > 0; effect = r;

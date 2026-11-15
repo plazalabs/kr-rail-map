@@ -37,8 +37,10 @@ async function run(b, [from, to, un]) {
 }
 
 (async () => {
-  for (const [w, h] of [[1440, 900], [1366, 768], [1366, 720]]) {   // 1366×720 ≈ 안 높이 625px (GitHub 러너와 같음)
-    const b = await launch({ port: 9781, w, h });
+  // [1366, 577, true] = GitHub 러너 실측 안 높이 577px 를 그대로 흉내 (P18, 2026-11-15 — 로컬 1366×720 은 안 높이가 더 커서 통과했었다)
+  for (const [w, h, emu] of [[1440, 900], [1366, 768], [1366, 720], [1366, 577, true]]) {   // 1366×720 ≈ 안 높이 625px
+    const b = await launch({ port: 9781, w, h: emu ? 720 : h });
+    if (emu) await b.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
     await b.send('Network.setBypassServiceWorker', { bypass: true });
     await b.goto(BASE + '#normal', 800); await ready(b);
     for (const c of CASES) {
@@ -50,7 +52,7 @@ async function run(b, [from, to, un]) {
       const rf = await b.evaluate(`(() => { const t = document.querySelector('#route-result .rc-tab[data-tab="fare"]'); if (!t) return null; t.click();
         const p = document.getElementById('route-panel'), rr = document.getElementById('route-result'), n = rr.querySelector('#rc-panel-fare .rc-fare-note');
         return { note: n ? n.textContent : '', inner: rr.scrollHeight - rr.clientHeight, ps: p.scrollHeight - p.clientHeight, bottom: Math.round(p.getBoundingClientRect().bottom), vh: innerHeight }; })()`);
-      R.check(`${w}×${h} ${c[0]}: 최소요금 탭 — 기준 한 줄 + 창이 화면 안`, !!rf && /성인 교통카드/.test(rf.note) && rf.inner <= 1 && rf.ps <= 1 && rf.bottom <= rf.vh, rf);
+      R.check(`${w}×${h} ${c[0]}: 최소요금 탭 — 기준 한 줄 + 창이 화면 안`, !!rf && /성인/.test(rf.note) && rf.inner <= 1 && rf.ps <= 1 && rf.bottom <= rf.vh, rf);
       await b.evaluate(`(() => { const t = document.querySelector('#route-result .rc-tab[data-tab="time"]'); if (t) t.click(); })()`);
     }
     const exc = b.logs.filter(l => /EXC/.test(l));

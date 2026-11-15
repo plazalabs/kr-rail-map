@@ -21,7 +21,10 @@ const go = b => b.evaluate(`(() => { const S = n => STATIONS.find(s => s.propert
 (async () => {
   let b = await launch({ port: 9761, w: 390, h: 844, mobile: true });
   await b.goto(BASE + '#normal', 1500); await ready(b);
-  await go(b); await sleep(1800);
+  await go(b); await sleep(1000);
+  // 지도가 경로로 날아가는 움직임이 끝나고 경로 선이 실제로 그려질 때까지 (고정 1.8초는 가끔 모자랐다 — 3번 중 1번 n:0)
+  for (let i = 0; i < 40; i++) { if (await b.evaluate(`!map.isMoving() && map.queryRenderedFeatures().some(f => /route/.test(f.layer.id) && f.geometry && f.geometry.type !== 'Point')`).catch(() => false)) break; await sleep(200); }
+  await sleep(300);
   const m1 = await b.evaluate(`(() => { const rp = document.getElementById('route-panel'), r = rp.getBoundingClientRect();
     const sum = (rp.querySelector('.rp-peek-sum') || {}).textContent || '';
     const src = map.getSource('route-highlight') || map.getSource('route-line') || null;

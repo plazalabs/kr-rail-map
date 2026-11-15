@@ -525,7 +525,9 @@ const RouteCompare = (() => {
   function fareTabNote(all) {
     const t = all && all.time, f = all && all.fare;
     if (!f) return '';
-    const base = '성인 교통카드 기준 · 할인·정기권 제외';
+    // KTX·일반열차가 끼면 그 구간은 교통카드가 아니라 일반실 운임 — '교통카드 기준' 이라고만 쓰면 틀린 말
+    const rail = r => !!(r && r.legs && r.legs.some(l => l.lineId && RF && typeof RF.categoryOf === 'function' && ['ktx', 'conventional'].includes(RF.categoryOf(l.lineId))));
+    const base = rail(f) || rail(t) ? '성인 기준(열차 일반실·전철 교통카드, 할인 제외)' : '성인 교통카드 기준(할인·정기권 제외)';
     if (!t) return base;
     if (hasPending(t) || hasPending(f)) return '요금 미정 구간이 있어 얼마 아끼는지는 말할 수 없어요 · ' + base;
     const samePath = t.path && f.path && t.path.length === f.path.length && t.path.every((x, i) => x === f.path[i]);

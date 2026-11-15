@@ -36,5 +36,8 @@ check('운행 중만: 같은 길이면 같은 길, 다르면 최적과 비교', 
 const hd = RC.findAllOpen(id('홍대입구', 'seoul-subway-line-2'), id('강남', 'seoul-subway-line-2'));
 const n3 = RC.fareTabNote(hd);
 check('홍대입구→강남: 최적 길과 견준 문장 + 기준', /최적 길/.test(n3) && /성인 교통카드/.test(n3), n3);
+const sb = RC.findAllOpen(id('서울', 'gyeongbu-line'), id('부산', 'busan-metro-line-1'));
+const n4 = RC.fareTabNote(sb);
+check('서울→부산(KTX): 교통카드만이라고 하지 않고 열차 일반실 기준', /일반실/.test(n4), n4);
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

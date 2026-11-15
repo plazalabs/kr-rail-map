@@ -1586,7 +1586,18 @@ body.map-ready #map-skeleton .sk { animation: none; }
   border: 1px solid var(--border, #d6dae0); border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,.14); padding: 4px; font-size: var(--fs-xs); line-height: 1.3;
 }
-.status-legend .sl-toggle { display: none; }
+/* 접기 단추 '범례' — PC 에서도 보인다 (11-15). ▾ = 펼침, ▸ = 접힘 */
+.status-legend .sl-toggle {
+  display: flex; align-items: center; gap: 4px; width: 100%; min-height: 26px; padding: 2px 8px; border: 0; background: none;
+  color: inherit; font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px; text-align: left;
+}
+.status-legend .sl-toggle::after { content: "BE"; margin-left: auto; font-size: .9em; color: var(--muted, #5b6470); }
+.status-legend:not(.open) .sl-toggle::after { content: "B8"; }
+.status-legend .sl-toggle:hover { background: var(--surface, #f2f4f7); }
+.status-legend .sl-toggle:focus-visible { outline: 2px solid var(--accent, #1b64da); outline-offset: 1px; }
+.status-legend:not(.open) .sl-rows { display: none; }
+.status-legend:not(.open) .slc-x { display: none; }
+.status-legend:not(.open) .sl-cond { border-bottom: 0; margin: 0; padding: 0 8px 3px; font-weight: normal; color: var(--muted, #5b6470); }
 .status-legend .sl-rows { display: flex; flex-direction: column; gap: 1px; }
 .status-legend .sl-row {
   display: flex; align-items: center; gap: 6px; width: 100%; min-height: 28px; padding: 3px 8px;
@@ -1606,15 +1617,9 @@ body.map-ready #map-skeleton .sk { animation: none; }
 .status-legend .slc-x { font-weight: normal; color: var(--muted, #5b6470); margin-left: 1px; }
 /* 휴대폰·좁은 화면: '범례' 버튼 하나로 접혀 있다가 누르면 펼친다 (지도를 덜 가린다) */
 @media (max-width: 980px) {
-  .status-legend .sl-toggle {
-    display: block; min-height: 32px; padding: 4px 10px; border: 0; background: none; color: inherit;
-    font: inherit; font-weight: 600; cursor: pointer; border-radius: 6px;
-  }
-  .status-legend .sl-toggle:focus-visible { outline: 2px solid var(--accent, #1b64da); }
-  .status-legend:not(.open) .sl-rows { display: none; }
+  .status-legend .sl-toggle { min-height: 32px; padding: 4px 10px; }
   /* 접혀 있을 때도 조건은 보이되 짧게 — '(계획 포함)'은 펼치면 */
-  .status-legend:not(.open) .slc-x { display: none; }
-  .status-legend:not(.open) .sl-cond { border-bottom: 0; margin: 0; padding: 0 10px 4px; font-weight: normal; color: var(--muted, #5b6470); }
+  .status-legend:not(.open) .sl-cond { padding: 0 10px 4px; }
   .status-legend .sl-row { min-height: 36px; }
 }
 

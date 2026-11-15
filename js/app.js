@@ -340,10 +340,20 @@ class StatusLegend {
       STATUS_ORDER.map(([st, label, dash]) =>
         `<button type="button" class="sl-row" data-status="${st}" aria-pressed="true">${statusSwatch(dash, st === 'proposed')}<span class="sl-label">${label}</span><span class="sl-n"></span></button>`).join('') +
       `</div>`;
-    el.querySelector('.sl-toggle').addEventListener('click', () => {
-      const open = !el.classList.contains('open');
+    // 범례 접기 (11-15 회장님: 'PC 에서도 범례를 누르면 접혀야') — 휴대폰은 처음에 접힘, PC 는 처음에 펼침.
+    // 사람이 접거나 펼친 것은 이 기기에 기억한다(PC 만 — 휴대폰은 늘 접힌 채 시작해 지도를 덜 가린다)
+    const isPc = () => window.matchMedia('(min-width: 981px)').matches;
+    const setOpen = open => {
       el.classList.toggle('open', open);
       el.querySelector('.sl-toggle').setAttribute('aria-expanded', String(open));
+    };
+    let saved = null;
+    try { saved = localStorage.getItem('krSlOpen'); } catch (e) { /* 저장소 막힘 — 기본값 */ }
+    setOpen(isPc() && saved !== '0');
+    el.querySelector('.sl-toggle').addEventListener('click', () => {
+      const open = !el.classList.contains('open');
+      setOpen(open);
+      if (isPc()) { try { localStorage.setItem('krSlOpen', open ? '1' : '0'); } catch (e) { /* 무시 */ } }
     });
     el.querySelectorAll('.sl-row').forEach(b => b.addEventListener('click', () => toggleStatusLines(b.dataset.status)));
     el.querySelector('.sl-cond').addEventListener('click', () => el.querySelector('.sl-toggle').click());   // 휴대폰: 조건 글자를 눌러도 펼침

@@ -1,5 +1,5 @@
 /* e2e: 노선 상태 범례(J4) + 노선 보기 버튼(J5) — 2026-11-14 UX 종합 리뷰
- *  A. PC: 지도 오른쪽 아래 범례 4줄(운행 중·공사 중·계획·구상), 글자+선 모양, 가리지 않음, 상태별 선 레이어 3개(점선 모양 서로 다름)
+ *  A. PC: 지도 오른쪽 아래 범례 4줄 · 처음 펼침, '범례' 단추로 접기·기억(11-15)(운행 중·공사 중·계획·구상), 글자+선 모양, 가리지 않음, 상태별 선 레이어 3개(점선 모양 서로 다름)
  *  B. PC: 범례 '공사 중' 실클릭 → 공사 중 노선 숨김(목록 체크도 꺼짐) → 다시 누르면 켜짐
  *  C. PC: 보기 버튼 '운행 중'·'고속철도'·'계획·구상'·'전체' 실클릭 → 켜진 노선이 그 조건과 같고 그 버튼만 눌림
  *  D. 휴대폰 390×844: 범례는 '범례' 버튼으로 접힘, 확대 버튼·탭바와 안 겹침, 누르면 펼쳐지고 화면 안
@@ -55,9 +55,24 @@ const overlap = (a, c) => a && c && a.left < c.right && c.left < a.right && a.to
     })()`);
     R.check('A1 범례 4줄: 운행 중·공사 중·계획·구상', A && A.labels.join('|') === '운행 중|공사 중|계획|구상', JSON.stringify(A && A.labels));
     R.check('A2 줄마다 선 모양 그림(색만으로 나누지 않음)', A && A.svg);
-    R.check('A3 화면 안·오른쪽 아래·PC 는 펼친 채(접는 버튼 없음)', A && A.inView && A.right < 80 && A.bottom < 200 && !A.toggleShown, JSON.stringify(A && { r: A.right, b: A.bottom, t: A.toggleShown }));
+    R.check('A3 화면 안·오른쪽 아래·PC 는 처음에 펼친 채 + 접기 단추', A && A.inView && A.right < 80 && A.bottom < 200 && A.toggleShown, JSON.stringify(A && { r: A.right, b: A.bottom, t: A.toggleShown }));
     R.check('A4 범례 줄이 다른 것에 안 가림', A && A.covered.length === 0, JSON.stringify(A && A.covered));
     R.check('A5 상태별 선 레이어 3개, 점선 모양 서로 다름', A && A.layers.every(Boolean) && new Set(A.dashes).size === 3, JSON.stringify(A && A.dashes));
+
+    // A6 (11-15 회장님: PC 에서도 범례 누르면 접혀야) — 누르면 접힘 → 새로고침해도 접힌 채(기억) → 다시 누르면 펼침
+    const LEG = `(() => { const el = document.getElementById('status-legend'); return { rows: getComputedStyle(el.querySelector('.sl-rows')).display !== 'none',
+      exp: el.querySelector('.sl-toggle').getAttribute('aria-expanded'), h: Math.round(el.getBoundingClientRect().height) }; })()`;
+    const l0 = await b.evaluate(LEG);
+    const pf = await press(b, '#status-legend .sl-toggle');
+    const l1 = await b.evaluate(LEG);
+    R.check('A6 PC: 범례 단추 누르면 접힘(줄 숨김·aria-expanded=false·높이 줄어듦)', l0.rows && l0.exp === 'true' && pf.ok && !l1.rows && l1.exp === 'false' && l1.h < l0.h, JSON.stringify({ l0, l1, pf }));
+    await b.send('Page.reload', {}); await ready(b);
+    const l2 = await b.evaluate(LEG);
+    R.check('A7 PC: 새로고침해도 접힌 채(이 기기에 기억)', !l2.rows && l2.exp === 'false', JSON.stringify(l2));
+    const pf2 = await press(b, '#status-legend .sl-toggle');
+    const l3 = await b.evaluate(LEG);
+    R.check('A8 PC: 다시 누르면 펼침', pf2.ok && l3.rows && l3.exp === 'true', JSON.stringify({ l3, pf2 }));
+    await b.evaluate(`setScope('all', { fly: false }); 0`); await sleep(500);
 
     // B
     const s0 = await b.evaluate(STATE);

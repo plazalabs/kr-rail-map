@@ -90,9 +90,14 @@
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-label', '처음 오셨나요 — 할 수 있는 일');
     el.innerHTML =
-      '<div class="gd-head"><b>처음 오셨나요?</b> 이런 걸 할 수 있어요' +
+      // 메타 피드백(2026-11-15): 첫 30초에 '이 앱이 나에게 뭘 해 주는지'가 없었다 → 질문 한 줄 + 우리 동네 역 입력.
+      '<div class="gd-head"><b class="gd-q" id="gd-q">GTX 개통 후, 우리 동네는 얼마나 가까워질까?</b>' +
       '<button type="button" class="gd-close" aria-label="안내 닫기"><i data-ic="close"></i></button></div>' +
-      '<div class="gd-slogan">축을 읽으면, 도시의 미래가 보인다</div>' +
+      '<div class="gd-ask"><input id="gd-st" type="text" autocomplete="off" spellcheck="false" enterkeyhint="search"' +
+      ' role="combobox" aria-autocomplete="list" aria-expanded="false" aria-labelledby="gd-q"' +
+      ' placeholder="우리 동네 역 이름 (예: 종로3가)"><div class="ac-list" hidden></div></div>' +
+      '<div class="gd-ans" aria-live="polite"></div>' +
+      '<div class="gd-sub">이런 것도 할 수 있어요</div>' +
       '<div class="gd-list">' + ITEMS.map(function (it, i) { return itemHtml(it, i, 'gd-item'); }).join('') + '</div>' +
       '<div class="gd-foot">이 버튼들은 왼쪽 메뉴 맨 위 <b>빠른 시작</b>에 늘 있어요</div>';
     el.querySelector('.gd-close').addEventListener('click', close);
@@ -103,9 +108,63 @@
         run(i);
       });
     });
-    el.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } });
+    // 후보 목록이 열린 채 Esc → 목록만 닫는다(카드까지 닫지 않게). 자동완성보다 먼저 상태를 적어 둔다
+    var inp = el.querySelector('#gd-st'), listOpen = false;
+    inp.addEventListener('keydown', function () { listOpen = inp.getAttribute('aria-expanded') === 'true'; });
+    el.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      if (e.target === inp && listOpen) return;
+      close();
+    });
     var host = document.getElementById('map-wrap') || document.body;
     host.appendChild(el);
+    if (typeof global.KR_attachAutocomplete === 'function') global.KR_attachAutocomplete(inp);
+    var pre = function () { if (global.KR_loadDetailData) try { global.KR_loadDetailData(); } catch (e) { /* 무시 */ } };
+    inp.addEventListener('focus', pre, { once: true });
+    inp.addEventListener('ac:pick', function () { pre(); answer(inp.dataset.sid); });
+  }
+
+  function escHtml(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  /* 고른 역 → 한 줄 답: 개통으로 가장 많이 줄어드는 도심까지 '지금 N분 → 개통 후 M분'.
+   * 숫자는 access.json(도심 접근성, 추정값) 그대로. 자료가 아직 안 왔으면 오면 다시 그린다. */
+  function answer(sid) {
+    if (!el || !sid) return;
+    var box = el.querySelector('.gd-ans');
+    var nm = (el.querySelector('#gd-st').value || '').trim();
+    // access.js 는 const StationAccess 라 window 에 붙지 않는다 → 이름으로 찾는다
+    function acc() { return typeof StationAccess !== 'undefined' ? StationAccess : null; }
+    var A = acc();
+    if (!A || !A.isReady()) {
+      box.innerHTML = '<span class="gd-wait">시간 자료를 불러오는 중…</span>';
+      var tries = 0, t = setInterval(function () {
+        if ((A = acc()) && A.isReady()) { clearInterval(t); answer(sid); }
+        else if (++tries > 40) { clearInterval(t); box.textContent = '시간 자료를 불러오지 못했어요. 역 상세에서 다시 볼 수 있어요.'; }
+      }, 250);
+      return;
+    }
+    var ac = A.of(sid), best = A.biggestGain(sid), html;
+    if (!ac) {
+      html = '<b>' + escHtml(nm) + '</b>은(는) 수도권 밖이라 도심까지 시간 비교 자료가 아직 없어요.';
+    } else if (best) {
+      html = '<b>' + escHtml(nm) + '</b> → ' + escHtml(best.label.split('(')[0].trim()) +
+        '<div class="gd-num">지금 <b>' + best.now + '분</b> → 개통 후 <b class="gd-after">' + best.after + '분</b>' +
+        ' <span class="gd-save">' + best.save + '분 단축</span></div>';
+    } else {
+      var r0 = ac.rows[0];
+      html = '<b>' + escHtml(nm) + '</b>은(는) 지금 계획된 개통으로는 도심까지 시간이 거의 그대로예요' +
+        (r0 && r0.now != null ? ' · ' + escHtml(r0.label.split('(')[0].trim()) + ' 지금 ' + r0.now + '분' : '') + '.';
+    }
+    html += '<div class="gd-acts"><button type="button" class="gd-more">자세히 보기</button>' +
+      '<a class="gd-rank" href="rank.html">가장 가까워지는 역 TOP 10</a></div>' +
+      '<div class="gd-src">추정값 · 시각표 미반영' + (A.asof && A.asof() ? ' · ' + escHtml(A.asof()) + ' 기준' : '') + '</div>';
+    box.innerHTML = html;
+    box.querySelector('.gd-more').addEventListener('click', function () {
+      close();
+      if (global.KR_openStationById) global.KR_openStationById(sid);
+    });
+    if (global.KRTrack) global.KRTrack('첫화면 우리동네', { 결과: best ? '단축' : ac ? '그대로' : '자료없음' });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderQuick);

@@ -1196,7 +1196,7 @@ function attachAutocomplete(input) {
   const listId = (input.id || 'ac') + '-list';
   list.id = listId;
   list.setAttribute('role', 'listbox');
-  list.setAttribute('aria-label', input.id === 'route-to' ? '도착역 후보' : input.id === 'cm-dest' ? '직장 역 후보' : '출발역 후보');
+  list.setAttribute('aria-label', input.id === 'route-to' ? '도착역 후보' : input.id === 'cm-dest' ? '직장 역 후보' : input.id === 'gd-st' ? '우리 동네 역 후보' : '출발역 후보');
   input.setAttribute('aria-controls', listId);
   let items = [], activeIdx = -1;
   function setExpanded(v) { input.setAttribute('aria-expanded', v ? 'true' : 'false'); }
@@ -2029,7 +2029,10 @@ function loadExits() {
   }).catch(() => null);
 }
 window.KR_loadExits = loadExits;   // station-area.js 가 역세권을 켤 때 부른다
-window.KR_regionOf = id => regionOf.get(id) || '';   // commute.js — 동명역 지역 표시
+window.KR_regionOf = id => regionOf.get(id) || '';
+// 처음 안내 카드(js/guide.js)의 '우리 동네 역' → 지도 이동 + 역 상세 (검색에서 고른 것과 같게)
+window.KR_loadDetailData = () => loadDetailData({ prefetch: true });   // 같은 카드 — 입력칸을 누르면 시간 자료(access.json)를 미리 받는다
+window.KR_openStationById = id => { const f = stationById(id); if (f) pickSearchHit(f); return !!f; };   // commute.js — 동명역 지역 표시
 
 // 투자 모드(js/mode.js) — 꺼져 있으면 시세·단지·공급을 받지 않는다(철도만 보는 사람은 약 2MB 절약).
 // 도심 접근성(access.json)은 소요시간 = 철도 정보라 모드와 상관없이 받는다.

@@ -47,12 +47,14 @@ def norm(n):
 
 
 def seoul_metro(path):
+    """(역별 촘촘한 쪽, 방향별 '역>다음역') — 열차코드마다 시각 순으로 늘어놓아 다음 역을 안다 (2026-11-15).
+    출근 시간 1대뿐인 역도 남긴다(120분), 낮엔 서는데 출근 시간 0대면 999."""
     raw = open(path, 'rb').read()
     try:
         text = raw.decode('utf-8')
     except UnicodeDecodeError:
         text = raw.decode('cp949')
-    cnt = collections.Counter()
+    trains = collections.defaultdict(list)
     for r in csv.DictReader(io.StringIO(text)):
         if r['주중주말'] != 'DAY':
             continue
@@ -60,14 +62,39 @@ def seoul_metro(path):
         if not t:
             continue
         m = int(t[:2]) * 60 + int(t[3:5])
-        if 420 <= m < 540:
-            cnt[(r['호선'], norm(r['역사명']), r['방향'])] += 1
-    per = collections.defaultdict(dict)
-    for (ln, st, d), n in cnt.items():
-        if n < 2:
-            continue
-        per[ln][st] = min(per[ln].get(st, 999), 120 / n)
-    return per
+        if m < 180: m += 1440   # 자정 넘은 열차
+        trains[(r['호선'], r['열차코드'], r['방향'], r['출발역'], r['도착역'], r['급행여부'])].append((m, norm(r['역사명']), bool(r['열차출발시간'])))
+    cnt = collections.Counter(); day = collections.Counter()
+    exp_cnt = collections.Counter(); exp_day = collections.Counter()   # 급행: (호선, 역, 방향) — 일반 열차의 다음 역 쪽에도 센다
+    local_next = collections.defaultdict(collections.Counter)          # (호선, 역, 방향) → 일반 열차 다음 역
+    for (ln, tno, d, a, b, ex), seq in trains.items():
+        seq.sort()
+        for i, (m, st, dep) in enumerate(seq[:-1]):
+            nxt = seq[i + 1][1]
+            if nxt == st:
+                continue
+            day[(ln, st, nxt)] += 1
+            if 420 <= m < 540:
+                cnt[(ln, st, nxt)] += 1
+            if ex not in ('', '0'):
+                exp_day[(ln, st, d, nxt)] += 1
+                if 420 <= m < 540: exp_cnt[(ln, st, d, nxt)] += 1
+            else:
+                local_next[(ln, st, d)][nxt] += 1
+    # 급행은 일반 열차가 서는 다음 역을 지나쳐 같은 방향으로 간다 → 그 방향(일반 열차 다음 역) 배차에도 더한다.
+    # (예: 9호선 여의도 노량진 방면 — 일반 '여의도>샛강' 에 급행도 더해야 '그 방향으로 가는 열차' 수가 된다)
+    for (ln, st, d, enxt), n in exp_day.items():
+        for nxt in local_next.get((ln, st, d), {}):
+            if nxt != enxt:   # 급행이 그 역에 서면 이미 셌다
+                cnt[(ln, st, nxt)] += exp_cnt.get((ln, st, d, enxt), 0)
+    per = collections.defaultdict(dict); dirs = collections.defaultdict(dict)
+    for (ln, st, nxt), nd in day.items():
+        n = cnt.get((ln, st, nxt), 0)
+        hw = 120 / n if n else 999
+        dirs[ln][st + '>' + nxt] = hw
+        if n:
+            per[ln][st] = min(per[ln].get(st, 999), hw)
+    return per, dirs
 
 
 # 레일포털 역 이름은 줄임말이 많다 ('경광주', '평내호', '디엠시', '1양원') — 우리 역 이름에 맞춘다
@@ -90,26 +117,43 @@ def match_names(sts, ours):
     return out
 
 
+def match_dir(dirs, ours):
+    """'역>다음역' 두 이름을 우리 역 이름으로. 못 맞추면 버린다"""
+    def one(k):
+        m = match_names({k: 0}, ours)
+        return next(iter(m)) if m else None
+    out = {}
+    for k, v in dirs.items():
+        a, b = k.split('>', 1)
+        a2, b2 = one(norm(a)), one(norm(b))
+        if a2 and b2 and a2 != b2:
+            key = a2 + '>' + b2
+            out[key] = round(min(out.get(key, 9999), v), 2)
+    return out
+
+
 def main():
     stations = json.load(open(os.path.join(ROOT, 'data', 'stations.geojson'), encoding='utf-8'))['features']
     ours_of = collections.defaultdict(set)
     for f in stations:
         for l in f['properties'].get('lines') or []:
             ours_of[l].add(f['properties']['name_ko'])
-    sm = seoul_metro(sys.argv[1])
+    sm, sm_dir = seoul_metro(sys.argv[1])
     kric = json.load(open(sys.argv[2], encoding='utf-8'))
     lines = {}
     for no, lid in SM_LINES.items():
         sts = {k: round(v, 2) for k, v in match_names(sm.get(no, {}), ours_of[lid]).items()}
         if not sts:
             continue
-        lines[lid] = {'min': round(statistics.median(sts.values()), 2), 'src': 'official', 'source': SRC_SM, 'stations': sts}
+        lines[lid] = {'min': round(statistics.median(sts.values()), 2), 'src': 'official', 'source': SRC_SM, 'stations': sts,
+                      'dir': match_dir(sm_dir.get(no, {}), ours_of[lid])}
     for name, lid in KRIC_LINES.items():
         k = kric.get(name)
         if not k:
             continue
         sts = match_names({norm(s): v for s, v in k['stations'].items()}, ours_of[lid])
-        lines[lid] = {'min': k['median'], 'src': 'official', 'source': SRC_KRIC, 'stations': sts}
+        lines[lid] = {'min': k['median'], 'src': 'official', 'source': SRC_KRIC, 'stations': sts,
+                      'dir': match_dir({'>'.join(norm(x) for x in kk.split('>', 1)): v for kk, v in k.get('dir', {}).items()}, ours_of[lid])}
     lines['yongin-light-rail-transit'] = {'min': 4, 'src': 'official', 'source': "레일포털 전체 도시철도운행정보 — 에버라인 평일 '운영시간 17:00~20:00 운행간격 4분' (퇴근)"}
     lines['incheon-subway-line-2'] = {'min': 2.5, 'src': 'official', 'source': "레일포털 전체 도시철도운행정보 — 인천 2호선 평일 '운행시격 2분30초~10분' 중 가장 짧은 값(출퇴근)"}
     gtx_a = "국토교통부: GTX-A 운정중앙~서울역 출퇴근 배차 10분 → 6.25분 (2025-03-01 시행)"
@@ -123,8 +167,8 @@ def main():
     for lid in ['dongbuk-line', 'dongbu-line', 'daejeon-metro-line-2', 'gwangju-metro-line-2-inner-circle-line', 'daegusaneop-line']:
         lines[lid] = {'min': 5, 'src': 'estimate', 'source': '개통 전 — 공식 배차 없음 (추정)'}
     doc = {
-        'schema': 'kr-rail-map/headways/2', 'updated': '2026-11-12',
-        'basis': '출퇴근 배차 간격(분). 운영기관 공식 시간표 기준, 개통 전 노선은 추정.',
+        'schema': 'kr-rail-map/headways/3', 'updated': '2026-11-15',
+        'basis': '출퇴근(평일 07~09시) 배차 간격(분). 운영기관 공식 시간표 기준, 개통 전 노선은 추정. dir = 방향별(역>다음역), 999 = 출근 시간 열차 없음.',
         'default': {'urban': 5, 'metro': 5, 'conventional': 30, 'ktx': 0},
         'lines': lines,
     }

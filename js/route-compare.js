@@ -817,7 +817,7 @@ const RouteCompare = (() => {
           ? `<div class="leg"><i data-ic="walk"></i> ${a}역 내 환승 (도보 이동)</div>`
           : `<div class="leg"><i data-ic="walk"></i> ${a} → ${b} (도보 이동)</div>`;
       } else {
-        const ln = escapeHtml(lineNameOf.get(leg.lineId) || leg.lineId);
+        const ln = escapeHtml((lineNameOf.get(leg.lineId) || leg.lineId) + (leg.branch ? ` (${leg.branch})` : ''));   // 갈래 운행 (11-15)
         const segStations = [];
         const step = i2 > i1 ? 1 : -1;
         for (let i = i1; i !== i2; i += step) segStations.push(stLink(r.path[i]));

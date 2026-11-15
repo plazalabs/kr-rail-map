@@ -39,24 +39,30 @@ for r in data:
     if not isinstance(t, datetime.time):
         continue
     trains[(lname, tno, a, b)].append((st, t))
-cnt = collections.Counter()
+cnt = collections.Counter(); day = collections.Counter()
 for (lname, tno, a, b), seq in trains.items():
     for i, (st, t) in enumerate(seq):
         nxt = seq[i + 1][0] if i + 1 < len(seq) else None
         if nxt is None:
             continue   # 종착역 도착은 출발이 아니다
+        day[(lname, st, nxt)] += 1
         m = t.hour * 60 + t.minute
         if 7 * 60 <= m < 9 * 60:
             cnt[(lname, st, nxt)] += 1
-per = collections.defaultdict(dict)
-for (ln, st, nxt), n in cnt.items():
-    if n < 2:
-        continue
-    hw = 120 / n
-    per[ln][st] = min(per[ln].get(st, 999), hw)   # 두 방향 중 촘촘한 쪽
+# 2026-11-15 (회장님 지적 — 청량리 수인분당): 예전엔 출근 시간 열차가 1대뿐인 역을 버려(n < 2) 노선 평균 6분이 대신 들어갔다.
+# 이제 1대도 남기고(120분), 낮에는 서는데 출근 시간엔 0대면 999(출근 시간 열차 없음).
+# 'dir' = 방향별('역>다음역') 값 — 길찾기 환승 대기는 실제로 탈 방향의 배차를 쓴다.
+per = collections.defaultdict(dict); dirs = collections.defaultdict(dict)
+for (ln, st, nxt), nd in day.items():
+    n = cnt.get((ln, st, nxt), 0)
+    hw = 120 / n if n else 999
+    dirs[ln][st + '>' + nxt] = round(hw, 2)
+    if n:
+        per[ln][st] = min(per[ln].get(st, 999), hw)   # 두 방향 중 촘촘한 쪽
 out = {}
-for ln, sts in sorted(per.items()):
-    v = sorted(sts.values())
-    out[ln] = {'median': round(statistics.median(v), 2), 'n': len(v), 'stations': {k: round(x, 2) for k, x in sts.items()}}
-    print(ln.ljust(22), '역', str(len(v)).rjust(3), '중앙', out[ln]['median'], '범위', round(v[0], 1), '~', round(v[-1], 1))
+for ln in sorted(set(per) | set(dirs)):
+    sts = per.get(ln, {})
+    v = sorted(sts.values()) or [999]
+    out[ln] = {'median': round(statistics.median(v), 2), 'n': len(sts), 'stations': {k: round(x, 2) for k, x in sts.items()}, 'dir': dirs.get(ln, {})}
+    print(ln.ljust(22), '역', str(len(sts)).rjust(3), '중앙', out[ln]['median'], '범위', round(v[0], 1), '~', round(v[-1], 1))
 json.dump(out, open(sys.argv[2], 'w', encoding='utf-8'), ensure_ascii=False)

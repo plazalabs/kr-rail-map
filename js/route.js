@@ -71,6 +71,7 @@ const RouteFinder = (() => {
   };
   function waitMin(lid) {
     if (!lid) return 0;
+    lid = baseOf(lid);
     if (lineCat.get(lid) === 'ktx' || (typeof EXPRESS !== 'undefined' && EXPRESS[lid])) return 0;   // KTX·급행은 접근 시간으로 따로
     if (/^gtx|great-train-express/.test(lid)) return 4;   // 계획 배차 약 6~10분
     return WAIT_MIN[lid] != null ? WAIT_MIN[lid] : WAIT_DEFAULT;
@@ -78,18 +79,49 @@ const RouteFinder = (() => {
   // 다른 노선으로 '갈아탈 때'만 (출발역 첫 탑승·직결 운행은 0)
   // 평면환승(같은 승강장 맞은편, 배차를 맞춰 운영 — 청량리 GTX-B·C, 삼성 GTX-A·C 등)은 도착하면 맞은편 열차가
   // 바로 받으므로 기다리는 시간 0 (2026-11-11 회장님 지적). 걷기는 PLATFORM_MIN(10초)만.
+  // 2026-11-15 (회장님 지적 — 청량리 수인분당은 평일 하루 9대, 출근 1대인데 6분 배차로 계산해 가짜 최적길이 뽑혔다):
+  // 배차 자료(data/headways.json, 공식 시간표 평일 07~09시)가 있으면 '그 역에서 그 방향으로 떠나는 열차' 배차의 절반을 쓴다.
+  // 손으로 넣은 노선별 대략값(WAIT_MIN)은 자료가 없는 노선·역에만. 아주 드문 곳은 60분에서 자른다(120분 배차 = 60분 대기).
   function transferWait(nl, line, stationId, fromId, toId) {
     if (!nl || !line || line === START || nl === line) return 0;
     if (sameService(nl, line)) return 0;
-    if (stationId && isPlatformTransfer(stationId, line, nl, fromId, toId)) return 0;
+    if (stationId && baseOf(nl) !== baseOf(line) && isPlatformTransfer(stationId, line, nl, fromId, toId)) return 0;
+    const hw = headwayAt(nl, stationId, toId);
+    if (hw != null) return Math.min(hw, 120) / 2;
     return waitMin(nl);
+  }
+  // 드문 열차 (2026-11-15): 처음 탈 때 기다림은 넣지 않는다(언제 역에 닿느냐에 따라 매번 달라서 — 회장님, 앱들과 같은 기준).
+  // 다만 출근 시간 배차가 30분보다 드문 열차(07~09시 4대 미만 — 광운대 경춘선, 청량리 수인분당 등)는 '가서 바로 타는' 열차가
+  // 아니라 시간표를 맞춰야 하는 열차다. 이런 열차는 처음 탈 때도, 순위(기다림 빼는 계산)에서도 배차의 절반을 기다린다고 본다.
+  // 안 그러면 2시간에 1대 오는 열차가 '기다림 0' 으로 가장 빠른 길에 뽑힌다.
+  const SPARSE_HW = 30;
+  function sparseWait(lineId, stationId, toId) {
+    const hw = headwayAt(lineId, stationId, toId);
+    return (hw != null && hw > SPARSE_HW) ? Math.min(hw, 120) / 2 : 0;
+  }
+  // 그 역에서 그 방향(다음 역 toId)으로 떠나는 열차 배차(분) — 방향 값 → 역 값 순. 없으면 null
+  function headwayAt(lineId, stationId, toId) {
+    if (!headwayDoc || !lineId || !stationId) return null;
+    const lid = baseOf(lineId);
+    const cat = lineCat.get(lid);
+    if (cat === 'ktx' || (typeof EXPRESS !== 'undefined' && EXPRESS[lid])) return null;
+    const h = headwayDoc.lines[lid] || headwayDoc.lines[serviceOf(lid)];
+    if (!h) return null;
+    const nm = nameOfId(stationId), nn = nameOfId(toId);
+    if (h.dir && nm && nn && h.dir[nm + '>' + nn] != null) return h.dir[nm + '>' + nn];
+    if (h.south_min && nm && (h.south_stations || []).includes(nm)) return h.south_min;
+    if (h.stations && nm && h.stations[nm] != null) return h.stations[nm];
+    return null;
   }
   // 출퇴근 배차 (data/headways.json, 2026-11-12) — 떡상 랭킹 '배차 포함' 스위치용. 기다리는 시간 = 배차 ÷ 2.
   // 처음 탈 때와 갈아탈 때 붙인다 (같은 열차로 이어 가기·같은 승강장 맞은편 환승은 0).
   let headwayDoc = null;
   function loadHeadways(doc) { headwayDoc = (doc && doc.lines) ? doc : null; return !!headwayDoc; }
-  function peakWaitAt(lineId, stationId) {
+  function peakWaitAt(lineId, stationId, toId) {
     if (!headwayDoc || !lineId) return 0;
+    lineId = baseOf(lineId);
+    const hw0 = headwayAt(lineId, stationId, toId);
+    if (hw0 != null) return Math.min(hw0, 120) / 2;
     const cat = lineCat.get(lineId);
     if (cat === 'ktx' || (typeof EXPRESS !== 'undefined' && EXPRESS[lineId])) return 0;   // KTX·급행은 접근 시간으로 따로
     const h = headwayDoc.lines[lineId] || headwayDoc.lines[serviceOf(lineId)];
@@ -173,12 +205,48 @@ const RouteFinder = (() => {
     'gyeongui-line-seoul': 'gyeongui-jungang-line',   // 경의선 서울역 방면 — 가좌에서 문산 방면으로 이어 달린다 (2026-11-13)
   };
   function serviceOf(lineId) { return THROUGH[lineId] || lineId; }
-  function sameService(a, b) { return a === b || (a != null && b != null && serviceOf(a) === serviceOf(b)); }
+  function sameService(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.includes('#') || b.includes('#')) return false;   // 갈래(지선) 운행 ↔ 본선 = 갈아탄다
+    return serviceOf(a) === serviceOf(b);
+  }
+  // 갈래(지선) 운행 (2026-11-15, 회장님 지적 — 성수지선을 본선과 한 줄로 이어 성수에서 안 갈아타는 것으로 계산했다).
+  // 지도에서는 같은 노선(같은 색)이지만, 열차가 따로 다녀 갈래와 본선 사이는 갈아타야 한다.
+  // 탐색 안에서는 '노선#갈래' 를 다른 노선처럼 다룬다. 결과 legs 의 lineId 는 원래 노선, branch 에 갈래 이름.
+  // stations: 첫 역 = 본선과 만나는 역. 근거: 서울교통공사 열차운행시각표 2026-09-01 (성수지선 신설동~성수,
+  // 신정지선 신도림~까치산 열차가 따로 운행), 코레일 광명셔틀(금천구청~광명).
+  // xfer: 갈래-본선 환승 걷기(분) — 서울교통공사_환승역거리 소요시간 정보(15044419, 2026-08-31): 성수 23m 19초, 신도림 81m 68초.
+  //       광명셔틀(코레일)은 공식 자료가 없어 기본값(TRANSFER_MIN).
+  const BRANCH_RUNS = [
+    { line: 'seoul-subway-line-2', tag: '성수지선', stations: ['성수', '용답', '신답', '용두', '신설동'], xfer: 1 },
+    { line: 'seoul-subway-line-2', tag: '신정지선', stations: ['신도림', '도림천', '양천구청', '신정네거리', '까치산'], xfer: 2 },
+    { line: 'seoul-metropolitan-subway-line-1', tag: '광명셔틀', stations: ['금천구청', '광명'], xfer: null },
+  ];
+  const baseOf = id => (id && id.includes('#')) ? id.slice(0, id.indexOf('#')) : id;
+  const runOf = e => (e.lineId && e.run) ? e.lineId + '#' + e.run : (e.lineId || null);
+  function branchOf(id) { return (id && id.includes('#')) ? id.slice(id.indexOf('#') + 1) : null; }
+  let branchTagged = 0;
+  function tagBranchRuns() {
+    branchTagged = 0;
+    for (const br of BRANCH_RUNS) {
+      adj.forEach((list, a) => {
+        const ia = br.stations.indexOf(nameOfId(a));
+        if (ia < 0) return;
+        for (const e of list) {
+          if (e.lineId !== br.line || e.walk) continue;
+          const ib = br.stations.indexOf(nameOfId(e.to));
+          if (ib < 0 || Math.abs(ia - ib) !== 1) continue;
+          e.run = br.tag; branchTagged++;
+        }
+      });
+    }
+  }
   // legs 가운데 실제로 갈아타는 횟수 (걷는 구간·이어 달리는 구간은 세지 않는다)
   function countTransfers(legs) {
     const ride = legs.filter(l => !l.walk && l.lineId !== null);
     let n = 0;
-    for (let i = 1; i < ride.length; i++) if (!sameService(ride[i - 1].lineId, ride[i].lineId)) n++;
+    for (let i = 1; i < ride.length; i++) if (!sameService(ride[i - 1].run || ride[i - 1].lineId, ride[i].run || ride[i].lineId)) n++;
     return n;
   }
 
@@ -224,6 +292,7 @@ const RouteFinder = (() => {
   const nameOfId = id => { const s = id && stationsById.get(id); return s ? s.properties.name_ko : null; };
   function isPlatformTransfer(stationId, a, b, fromId, toId) {
     if (!stationId || !a || !b) return false;
+    a = baseOf(a); b = baseOf(b);
     const name = nameOfId(stationId);
     if (!PLATFORM_STATIONS.has(name)) return false;
     const sa = serviceOf(a), sb = serviceOf(b);
@@ -252,6 +321,11 @@ const RouteFinder = (() => {
     return ls.includes(base) ? base : lid;
   }
   function transferMinutes(stationId, a0, b0, fromId, toId) {
+    if (a0 && b0 && a0 !== b0 && baseOf(a0) === baseOf(b0)) {   // 같은 노선의 갈래 - 본선 (성수·신도림·금천구청)
+      const br = BRANCH_RUNS.find(x => x.tag === (branchOf(a0) || branchOf(b0)));
+      return (br && br.xfer != null) ? br.xfer : TRANSFER_MIN;
+    }
+    a0 = baseOf(a0); b0 = baseOf(b0);
     if (sameService(a0, b0) && a0 !== b0) return 0;   // 이어 달리는 구간 — 갈아타지 않는다
     if (isPlatformTransfer(stationId, a0, b0, fromId, toId)) return PLATFORM_MIN;
     const a = overlayLine(stationId, a0), b = overlayLine(stationId, b0);
@@ -478,6 +552,7 @@ const RouteFinder = (() => {
     applyOfficialRuntimes();
     addGtxOfficialEdges(activeIds);
     addExpressEdges();
+    tagBranchRuns();
 
     return { stations: stationsById.size, edges: edgeCount, loopEdges, walkEdges, walkRejected };
   }
@@ -730,6 +805,7 @@ const RouteFinder = (() => {
   // 이 노선에 '탈 때' 붙는 접근 시간. KTX 만 해당한다.
   // route-compare.js 가 같은 값을 쓰도록 노출한다 (두 탭의 소요시간이 갈라지면 안 된다).
   function accessMinutes(lineId) {
+    lineId = baseOf(lineId);
     if (lineId && EXPRESS[lineId]) return EXPRESS[lineId].accessMin;
     // 일반철도(무궁화·ITX)도 같은 성격 — 지정석·개찰·드문 배차(경부선 서울↔수원 무궁화 약 1시간에 1대, 2026-11 시간표).
     // 2026-11-13: 경부선 정차역을 바로잡자(영등포·수원 등) 이 값 없이 '의정부→수원 = 서울에서 무궁화 갈아타기' 가 뽑혔다.
@@ -806,7 +882,7 @@ const RouteFinder = (() => {
         if (openOnly && !e.open && !(allow && allow.has(e.lineId))) continue;
         // 개통 후엔 새 역에 선다 (창릉) — '그 해까지 개통' 계산(allow)에서도 새 역이 열렸으면 무정차 길은 없다
         if (stageBlocked(e, openOnly, allow)) continue;
-        const nl = e.lineId || null;
+        const nl = runOf(e);
         let cost = edgeMinutes(e);
         // 환승 비용: 앞뒤 모두 노선이 있고 서로 다를 때만. 환승은 지금 있는
         // 역(u)에서 일어난다. 역마다 실제 도보 시간이 다르므로 그 값을 쓴다.
@@ -821,6 +897,7 @@ const RouteFinder = (() => {
         // '3.8km KTX' 같은 경로가 애초에 후보로 뽑히지 않는다.
         if (nl !== line) cost += accessMinutes(nl);
         cost += transferWait(nl, line, u, pu, e.to);
+        if (nl !== null && (line === START || line === null)) cost += sparseWait(nl, u, e.to);   // 드문 열차는 처음 탈 때도
         const nk = stateKey(e.to, nl, u);
         const nd = d + cost;
         if (nd < (dist.get(nk) ?? Infinity)) {
@@ -847,22 +924,24 @@ const RouteFinder = (() => {
 
     // leg 분해 (노선 바뀌면 환승)
     const legs = [];
-    let legStart = 0, curLine = edges[0] ? (edges[0].lineId || null) : null;
+    let legStart = 0, curLine = edges[0] ? runOf(edges[0]) : null;
     let minutes = 0, legKm = 0, segs = [];   // segs: 지난 역 쌍·거리 (공항철도 독립구간 요금)
     // 첫 구간부터 KTX 면 접근 시간을 붙인다
     minutes += accessMinutes(curLine);
+    const firstWait = curLine ? sparseWait(curLine, path[0], path[1]) : 0;   // 드문 열차 (위 SPARSE_HW)
+    minutes += firstWait;
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
       minutes += edgeMinutes(e);
-      const lid = e.lineId || null;
+      const lid = runOf(e);
       if (lid !== curLine) {
         // 환승은 지금 역(path[i])에서 일어난다. 역·노선쌍마다 실제 도보
         // 시간이 다르므로 그 값을 표시 시간에 넣는다. transferAfter 는
         // '이 구간을 내린 뒤 갈아타는 데 걸리는 시간' 이다.
         const tm = (curLine !== null && lid !== null)
           ? transferMinutes(path[i], curLine, lid, path[i - 1], path[i + 1]) : 0;
-        const wt = transferWait(lid, curLine, path[i], path[i - 1], path[i + 1]);
-        legs.push({ lineId: curLine, from: path[legStart], to: path[i],
+        const wt = transferWait(lid, curLine, path[i], path[i - 1], path[i + 1]) + (curLine === null && lid ? sparseWait(lid, path[i], path[i + 1]) : 0);
+        legs.push({ lineId: baseOf(curLine), run: curLine, branch: branchOf(curLine), from: path[legStart], to: path[i],
                     walk: curLine === null, distKm: legKm, transferAfter: tm, waitAfter: wt, segs,
                     platform: !!(curLine && lid && isPlatformTransfer(path[i], curLine, lid, path[i - 1], path[i + 1])) });
         if (tm) minutes += tm;
@@ -873,7 +952,7 @@ const RouteFinder = (() => {
       legKm += e.distKm;
       segs.push({ a: path[i], b: path[i + 1], km: e.distKm || 0 });
     }
-    legs.push({ lineId: curLine, from: path[legStart], to: path[path.length - 1],
+    legs.push({ lineId: baseOf(curLine), run: curLine, branch: branchOf(curLine), from: path[legStart], to: path[path.length - 1],
                 walk: curLine === null, distKm: legKm, transferAfter: 0, segs });
 
     // 각 leg 에 개통 상태를 실어 보낸다 → 화면에서 '미개통' 배지로 표시.
@@ -937,7 +1016,7 @@ const RouteFinder = (() => {
         if (openOnly && !e.open && !(allow && allow.has(e.lineId))) continue;
         // 개통 후엔 새 역에 선다 (창릉) — '그 해까지 개통' 계산(allow)에서도 새 역이 열렸으면 무정차 길은 없다
         if (stageBlocked(e, openOnly, allow)) continue;
-        const nl = e.lineId || null;
+        const nl = runOf(e);
         let cost = edgeMinutes(e), shown = edgeMinutes(e);
         if (line !== START && line !== null && nl !== null && !sameService(nl, line)) {
           cost += transferMinutes(u, line, nl, pu, e.to) + TRANSFER_DECISION_EXTRA;
@@ -948,8 +1027,14 @@ const RouteFinder = (() => {
         if (peakWait) {
           // 출퇴근 배차 — 처음 탈 때(출발역·걸어온 뒤) 와 갈아탈 때. 같은 열차·맞은편 환승은 0
           const boarding = nl && (line === START || line === null || (nl !== line && !sameService(nl, line) && !isPlatformTransfer(u, line, nl, pu, e.to)));
-          if (boarding) { const w = peakWaitAt(nl, u); cost += w; shown += w; }
+          if (boarding) { const w = peakWaitAt(nl, u, e.to); cost += w; shown += w; }
         } else if (!noWait) { const w = transferWait(nl, line, u, pu, e.to); cost += w; shown += w; }   // 기다리는 시간 (findRoute 와 같음)
+        if (!peakWait && nl) {
+          // 드문 열차(SPARSE_HW): 처음 탈 때는 늘, 기다림 빼는 순위 계산(noWait)에서는 갈아탈 때도 배차 절반을 넣는다
+          const boardFirst = line === START || line === null;
+          const boardXfer = !boardFirst && nl !== line && !sameService(nl, line);
+          if (boardFirst || (noWait && boardXfer)) { const w = sparseWait(nl, u, e.to); cost += w; shown += w; }
+        }
         const nk = stateKey(e.to, nl, u);
         const nd = d + cost;
         if (nd < (dist.get(nk) ?? Infinity)) {

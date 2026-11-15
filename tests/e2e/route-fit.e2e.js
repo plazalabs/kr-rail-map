@@ -38,7 +38,7 @@ async function run(b, [from, to, un]) {
 
 (async () => {
   // [1366, 577, true] = GitHub 러너 실측 안 높이 577px 를 그대로 흉내 (P18, 2026-11-15 — 로컬 1366×720 은 안 높이가 더 커서 통과했었다)
-  for (const [w, h, emu] of [[1440, 900], [1366, 768], [1366, 720], [1366, 577, true]]) {   // 1366×720 ≈ 안 높이 625px
+  for (const [w, h, emu] of [[1440, 900], [1440, 757, true], [1366, 768], [1366, 720], [1366, 577, true]]) {   // 1366×720 ≈ 안 높이 625px
     const b = await launch({ port: 9781, w, h: emu ? 720 : h });
     if (emu) await b.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
     await b.send('Network.setBypassServiceWorker', { bypass: true });

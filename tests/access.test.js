@@ -26,6 +26,7 @@ vm.runInContext(rsrc, rctx);
 const RF = rctx.RouteFinder;
 RF.buildGraph(lines.features, stations.features);
 RF.loadTransfers(transfers);
+RF.loadHeadways(JSON.parse(fs.readFileSync(path.join(ROOT, "data/headways.json"), "utf8")));   // build_access.js 와 같게 (11-15: 드문 열차·방향별 배차)
 
 let pass = 0, fail = 0;
 const fails = [];
@@ -285,7 +286,7 @@ check('자료 없는 역은 그렇다고 말한다', /계산하지 못했습니�
   const withG = Object.values(access.stations).filter(r => Array.isArray(r.g)).length;
   check('모든 역에 강남권 기준 역 번호(g)가 있다', withG === Object.keys(access.stations).length, withG);
   const kw = access.stations['st-355172776'];
-  check('광운대: 지금은 선릉, 개통 후는 삼성 기준 (32→9분, 경춘선 신이문·석계 뺀 뒤)', kw && nm(gd.member_ids[kw.g[0]]) === '선릉' && nm(gd.member_ids[kw.g[1]]) === '삼성' && kw.now[2] === 32 && kw.after[2] === 9, kw && kw.g);
+  check('광운대: 지금은 선릉, 개통 후는 삼성 기준 (33→9분 — 11-15 방향별 공식 배차·드문 열차 뒤 32→33)', kw && nm(gd.member_ids[kw.g[0]]) === '선릉' && nm(gd.member_ids[kw.g[1]]) === '삼성' && kw.now[2] === 33 && kw.after[2] === 9, kw && kw.g);
   const sd = fs.readFileSync(path.join(ROOT, 'js/station-detail.js'), 'utf8');
   check("역 상세 칩은 '강남권까지' + 기준 역 안내", /'강남권까지'/.test(sd) && /강남·역삼·선릉·삼성 중 가장 빠른 역/.test(sd) && !/\['강남까지'/.test(sd));
 }

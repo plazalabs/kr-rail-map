@@ -1690,7 +1690,7 @@ document.getElementById('route-go').addEventListener('click', () => {
         ? `<div class="leg"><i data-ic="walk"></i> ${a}역 내 환승 (도보 이동)</div>`
         : `<div class="leg"><i data-ic="walk"></i> ${a} → ${b} (도보 이동)</div>`;
     } else {
-      const ln = lineNameOf.get(leg.lineId) || leg.lineId;
+      const ln = (lineNameOf.get(leg.lineId) || leg.lineId) + (leg.branch ? ` (${leg.branch})` : '');   // 갈래 운행 — 성수지선 등 (11-15)
       const lineColor = (LINES.find(l => l.properties.id === leg.lineId)?.properties.color) || '#888';
       const badge = leg.unopened ? ` <span class="badge-unopened">미개통</span>` : '';
       // 경유역 목록 (네이버 스타일: 세로 타임라인, 전부 표시)
@@ -2067,6 +2067,9 @@ const dataPromise = loadData().then(() => {
     .then(r => r.ok ? r.json() : null)
     .then(doc => { if (doc) RouteFinder.loadTransfers(doc); })
     .catch(() => null));
+  // 출근 시간 배차(역별·방향별, 공식 시간표) — 길찾기 환승 기다림·드문 열차(청량리 수인분당 등)에 쓴다 (11-15).
+  // 예전엔 '배차 넣기' 스위치를 켤 때만 받아, 길찾기는 노선별 대략값으로 계산했다. 못 받으면 대략값으로 계속 간다
+  extra.push(window.KR_ensureHeadways().catch(() => null));
   // 신분당선·GTX-A·공항철도 별도 운임표 (감사 N1~N3). 못 받아도 route-compare.js 의 같은 기본값으로 계산된다
   if (typeof RouteCompare !== 'undefined' && RouteCompare.loadSpecialFares) {
     extra.push(fetch('data/fares-special.json').then(r => r.ok ? r.json() : null)

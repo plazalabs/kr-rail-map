@@ -1676,3 +1676,15 @@ body.map-ready #map-skeleton .sk { animation: none; }
   #route-panel .rc-fare-note { margin: 0 0 2px; line-height: 1.3; }
   #route-panel .rc-insight { margin: 2px 0; line-height: 1.35; }
 }
+
+/* CI 러너 1440×900 창의 안 높이 757px (2026-11-15, v261 CI route-fit 11px 넘침): ≤720px 규칙과 기본 사이 틈.
+ * 여기서는 글을 숨기지 않고 여백만 줄인다 (rp-note·rp-opt-sub 그대로) */
+@media (min-width: 769px) and (min-height: 721px) and (max-height: 780px) {
+  #route-panel { gap: 4px; padding-top: 8px; padding-bottom: 8px; }
+  #route-panel .rc-nf { padding: 6px 10px; margin-bottom: 4px; }
+  #route-panel .rc-tabs { margin-bottom: 2px; }
+  #route-panel .rc-insight { margin: 4px 0; }
+  #route-panel .unopened-notice { margin: 4px 0; padding: 5px 8px; }
+  #route-panel .rc-basis { margin: 0 0 2px; }
+  #route-result .total { margin-bottom: 4px; }
+}

@@ -282,6 +282,10 @@ const RouteFinder = (() => {
     { line: 'seoul-metropolitan-subway-gyeongchun-line', at: '상봉', tag: '청량리', toward: '중랑' },
     { line: 'gyeongui-line-seoul', at: '가좌', tag: '서울역', toward: '신촌' },
     { line: 'gyeongui-jungang-line', at: '가좌', tag: '용산', toward: '홍대입구' },
+    // 5호선 강동: 방화 쪽에서 온 열차가 강동에서 하남검단산행(길동 쪽)·마천행(둔촌동 쪽)으로 갈린다 — 길동↔둔촌동은 강동에서 갈아탐
+    // (서울교통공사 열차운행시각표 — 길동~둔촌동을 잇는 열차 없음). 전엔 길동→둔촌동 4분 무환승.
+    { line: 'seoul-subway-line-5', at: '강동', tag: '하남', toward: '길동' },
+    { line: 'seoul-subway-line-5', at: '강동', tag: '마천', toward: '둔촌동' },
   ];
   const JUNCTION_TAGS = new Set(JUNCTION_TURNS.map(j => j.tag));
   // 결과 legs 에 보이는 운행: 갈림목 방향 표시는 떼고 원래 노선으로 (갈래 이름처럼 보이면 안 됨)
@@ -838,6 +842,24 @@ const RouteFinder = (() => {
         }
         return false;
       };
+      // 시각표에 없는 가짜 정차역: 그 역 양옆 두 역이 시각표에서 바로 이웃이고 지도에도 바로 이어져 있으면 그 역의 이 노선 간선을 지운다
+      // (수인분당 대청 — 지도 선이 3호선 대청 옆을 지나 대모산입구–대청–수서로 섰다. 시각표는 대모산입구 → 수서, v277)
+      adj.forEach((l2, m) => {
+        const nmM = nameOf(m);
+        if (names.has(nmM) || !inCapital(m)) return;
+        const nb = l2.filter(e => ok(e) && e.officialMin == null);
+        if (nb.length !== 2 || nb[0].to === nb[1].to) return;
+        const [x, y] = [nb[0].to, nb[1].to];
+        if (!pairs.has(key(nameOf(x), nameOf(y)))) return;
+        if (!(adj.get(x) || []).some(e => ok(e) && e.to === y)) return;
+        [x, y].forEach(z => {
+          adj.set(m, (adj.get(m) || []).filter(e => !(ok(e) && e.to === z)));
+          adj.set(z, (adj.get(z) || []).filter(e => !(ok(e) && e.to === m)));
+          geomAdjacent.delete(lid + ':' + pairKey(m, z));
+        });
+        kricTopologyFix.removed++;
+        kricTopologyFix.pairs.push(lid + ':' + nmM + '(정차 아님)');
+      });
       drop.forEach(([u, v]) => {
         if (!linked(u, v)) { kricTopologyFix.kept.push(lid + ':' + nameOf(u) + '–' + nameOf(v)); return; }
         [[u, v], [v, u]].forEach(([x, y]) => adj.set(x, (adj.get(x) || []).filter(e => !(ok(e) && e.to === y))));

@@ -6,8 +6,8 @@
  "summary": {
   "lines": 85,
   "open_lines": 67,
-  "open_pairs": 1465,
-  "open_confirmed": 1456,
+  "open_pairs": 1464,
+  "open_confirmed": 1455,
   "open_confirmed_pct": 99.4,
   "open_lines_all_confirmed": 63
  },
@@ -1167,8 +1167,8 @@
   "suin-bundang-line": {
    "name": "수인·분당선",
    "status": "open",
-   "stations": 64,
-   "confirmed": 64,
+   "stations": 63,
+   "confirmed": 63,
    "sources": [
     "official",
     "osm-geometry",
@@ -1177,7 +1177,10 @@
    "unconfirmed": [],
    "provisional": false,
    "partial": false,
-   "gap_reason": ""
+   "gap_reason": "",
+   "removed_extra": [
+    "대청"
+   ]
   },
   "taebaek-line": {
    "name": "태백선",

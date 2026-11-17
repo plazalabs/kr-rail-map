@@ -21,7 +21,8 @@
 (function () {
   'use strict';
 
-  var byId = {};   // 역 ID → 시세 (IMPL12: 예전엔 역 이름 키라 동명 역이 서로의 시세를 받았다)
+  var byId = {};
+  var missing = {};   // 시세 없는 수도권 역 → { r: 'no-dong'|'no-apt'|'not-collected', d: 법정동 }   // 역 ID → 시세 (IMPL12: 예전엔 역 이름 키라 동명 역이 서로의 시세를 받았다)
   var meta = null;
   var loading = null;
   var ready = false;
@@ -53,6 +54,7 @@
         // 역 ID 키 자료만 쓴다. 옛 이름 키 자료(캐시에 남은 것)는 동명 역에 남의 시세를 붙이므로 쓰지 않는다.
         if (d.keyed_by !== 'station_id') throw new Error('old name-keyed data');
         byId = d.stations || {};
+        missing = d.missing || {};
         // 역 수와 법정동 수 (정반합 8차 A17) — 여러 역이 같은 법정동 값을 쓴다(값 있는 역만 센다). 타일 수를 독립 표본으로 읽지 않게 화면에 밝힌다
         var dongs = {}, n = 0;
         for (var k in byId) { var o = byId[k]; if (o && o.lawd && o.dong && o.medianPerPyeong != null) { dongs[o.lawd + '|' + o.dong] = 1; n++; } }
@@ -161,6 +163,7 @@
     loadComplexes: loadComplexes,
     of: of,
     sameDong: sameDong,
+    missingOf: function (id) { return missing[id] || null; },
     complexes: complexes,
     isReady: isReady,
     isComplexReady: function () { return cxReady; },

@@ -173,6 +173,34 @@ def main():
                     "medianPerPyeong": d["medianPerPyeong"],
                     "medianPrice": d["medianPrice"],
                     }
+    # 시세가 없는 수도권 역은 왜 없는지 적는다 (화면이 '자료 없음' 한 마디로 끝내지 않게)
+    #   no-dong       : 역 주소 자료에서 이 역의 법정동을 찾지 못함 (예: 9호선 신논현·봉은사)
+    #   no-apt        : 법정동은 알지만 그 동에 기간 안 아파트 매매가 없음 (상업지 — 명동 충무로2가, 종로3가 돈의동)
+    #   not-collected : 그 시군구 실거래를 아직 받지 않음
+    st2dong = {}
+    for key, sids in dong2st.items():
+        for sid in sids:
+            st2dong.setdefault(sid, []).append(key)
+    collected = {d["lawd"] for d in out} | {pathlib.Path(f).stem.split("_")[0] for f in glob.glob(str(RTMS / "apt-trade" / "*_??????.json"))}
+    all_st = json.loads((ROOT / "data" / "stations.geojson").read_text("utf8"))["features"]
+    in_cap = lambda c: 126.3 < c[0] < 127.9 and 36.85 < c[1] < 38.3
+    missing = {}
+    for f in all_st:
+        sid = f["properties"]["id"]
+        if sid in by_station or not in_cap(f["geometry"]["coordinates"]):
+            continue
+        keys = sorted(st2dong.get(sid, []))
+        if not keys:
+            missing[sid] = {"r": "no-dong"}
+        elif any(k[0] in collected for k in keys):
+            missing[sid] = {"r": "no-apt", "d": "·".join(k[1] for k in keys)}
+        else:
+            missing[sid] = {"r": "not-collected", "d": "·".join(k[1] for k in keys)}
+    cnt = {}
+    for v in missing.values():
+        cnt[v["r"]] = cnt.get(v["r"], 0) + 1
+    print("시세 없는 수도권 역", len(missing), cnt)
+
     payload = {
         "updated": sorted({m for d in out for m in d["months"]})[-1] if out else None,
         "source": "국토교통부 아파트 매매 실거래가 (공공데이터포털)",
@@ -181,6 +209,7 @@ def main():
         "districts": out,
         "keyed_by": "station_id",
         "stations": by_station,
+        "missing": missing,
     }
     # 압축(공백 없이) 저장 — 앱이 그대로 받는 파일이라 들여쓰기는 전송량만 늘린다 (IMPL12 건 4, 397→290KB)
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), "utf8")

@@ -31,5 +31,16 @@ check('타일: 거래 적음 판단은 건수로만 (값이 없어도)', /raw &&
 check('비교표: 거래 적음(N건)', /거래 적음\(' \+ p\.deals \+ '건\)/.test(mm));
 check('시세 역 수는 값 있는 역만 센다', /medianPerPyeong != null/.test((pr.match(/meta\.nStations[\s\S]{0,400}/) || [''])[0] + (pr.match(/for \(var k in byId\)[^\n]*/) || [''])[0]));
 
+console.log('\n[시세 빈 역의 이유 — 숙제 41]');
+const ST = JSON.parse(read('data/stations.geojson')).features;
+const inCap = c => c[0] > 126.3 && c[0] < 127.9 && c[1] > 36.85 && c[1] < 38.3;
+const capNo = ST.filter(f => inCap(f.geometry.coordinates) && !d.stations[f.properties.id]);
+const miss = d.missing || {};
+check('시세 없는 수도권 역마다 이유가 있다', capNo.length > 0 && capNo.every(f => miss[f.properties.id] && ['no-dong', 'no-apt', 'not-collected'].includes(miss[f.properties.id].r)), capNo.filter(f => !miss[f.properties.id]).slice(0, 5).map(f => f.properties.name_ko));
+const byName = n => ST.filter(f => f.properties.name_ko === n).map(f => miss[f.properties.id]).find(Boolean);
+check('명동: 아파트 거래 없는 동네(no-apt)', (byName('명동') || {}).r === 'no-apt', byName('명동'));
+check('신논현: 법정동 못 찾음(no-dong)', (byName('신논현') || {}).r === 'no-dong', byName('신논현'));
+check('역 상세: 빈 이유 문구', /missingOf\(sid\)/.test(sd) && /아파트 매매가 없는 동네/.test(sd) && /법정동을 찾지 못해/.test(sd));
+
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

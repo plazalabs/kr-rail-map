@@ -418,8 +418,13 @@
       ? StationPrice.of(sid) : null;
     if (!price && typeof StationPrice !== 'undefined' && StationPrice.isReady()) {
       // 자료가 없다고 말한다 — 칸이 말없이 사라지면 '시세가 안 뜬다'인지 '자료가 없다'인지 알 수 없다
+      var ms = StationPrice.missingOf ? StationPrice.missingOf(sid) : null;
+      var why = !ms ? '수도권 밖은 아직 모으지 않았습니다'
+        : ms.r === 'no-dong' ? '역 주소 자료에서 이 역의 법정동을 찾지 못해 시세를 붙이지 못했습니다'
+        : ms.r === 'no-apt' ? esc(ms.d) + ' — 최근 6개월 아파트 매매가 없는 동네입니다(상가·업무지 등)'
+        : esc(ms.d) + ' — 이 시군구 실거래를 아직 받지 않았습니다';
       return '<div class="sd-sec sd-price-sec sd-price-none"><h3>아파트 매매 시세</h3>' +
-        '<span class="mk-none">자료 없음</span> <span class="mk-where">이 역 법정동에 묶인 아파트 매매 실거래가 없습니다 (수도권 밖은 아직 모으지 않았습니다)</span></div>';
+        '<span class="mk-none">자료 없음</span> <span class="mk-where">' + why + '</span></div>';
     }
     if (!price) return '';
 

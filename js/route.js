@@ -1215,6 +1215,12 @@ const RouteFinder = (() => {
     }
     const path = revPath.reverse();
     const edges = revEdges.reverse();   // edges[i] : path[i] → path[i+1]
+    return legsOfPath(path, edges, peak);
+  }
+
+  // 경로(역 순서·간선) → legs·분·환승. 최적·최소환승·최소요금 세 탭이 모두 이 함수 하나로 legs 를 만든다
+  // (갈래 운행 '노선#갈래'를 환승으로 세는 규칙이 탭마다 갈라지지 않게 — 성수지선→본선)
+  function legsOfPath(path, edges, peak) {
 
     // leg 분해 (노선 바뀌면 환승)
     const legs = [];
@@ -1379,7 +1385,7 @@ const RouteFinder = (() => {
   }
 
   const api = {
-    buildGraph, ensureGraph, findRoute, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
+    buildGraph, ensureGraph, findRoute, legsOfPath, runOf, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
     loadTransfers, loadHeadways, loadHeadwaysOff, withBand, hasHeadwaysOff: () => !!headwayOff, peakWaitAt, boardWait, transferMinutes, sameService, countTransfers,
     transferWait, stopStages, stageIds, hasHeadways: () => !!headwayDoc,   // I1·I2 (2026-11-14): route-compare 가 같은 대기 시간을 쓰게 · 배차 자료 받았는지
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.

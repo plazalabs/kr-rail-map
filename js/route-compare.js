@@ -295,39 +295,9 @@ const RouteCompare = (() => {
   function withPeak(peak, fn, band) { const old = PEAK; PEAK = !!peak; try { return RF.withBand ? RF.withBand(band, fn) : fn(); } finally { PEAK = old; } }
   function buildLegs(stations, edges) {
     if (stations.length <= 1) return { legs: [], minutes: 0, transfers: 0 };
-    const legs = [];
-    let legStart = 0, curLine = edges[0].lineId;
-    let minutes = RF.accessMinutes(curLine);   // 첫 구간이 KTX 면 접근 시간
-    // 처음 탈 때 기다림 — findRoute 와 같은 규칙(드문 열차만, 배차 넣기면 모든 열차). 예전엔 여기만 빠져 있었다
-    let firstWait = (curLine && RF.boardWait) ? RF.boardWait(curLine, stations[0], stations[1], PEAK) : 0;
-    minutes += firstWait;
-    // leg 별 거리도 남긴다 — 요금 계산에서 KTX 구간만 따로 떼어내야 한다
-    let km = 0, segs = [];   // segs: 이 구간에서 지난 역 쌍과 거리 — 공항철도 독립구간 요금에 쓴다 (2026-11-13)
-    edges.forEach((e, i) => {
-      minutes += edgeMinutes(e);
-      if (e.lineId !== curLine) {
-        // 환승은 지금 역(stations[i])에서. 역·노선쌍마다 실제 도보 시간이 다르다.
-        const tm = (curLine !== null && e.lineId !== null)
-          ? RF.transferMinutes(stations[i], curLine, e.lineId, stations[i - 1], stations[i + 1]) : 0;
-        // 갈아탈 때 기다리는 시간 — findRoute(route.js)와 같은 정의. 예전엔 여기만 빠져 같은 경로가 탭마다 31분/28분으로 달랐다 (감사1, 2026-11-14)
-        const bw = (curLine === null && e.lineId !== null && RF.boardWait) ? RF.boardWait(e.lineId, stations[i], stations[i + 1], PEAK) : 0;   // 걸어온 뒤 처음 타는 열차
-        if (bw && legs.every(l => l.walk)) firstWait += bw;
-        const wt = ((curLine !== null && e.lineId !== null && RF.transferWait) ? RF.transferWait(e.lineId, curLine, stations[i], stations[i - 1], stations[i + 1]) : 0) + bw;
-        legs.push({ lineId: curLine, from: stations[legStart], to: stations[i],
-                    walk: curLine === null, distKm: km, transferAfter: tm, waitAfter: wt, segs,
-                    platform: !!(curLine && e.lineId && RF.isPlatformTransfer(stations[i], curLine, e.lineId, stations[i - 1], stations[i + 1])) });
-        if (tm) minutes += tm;
-        minutes += wt;
-        minutes += RF.accessMinutes(e.lineId);
-        legStart = i; curLine = e.lineId; km = 0; segs = [];
-      }
-      km += e.distKm;
-      segs.push({ a: stations[i], b: stations[i + 1], km: e.distKm || 0 });
-    });
-    legs.push({ lineId: curLine, from: stations[legStart], to: stations[stations.length - 1],
-                walk: curLine === null, distKm: km, transferAfter: 0, segs });
-    const transfers = RF.countTransfers(legs);   // 이어 달리는 구간(GTX-A 미개통 구간)은 환승이 아니다
-    return { legs, minutes: Math.round(minutes), transfers, firstWait, peakWait: PEAK };
+    // 최적 탭(route.js findRoute)과 같은 함수 — 갈래 운행·이어 달리기·기다림 규칙이 탭마다 같다
+    const r = RF.legsOfPath(stations, edges, PEAK && (!RF.hasHeadways || RF.hasHeadways()));
+    return { legs: r.legs, minutes: r.minutes, transfers: r.transfers, firstWait: r.firstWait, peakWait: PEAK };
   }
 
   // 최소환승: (역,노선) 상태 다익스트라, 비용=(환승,분) 사전식
@@ -354,9 +324,10 @@ const RouteCompare = (() => {
         if (openOnly && !e.open) continue;
         if (!openOnly && e.nowOnly) continue;   // 개통 후엔 새 역에 선다 (route.js NOW_ONLY_SPANS)
         let nt, nl;
+        const run = RF.runOf(e);   // 갈래 운행은 '노선#갈래' — 본선과 갈아탄다 (성수지선)
         if (e.walk) { nt = t + 1; nl = null; }
-        else if (cl === null || RF.sameService(cl, e.lineId)) { nt = t; nl = e.lineId; }
-        else { nt = t + 1; nl = e.lineId; }
+        else if (cl === null || RF.sameService(cl, run)) { nt = t; nl = run; }
+        else { nt = t + 1; nl = run; }
         const nm = m + edgeMinutes(e);
         const vk = skey(e.to, nl);
         const vd = dist.get(vk);
@@ -407,13 +378,13 @@ const RouteCompare = (() => {
       for (const e of (RF.adjacency().get(u) || [])) {
         if (openOnly && !e.open) continue;
         if (!openOnly && e.nowOnly) continue;   // 개통 후엔 새 역에 선다 (route.js NOW_ONLY_SPANS)
-        const nl = e.walk ? null : e.lineId;
+        const nl = e.walk ? null : RF.runOf(e);   // 갈래 운행은 '노선#갈래' (성수지선)
         // metroOnly: 별도 운임(신분당·GTX-A·공항철도)·일반철도·KTX 를 안 타는 '순수 전철' 후보 (pickCheapest 참고)
         if (metroOnly && !e.walk && (SPECIAL[e.lineId] || ['ktx', 'conventional'].includes(RF.categoryOf(e.lineId)))) continue;
         const transfer = !e.walk && cl !== null && !RF.sameService(cl, nl);
         // KTX 는 km당 요금이 수도권 전철의 6배쯤 된다. 같은 거리라도 훨씬 비싸므로
         // '최소요금' 탐색에서는 KTX 구간을 6배로 세야 무궁화·ITX 경로가 이긴다.
-        const w = (!e.walk && RF.categoryOf(nl) === 'ktx') ? 6 : 1;
+        const w = (!e.walk && RF.categoryOf(e.lineId) === 'ktx') ? 6 : 1;
         const nkm = km + e.distKm * w + (transfer ? TRANSFER_KM : 0);
         const nm = m + edgeMinutes(e);
         const vk = skey(e.to, nl);

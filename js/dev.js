@@ -85,14 +85,15 @@ const StationDev = (() => {
   function whereHtml(r) {
     const { ds, names } = dongNames(r);
     if (ds.length < 2) return '';
-    const total = '합계 <b>' + num(r.hh) + '세대</b>';
+    // 합계가 0이면 '0세대'라고 쓰지 않는다 — 공급이 없다는 뜻으로 읽힌다.
+    const total = r.hh ? '합계 <b>' + num(r.hh) + '세대</b>' : '합계 <b>자료에서 확인되지 않음</b>';
     if (ds.length < 4) {
       return '<div class="dv-where">' + esc(names.join('·')) + ' ' + total + '</div>';
     }
     let h = '<details class="dv-where dv-where-more"><summary>' + esc(names.slice(0, 3).join('·')) +
       ' <span class="dv-more">외 ' + (ds.length - 3) + '곳</span> ' + total + '</summary><ul class="dv-dongs">';
     ds.forEach((d, i) => {
-      h += '<li><span>' + esc(names[i]) + '</span><span class="dv-h">' + num(d.hh) + '세대</span></li>';
+      h += '<li><span>' + esc(names[i]) + '</span><span class="dv-h">' + (d.hh ? num(d.hh) + '세대' : '확인되지 않음') + '</span></li>';
     });
     return h + '</ul></details>';
   }

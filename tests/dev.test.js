@@ -126,8 +126,13 @@ const sample = {
   ],
   recent: { cnt: 2, hh: 300, byYear: { 2024: 300 } },
 };
+const zeroMulti = Object.assign({}, sample, {
+  lawd: '11170', sgg: '용산구', dong: '동자동', cnt: 0, hh: 0, started: 0, planned: 0, byYear: {}, list: [], recent: null,
+  dongs: [{ lawd: '11170', sgg: '용산구', dong: '동자동', hh: 0 }, { lawd: '11140', sgg: '중구', dong: '남대문로5가', hh: 0 },
+    { lawd: '11140', sgg: '중구', dong: '봉래동2가', hh: 0 }] });
+const zeroMany = Object.assign({}, zeroMulti, { dongs: zeroMulti.dongs.concat([{ lawd: '11140', sgg: '중구', dong: '회현동1가', hh: 0 }]) });
 Dev.setDoc({ keyed_by: 'station_id', stations: { '수원': sample, '한빛': Object.assign({}, sample, {
-  cnt: 0, hh: 0, started: 0, planned: 0, byYear: {}, list: [], recent: null }) } });
+  cnt: 0, hh: 0, started: 0, planned: 0, byYear: {}, list: [], recent: null }), '서울': zeroMulti, '서울4': zeroMany } });
 
 const h = Dev.sectionHtml('수원');
 check('총 세대수를 보여준다', /1,200/.test(h));
@@ -147,6 +152,14 @@ check('0세대는 0이라고 말한다', /없습니다/.test(zero) && !/자료�
 const none = Dev.sectionHtml('없는역');
 check('자료 없는 역은 자료가 없다고 말한다', /자료를 받지 못한 동네/.test(none));
 check('자료 없음을 0세대라고 하지 않는다', !/0세대/.test(none));
+
+// 여러 동 합계가 0이면 '합계 0세대'라고 쓰지 않는다 — 공급 0으로 읽힌다 (숙제 2-1)
+for (const id of ['서울', '서울4']) {
+  const zm = Dev.sectionHtml(id);
+  check(id + ': 여러 동 합계 0은 0세대로 쓰지 않는다', !/0세대/.test(zm), zm.slice(0, 200));
+  check(id + ': 여러 동 합계 0은 자료에서 확인되지 않음', /자료에서 확인되지 않음/.test(zm));
+  check(id + ': 동 이름은 그대로 보인다', /남대문로5가/.test(zm));
+}
 
 check('of() 는 없는 역에 null', Dev.of('없는역') === null);
 check('brief() 요약', Dev.brief('수원').hh === 1200 && Dev.brief('수원').overdue === 800);

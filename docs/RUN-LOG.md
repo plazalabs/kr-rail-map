@@ -4,7 +4,7 @@
 계획: `docs/plans/block-A.md` · 시작 기준선: 데이터 시험 실패 10개
 
 ### 이어서 할 일 (대화 정리 전 메모, 11-18)
-- **9번 진행 중 (커밋 전)**: `data/build_access.js`(slower_reasons — 정차 단계별로 다시 재서 이유), `js/access.js`(+N분 빨간 글자, 표 아래 이유 한 줄, 평균 줄 +N분), `tests/access.test.js`(느려지는 역 이유·화면 시험)가 고쳐져 있음. 남은 것: `node data/build_access.js && node data/build_rank.js` (약 4분) → `node tests/access.test.js` 와 데이터 시험(D-40 통과 기대) → access.json 이 slower_reasons 말고는 그대로인지 확인 → sw.js v291 · CHANGELOG · TODO 9 [x] · RUN-LOG 전후 표(느려지는 48건, 이유 역 수) → 커밋.
+- 9번은 끝남(커밋됨). 다음은 아래 8번.
 - **그다음 8번 (블록 A 마지막)**: 서해선 두 노선 이름 → '서해선(광역전철)'(seoul-metropolitan-subway-seohae-line) · '서해선(일반철도)'(seohae-line-conv). 화면 노선도 고르기가 이미 쓰는 말. 새 스크립트 data/fix_line_names.js 로 lines.geojson 을 고치고, build_pages.py(노선 페이지 제목)·build_rank.js 다시, `tests/readme-numbers.test.js`·`tests/build-public.test.js` 확인. CLAUDE.md 예시는 '(도시철도)' — 회장님 질문 칸에 적을 것. 광주 2호선(D-15)은 손대지 않음.
 - **그다음 블록 B**: 계획 `docs/plans/block-B.md` 써 두었음(아직 커밋 안 함 — 블록 B 시작 때 커밋). 회장님 허락: `tests/e2e/invariants.spec.mjs` 는 선택자만 고침, 기대 숫자 금지, `.claude/settings.json` 의 그 deny 한 줄을 잠깐 풀고 블록 끝에 다시 잠금.
 - 작업 습관: 데이터 생성 스크립트는 `data/` 안. 편집은 파이썬 패치 파일(-X utf8)로 — bash heredoc 은 역슬래시를 먹는다. playwright 는 `--workers=1`, 출력은 파일로 받아서 봄. 잠긴 시험 고침 제안은 `scratch/locked-test-proposals/`.
@@ -71,6 +71,11 @@
 |---|---|---|
 | 시세 없는 수도권 역 | 255역 '자료 없음 (수도권 밖은 아직…)' 한 문장 | 255역 이유: 아파트 거래 없는 동 61 · 법정동 못 찾음 194 |
 | 시세 있는 역 | 463 | 463 (그대로) |
+#### 9 개통 후 느려짐 (D-40)
+| 항목 | 전 | 후 |
+|---|---|---|
+| 느려지는 칸 (GTX-A 북쪽 24역) | 48칸, 이유 없음, 화면은 −만 가정 | 48칸, 이유 'GTX-A 창릉역 정차 추가', 화면 '+1분/+2분' |
+| 시간 값 | — | 그대로 (1,237역 모두 같음) |
 
 ### 잠긴 시험 변경 제안
 

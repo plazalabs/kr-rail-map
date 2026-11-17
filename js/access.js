@@ -164,7 +164,10 @@ const StationAccess = (() => {
       '.sa-gain.sa-new{color:#1a73e8}' +
       // 다크 테마(어두운 바탕)에서는 초록·파랑을 밝게 — 대비 4.5:1 (axe 11-15)
       'body[data-theme="dark"] .sa-gain,body[data-theme="eclipse"] .sa-gain,body[data-theme="neon"] .sa-gain{color:#5fd38d}' +
-      'body[data-theme="win95"] .sa-gain{color:#0b592d}' +   // 회색 바탕 #c0c0c0 대비 4.5:1
+      'body[data-theme="win95"] .sa-gain{color:#0b592d}' +
+      '.sa-gain.sa-slow{color:#b3261e}' +
+      'body[data-theme="dark"] .sa-gain.sa-slow,body[data-theme="eclipse"] .sa-gain.sa-slow,body[data-theme="neon"] .sa-gain.sa-slow{color:#f28b82}' +
+      'body[data-theme="win95"] .sa-gain.sa-slow{color:#7a1410}' +   // 회색 바탕 #c0c0c0 대비 4.5:1
       'body[data-theme="dark"] .sa-gain.sa-new,body[data-theme="eclipse"] .sa-gain.sa-new,body[data-theme="neon"] .sa-gain.sa-new{color:#8ab4f8}' +
       '.sa-none{color:var(--muted,#5b6470)}' +
       '.sa-sum{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border,#e5e7eb);' +
@@ -202,6 +205,7 @@ const StationAccess = (() => {
       let gain = '';
       if (r.isNew) gain = '<span class="sa-gain sa-new">신규</span>';
       else if (r.save > 0) gain = '<span class="sa-gain">−' + r.save + '분</span>';
+      else if (r.save < 0) gain = '<span class="sa-gain sa-slow">+' + (-r.save) + '분</span>';   // 개통 후 느려짐 (새 정차) — 이유는 표 아래
       const nowTxt = r.now == null
         ? '<span class="sa-none">지금은 없음</span>'
         : (r.now === 0 ? '여기' : fmt(r.now));
@@ -211,6 +215,9 @@ const StationAccess = (() => {
         '<td>' + gain + '</td></tr>';
     }
     h += '</tbody></table>';
+    // 개통 후 느려지는 칸이 있으면 이유를 같이 (자료 access.slower_reasons)
+    const why = doc.slower_reasons && doc.slower_reasons[stationId];
+    if (why && a.rows.some(r => r.save != null && r.save < 0)) h += '<div class="sa-note sa-slow-note">+N분 = 개통 후 더 걸림: ' + esc(why) + '</div>';
 
     // 요약 — 3대 업무지구 평균, 전국 순위, 개통 단축 순위.
     // 줄을 둘로 나눈다. 한 줄에 몰면 좁은 패널에서 숫자가 줄바꿈으로 쪼개진다.
@@ -221,7 +228,7 @@ const StationAccess = (() => {
       if (a.score.now != null) {
         gainMin = Math.round(a.score.now) - Math.round(a.score.after);
         s += ' <span class="sa-rank">(지금 ' + fmt(Math.round(a.score.now)) +
-          (gainMin > 0 ? ', −' + gainMin + '분' : '') + ')</span>';
+          (gainMin > 0 ? ', −' + gainMin + '분' : gainMin < 0 ? ', +' + (-gainMin) + '분' : '') + ')</span>';
       }
       lines.push(s);
     }

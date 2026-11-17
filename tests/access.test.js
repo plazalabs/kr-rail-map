@@ -291,6 +291,17 @@ check('자료 없는 역은 그렇다고 말한다', /계산하지 못했습니�
   check("역 상세 칩은 '강남권까지' + 기준 역 안내", /'강남권까지'/.test(sd) && /강남·역삼·선릉·삼성 중 가장 빠른 역/.test(sd) && !/\['강남까지'/.test(sd));
 }
 
+section('개통 후 느려지는 역 — +N분과 이유 (숙제 9, D-40)');
+{
+  const slow = Object.entries(access.stations).filter(([, v]) => v.now.some((n, i) => n != null && v.after[i] != null && v.after[i] > n));
+  check('느려지는 역마다 이유가 자료에 있다', slow.length > 0 && slow.every(([id]) => access.slower_reasons && access.slower_reasons[id]), slow.filter(([id]) => !(access.slower_reasons || {})[id]).length + '역 이유 없음');
+  if (slow.length && typeof SA.sectionHtml === 'function') {
+    const h = SA.sectionHtml(slow[0][0]);
+    check('화면: +N분으로 보인다', /sa-slow">\+\d+분/.test(h), h.slice(0, 200));
+    check('화면: 이유를 같이 적는다', /개통 후 더 걸림: /.test(h) && !!access.slower_reasons && h.includes(String(access.slower_reasons[slow[0][0]] || '').split(' · ')[0].slice(0, 10)));
+  }
+}
+
 console.log('\n결과: ' + pass + '개 통과, ' + fail + '개 실패');
 if (fail) {
   console.log('\n실패 목록');

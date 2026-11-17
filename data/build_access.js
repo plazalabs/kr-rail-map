@@ -135,6 +135,13 @@ const ids = stations.features.map(f => f.properties.id);
 const out = {};
 ids.forEach(id => { out[id] = { now: [], after: [] }; });
 
+// 개통 후가 지금보다 느린 값은 새 정차(창릉·삼성) 때문일 수밖에 없다(개통은 길을 더할 뿐, 바닥값 = 정차 단계만 넣은 지금 길).
+// 어느 정차 때문인지 단계 하나씩 넣어 다시 재고 그 이유를 slower_reasons 에 적는다 (D-40). 화면은 '+N분'과 이 이유를 보여 준다.
+const STAGE_REASON = {
+  'gtx-a-changneung': 'GTX-A 창릉역 정차 추가 — 대곡~연신내 사이에 역이 하나 늘어 그만큼 더 걸림',
+  'gtx-a-samseong-stop': 'GTX-A 삼성역 정차 — 서울역~수서 사이에 역이 하나 늘어 그만큼 더 걸림',
+};
+const slowerReasons = {};
 const t0 = Date.now();
 for (const id of ids) {
   // 두 번의 다익스트라로 5개 거점을 한꺼번에 얻는다.
@@ -154,6 +161,15 @@ for (const id of ids) {
     // 고르느라(환승 판단 여유분) 표시 분이 그보다 길게 나오는 경우(2026-11-11, 19역)는 그 값을 쓴다.
     out[id].after.push(b == null ? (f == null ? null : f) : (f == null ? b : Math.min(f, b)));
   });
+  const slowIdx = dests.map((d, i) => i).filter(i => out[id].now[i] != null && out[id].after[i] != null && out[id].after[i] > out[id].now[i]);
+  if (slowIdx.length) {
+    const why = [];
+    for (const s of ALL_STAGES) {
+      const m = RF.allTimesFrom(id, { openOnly: true, allow: new Set([s]), noWait: false });
+      if (slowIdx.some(i => { const t = bestOf(m, dests[i]); return t != null && t > out[id].now[i]; })) why.push(STAGE_REASON[s] || (s + ' 정차 추가'));
+    }
+    if (why.length) slowerReasons[id] = why.join(' · ');
+  }
   // GBD 기준 역 번호 [지금, 개통 후] — 개통 후 값이 지금 길로 정해졌으면(같거나 지금이 빠름) 지금 번호
   if (GBD_I >= 0) {
     const gd = dests[GBD_I], na = out[id].now[GBD_I], aa = out[id].after[GBD_I];
@@ -228,6 +244,7 @@ const doc = {
   })),
   stations: out,
   excluded,
+  slower_reasons: slowerReasons,
 };
 
 // 연도별 값(y)은 지도 화면이 쓰지 않는다 — 떡상 랭킹 자료(build_rank.js)만 쓰므로 따로 둔다.

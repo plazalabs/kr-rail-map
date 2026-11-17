@@ -615,7 +615,8 @@
 
     // 실거래 7종 (1단계, 2026-11-09) — 투자 모드에서만. 자료 없는 종류는 '자료 없음', 5건 미만은 '거래 적음'.
     if (invest && typeof StationMarket !== 'undefined' && StationMarket.isReady()) {
-      P += '<div class="sd-sec sd-market-sec"><h3>실거래 (7종)</h3>' + StationMarket.sectionHtml(sid) + '</div>';
+      const mkRep = typeof StationPrice !== 'undefined' && StationPrice.isReady() ? StationPrice.of(sid) : null;
+      P += '<div class="sd-sec sd-market-sec"><h3>실거래 (7종)</h3>' + StationMarket.sectionHtml(sid, mkRep) + '</div>';
     }
 
     // 역세권 범위(근사) — 1차 250m 안 출구·다른 역 수. 모듈이 없으면 건너뛴다.

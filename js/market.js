@@ -50,10 +50,15 @@
     ['nrg-trade', '상가·사무실 매매']
   ];
 
-  // 한 칸의 값 (HTML). s 는 build_station_market.summarize() 결과
-  function cell(kind, s) {
+  // 칸의 동이 시세 동(대표 동)과 다르면 그 사실을 밝힌다 — 한 역 = 한 동네 목록, 7종은 목록 안의 다른 동일 수 있다.
+  function otherTag(s, rep) {
+    return rep && rep.dong && s.d !== rep.dong ? ' · <span class="mk-other">시세 동(' + esc(rep.dong) + ')과 다른 동</span>' : '';
+  }
+
+  // 한 칸의 값 (HTML). s 는 build_station_market.summarize() 결과, rep 는 시세 동 {dong}
+  function cell(kind, s, rep) {
     if (!s) return '<span class="mk-none">자료 없음</span>';
-    var where = '<span class="mk-where">' + esc(s.d) + ' · ' + s.n + '건' + '</span>';
+    var where = '<span class="mk-where">' + esc(s.d) + ' · ' + s.n + '건' + otherTag(s, rep) + '</span>';
     if (/-rent$/.test(kind)) {
       var parts = [];
       parts.push(s.jd != null ? '전세 <b>' + won(s.jd) + '</b> (' + s.jn + '건)'
@@ -71,7 +76,7 @@
       : (land ? '<br><span class="mk-where">대지만 · 도로 등 제외</span>' : '');
     if (s.few) {
       return '<span class="mk-few">' + (land ? '대지 ' : '') + '거래 적음 (' + s.n + '건)</span>' +
-        '<br><span class="mk-where">' + esc(s.d) + '</span>' + dropTxt;
+        '<br><span class="mk-where">' + esc(s.d) + otherTag(s, rep) + '</span>' + dropTxt;
     }
     var h;
     if (land) h = '대지 <b>' + num(s.m2) + '만</b>/㎡';
@@ -82,17 +87,20 @@
     return h + '<br>' + where + dropTxt;
   }
 
-  function sectionHtml(sid) {
+  function sectionHtml(sid, rep) {
     if (!ready) return '';
     var st = data.stations[sid] || {};
     var h = '<table class="mk-table"><tbody>';
+    var other = false;
     ROWS.forEach(function (r) {
-      h += '<tr data-kind="' + r[0] + '"><th>' + r[1] + '</th><td>' + cell(r[0], st[r[0]]) + '</td></tr>';
+      if (st[r[0]] && otherTag(st[r[0]], rep)) other = true;
+      h += '<tr data-kind="' + r[0] + '"><th>' + r[1] + '</th><td>' + cell(r[0], st[r[0]], rep) + '</td></tr>';
     });
     h += '</tbody></table>';
     h += '<div class="sd-note">※ 국토교통부 실거래가 ' + esc(data.period[0]) + '~' + esc(data.period[1]) +
       ', 역이 있는 <b>법정동 단위</b> 중위값입니다. 거래 ' + data.minDeals + '건 미만은 값을 내지 않고, ' +
-      '지분거래는 단가에서 뺐습니다. 토지는 대지만 셉니다(도로 등 제외). 월세 칸은 보증금 / 월세. 최근 1~2개월은 신고 지연으로 건수가 적습니다.</div>';
+      '지분거래는 단가에서 뺐습니다. 토지는 대지만 셉니다(도로 등 제외). 월세 칸은 보증금 / 월세. 최근 1~2개월은 신고 지연으로 건수가 적습니다.' +
+      (other ? ' 시세 동과 다른 동은 이 역이 걸친 동 가운데 그 종류 거래가 가장 많은 동입니다.' : '') + '</div>';
     return h;
   }
 

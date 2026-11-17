@@ -11,8 +11,11 @@
   - 지분거래(토지·상업업무용 shareDealingType '지분')는 일부만 산 값이라 단가·중위가에서 빼고 건수만 센다.
   - 수익률(월세 ÷ 집값)은 계산하지 않는다 — 같은 단지·평형 짝 맞추기가 필요한 2단계 과제 (2026-11-09 결정).
 
-역 하나가 여러 법정동에 걸치면(주소 행이 여럿) 종류마다 거래가 가장 많은 법정동을 쓴다 — 시세와 같은 방식.
-그래서 종류마다 법정동이 다를 수 있고, 화면에 법정동 이름을 같이 적는다.
+한 역 = 한 동네 목록 (CLAUDE.md 2장). 역이 걸친 법정동 목록은 station-dev.json 의 dongs 하나뿐이다
+(개발 자료가 없는 역은 시세 동 하나가 목록). 7종은 그 목록 안의 동만 쓰고, 그중 종류마다 거래가 가장
+많은 동을 쓴다. 리는 속한 읍·면과 같은 동네로 본다. 목록 밖 동은 시군구가 달라도 이름만 같으면 붙던
+오매칭이라 쓰지 않는다. 종류마다 동이 다를 수 있어 칸마다 법정동 이름(d)과
+시군구 코드(l)를 적고, 화면은 시세 동과 다르면 그 이름을 밝힌다.
 
 사용
   python data/build_station_market.py            # data/_rtms/<종류>/ 를 읽어 station-market.json 을 쓴다
@@ -138,13 +141,38 @@ def station_index():
     return dong2st
 
 
+def station_lists():
+    """역 ID → {(시군구코드, 법정동)} — 그 역의 동네 목록. 개발 목록이 없으면 시세 동 하나."""
+    out = {}
+    dev = json.loads((ROOT / "data" / "station-dev.json").read_text("utf8"))["stations"]
+    price = json.loads((ROOT / "data" / "station-price.json").read_text("utf8"))["stations"]
+    for sid, d in dev.items():
+        if d.get("dongs"):
+            out[sid] = {(x["lawd"], x["dong"]) for x in d["dongs"]}
+    for sid, p in price.items():
+        if sid not in out and p.get("lawd") and p.get("dong"):
+            out[sid] = {(p["lawd"], p["dong"])}
+    return out
+
+
+def in_list(key, lst):
+    """(시군구코드, 실거래 법정동)이 목록 안인가. '부발읍 신하리' 는 목록의 '부발읍' 안이다."""
+    code, umd = key
+    return any(c == code and (umd == d or umd.startswith(d + " ")) for c, d in lst)
+
+
 def build():
     import dong_match
     import lawd
     if not DONG.exists():
         raise SystemExit("data/_station_dong.json 이 없습니다. build_station_dong.py 를 먼저 실행하세요.")
     dong2st = station_index()
+    lists = station_lists()
     sgg_label = {c: lawd.label_of(c) for c in lawd.codes()}
+    # 인천 28125 에는 옛 동구와 옛 중구 원도심이 함께 있다 — 역 주소데이터가 '중구'라 적은 동은 '중구'
+    # (build_station_price·build_station_complex 와 같음. 안 하면 동인천이 '동구 인현동'으로 나온다)
+    junggu = {s["dong"] for s in json.loads(DONG.read_text("utf8"))
+              if s.get("lawd") == "28125" and s.get("sgg") == "중구" and s.get("dong")}
     stations = {}          # 역 ID → {kind: {...}}
     report = {}
     months = set()
@@ -157,7 +185,8 @@ def build():
         linked = unlinked = 0
         best = {}          # 역 ID → (건수, 법정동 키)
         for key, rows in by_dong.items():
-            sids = dong_match.stations_in(key[0], key[1], dong2st)
+            sids = {sid for sid in dong_match.stations_in(key[0], key[1], dong2st)
+                    if in_list(key, lists.get(sid, ()))}
             if not sids:
                 unlinked += len(rows)
                 continue
@@ -169,7 +198,8 @@ def build():
         for sid, (_n, key) in best.items():
             s = summarize(kind, by_dong[key])
             s["d"] = key[1]
-            s["sgg"] = sgg_label.get(key[0], key[0])
+            s["l"] = key[0]
+            s["sgg"] = "중구" if key[0] == "28125" and key[1] in junggu else sgg_label.get(key[0], key[0])
             few += 1 if s.get("few") else 0
             stations.setdefault(sid, {})[kind] = s
         report[kind] = {"deals": len(deals), "linked": linked, "unlinked": unlinked,
@@ -228,6 +258,12 @@ def selftest():
                                 for p, u in [(1, "근생"), (2, "근생"), (3, "업무"), (4, "근생"), (5, "판매")]])
     ck("상업업무용: 중위 3 · 용도 상위 근생 3건", s["med"] == 3 and s["top"][0] == ["근생", 3], s)
     ck("수익률 필드 없음 (1단계 결정)", not any(k in json.dumps(s) for k in ("yield", "수익률")))
+    print("[동네 목록]")
+    lst = {("41500", "부발읍"), ("11140", "남대문로5가")}
+    ck("목록 안: 부발읍 신하리 ⊂ 부발읍", in_list(("41500", "부발읍 신하리"), lst))
+    ck("목록 안: 같은 코드·같은 동", in_list(("11140", "남대문로5가"), lst))
+    ck("목록 밖: 이름 같고 시군구 다름", not in_list(("28140", "남대문로5가"), lst))
+    ck("목록 밖: 앞 글자만 같은 다른 읍", not in_list(("41500", "부발읍면 신하리"), lst))
     print(f"\n결과: {ok} 통과 / {bad} 실패")
     return 1 if bad else 0
 

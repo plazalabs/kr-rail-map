@@ -42,6 +42,16 @@ async function withData(d) {
   check('없는 종류 → 자료 없음', /자료 없음/.test(row('silv-trade')) && /자료 없음/.test(row('rh-trade')));
   check('없는 역 → 7칸 모두 자료 없음', (M.sectionHtml('st-zzz').match(/자료 없음/g) || []).length === 7);
   check('수익률 표시 없음 (1단계 결정)', !/수익률/.test(h));
+  // 한 역 = 한 동네 목록: 7종 칸의 동이 시세 동과 다르면 칸에 밝힌다 (숙제 63)
+  const M2 = await withData({ keyed_by: 'station_id', period: ['2026-04', '2026-09'], minDeals: 5, stations: {
+    'st-g': { 'apt-rent': { n: 40, jn: 30, wn: 10, jd: 52000, wd: 5000, wr: 180, d: '도화동' },
+      'offi-trade': { n: 3, few: true, sh: 0, d: '공덕동' } } } });
+  const g = M2.sectionHtml('st-g', { dong: '공덕동' });
+  const rowg = k => (g.match(new RegExp('<tr data-kind="' + k + '">([\\s\\S]*?)</tr>')) || [])[1] || '';
+  check('시세 동과 다른 동 칸 → "시세 동(공덕동)과 다른 동"', /도화동[^<]*<span class="mk-other">시세 동\(공덕동\)과 다른 동/.test(rowg('apt-rent')), rowg('apt-rent'));
+  check('시세 동과 같은 칸에는 표시 없음', !/mk-other/.test(rowg('offi-trade')), rowg('offi-trade'));
+  check('다른 동이 있으면 각주에 이유', /이 역이 걸친 동 가운데/.test(g));
+  check('시세 동을 모르면 표시 없음', !/mk-other/.test(M2.sectionHtml('st-g')));
   const bad = await withData({ stations: { 'st-a': {} } });
   check('역 ID 키가 아닌 자료는 거부', bad.isReady() === false);
 

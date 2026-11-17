@@ -461,34 +461,66 @@ def main():
             rec["recent"] = {"cnt": rb["cnt"], "hh": rb["hh"], "byYear": rb["byYear"]}
         districts.append(rec)
 
-    # 한 역 = 한 법정동. 시세(station-price.json)가 있는 역은 시세가 고른
-    # 법정동 하나만 쓴다 — 시세 탭과 개발 탭이 같은 동을 가리키게.
+    # 한 역 = 한 동네 목록.
+    #   시세 탭은 대표 동 하나(station-price.json 이 고른 동)를 쓴다.
+    #   개발 탭은 역이 걸친 동 전체 물량을 합치고, 그 동들을 dongs 로 낸다.
+    #   대표 동(시세 동)은 반드시 dongs 안에 있다. 없으면 넣는다.
+    # 역 주소가 읍까지만 적힌 역('부발읍')은 그 읍 안의 리를 한 동네로 묶는다.
     price = json.loads((ROOT / "data" / "station-price.json").read_text("utf8")).get("stations", {})
+
+    def unit_of(name, key):
+        sgg, dong = key
+        head = dong.split()[0]
+        if " " in dong and head[-1] in "읍면" and name in dong2st.get((sgg, head), ()):
+            return (sgg, head)
+        return key
 
     # 역별 값은 '받은 법정동 전체'를 돈다. 물량이 0인 동네도 넣어야
     # 화면이 '0세대(자료 있음)'이라고 말할 수 있다.
+    keys_of = {}
     for (sgg, dong) in sorted(collected | set(plan_d)):
-        b = plan_d.get((sgg, dong)) or empty()
-        sts = sorted(dong_match.stations_in(sgg, dong, dong2st))
-        if not sts:
+        for name in dong_match.stations_in(sgg, dong, dong2st):
+            keys_of.setdefault(name, []).append((sgg, dong))
+
+    added = []
+    for name, keys in keys_of.items():
+        pick = price.get(name)
+        if not pick:
             continue
-        rb = recent_d.get((sgg, dong))
-        for name in sts:
-            pick = price.get(name)
-            if pick and (pick.get("lawd"), pick.get("dong")) != (sgg, dong):
-                continue
-            cur = stations.get(name)
-            if cur is None:
-                stations[name] = {
-                    "lawd": sgg, "dong": dong,
-                    "sgg": lawd.label_of(sgg) if sgg else "",
-                    "cnt": b["cnt"], "hh": b["hh"],
-                    "overdue": b["overdue"],
-                    "byYear": dict(b["byYear"]), "list": list(b["list"]),
-                    "recent": ({"cnt": rb["cnt"], "hh": rb["hh"],
-                                "byYear": dict(rb["byYear"])} if rb else None),
-                }
-                continue
+        pk = (pick.get("lawd"), pick.get("dong"))
+        if unit_of(name, pk) not in {unit_of(name, k) for k in keys}:
+            keys.append(pk)
+            added.append((ix.name_of.get(name, name), pk[1]))
+    if added:
+        print("시세 동이 개발 동네 목록에 없어 넣은 역 %d개 (예: %s)"
+              % (len(added), ", ".join("%s %s" % a for a in added[:5])))
+
+    for name in sorted(keys_of):
+        keys = keys_of[name]
+        pick = price.get(name)
+        rep = (pick["lawd"], pick["dong"]) if pick else keys[0]
+        units = {}
+        for (sgg, dong) in keys:
+            b = plan_d.get((sgg, dong)) or empty()
+            u = unit_of(name, (sgg, dong))
+            units[u] = units.get(u, 0) + b["hh"]
+        rep_u = unit_of(name, rep)
+        dongs = [{"lawd": s, "sgg": lawd.label_of(s) if s else "", "dong": d, "hh": h}
+                 for (s, d), h in sorted(units.items(),
+                                         key=lambda kv: (kv[0] != rep_u, -kv[1], kv[0]))]
+        stations[name] = {
+            "lawd": rep[0], "dong": rep[1],
+            "sgg": lawd.label_of(rep[0]) if rep[0] else "",
+            "dongs": dongs,
+            "cnt": 0, "hh": 0, "overdue": 0,
+            "byYear": {}, "list": [], "recent": None,
+        }
+
+    for name in sorted(keys_of):
+        for (sgg, dong) in keys_of[name]:
+            b = plan_d.get((sgg, dong)) or empty()
+            rb = recent_d.get((sgg, dong))
+            cur = stations[name]
             # 역이 여러 법정동에 걸치면 물량을 더한다. 목록은 큰 것부터 다시.
             cur["cnt"] += b["cnt"]
             cur["hh"] += b["hh"]

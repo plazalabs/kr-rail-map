@@ -61,8 +61,40 @@ const StationDev = (() => {
     if (!r) return null;
     return {
       hh: r.hh, cnt: r.cnt, overdue: r.overdue || 0,
-      dong: r.dong, recent: r.recent ? r.recent.hh : 0,
+      dong: r.dong, dongs: dongsOf(r), recent: r.recent ? r.recent.hh : 0,
     };
+  }
+
+  /* 한 역 = 한 동네 목록. 첫 동이 대표 동(시세 동)이다. */
+  function dongsOf(r) {
+    return (r.dongs && r.dongs.length) ? r.dongs : [{ lawd: r.lawd, sgg: r.sgg, dong: r.dong, hh: r.hh }];
+  }
+
+  // 시군구가 섞이면 동마다 구 이름을 붙인다('성남시 중원구' → '중원구').
+  function dongNames(r) {
+    const ds = dongsOf(r);
+    const mixed = ds.some(d => d.lawd !== ds[0].lawd);
+    const gu = d => String(d.sgg || '').split(' ').pop();
+    const names = ds.map(d => (mixed && d.sgg ? gu(d) + ' ' : '') + d.dong);
+    const head = !mixed && ds[0].sgg ? ds[0].sgg + ' ' : '';
+    return { ds, names, head };
+  }
+
+  // 동이 둘 이상이면 '성남동·수진동 합계 4,678세대'. 넷 이상이면 앞 3개 + '외 N곳',
+  // 누르면 동별 세대가 펼쳐진다.
+  function whereHtml(r) {
+    const { ds, names } = dongNames(r);
+    if (ds.length < 2) return '';
+    const total = '합계 <b>' + num(r.hh) + '세대</b>';
+    if (ds.length < 4) {
+      return '<div class="dv-where">' + esc(names.join('·')) + ' ' + total + '</div>';
+    }
+    let h = '<details class="dv-where dv-where-more"><summary>' + esc(names.slice(0, 3).join('·')) +
+      ' <span class="dv-more">외 ' + (ds.length - 3) + '곳</span> ' + total + '</summary><ul class="dv-dongs">';
+    ds.forEach((d, i) => {
+      h += '<li><span>' + esc(names[i]) + '</span><span class="dv-h">' + num(d.hh) + '세대</span></li>';
+    });
+    return h + '</ul></details>';
   }
 
   function ensureStyle() {
@@ -73,6 +105,12 @@ const StationDev = (() => {
       '.dv-top{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-bottom:2px}' +
       '.dv-big{font-size:var(--fs-xl);font-weight:700;font-variant-numeric:tabular-nums;' +
       'color:var(--text,#111827)}' +
+      '.dv-where{font-size:var(--fs-sm);color:var(--text-2,#374151);margin-bottom:4px;word-break:keep-all}' +
+      '.dv-where b{font-variant-numeric:tabular-nums}' +
+      '.dv-where-more summary{cursor:pointer;min-height:44px;display:flex;align-items:center;flex-wrap:wrap;gap:4px}' +
+      '.dv-more{text-decoration:underline;color:var(--accent,#2563eb)}' +
+      '.dv-dongs{list-style:none;margin:0 0 6px;padding:0;font-size:var(--fs-xs)}' +
+      '.dv-dongs li{display:flex;justify-content:space-between;gap:8px;padding:2px 0;word-break:keep-all}' +
       '.dv-unit{font-size:var(--fs-xs);color:var(--muted,#5b6470)}' +
       '.dv-split{font-size:var(--fs-xs);color:var(--text-2,#374151);margin-bottom:8px}' +
       '.dv-split b{font-variant-numeric:tabular-nums}' +
@@ -118,19 +156,26 @@ const StationDev = (() => {
         '공급이 0이라는 뜻이 아니라 <b>자료를 받지 못한 동네</b>입니다.</div>';
     }
 
-    const where = (r.sgg ? r.sgg + ' ' : '') + r.dong;
+    const dn = dongNames(r);
+    const where = dn.head + dn.names.join('·');
+    const multi = dn.ds.length > 1;
+    // 동이 여럿이면 합계라는 것과, 시세 탭의 동이 그 안에 있다는 것을 밝힌다.
+    const unitNote = multi
+      ? '※ 법정동 단위 합계입니다. 시세 탭과 같은 법정동(' + esc((r.sgg ? r.sgg + ' ' : '') + r.dong) +
+        ')이 이 합계 안에 들어 있습니다. '
+      : '※ 법정동(' + esc(where) + ') 단위입니다. ';
     if (!r.hh) {
       // '공급 0' 으로 읽히지 않게 — 수록 자료의 범위만 말한다 (68점 감사 11번)
-      let h = '<div class="dv-none">' + esc(where) + ': 수록된 주택인허가 자료에서 아직 준공되지 않은 건이 ' +
+      let h = whereHtml(r) + '<div class="dv-none">' + (multi ? '이 동네들에서 ' : esc(where) + ': ') + '수록된 주택인허가 자료에서 아직 준공되지 않은 건이 ' +
         '확인되지 않습니다 <span class="dv-src">(입주 물량이 0이라는 뜻은 아님)</span></div>';
       if (r.recent && r.recent.hh) {
         h += '<div class="dv-recent">최근 입주 <b>' + num(r.recent.hh) + '세대</b>' +
           recentYears(r.recent) + '</div>';
       }
-      h += '<div class="dv-note">※ 법정동 단위입니다. 역에서 몇 m인지는 자료에 없습니다.</div>';
+      h += '<div class="dv-note">' + (multi ? unitNote : '※ 법정동 단위입니다. ') + '역에서 몇 m인지는 자료에 없습니다.</div>';
       return h;    }
 
-    let h = '<div class="dv-top"><span class="dv-big">' + num(r.hh) + '</span>' +
+    let h = whereHtml(r) + '<div class="dv-top"><span class="dv-big">' + num(r.hh) + '</span>' +
       '<span class="dv-unit">세대 · ' + r.cnt + '건</span></div>';
 
     if (r.overdue) {
@@ -156,7 +201,7 @@ const StationDev = (() => {
         '<br><span class="dv-note">이미 지어진 물량입니다. 지금 시세를 설명하는 값입니다.</span></div>';
     }
 
-    h += '<div class="dv-note">※ 법정동(' + esc(where) + ') 단위입니다. 역에서 몇 m인지는 ' +
+    h += '<div class="dv-note">' + unitNote + '역에서 몇 m인지는 ' +
       '자료에 없습니다. <b>이 자료로는 착공 여부를 알 수 없습니다</b> — 실제 착공일은 ' +
       '준공 처리할 때 같이 적히기 때문입니다. 인허가만 받고 취소·지연되는 건이 있으니 ' +
       '예정 연도는 어림값으로 보세요.</div>';

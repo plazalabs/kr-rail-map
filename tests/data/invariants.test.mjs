@@ -181,15 +181,19 @@ test('[D-22] rank-top.json(홈 카드 TOP3)의 연도·역이 rank.json 과 맞�
 // 4. 시세·법정동
 // ─────────────────────────────────────────────────────────────
 
-test('[D-30] 한 역은 시세와 개발(공급)에서 같은 법정동을 쓴다', () => {
-  // 검수 때: 서울역 시세=용산구 동자동, 개발=중구 남대문로5가
+test('[D-30] 시세 동은 그 역의 개발(공급) 동네 목록 안에 있다', () => {
+  // 한 역 = 한 동네 목록. 시세는 대표 동 하나, 개발은 목록(dongs) 전체 합계.
+  // 리는 그 리가 속한 읍과 같은 동네로 본다 (부발: 시세 '부발읍 신하리', 개발 '부발읍').
+  // 검수 때: 서울역 시세=용산구 동자동, 개발=중구 남대문로5가 (목록 없이 다른 동 하나만 보였다)
   const bad = [];
   for (const [id, p] of Object.entries(price.stations)) {
     const d = dev.stations[id];
     if (!d) continue;
-    if (p.lawd !== d.lawd || p.dong !== d.dong) bad.push(`${nameOf[id]}: 시세=${p.sgg} ${p.dong} / 개발=${d.sgg} ${d.dong}`);
+    const list = Array.isArray(d.dongs) ? d.dongs : [];
+    const inside = list.some(x => x.lawd === p.lawd && (x.dong === p.dong || p.dong.startsWith(x.dong + ' ')));
+    if (!inside) bad.push(`${nameOf[id]}: 시세=${p.sgg} ${p.dong} / 개발 목록=${list.map(x => x.dong).join('·') || '없음'}`);
   }
-  assert.equal(bad.length, 0, failList('시세와 개발 탭의 법정동이 다른 역', bad));
+  assert.equal(bad.length, 0, failList('시세 동이 개발 동네 목록에 없는 역', bad));
 });
 
 test('[D-31] 역에 붙은 법정동은 같은 시군구에 붙은 다른 역들과 지리적으로 가깝다 (동명 법정동 오매칭 탐지)', () => {

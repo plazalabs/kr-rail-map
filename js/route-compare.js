@@ -502,6 +502,21 @@ const RouteCompare = (() => {
     return best;
   }
 
+  // '최적'은 다른 탭에 시간·환승·요금 모두 밀리면 안 된다 (CLAUDE.md 3장). 밀리면 그 길을 최적으로 낸다.
+  // 최적 탐색은 시간+환승 벌점으로 고르는데 요금은 보지 않아, 1분 빠르고 600원 싼 1회 환승 길을 두고
+  // 2회 환승 길을 최적으로 냈다(광운대→강남 56분·2,550원 vs 55분·1,950원).
+  function dominates(o, b) {
+    if (!o || !b || typeof o.fare !== 'number' || typeof b.fare !== 'number') return false;
+    if (hasPending(o) !== hasPending(b)) return false;   // 요금 미정 부분합은 확정 총액과 견주지 않는다
+    return o.minutes <= b.minutes && o.transfers <= b.transfers && o.fare <= b.fare &&
+      (o.minutes < b.minutes || o.transfers < b.transfers || o.fare < b.fare);
+  }
+  function undominatedBest(best, others) {
+    let out = best;
+    for (const o of others) if (dominates(o, out)) out = o;
+    return out;
+  }
+
   // 운행 중인 노선만 쓰는 3종 (길찾기 기본 — 2026-11-09 결정 1: 미개통은 켠 사람에게만).
   // future 는 '개통 예정 노선까지 쓰면' 의 최단시간 — 결과에 '켜면 몇 분' 한 줄을 붙이는 데만 쓴다.
   // opts.peakWait: 길찾기 '배차 넣기'(KR_WAIT 'peak') — 처음 탈 때도 출퇴근 배차 절반 (A6)
@@ -509,9 +524,10 @@ const RouteCompare = (() => {
     if (!RF) return { time: null, transfer: null, fare: null, now: null, future: null, openOnly: true };
     const peak = !!(opts && opts.peakWait), band = opts && opts.band === 'off' ? 'off' : 'peak';
     return withPeak(peak, () => {
-      const time = enrich(RF.findRoute(fromId, toId, { openOnly: true, peakWait: peak }));
+      const time0 = enrich(RF.findRoute(fromId, toId, { openOnly: true, peakWait: peak }));
       const transfer = enrich(findMinTransfer(fromId, toId, true));
-      const fare = pickCheapest([enrich(findMinFare(fromId, toId, true)), enrich(findMinFare(fromId, toId, true, true)), time, transfer]);
+      const fare = pickCheapest([enrich(findMinFare(fromId, toId, true)), enrich(findMinFare(fromId, toId, true, true)), time0, transfer]);
+      const time = undominatedBest(time0, [transfer, fare]);
       const future = enrich(RF.findRoute(fromId, toId, { peakWait: peak }));
       return { time, transfer, fare, now: time, future, openOnly: true, peakWait: peak, band };
     }, band);
@@ -528,10 +544,11 @@ const RouteCompare = (() => {
     // '역의 실제 도보 시간 + 4분' 이므로, 표시 시간과 같은 잣대로 고른다.
     // (예전에는 8분 고정이었는데, 표시는 실제 값이라 둘이 어긋났다)
     // (환승 3회로 2분 아끼는 경로가 '최단시간'으로 뽑히던 문제)
-    const time = RF ? enrich(RF.findRoute(fromId, toId, { peakWait: peak })) : null;
+    const time0 = RF ? enrich(RF.findRoute(fromId, toId, { peakWait: peak })) : null;
     const transfer = enrich(findMinTransfer(fromId, toId));
     const now = RF ? enrich(RF.findRoute(fromId, toId, { openOnly: true, peakWait: peak })) : null;
-    const fare = pickCheapest([enrich(findMinFare(fromId, toId)), enrich(findMinFare(fromId, toId, false, true)), time, transfer, now]);   // '지금 바로' 길도 후보 (2026-11-13)
+    const fare = pickCheapest([enrich(findMinFare(fromId, toId)), enrich(findMinFare(fromId, toId, false, true)), time0, transfer, now]);   // '지금 바로' 길도 후보
+    const time = undominatedBest(time0, [transfer, fare]);
     // '지금' — 미개통 노선을 한 개도 쓰지 않는 가장 빠른 경로.
     // 부동산에서 이게 핵심이다: 개통 전에 그 집에 살면 실제로 몇 분 걸리는가.
     // 목적지가 미개통 노선에만 있는 역이면 null 이 된다 (지금은 갈 수 없다).
@@ -556,6 +573,14 @@ const RouteCompare = (() => {
     return '최적 길과 요금이 같아요 · ' + time + ' · ' + base;
   }
 
+  // 최적 길과 견준 요금 차이 (' · 600원 더 비쌈'). 한쪽이라도 요금 미정이 끼면 말하지 않는다.
+  function fareDiffText(r, t) {
+    if (!r || !t || typeof r.fare !== 'number' || typeof t.fare !== 'number' || hasPending(r) || hasPending(t)) return '';
+    const d = r.fare - t.fare;
+    if (!d) return ' · 요금 같음';
+    return ' · ' + Math.abs(d).toLocaleString() + '원 ' + (d > 0 ? '더 비쌈' : '쌈');
+  }
+
   // 탭 위 한 줄 요약. '최적' 보다 다른 길이 빠르면 그 대가(환승)를 같이 적는다 — 숨기면 '최적' 이 거짓말처럼 보인다.
   function insightOf(all) {
     const out = [];
@@ -569,7 +594,7 @@ const RouteCompare = (() => {
     };
     if (t && all.transfer && all.transfer.transfers < t.transfers) {
       const dm = all.transfer.minutes - t.minutes;
-      out.push(`최소환승은 ${dm > 0 ? dm + '분 더 걸리지만' : '시간도 비슷하고'} 환승 ${t.transfers - all.transfer.transfers}회 절약`);
+      out.push(`최소환승은 ${dm > 0 ? dm + '분 더 걸리지만' : '시간도 비슷하고'} 환승 ${t.transfers - all.transfer.transfers}회 절약` + fareDiffText(all.transfer, t));
     }
     if (t && all.fare && (hasPending(t) || hasPending(all.fare)) && all.fare !== t) {
       // 한쪽이라도 요금 미정이 끼면 '몇 원 절약'을 말하지 않는다 — 미정 부분이 얼마일지 모른다

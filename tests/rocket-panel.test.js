@@ -23,13 +23,11 @@ check('삼성 → 삼성은', L.topic('삼성') === '삼성은');
 check('DMC → DMC는 (한글 아님)', L.topic('DMC') === 'DMC는');
 check('공동 순위 글', L.rankText(8, true) === '공동 8위' && L.rankText(3, false) === '3위' && L.rankText(null) === '—');
 
-console.log('\n[기본 연도] 떡상 역 수의 80% 를 처음 넘는 해');
+console.log('\n[기본 연도] 순위 기준은 "2031년까지 개통" 하나 (rank.json default_year)');
 const dy = L.defaultYear(doc);
-const count = at => RankTable.compute(doc, { weight: 'avg', region: 'capital', at }).rows.filter(r => RankTable.tierOf(r) === 'rocket').length;
+check('자료에 default_year = 2031', doc.default_year === 2031, doc.default_year);
+check('기본 연도 = 2031', dy === '2031', dy);
 check('기본 연도가 자료의 연도 중 하나', doc.years.map(String).includes(dy), dy);
-check('그 해 떡상 수 ≥ 전체의 80%', count(dy) >= count('all') * 0.8, [dy, count(dy), count('all')]);
-const before = doc.years.map(String).filter(y => +y < +dy);
-check('그 앞 해들은 80% 미만', before.every(y => count(y) < count('all') * 0.8), before.map(y => [y, count(y)]));
 
 console.log('\n[제목] 문장형');
 const res = at => RankTable.compute(doc, { weight: 'avg', region: 'capital', at }).rows;

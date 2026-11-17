@@ -138,8 +138,13 @@ const rows = groups.map(g => {
   };
 }).filter(r => r.aft.filter(v => v != null).length >= 2);
 
+// 기본 시나리오(순위 기준)는 '2031년까지 개통' 하나 — 홈 카드·떡상 패널·순위표·타일 지도가 모두 이 값을 기본으로 쓴다.
+// 전체 개통(시기 미정 포함)은 켜는 옵션. 바꾸려면 회장님 결정 (CLAUDE.md 3-1).
+const DEFAULT_YEAR = 2031;
+if (!(yearsDoc.years || []).includes(DEFAULT_YEAR)) throw new Error('기본 시나리오 연도 ' + DEFAULT_YEAR + ' 가 연도 단계에 없음');
 const doc = {
   updated: access.updated,
+  default_year: DEFAULT_YEAR,
   basis: '역에서 CBD·YBD·GBD 까지 걸리는 시간(분)과 개통 연도별 값. 공개 자료를 바탕으로 한 추정값.',
   dest: ['CBD', 'YBD', 'GBD'],
   years: yearsDoc.years || [],

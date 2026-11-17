@@ -295,6 +295,7 @@
   var WLABEL = { avg: '도심·여의도·강남 평균', cbd: '도심', ybd: '여의도', gbd: '강남' };
   var st = { w: 'avg', y: 'all', group: 'line', size: 'equal', color: 'gain', scope: 'new', view: 'tiles', sel: null, cmp: [], tab: 'tiles', focus: null, band: null };
   var el = null, isOpen = false, model = null, doc = null, rowsById = new Map(), tileById = new Map(), opener = null;
+  var yPicked = false;   // 사람이 연도를 골랐나 (안 골랐으면 기본 시나리오 연도)
 
   // rank.js 는 'const RankTable' 로 선언돼 window 에 안 붙는다 — 이름으로 직접 찾는다
   function RTab() { return typeof RankTable !== 'undefined' ? RankTable : global.RankTable; }
@@ -613,7 +614,7 @@
     }).join('');
     box.querySelectorAll('button').forEach(function (b) {
       if (b.classList.contains('mm-play')) { b.addEventListener('click', function () { playT ? stopPlay() : play(); }); return; }
-      b.addEventListener('click', function () { stopPlay(); st.y = b.dataset.y; track('market_map_filter_change', { 종류: '연도' }); render(); });
+      b.addEventListener('click', function () { stopPlay(); st.y = b.dataset.y; yPicked = true; track('market_map_filter_change', { 종류: '연도' }); render(); });
     });
   }
 
@@ -1180,7 +1181,12 @@
     if (doc) return Promise.resolve(true);
     var p = (typeof StationRocket !== 'undefined' && StationRocket.load) ? StationRocket.load().then(function () { return StationRocket.doc(); })
       : fetch('data/rank.json').then(function (r) { return r.ok ? r.json() : null; });
-    return p.then(function (d) { doc = d || null; return !!doc; }).catch(function () { return false; });
+    return p.then(function (d) {
+      doc = d || null;
+      // 연도를 고르지 않았으면 기본 시나리오(홈 카드·떡상 패널과 같은 연도). 전체 개통은 버튼으로 켠다.
+      if (doc && !yPicked) st.y = RTab().defaultYear(doc);
+      return !!doc;
+    }).catch(function () { return false; });
   }
 
   function open(o) {
@@ -1188,7 +1194,8 @@
     build();
     opener = document.activeElement;
     ['w', 'group', 'color', 'scope'].forEach(function (k) { if (o[k] && ALLOWED[k].indexOf(String(o[k])) >= 0) st[k] = String(o[k]); });
-    if (o.y && /^(all|20[0-9][0-9])$/.test(String(o.y))) st.y = String(o.y);
+    if (o.y && /^(all|20[0-9][0-9])$/.test(String(o.y))) { st.y = String(o.y); yPicked = true; }
+    else if (!yPicked && doc) st.y = RTab().defaultYear(doc);
     if (['deals', 'supply', 'equal'].indexOf(o.size) >= 0) st.size = o.size;
     if (['list', 'tiles', 'matrix', 'scatter', 'bands'].indexOf(o.view) >= 0) st.view = o.view;
     if (o.focus && String(o.focus).length < 40) st.focus = String(o.focus);

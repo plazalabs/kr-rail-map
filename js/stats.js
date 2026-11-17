@@ -41,24 +41,23 @@
       const p = f.properties;
       const lid = p.id;
       const km = lineLength(f);
-      const stNames = new Set();
+      // 역 = stations.geojson 의 역 id 하나 (stations.count_definition). 이름으로 세지 않는다.
+      const stIds = new Set();
       STATIONS.forEach(s => {
-        if ((s.properties.lines || []).includes(lid)) stNames.add(s.properties.name_ko);
+        if ((s.properties.lines || []).includes(lid)) stIds.add(s.properties.id);
       });
       return {
         id: lid, name: p.name_ko || lid, color: p.color || '#888',
         status: p.status || 'open', category: p.category || 'etc',
-        km, stations: stNames.size
+        km, stations: stIds.size
       };
     });
 
-    // 전체 역 (중복 제거)
-    const allNames = new Set(STATIONS.map(s => s.properties.name_ko));
+    // 전체 역 = 역 id 개수 (헤더·상태줄과 같은 정의 — 이름 기준 1,208 을 쓰지 않는다)
+    const allIds = new Set(STATIONS.map(s => s.properties.id));
 
     // 환승역 (2개 이상 노선)
-    const transferStations = STATIONS.filter(s => (s.properties.lines || []).length >= 2)
-      .map(s => s.properties.name_ko);
-    const uniqueTransfer = [...new Set(transferStations)];
+    const uniqueTransfer = STATIONS.filter(s => (s.properties.lines || []).length >= 2).map(s => s.properties.id);
 
     // 상태별
     const byStatus = {};
@@ -80,7 +79,7 @@
     const longest = [...lineInfo].sort((a, b) => b.km - a.km).slice(0, 5);
     const mostStations = [...lineInfo].sort((a, b) => b.stations - a.stations).slice(0, 5);
 
-    return { lineInfo, totalKm, allStations: allNames.size, transfer: uniqueTransfer.length, byStatus, byCat, longest, mostStations };
+    return { lineInfo, totalKm, allStations: allIds.size, transfer: uniqueTransfer.length, byStatus, byCat, longest, mostStations };
   }
 
   function ensureStyle() {

@@ -69,17 +69,13 @@
     return km;
   }
 
-  // 노선 귀속 역 수 (역명 중복 제거)
+  // 노선 귀속 역 수 — 역 = 역 id 하나 (stations.count_definition)
   function stationCount(lid) {
     if (!stations.length) return null;
-    var seen = {};
     var n = 0;
     stations.forEach(function (s) {
       var ls = (s.properties && s.properties.lines) || [];
-      if (ls.indexOf(lid) >= 0) {
-        var nm = s.properties.name_ko || s.properties.id;
-        if (!seen[nm]) { seen[nm] = 1; n++; }
-      }
+      if (ls.indexOf(lid) >= 0) n++;
     });
     return n;
   }

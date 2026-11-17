@@ -623,8 +623,8 @@ const DiagramMode = (() => {
         canvas.appendChild(out.svg);
         scroll.appendChild(canvas);
         viewW = out.W; viewH = out.H;
-        bar.querySelector('.dg-hint').textContent =
-          '노선 ' + out.lineCount + '개 · 역 ' + out.nodeCount + '곳';
+        // 역 수는 쓰지 않는다 — 노선도의 점은 환승역을 하나로 합친 그림 점이라 역 수(역 id 개수)와 다르다
+        bar.querySelector('.dg-hint').textContent = '노선 ' + out.lineCount + '개를 그렸습니다';
         // 만든 시간(ms)은 사용자에게 뜻이 없다 — 개발 확인용으로 콘솔에만 (정반합 8차 A15, 2026-11-15)
         try { if (/[?&]dev=1/.test(location.search)) console.log('[노선도] ' + Math.round(performance.now() - t0) + 'ms'); } catch (e) { /* 무시 */ }
         centerOnCore();

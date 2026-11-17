@@ -206,10 +206,17 @@ const secs = (Date.now() - t0) / 1000;
 
 // 도달 불가(=null)만 있는 역은 파일에서 뺀다. 지도에는 있지만 철도로 갈 수
 // 없는 역(미개통 노선만 있는 신설역)이라 접근성이라는 값이 성립하지 않는다.
+// 뺀 역은 이유와 함께 excluded 에 남긴다 — 역 수(1,249)와 순위 역 수가 왜 다른지 화면이 밝힐 수 있게 (D-02)
 let dropped = 0;
+const excluded = [];
 Object.keys(out).forEach(id => {
   const has = out[id].after.some(v => v != null);
-  if (!has) { delete out[id]; dropped++; }
+  if (!has) {
+    delete out[id]; dropped++;
+    const f = stations.features.find(s => s.properties.id === id);
+    excluded.push({ id, name: f ? f.properties.name_ko : id, lines: f ? (f.properties.lines || []) : [],
+      reason: '지금도 개통 후에도 철도로 거점(도심·여의도·강남 등)까지 이어지지 않음' });
+  }
 });
 
 const doc = {
@@ -220,6 +227,7 @@ const doc = {
     station_id: d.station_id, member_ids: d.member_ids, lat: d.lat, lng: d.lng,
   })),
   stations: out,
+  excluded,
 };
 
 // 연도별 값(y)은 지도 화면이 쓰지 않는다 — 떡상 랭킹 자료(build_rank.js)만 쓰므로 따로 둔다.

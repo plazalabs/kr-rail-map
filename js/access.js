@@ -244,12 +244,15 @@ const StationAccess = (() => {
       // 수도권 역이면 RAIL MARKET MAP(역 타일)에서도 (2026-11-13) — 순위 자료가 수도권만이라 그 밖에선 안 보인다
       (inCapital(stationId) ? ' · <a class="sa-rocket" href="./?market=1&st=' + encodeURIComponent(stationId) + '" data-market-st="' + stationId + '"><i data-ic="chart"></i> 타일 지도에서 보기 →</a>' : '') + '</div>';
 
-    const tot = (a.rank.after ? a.rank.after.total : 0).toLocaleString();
+    // 역 수는 하나(stations.geojson 의 역 id 개수). 순위는 그중 철도로 거점에 닿는 역만 매기고, 닿지 않는 역(excluded)은 순위 밖.
+    const ranked = a.rank.after ? a.rank.after.total : 0;
+    const nEx = (doc.excluded || []).length;
+    const tot = (ranked + nEx).toLocaleString();
     h += '<div class="sa-note">※ 실제 시각표가 아니라 추정값입니다. 타고 가는 시간 + 갈아탈 때 걷는 시간 + <b>갈아탈 때 기다리는 시간</b>(공식 출근 시간 배차의 절반)을 ' +
       '더했습니다. 처음 열차를 기다리는 시간은 뺐습니다(역에 닿는 때에 따라 매번 달라서 — 길찾기와 같은 기준). 두 번째 숫자가 <b>개통 후</b>이고 −N분은 그 차이입니다. ' +
       '순위는 CBD(도심·서울역)·YBD(여의도)·GBD(강남) 세 곳 평균, ' +
       'GBD 중시는 강남을 두 번 센 평균으로 매긴 것으로, ' +
-      '전국 ' + tot + '역 가운데 몇 번째인지입니다.</div>';
+      '전국 ' + tot + '역 가운데 몇 번째인지입니다' + (nEx ? ' (철도로 거점까지 이어지지 않는 ' + nEx + '역은 순위 밖)' : '') + '.</div>';
     return h;
   }
 

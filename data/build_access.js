@@ -99,13 +99,12 @@ const bestIdx = (m, d) => { let v = null, k = null; d.member_ids.forEach((id, i)
 const GBD_I = dests.findIndex(d => d.id === 'gbd');
 
 // --- 연도별 개통 (2026-11-12) -------------------------------------------
-// 노선 'opened' 글에서 개통 연도를 읽는다. '미정…'·'…년대' 는 시기를 모름 → 연도별 단계에는 넣지 않고 '개통 후(전체)' 에만.
+// 개통 연도는 lines.geojson 의 open_year(숫자 또는 null) 하나뿐이다 (data/plan_status.js 가 정함).
+// null = 시기 미정 → 연도별 단계에는 넣지 않고 '개통 후(전체)' 에만.
 // 그 해까지 개통한 노선만 타고 CBD·YBD·GBD 까지 몇 분인지 — 떡상 랭킹 연도 슬라이더(rank.html)가 쓴다.
 function openYear(p) {
-  const o = String(p.opened || '').trim();
-  if (!o || /^미정/.test(o) || /년대/.test(o) || o === '-') return null;
-  const m = /(20\d\d)/.exec(o);
-  return m ? +m[1] : null;
+  if (!('open_year' in p)) throw new Error('open_year 없는 미개통 노선: ' + p.id + ' — node data/plan_status.js 먼저');
+  return p.open_year == null ? null : +p.open_year;
 }
 const unopened = lines.features.filter(f => f.properties.status && f.properties.status !== 'open');
 const lineYear = {};
@@ -116,7 +115,8 @@ const capitalLines = new Set();
 stations.features.forEach(s => { if (inCapital(s.geometry.coordinates)) (s.properties.lines || []).forEach(l => capitalLines.add(l)); });
 unopened.forEach(f => { if (capitalLines.has(f.properties.id)) lineYear[f.properties.id] = openYear(f.properties); });
 // 노선은 열렸어도 역 정차가 늦는 단계 (삼성역 2028 — js/route.js STOP_STAGES). 노선 연도표에 같이 넣어야 2027 계산이 삼성 무정차가 된다.
-(RF.stopStages ? RF.stopStages() : []).forEach(s => { if (s.lid in lineYear) lineYear[s.by] = s.year; });
+const stageYear = {};
+(RF.stopStages ? RF.stopStages() : []).forEach(s => { if (s.lid in lineYear) { lineYear[s.by] = s.year; stageYear[s.by] = s.year; } });
 const YEARS = Array.from(new Set(Object.values(lineYear).filter(y => y != null))).sort((a, b) => a - b);
 const allowOf = y => new Set(Object.keys(lineYear).filter(id => lineYear[id] != null && lineYear[id] <= y));
 const CORE_IDX = ['cbd', 'ybd', 'gbd'].map(c => dests.findIndex(d => d.id === c));
@@ -227,7 +227,9 @@ const doc = {
 const yearsDoc = {
   updated: doc.updated,
   years: YEARS,
-  year_lines: Object.fromEntries(YEARS.map(y => [y, Object.keys(lineYear).filter(id => lineYear[id] === y)])),
+  // 노선만 — 정차 단계(삼성역 정차 등)는 노선이 아니라 year_stages 에 따로 (D-21: year_lines 는 lines.geojson 의 노선 id 만)
+  year_lines: Object.fromEntries(YEARS.map(y => [y, Object.keys(lineYear).filter(id => lineYear[id] === y && !(id in stageYear))])),
+  year_stages: Object.fromEntries(YEARS.map(y => [y, Object.keys(stageYear).filter(id => stageYear[id] === y)]).filter(([, a]) => a.length)),
   undated_lines: Object.keys(lineYear).filter(id => lineYear[id] == null),
   stations: Object.fromEntries(Object.keys(out).map(id => [id, { y: out[id].y, w: out[id].w }])),
 };

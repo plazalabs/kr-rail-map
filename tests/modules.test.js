@@ -212,6 +212,15 @@ check('연도가 있는 항목은 2020~2040 사이',
 check('개통일 미정 항목은 "미정" 으로 표시',
   entries.filter(e => !e.opening).every(e => e.openingText === '미정'),
   entries.filter(e => !e.opening).slice(0, 3).map(e => e.openingText).join(','));
+// 개통 연도는 open_year 하나뿐 — 타임라인 '미정' vs 순위 2031 모순 (숙제 4, D-20)
+const byIdTl = Object.fromEntries(entries.map(e => [e.id, e]));
+check('타임라인 GTX-C = 2031 (open_year)', byIdTl['gtx-c'] && byIdTl['gtx-c'].opening && byIdTl['gtx-c'].opening.year === 2031,
+  byIdTl['gtx-c'] && byIdTl['gtx-c'].openingText);
+check('타임라인 창릉 = 2030', byIdTl['gtx-a-changneung'] && byIdTl['gtx-a-changneung'].opening && byIdTl['gtx-a-changneung'].opening.year === 2030);
+const lnById = Object.fromEntries(LINES_FC.features.map(f => [f.properties.id, f.properties]));
+check('모든 항목의 연도 = lines.geojson open_year',
+  entries.every(e => (e.opening ? e.opening.year : null) === (lnById[e.id].open_year == null ? null : lnById[e.id].open_year)),
+  entries.filter(e => (e.opening ? e.opening.year : null) !== lnById[e.id].open_year).map(e => e.name + ':' + (e.opening && e.opening.year) + '/' + lnById[e.id].open_year).join(','));
 check('모든 항목에 이름과 색이 있음',
   entries.every(e => e.name && /^#[0-9a-fA-F]{6}$/.test(e.color)));
 check('길이가 0인 항목이 없음', entries.every(e => e.km > 0),

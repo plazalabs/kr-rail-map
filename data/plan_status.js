@@ -7,6 +7,8 @@
  *     plan_basis   — 한 줄 근거 (누가 언제 무엇을 발표)
  *     plan_url     — 근거 링크 (보도자료 원문을 못 찾으면 그 발표를 전한 보도)
  *     plan_checked — 이 내용을 마지막으로 확인한 날
+ *     open_year    — 개통 연도(숫자) 또는 null(시기 미정). 타임라인·순위·홈 카드·타일 지도가 모두 이 값 하나만 읽는다.
+ *                    여러 단계면 첫 단계 연도. opened(자유 문장)는 설명용이다.
  *   을 붙인다. opened(화면 글자)도 최신 발표와 다르면 고친다.
  * 실행: node data/plan_status.js   (같은 값이면 바뀌는 것 없음)
  */
@@ -17,24 +19,24 @@ const P = path.join(__dirname, 'lines.geojson');
 const CHECKED = '2026-11-14';
 
 const PLAN = {
-  'gtx-a-seoul-suseo': { stage: '공사 중', basis: '국토교통부: 삼성역 구간 보강 후 2027년 상반기 무정차 통과 전망, 삼성역 정차는 2028년 (2026-11-03 보도)', url: 'https://news.bizwatch.co.kr/article/real_estate/2026/11/03/0012' },
-  'gtx-a-changneung': { stage: '신설 승인', basis: '2021-08 신설 승인(LH 비용 부담), LH 광역교통개선대책 개통 2030년으로 변경 (2026-09 보도)', url: 'https://biz.newdaily.co.kr/site/data/html/2026/09/30/2026093000143.html' },
-  'gtx-a-pyeongtaek': { stage: '설계 중', basis: '국가철도공단: 2027년 4분기 설계 마치고 2028년 착공 구상 — 개통 시기 미확정 (2026-04 보도)', url: 'https://news.mtn.co.kr/news-detail/2026042005021558065' },
-  'gtx-b': { stage: '공사 중', basis: '민자 구간 착공 보고(2025-03), 공사 72개월 — 2031년 운행 목표 (보도)', url: 'https://news.mtn.co.kr/news-detail/2025080716382129857' },
-  'gtx-c': { stage: '공사 중', basis: '국토교통부: 2026-09-15 민간투자 본공사 착수, 공사 60개월 (2031년 목표)', url: 'https://www.sidae.com/article/2026091509243569574' },
-  'gtx-c-sangnoksu': { stage: '공사 중', basis: 'GTX-C 본선과 같이 2026-09-15 본공사 착수 (2031년 목표)', url: 'https://www.sidae.com/article/2026091509243569574' },
-  'gtx-d': { stage: '정부 계획(구상)', basis: '정부 2기 GTX 구상(2024-01-25 민생토론회) — D·E·F 1단계 2035년 개통 목표(국토교통부 민생토론회(교통) 원문: "1단계 구간은 ’35년 개통 목표" — 목표이며 확정 아님), 제5차 국가철도망 구축계획 반영 전, 노선·역 확정 전', url: 'https://www.molit.go.kr/2024plan_traffic/total/total_01.jsp' },
-  'gtx-e': { stage: '정부 계획(구상)', basis: '정부 2기 GTX 구상(2024-01-25 민생토론회) — 2035년 개통 목표, 노선·역 확정 전', url: 'https://www.korea.kr/news/policyNewsView.do?newsId=148925218' },
-  'gtx-f': { stage: '정부 계획(구상)', basis: '정부 2기 GTX 구상(2024-01-25 민생토론회) — 1단계(교산~왕숙2) 2035년 목표, 노선·역 확정 전', url: 'https://www.korea.kr/news/policyNewsView.do?newsId=148925218' },
-  'gtx-g': { stage: '지자체 제안', basis: '경기도 GTX 플러스 노선안(2024-04-01) — 정부 계획 반영 전', url: 'https://newsseoul.co.kr/news/view/1065568225789045' },
-  'gtx-h': { stage: '지자체 제안', basis: '경기도 GTX 플러스 노선안(2024-04-01) — 정부 계획 반영 전', url: 'https://newsseoul.co.kr/news/view/1065568225789045' },
-  'dongbuk-line': { stage: '공사 중', basis: '서울시: 2027년 11월 개통 목표, 공정률 76.4% (2026-09 시의회 현장 방문)', url: 'https://m.go.seoul.co.kr/news/2026/09/07/20260907500208' },
-  'dongbu-line': { stage: '검토 중', basis: '서울시 제3차 도시철도망 구축계획(2026-06)에 안 들어감 — 사업 타당성 검토 뒤 계획 변경으로 추진 예정', url: 'https://www.nocutnews.co.kr/news/6531171' },
-  'gwangju-metro-line-2-inner-circle-line': { stage: '공사 중', basis: '전남광주통합특별시 발표(2026-10-02): 1단계 2028년 12월, 2단계 2035년 12월로 연기', url: 'https://news.mtn.co.kr/news-detail/2026100214544582969' },
-  'daegusaneop-line': { stage: '공사 중', basis: '국가철도공단: 2025-11 제2공구 착공, 2030년 12월 개통 예정', url: 'https://www.hankyung.com/article/2025111200281' },
-  'daejeon-metro-line-2': { stage: '공사 중', basis: '대전시 발표(2026-06-23): 보상 지연·시운전 연장으로 2028년 말 → 2030년 하반기', url: 'https://www.segye.com/newsView/20260623517601', opened: '2030년 하반기 (대전시 2026-06-23 발표 — 당초 2028년 말)' },
-  'yangsan-line': { stage: '공사 중', basis: '부산시·양산시 운영 협약(2026-03-30), 종합시험운행 중 — 2026년 12월 개통 예정(보도, 확정 공고 전)', url: 'https://www.segye.com/newsView/20260828503196' },
-  'busan-metro-line-2-yangsan-ext': { stage: '공사 중', basis: '양산선과 같이 2026년 12월 개통 예정 — 부산시 운영(2026-03-30 협약)', url: 'https://www.segye.com/newsView/20260828503196' },
+  'gtx-a-seoul-suseo': { year: 2027, stage: '공사 중', basis: '국토교통부: 삼성역 구간 보강 후 2027년 상반기 무정차 통과 전망, 삼성역 정차는 2028년 (2026-11-03 보도)', url: 'https://news.bizwatch.co.kr/article/real_estate/2026/11/03/0012' },
+  'gtx-a-changneung': { year: 2030, stage: '신설 승인', basis: '2021-08 신설 승인(LH 비용 부담), LH 광역교통개선대책 개통 2030년으로 변경 (2026-09 보도)', url: 'https://biz.newdaily.co.kr/site/data/html/2026/09/30/2026093000143.html' },
+  'gtx-a-pyeongtaek': { year: null, stage: '설계 중', basis: '국가철도공단: 2027년 4분기 설계 마치고 2028년 착공 구상 — 개통 시기 미확정 (2026-04 보도)', url: 'https://news.mtn.co.kr/news-detail/2026042005021558065' },
+  'gtx-b': { year: 2031, stage: '공사 중', basis: '민자 구간 착공 보고(2025-03), 공사 72개월 — 2031년 운행 목표 (보도)', url: 'https://news.mtn.co.kr/news-detail/2025080716382129857' },
+  'gtx-c': { year: 2031, stage: '공사 중', basis: '국토교통부: 2026-09-15 민간투자 본공사 착수, 공사 60개월 (2031년 목표)', url: 'https://www.sidae.com/article/2026091509243569574' },
+  'gtx-c-sangnoksu': { year: 2031, stage: '공사 중', basis: 'GTX-C 본선과 같이 2026-09-15 본공사 착수 (2031년 목표)', url: 'https://www.sidae.com/article/2026091509243569574' },
+  'gtx-d': { year: 2035, stage: '정부 계획(구상)', basis: '정부 2기 GTX 구상(2024-01-25 민생토론회) — D·E·F 1단계 2035년 개통 목표(국토교통부 민생토론회(교통) 원문: "1단계 구간은 ’35년 개통 목표" — 목표이며 확정 아님), 제5차 국가철도망 구축계획 반영 전, 노선·역 확정 전', url: 'https://www.molit.go.kr/2024plan_traffic/total/total_01.jsp' },
+  'gtx-e': { year: 2035, stage: '정부 계획(구상)', basis: '정부 2기 GTX 구상(2024-01-25 민생토론회) — 2035년 개통 목표, 노선·역 확정 전', url: 'https://www.korea.kr/news/policyNewsView.do?newsId=148925218' },
+  'gtx-f': { year: 2035, stage: '정부 계획(구상)', basis: '정부 2기 GTX 구상(2024-01-25 민생토론회) — 1단계(교산~왕숙2) 2035년 목표, 노선·역 확정 전', url: 'https://www.korea.kr/news/policyNewsView.do?newsId=148925218' },
+  'gtx-g': { year: null, stage: '지자체 제안', basis: '경기도 GTX 플러스 노선안(2024-04-01) — 정부 계획 반영 전', url: 'https://newsseoul.co.kr/news/view/1065568225789045' },
+  'gtx-h': { year: null, stage: '지자체 제안', basis: '경기도 GTX 플러스 노선안(2024-04-01) — 정부 계획 반영 전', url: 'https://newsseoul.co.kr/news/view/1065568225789045' },
+  'dongbuk-line': { year: 2027, stage: '공사 중', basis: '서울시: 2027년 11월 개통 목표, 공정률 76.4% (2026-09 시의회 현장 방문)', url: 'https://m.go.seoul.co.kr/news/2026/09/07/20260907500208' },
+  'dongbu-line': { year: null, stage: '검토 중', basis: '서울시 제3차 도시철도망 구축계획(2026-06)에 안 들어감 — 사업 타당성 검토 뒤 계획 변경으로 추진 예정', url: 'https://www.nocutnews.co.kr/news/6531171' },
+  'gwangju-metro-line-2-inner-circle-line': { year: 2028, stage: '공사 중', basis: '전남광주통합특별시 발표(2026-10-02): 1단계 2028년 12월, 2단계 2035년 12월로 연기', url: 'https://news.mtn.co.kr/news-detail/2026100214544582969' },
+  'daegusaneop-line': { year: 2030, stage: '공사 중', basis: '국가철도공단: 2025-11 제2공구 착공, 2030년 12월 개통 예정', url: 'https://www.hankyung.com/article/2025111200281' },
+  'daejeon-metro-line-2': { year: 2030, stage: '공사 중', basis: '대전시 발표(2026-06-23): 보상 지연·시운전 연장으로 2028년 말 → 2030년 하반기', url: 'https://www.segye.com/newsView/20260623517601', opened: '2030년 하반기 (대전시 2026-06-23 발표 — 당초 2028년 말)' },
+  'yangsan-line': { year: 2026, stage: '공사 중', basis: '부산시·양산시 운영 협약(2026-03-30), 종합시험운행 중 — 2026년 12월 개통 예정(보도, 확정 공고 전)', url: 'https://www.segye.com/newsView/20260828503196' },
+  'busan-metro-line-2-yangsan-ext': { year: 2026, stage: '공사 중', basis: '양산선과 같이 2026년 12월 개통 예정 — 부산시 운영(2026-03-30 협약)', url: 'https://www.segye.com/newsView/20260828503196' },
 };
 
 const raw = fs.readFileSync(P, 'utf8');
@@ -46,7 +48,8 @@ for (const f of doc.features) {
   if (p.status === 'open') continue;
   const x = PLAN[p.id];
   if (!x) { missing.push(p.id); continue; }
-  const want = { plan_stage: x.stage, plan_basis: x.basis, plan_url: x.url, plan_checked: CHECKED };
+  if (!('year' in x)) { missing.push(p.id + '(year)'); continue; }
+  const want = { open_year: x.year, plan_stage: x.stage, plan_basis: x.basis, plan_url: x.url, plan_checked: CHECKED };
   if (x.opened) want.opened = x.opened;
   for (const [k, v] of Object.entries(want)) if (p[k] !== v) { p[k] = v; n++; }
 }

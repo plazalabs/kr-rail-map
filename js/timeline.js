@@ -125,7 +125,12 @@
   function buildEntries() {
     return targetLines().map(function (f) {
       var p = f.properties;
-      var oy = extractOpeningYear(p.note);
+      // 개통 연도는 open_year 하나뿐 (순위·홈 카드와 같은 값). 월은 설명 문장(opened)에 같은 해가 적혀 있을 때만.
+      var oy = null;
+      if (p.open_year != null) {
+        var om = extractOpeningYear(String(p.opened || '').replace(/(20\d{2}년\s*\d{1,2}월)/, '$1 개통'));
+        oy = { year: +p.open_year, month: om && om.year === +p.open_year ? om.month : null };
+      }
       var sc = stationCount(p.id);
       return {
         id: p.id,

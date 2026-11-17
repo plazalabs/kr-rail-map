@@ -174,7 +174,7 @@
     $('yr').setAttribute('aria-valuetext', yrLabel(st.y));
     $('yr-ticks').innerHTML = S.map(y => '<span' + (y === st.y ? ' aria-current="true"' : '') + '>' + (y === 'all' ? '전체' : "'" + y.slice(2)) + '</span>').join('');
     $('yr-now').textContent = yrLabel(st.y);
-    const ids = st.y === 'all' ? (doc.undated_lines || []) : ((doc.year_lines || {})[st.y] || []);
+    const ids = st.y === 'all' ? (doc.undated_lines || []) : ((doc.year_lines || {})[st.y] || []).concat((doc.year_stages || {})[st.y] || []);
     const named = lineChips(ids);
     $('yr-opens').innerHTML = named.length
       ? (st.y === 'all' ? '시기 미정 노선까지:' : st.y + '년 개통:') + ' ' + named.map(chipHtml).join(' ')

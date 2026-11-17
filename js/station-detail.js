@@ -400,12 +400,19 @@
       return '<div class="sd-sec sd-price-sec sd-price-none"><h3>아파트 매매 시세</h3>' +
         '<span class="mk-none">자료 없음</span> <span class="mk-where">이 역 법정동에 묶인 아파트 매매 실거래가 없습니다 (수도권 밖은 아직 모으지 않았습니다)</span></div>';
     }
-    if (!price || !price.medianPerPyeong) return '';
+    if (!price) return '';
 
     var pm = StationPrice.meta() || {};
     // '강남구 역삼동' 처럼 시군구를 같이 적는다. 동 이름만으로는 '중구'
     // 처럼 여러 시도에 있는 곳을 구분할 수 없다.
     var where = [price.sido, price.sgg].filter(Boolean).join(' ');
+    // 거래가 5건 미만이면 자료에 대표값이 없다 — 값 대신 건수만 밝힌다.
+    if (price.medianPerPyeong == null) {
+      return '<div class="sd-sec sd-price-sec sd-price-few"><h3>아파트 매매 시세 · ' + esc(price.dong) +
+        ' <span class="sd-price-sub">' + (where ? '· ' + esc(where) : '') + '</span></h3>' +
+        '<span class="mk-few">거래 적음 (' + price.deals + '건)</span> <span class="mk-where">최근 6개월 거래가 ' +
+        (pm.minDeals || 5) + '건 미만이라 대표값을 내지 않습니다</span></div>';
+    }
     var h = '<div class="sd-sec sd-price-sec"><h3>법정동 실거래 · ' + esc(price.dong) +
       ' <span class="sd-price-sub">' + (where ? '· ' + esc(where) + ' · ' : '') +
       '최근 6개월 ' + price.deals + '건</span></h3>';

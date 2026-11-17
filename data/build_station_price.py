@@ -119,14 +119,16 @@ def main():
         st_names = sorted(dong_match.stations_in(code, umd, dong2st))
         if st_names:
             matched += len(rows)
+        # 거래 MIN_DEALS 건 미만이면 대표값(중위 평당가·중위 금액)을 내지 않는다 — 건수만. 화면은 '거래 적음(N건)'.
+        enough = len(rows) >= MIN_DEALS
         out.append({
             "lawd": code,
             "sido": rows[0]["sido"],
             "sgg": rows[0]["sgg"],
             "dong": umd,
             "deals": len(rows),
-            "medianPerPyeong": round(statistics.median(pers), 1) if pers else None,
-            "medianPrice": round(statistics.median(prices), 0) if prices else None,
+            "medianPerPyeong": round(statistics.median(pers), 1) if pers and enough else None,
+            "medianPrice": round(statistics.median(prices), 0) if prices and enough else None,
             "avgArea": round(statistics.mean([x["area"] for x in rows if x["area"]]), 1),
             "stations": st_names,
             "months": sorted({f"{x['year']}-{x['month']:02d}" for x in rows}),
@@ -174,7 +176,8 @@ def main():
     payload = {
         "updated": sorted({m for d in out for m in d["months"]})[-1] if out else None,
         "source": "국토교통부 아파트 매매 실거래가 (공공데이터포털)",
-        "note": "법정동 단위 집계. 최근 1~2개월은 신고 지연으로 건수가 적다.",
+        "note": "법정동 단위 집계. 거래 5건 미만은 중위값 없이 건수만. 최근 1~2개월은 신고 지연으로 건수가 적다.",
+        "minDeals": MIN_DEALS,
         "districts": out,
         "keyed_by": "station_id",
         "stations": by_station,

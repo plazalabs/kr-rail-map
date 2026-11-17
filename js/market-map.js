@@ -286,7 +286,7 @@
   var CORE = ['GTX-A', 'GTX-B', 'GTX-C'], hiddenN = 0;   // 기본으로 보이는 묶음 (회장님 11-14)
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   // '평균' 만 쓰면 '−57분'이 무엇의 평균인지 모른다 (정반합 8차 A16) — 세 업무지구를 밝힌다
-  // A17: 가격 자료가 몇 역·몇 법정동인지와 기준 달 — '역 465곳 = 법정동 306곳 값' (같은 동 역들은 같은 숫자)
+  // A17: 가격 자료가 몇 역·몇 법정동인지와 기준 달 — '역 445곳 = 법정동 N곳 값' (같은 동 역들은 같은 숫자)
   function priceBasis() {
     var m = global.StationPrice && StationPrice.meta ? StationPrice.meta() : null;
     if (!m || !m.nStations) return '';
@@ -711,7 +711,7 @@
     var timeTxt = r.isNew ? '지금은 철도로 못 감 → 개통 후 ' + Math.round(r.aft.min) + '분' : '지금 ' + Math.round(r.now.min) + '분 → 개통 후 ' + Math.round(r.aft.min) + '분';
     if (c === 'price' || c === 'jeonse') {
       var v = t.mv, raw = c === 'price' ? (typeof StationPrice !== 'undefined' && StationPrice.isReady() ? StationPrice.of(r.id) : null) : null;
-      var miss = c === 'price' && raw && raw.medianPerPyeong != null && raw.deals < 5 ? '거래 적음' : '자료 없음';
+      var miss = c === 'price' && raw && raw.deals < 5 ? '거래 적음' : '자료 없음';
       if (v == null) return { main: miss, sub: timeTxt, key: -1e9, say: (c === 'price' ? '평당가 ' : '전세가율 ') + miss };
       var main = c === 'price' ? Math.round(v).toLocaleString('ko-KR') + '만' : Math.round(v * 100) + '%';
       return { main: main, sub: timeTxt, key: v, say: c === 'price' ? '평당 ' + Math.round(v).toLocaleString('ko-KR') + '만원' : '전세가율 ' + Math.round(v * 100) + '%' };
@@ -982,7 +982,7 @@
       '<tr><th>줄어듦</th>' + rows.map(function (r) { var g = Logic.gainOf(r); return td(r.isNew ? '신규' : g > 0 ? '−' + g + '분' : '0분'); }).join('') + '</tr>' +
       '<tr><th>순위</th>' + rows.map(function (r) { return td(r.change == null ? '→ ' + r.aft.rank + '위' : r.now.rank + '→' + r.aft.rank + '위'); }).join('') + '</tr>';
     if (inv) {
-      h += '<tr><th>평당(전용)</th>' + rows.map(function (r) { var p = StationPrice.of(r.id); return td(p && p.medianPerPyeong != null ? esc(StationPrice.pp(p.medianPerPyeong)) + (p.deals < 5 ? '(적음)' : '') : '—'); }).join('') + '</tr>';
+      h += '<tr><th>평당(전용)</th>' + rows.map(function (r) { var p = StationPrice.of(r.id); return td(p && p.medianPerPyeong != null ? esc(StationPrice.pp(p.medianPerPyeong)) : p && p.deals ? '거래 적음(' + p.deals + '건)' : '—'); }).join('') + '</tr>';
       if (typeof StationJeonse !== 'undefined' && StationJeonse.isReady && StationJeonse.isReady()) h += '<tr><th>전세가율</th>' + rows.map(function (r) { var j = StationJeonse.of(r.id); return td(j && j.r != null ? Math.round(j.r * 100) + '%' : '—'); }).join('') + '</tr>';
     }
     return h + '</table></div>';
@@ -1002,7 +1002,8 @@
       '<tr><th>' + WLABEL[st.w] + ' 기준</th><td>' + cell(fm(row.now.min), fm(row.aft.min)) + '</td></tr></table>';
     if (invest() && typeof StationPrice !== 'undefined' && StationPrice.isReady()) {
       var p = StationPrice.of(row.id);
-      if (p && p.medianPerPyeong != null) h += '<div>평당(전용) ' + esc(StationPrice.pp(p.medianPerPyeong)) + ' <span class="mm-src">' + esc(p.dong) + ' 아파트 매매 중위 · 최근 6개월 ' + p.deals + '건' + (p.deals < 5 ? ' (거래 적음)' : '') + '</span></div>';
+      if (p && p.medianPerPyeong != null) h += '<div>평당(전용) ' + esc(StationPrice.pp(p.medianPerPyeong)) + ' <span class="mm-src">' + esc(p.dong) + ' 아파트 매매 중위 · 최근 6개월 ' + p.deals + '건</span></div>';
+      else if (p && p.deals) h += '<div>평당(전용) 거래 적음(' + p.deals + '건) <span class="mm-src">' + esc(p.dong) + ' 아파트 매매 · 최근 6개월</span></div>';
       if (typeof StationJeonse !== 'undefined' && StationJeonse.isReady && StationJeonse.isReady()) {
         var j = StationJeonse.of(row.id);
         if (j && j.r != null) h += '<div>전세가율 ' + Math.round(j.r * 100) + '%' + (j.r >= 0.8 ? ' (주의)' : '') + ' <span class="mm-src">같은 단지·면적 짝 ' + (j.n || 0) + '쌍 중위 · 집계상 주의 지표</span></div>';

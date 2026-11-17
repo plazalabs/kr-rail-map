@@ -47,14 +47,15 @@
         meta = {
           updated: d.updated || null,
           source: d.source || '',
-          note: d.note || ''
+          note: d.note || '',
+          minDeals: d.minDeals || 5
         };
         // 역 ID 키 자료만 쓴다. 옛 이름 키 자료(캐시에 남은 것)는 동명 역에 남의 시세를 붙이므로 쓰지 않는다.
         if (d.keyed_by !== 'station_id') throw new Error('old name-keyed data');
         byId = d.stations || {};
-        // 역 수와 법정동 수 (정반합 8차 A17) — 여러 역이 같은 법정동 값을 쓴다(465역 = 306동). 타일 수를 독립 표본으로 읽지 않게 화면에 밝힌다
+        // 역 수와 법정동 수 (정반합 8차 A17) — 여러 역이 같은 법정동 값을 쓴다(값 있는 역만 센다). 타일 수를 독립 표본으로 읽지 않게 화면에 밝힌다
         var dongs = {}, n = 0;
-        for (var k in byId) { var o = byId[k]; if (o && o.lawd && o.dong) { dongs[o.lawd + '|' + o.dong] = 1; n++; } }
+        for (var k in byId) { var o = byId[k]; if (o && o.lawd && o.dong && o.medianPerPyeong != null) { dongs[o.lawd + '|' + o.dong] = 1; n++; } }
         meta.nStations = n; meta.nDong = Object.keys(dongs).length;
         ready = true;
         return true;

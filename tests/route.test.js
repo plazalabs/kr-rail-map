@@ -329,9 +329,11 @@ const honamBad = ['서대전', '계룡', '연산', '논산', '함열', '백양�
   .filter(nm => stations.features.some(f =>
     f.properties.name_ko === nm && f.properties.lines.includes('honam-line-ktx')));
 check('KTX 호남선에 일반선 경유역이 없음', honamBad.length === 0, honamBad.join(','));
-check('KTX 호남선 정차 순서가 용산→목포', honamKtx.properties.stops[0] === '용산' &&
-  honamKtx.properties.stops[honamKtx.properties.stops.length - 1] === '목포',
-  (honamKtx.properties.stops || []).join('→'));
+// 구간이 나뉜 노선은 stops 가 [[…]] (D-14) — 첫 구간을 본다
+const honamStops = Array.isArray(honamKtx.properties.stops[0]) ? honamKtx.properties.stops[0] : honamKtx.properties.stops;
+check('KTX 호남선 정차 순서가 용산→목포', honamStops[0] === '용산' &&
+  honamStops[honamStops.length - 1] === '목포',
+  (honamStops || []).join('→'));
 
 // 3) GTX-A 는 운행 상태대로 나뉜다 (2026-11-10).
 //    운행 중: 운정중앙~서울역 · 수서~동탄 / 공사 중: 서울역~수서 (2027년 상반기 전망) / 계획: 동탄~평택지제

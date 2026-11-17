@@ -227,8 +227,27 @@
     var med = nns[Math.floor(nns.length / 2)];
     return Math.max(MAX_GAP_KM, med * 2.5);
   }
+  // 노선에 stops(정차 순서)가 있으면 인접역은 그것만으로 만든다 — 좌표로 추론하지 않는다.
+  // 구간이 나뉜 노선은 stops 가 [[…],[…]] (서울역 GTX-A 가 '수서 ← 현재역'으로 나오던 것).
+  function stopsChains(lineId) {
+    var line = lineById(lineId);
+    var stops = line && line.properties && line.properties.stops;
+    if (!Array.isArray(stops) || !stops.length) return null;
+    return Array.isArray(stops[0]) ? stops : [stops];
+  }
+  // stops 가 없는 노선의 좌표 체인은 서울역에 가까운 끝을 앞에 둔다 — stops 와 같은 '서울 쪽 ← · → 바깥쪽' 방향.
+  // 같은 역의 KTX 경부선과 경부선이 서로 반대 방향으로 보이던 것.
+  var SEOUL_PT = [126.9707, 37.5547];
+  function orient(chain, coords) {
+    if (chain.length < 2) return chain;
+    var a = coords[chain[0]], b = coords[chain[chain.length - 1]];
+    var da = havKm(a.lng, a.lat, SEOUL_PT[0], SEOUL_PT[1]), db = havKm(b.lng, b.lat, SEOUL_PT[0], SEOUL_PT[1]);
+    return db < da ? chain.slice().reverse() : chain;
+  }
   function lineOrder(lineId) {
     if (orderCache[lineId]) return orderCache[lineId];
+    var fromStops = stopsChains(lineId);
+    if (fromStops) { orderCache[lineId] = { chains: fromStops, stops: true }; return orderCache[lineId]; }
     var seen = {}, trip = [];
     for (var i = 0; i < STATIONS.length; i++) {
       var s = STATIONS[i];
@@ -276,7 +295,7 @@
         chain.push(nn);
         delete rem[nn];
       }
-      chains.push(chain);
+      chains.push(orient(chain, coords));
     }
     orderCache[lineId] = { chains: chains };
     return orderCache[lineId];
@@ -286,16 +305,15 @@
     var st = stationById(stationId);
     var nm = st ? (st.properties.name_ko || stationId) : stationId;
     var chains = lineOrder(lineId).chains;
+    // 역이 여러 구간에 있으면(서울: 경부 본선·영등포 갈래) 구간마다의 이웃을 모두 모은다.
+    var prev = [], next = [];
     for (var i = 0; i < chains.length; i++) {
       var idx = chains[i].indexOf(nm);
-      if (idx >= 0) {
-        return {
-          prev: idx > 0 ? chains[i][idx - 1] : null,
-          next: idx < chains[i].length - 1 ? chains[i][idx + 1] : null
-        };
-      }
+      if (idx < 0) continue;
+      if (idx > 0 && prev.indexOf(chains[i][idx - 1]) < 0) prev.push(chains[i][idx - 1]);
+      if (idx < chains[i].length - 1 && next.indexOf(chains[i][idx + 1]) < 0) next.push(chains[i][idx + 1]);
     }
-    return { prev: null, next: null };
+    return { prev: prev, next: next };
   }
 
   /* ---------- 패널 DOM ---------- */
@@ -345,10 +363,13 @@
     var col = line ? (line.properties.color || '#888') : '#888';
     var a = adjacent(lid, stationId);
     // 인접역은 '이 노선 위의' 그 이름 역 ID 로 잇는다 (IMPL12 — 이름으로 전체를 찾으면 교대가 부산 교대로 갔다)
-    function cell(name) {
-      if (!name) return '<span class="sd-st sd-none">—</span>';
+    function one(name) {
       var tid = idOnLine(name, lid, stationId);
       return '<span class="sd-st"' + (tid ? ' data-sid="' + esc(tid) + '"' : '') + ' data-st="' + esc(name) + '">' + esc(name) + '</span>';
+    }
+    function cell(names) {
+      if (!names || !names.length) return '<span class="sd-st sd-none">—</span>';
+      return names.map(one).join('<span class="sd-or">·</span>');
     }
     return '<div class="sd-adj"><span class="sd-dot" style="background:' + esc(col) + '"></span>' +
       '<span class="sd-lname">' + esc(nm) + '</span>' +

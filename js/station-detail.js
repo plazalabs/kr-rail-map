@@ -434,7 +434,7 @@
     var where = [price.sido, price.sgg].filter(Boolean).join(' ');
     // 거래가 5건 미만이면 자료에 대표값이 없다 — 값 대신 건수만 밝힌다.
     if (price.medianPerPyeong == null) {
-      return '<div class="sd-sec sd-price-sec sd-price-few"><h3>아파트 매매 시세 · ' + esc(price.dong) +
+      return '<div class="sd-sec sd-price-sec sd-price-few"><h3>법정동 실거래 · ' + esc(price.dong) +
         ' <span class="sd-price-sub">' + (where ? '· ' + esc(where) : '') + '</span></h3>' +
         '<span class="mk-few">거래 적음 (' + price.deals + '건)</span> <span class="mk-where">최근 6개월 거래가 ' +
         (pm.minDeals || 5) + '건 미만이라 대표값을 내지 않습니다</span></div>';

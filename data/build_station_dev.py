@@ -461,6 +461,10 @@ def main():
             rec["recent"] = {"cnt": rb["cnt"], "hh": rb["hh"], "byYear": rb["byYear"]}
         districts.append(rec)
 
+    # 한 역 = 한 법정동. 시세(station-price.json)가 있는 역은 시세가 고른
+    # 법정동 하나만 쓴다 — 시세 탭과 개발 탭이 같은 동을 가리키게.
+    price = json.loads((ROOT / "data" / "station-price.json").read_text("utf8")).get("stations", {})
+
     # 역별 값은 '받은 법정동 전체'를 돈다. 물량이 0인 동네도 넣어야
     # 화면이 '0세대(자료 있음)'이라고 말할 수 있다.
     for (sgg, dong) in sorted(collected | set(plan_d)):
@@ -470,6 +474,9 @@ def main():
             continue
         rb = recent_d.get((sgg, dong))
         for name in sts:
+            pick = price.get(name)
+            if pick and (pick.get("lawd"), pick.get("dong")) != (sgg, dong):
+                continue
             cur = stations.get(name)
             if cur is None:
                 stations[name] = {

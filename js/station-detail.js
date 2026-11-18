@@ -52,7 +52,8 @@
       'border:1px dashed var(--border,#d1d5db);background:var(--surface-2,transparent);color:var(--text,inherit);font-size:var(--fs-sm)}' +
     '.sd-mode-on:hover{background:var(--hover,#f3f4f6)}' +
     '.sd-sec h3{font-size:var(--fs-sm);color:var(--muted,#5b6470);margin:0 0 8px;font-weight:600}' +
-    '.sd-line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border,#f4f4f4);font-size:var(--fs-md)}' +
+    '.sd-hw{flex-basis:100%;padding-left:18px;font-size:var(--fs-xs);color:var(--muted,#5b6470);font-variant-numeric:tabular-nums}' +
+    '.sd-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border,#f4f4f4);font-size:var(--fs-md)}' +
     '.sd-dot{width:12px;height:12px;border-radius:50%;flex:none}' +
     '.sd-badge{margin-left:auto;font-size:var(--fs-xs);padding:2px 8px;border-radius:10px;flex:none}' +
     '.sd-badge.open{background:#e6f4ea;color:#137333}' +
@@ -339,12 +340,35 @@
     var col = line ? (line.properties.color || '#888') : '#888';
     var st = line ? (line.properties.status || 'open') : 'open';
     var label = STATUS_LABEL[st] || st;
-    return '<div class="sd-line"><span class="sd-dot" style="background:' + esc(col) + '"></span>' +
+    return '<div class="sd-line" data-lid="' + esc(lid) + '"><span class="sd-dot" style="background:' + esc(col) + '"></span>' +
       '<span>' + esc(nm) + '</span>' +
       '<span class="sd-badge ' + esc(st) + '">' + esc(label) + '</span></div>';
   }
 
   // 노선 lid 위에 있는 이름 nm 의 역 ID. 같은 노선에 같은 이름이 둘이면 현재 역에서 가까운 쪽.
+  // 배차 한 줄 — data/headways.json(출근 7~9시)·headways-off.json(평시 10~16시)의 역 값 그대로. 두 자료를 받은 뒤 채우고,
+  // 둘 다 값이 없는 노선은 줄을 넣지 않는다. 999 = 그 시간대 열차 없음
+  function hwTxt(v) { return v == null ? '—' : (v >= 999 ? '열차 없음' : v + '분'); }
+  function fillHeadways(sid, nameKo) {
+    if (typeof RouteFinder === 'undefined' || !RouteFinder.headwayRaw) return;
+    var ps = [];
+    if (typeof window !== 'undefined' && window.KR_ensureHeadways) ps.push(window.KR_ensureHeadways());
+    if (typeof window !== 'undefined' && window.KR_ensureHeadwaysOff) ps.push(window.KR_ensureHeadwaysOff());
+    Promise.all(ps).catch(function () { return null; }).then(function () {
+      if (!panel || !current || (current.properties && current.properties.id) !== sid) return;   // 그사이 다른 역을 열었으면 그대로
+      panel.querySelectorAll('.sd-line[data-lid]').forEach(function (row) {
+        if (row.querySelector('.sd-hw')) return;
+        var lid = row.getAttribute('data-lid');
+        var pk = RouteFinder.headwayRaw(lid, nameKo, 'peak'), of = RouteFinder.headwayRaw(lid, nameKo, 'off');
+        if (pk == null && of == null) return;
+        var d = document.createElement('div');
+        d.className = 'sd-hw';
+        d.textContent = '배차 출근 ' + hwTxt(pk) + ' / 평시 ' + hwTxt(of);
+        row.appendChild(d);
+      });
+    });
+  }
+
   function idOnLine(nm, lid, fromId) {
     var from = stationById(fromId), best = null, bd = Infinity;
     for (var i = 0; i < STATIONS.length; i++) {
@@ -838,6 +862,7 @@
       StationShareImage.saveLife({ name: nameKo, rows: ac.rows, asof: StationAccess.asof ? StationAccess.asof() : '', q: 'st=' + encodeURIComponent(sid) }, { wait: false })   // access.json 은 기다림 뺀 시간
         .then(function (msg) { if (msg) lfBtn.textContent = msg + ' — 다시 공유 →'; });
     });
+    fillHeadways(sid, nameKo);
     var cmBtn = body.querySelector('.sd-commute');
     if (cmBtn) cmBtn.addEventListener('click', function () {
       hide();

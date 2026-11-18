@@ -1561,6 +1561,7 @@ if (routeBandEl) {
 }
 window.KR_autoBand = autoBand;
 window.KR_routeBand = routeBand;
+window.KR_ensureHeadwaysOff = ensureHeadwaysOff;
 // 길찾기 '배차 넣기' (정반합 8차 A6, 2026-11-15) — 떡상 순위·역 타일·통근권과 같은 설정(KR_WAIT) 하나. 켜면 처음 탈 때도 배차 절반
 const routePeakEl = document.getElementById('route-peak');
 if (routePeakEl && window.KR_WAIT) {

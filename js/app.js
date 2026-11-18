@@ -2217,6 +2217,7 @@ function loadDetailData(opts) {
   if (detailDataRequested) return;
   detailDataRequested = true;
   if (typeof StationAccess !== 'undefined') watchData('도심 접근성', StationAccess.load('data/access.json')).then(detailRedraw);
+  if (typeof StationAccess !== 'undefined' && StationAccess.loadRanks) watchData('역 순위', StationAccess.loadRanks('data/rank-station.json')).then(detailRedraw);   // 홈 카드·떡상 패널과 같은 순위 (data/build_rank.js)
 }
 // 역 상세 패널이 처음 열릴 때 (지도 load 전에 검색으로 여는 경우도 포함)
 if (typeof StationDetail !== 'undefined') StationDetail.beforeShow = loadDetailData;

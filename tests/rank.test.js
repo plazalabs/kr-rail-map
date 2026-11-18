@@ -133,24 +133,23 @@ console.log('\n[결론] 광운대 — 회장님 숫자와 맞는지');
 
 console.log('\n[일치] 역 상세의 순위와 순위표 전국 순위가 같다');
 {
+  // 역 상세 순위는 data/rank-station.json(build_rank.js 가 이 RankTable 로 만든 값) — 홈 카드·떡상 패널과 같은 기준(평균 · 기본 연도 · 수도권/전국)
   SA.setDoc(access);
-  const all = RT.compute(doc, { weight: 'avg', region: 'all' });
-  const gbd = RT.compute(doc, { weight: 'gbd', region: 'all' });
+  SA.setRanks(read('data/rank-station.json'));
+  const cap = RT.compute(doc, { weight: 'avg', region: 'capital', at: doc.default_year });
+  const all = RT.compute(doc, { weight: 'avg', region: 'all', at: doc.default_year });
   let bad = 0, n = 0;
-  for (const name of ['광운대', '서울', '청량리', '노원', '동탄', '일산', '수서']) {
-    const row = all.rows.find(r => r.name === name);
-    const grow = gbd.rows.find(r => r.name === name);
+  for (const name of ['광운대', '서울', '청량리', '노원', '동탄', '일산', '수서', '부산']) {
+    const row = cap.rows.find(r => r.name === name) || all.rows.find(r => r.name === name);
     if (!row) continue;
+    const inCap = cap.rows.includes(row);
     const a = SA.of(row.id);
     n++;
-    // 역 상세는 동점을 이름 순서로 끊고, 순위표는 공동 순위 — 순위표 순위 ≤ 상세 순위 ≤ 순위표 순위 + 동점 수
-    const cnt = all.rows.filter(r => r.aft.score === row.aft.score).length;
-    const gcnt = gbd.rows.filter(r => r.aft.score === grow.aft.score).length;
-    const ok = a && a.rank.after.rank >= row.aft.rank && a.rank.after.rank < row.aft.rank + cnt &&
-      a.rank.gbd.rank >= grow.aft.rank && a.rank.gbd.rank < grow.aft.rank + gcnt;
-    if (!ok) { bad++; console.log('    ', name, a && a.rank.after.rank, row.aft.rank, cnt, a && a.rank.gbd.rank, grow.aft.rank, gcnt); }
+    const ok = a && a.rank && a.rank.rank === row.aft.rank && a.rank.scope === (inCap ? 'c' : 'n') &&
+      a.rank.total === (inCap ? cap.total : all.total) && String(a.rank.year) === String(doc.default_year);
+    if (!ok) { bad++; console.log('    ', name, a && JSON.stringify(a.rank), row.aft.rank, inCap); }
   }
-  check('표본 ' + n + '역 순위 일치 (동점 범위 안)', bad === 0 && n >= 6, bad);
+  check('표본 ' + n + '역 역 상세 순위 = 순위표(기본 연도) 순위', bad === 0 && n >= 7, bad);
 }
 
 console.log('\n[화면] rank.html');

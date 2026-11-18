@@ -193,13 +193,14 @@ const gangnam = idAt('강남', 37.4979, 127.0276);
 const g = SA.of(gangnam);
 check('강남 기록이 나온다', !!g);
 check('강남→강남은 0분', g && g.rows.find(r => r.id === 'gbd').after === 0);
-check('순위가 매겨진다', !!(g && g.rank.after), g && JSON.stringify(g.rank));
-check('순위는 전체 수보다 작거나 같다',
-  g && g.rank.after && g.rank.after.rank <= g.rank.after.total);
-// 2026-11-10: GTX-A 가 삼성에 서지 않게 바로잡자(2028년 정차 예정) 강남→서울역이 20 → 33분이 되어
-// 순위가 61 → 68위(5.5%)로 내려갔다. 사실에 맞춘 결과라 기준을 6% 로 둔다.
-check('강남이 상위 6% 안에 든다', g && g.rank.after.rank / g.rank.after.total <= 0.06,
-  g && g.rank.after.rank + '/' + g.rank.after.total);
+check('순위 자료 없으면 순위 없음 (화면이 따로 세지 않음)', g && g.rank === null, g && JSON.stringify(g.rank));
+const rankDoc = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/rank-station.json'), 'utf8'));
+check('순위 자료(rank-station.json)를 읽어들인다', SA.setRanks(rankDoc) === true);
+const g2 = SA.of(gangnam);
+check('순위가 매겨진다 (수도권 · 기본 연도)', !!(g2 && g2.rank && g2.rank.scope === 'c' && g2.rank.year === rankDoc.year), g2 && JSON.stringify(g2.rank));
+check('순위는 전체 수보다 작거나 같다', g2 && g2.rank.rank <= g2.rank.total);
+// 수도권 675역 중 2031년 기준 — 강남은 상위 10% 안 (11-18: 62위)
+check('강남이 수도권 상위 10% 안에 든다', g2 && g2.rank.rank / g2.rank.total <= 0.1, g2 && g2.rank.rank + '/' + g2.rank.total);
 check('3대 업무지구 평균이 계산된다', g && g.score.after != null && g.score.after < 40,
   g && g.score.after);
 
@@ -242,19 +243,8 @@ check('수원의 개통 단축폭은 크다', s && s.score.now - s.score.after >
 // 더 정확해졌고(여의도 62→54분), 순위가 458/1199(38.2%) → 484/1231(39.3%)로 거의 그대로가 됐다.
 // '개통 후'에는 GTX-A·B·C·계획 노선이 다 들어가 다른 역들도 함께 빨라지기 때문 — 수원 자체는 20분 단축(위), 단축 순위 상위 20%(아래).
 // 그래서 '순위가 오른다' 대신 '전체 대비 위치(백분율)가 2%p 넘게 나빠지지 않는다'로 본다.
-check('수원 순위(백분율)가 개통 후 크게 나빠지지 않는다', s && s.rank.now && s.rank.after &&
-  s.rank.after.rank / s.rank.after.total - s.rank.now.rank / s.rank.now.total <= 0.02,
-  s && s.rank.now.rank + '/' + s.rank.now.total + ' → ' + s.rank.after.rank + '/' + s.rank.after.total);
-
-// 단축폭 순위 — '개통으로 얼마나 좋아지나'. 수원은 GTX-C 수혜라 상위여야 한다.
-check('수원의 개통 단축 순위가 상위 20%', s && s.rank.gain &&
-  s.rank.gain.rank / s.rank.gain.total <= 0.2,
-  s && s.rank.gain && s.rank.gain.rank + '/' + s.rank.gain.total);
-// 단축폭이 0인 역은 단축 순위에서 빠진다 — 그래서 대상 수가 접근성 순위보다 적다.
-// 0분을 '개선'으로 세면 이미 좋은 역이 개선 순위에 끼어든다.
-check('단축 순위는 개선이 있는 역만 센다',
-  s && s.rank.gain && s.rank.after && s.rank.gain.total < s.rank.after.total,
-  s && s.rank.gain && (s.rank.gain.total + ' < ' + s.rank.after.total));
+// 지금→개통 후 순위 변화·단축 순위는 떡상 랭킹(js/rank.js, tests/rank.test.js)이 본다 — 역 상세는 기본 연도 순위 하나만
+check('수원도 수도권 순위가 있다', s && s.rank && s.rank.scope === 'c', s && JSON.stringify(s.rank));
 // 강남은 이미 최고 접근성이라 개통으로 줄어들 여지가 거의 없다.
 // 2026-11-11: 업무지구를 묶음으로 바꾸자 강남의 3도심 단축이 0분 — 0분인 역이 많아 동점 순서에 따라 순위가 흔들린다.
 // '강남보다 더 많이 줄어드는 역'의 비율로 본다(동점은 같은 자리).

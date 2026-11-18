@@ -14,6 +14,7 @@
 | 4 | 13 성수 지선 환승 안 셈 | 재현부터 — 어느 탭·화면에서 빠지는지. `js/route.js`/`route-compare.js` | 신설동→강남 환승 수 | E-13, `tests/junction-turns.test.js` |
 | 5 | 14 역 상세 시간 ≠ 길찾기 시간 (30 vs 31, 40 vs 45) | `data/build_access.js` 와 길찾기가 같은 함수·같은 기준인지. 다르면 문구 지우기(CLAUDE.md 3장) | 서울역·광운대 상세 분 | E-06, `tests/route-consistency.test.js` |
 | 6 | 15 상태줄 47 vs 길찾기 50 | `js/app.js` 상태줄 요약이 길찾기 결과(처음 기다림 포함)를 그대로 쓰게 | 상태줄 분 | E-07 |
+| 8 | 64 역 상세 순위를 홈과 같은 기준 (11-18 추가) | `data/build_rank.js`(역별 순위 파일 rank-station.json — js/rank.js 로), `js/access.js`(순위를 다시 세지 않고 읽기만), `js/app.js` | 의정부 상세 '전국 127위' → '2031년까지 개통 · 수도권 675역 중 117위' | 새 회귀 시험(데이터·e2e), E-01, tests/access·rank |
 | 7 | 60 역 상세 배차 한 줄 "출근 ○분 / 평시 ○분" | `js/station-detail.js`, `data/headways.json`·`headways-off.json` 읽기만 | 화면에 새 줄 | 새 단위 시험, 관련 e2e |
 
 ## 멈추는 조건

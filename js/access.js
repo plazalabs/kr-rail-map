@@ -2,8 +2,8 @@
  *
  * data/access.json (data/build_access.js 가 만든다) 을 읽어
  *   1) 역별 5개 거점 소요시간 — 지금 / 개통 후
- *   2) 3대 업무지구(도심·여의도·강남) 평균으로 매긴 전국 순위
- * 를 제공한다.
+ *   2) 순위 — data/rank-station.json (data/build_rank.js 가 js/rank.js 로 만든 값, 홈 카드·떡상 패널과 같은 기준)
+ * 를 제공한다. 순위는 여기서 다시 세지 않는다.
  *
  * 왜 필요한가
  *   이 사이트는 시세는 보여주지만 '그 역이 어디로 얼마나 빨리 닿는가'는
@@ -19,10 +19,7 @@
 const StationAccess = (() => {
   let doc = null;
   let byId = null;
-  let rankNow = null;    // Map<id, {rank, total}>
-  let rankAfter = null;
-  let rankGain = null;   // 개통 단축폭 순위
-  let rankGbd = null;    // GBD(강남) 중시 순위 — 개통 후 기준 (2026-11-12 회장님 요청)
+  let ranks = null;      // data/rank-station.json — { year, total:{c,n}, stations, unranked, by:{id:[순위,'c'|'n']} }
   let styleDone = false;
 
   // 3대 업무지구 — 순위를 매길 때 쓰는 축. 서울역·판교는 표시만 한다.
@@ -62,33 +59,9 @@ const StationAccess = (() => {
     return n >= 2 ? sum / wsum : null;
   }
 
-  function buildRanks() {
-    rankNow = new Map(); rankAfter = new Map(); rankGain = new Map(); rankGbd = new Map();
-    const a = [], b = [], c = [], g = [];
-    for (const id of Object.keys(byId)) {
-      const sn = scoreOf(byId[id], 'now');
-      const sa = scoreOf(byId[id], 'after');
-      if (sn != null) a.push([id, sn]);
-      if (sa != null) b.push([id, sa]);
-      const sg = scoreOf(byId[id], 'after', GBD_WEIGHT);
-      if (sg != null) g.push([id, sg]);
-      // 단축폭 순위 — '개통으로 얼마나 좋아지나'. 지금 갈 수 없던 역은
-      // 단축폭을 잴 수 없으므로 뺀다 (0분으로 넣으면 순위가 뒤로 밀린다).
-      if (sn != null && sa != null && sn - sa > 0) c.push([id, sa - sn]);
-    }
-    // 동점은 역 이름이 아니라 id 순서로 고정한다 — 새로고침마다 순위가
-    // 흔들리면 '어제는 12위였는데' 같은 말을 못 한다.
-    const put = (list, map) => {
-      list.sort((x, y) => x[1] - y[1] || (x[0] < y[0] ? -1 : 1));
-      list.forEach((row, i) => map.set(row[0], { rank: i + 1, total: list.length }));
-    };
-    put(a, rankNow); put(b, rankAfter); put(c, rankGain); put(g, rankGbd);
-  }
-
   function setDoc(d) {
     if (!d || !d.destinations || !d.stations) return false;
     doc = d; byId = d.stations;
-    buildRanks();
     return true;
   }
 
@@ -100,6 +73,20 @@ const StationAccess = (() => {
   }
 
   function isReady() { return !!doc; }
+
+  function setRanks(d) { ranks = (d && d.by && d.total) ? d : null; return !!ranks; }
+  function loadRanks(url) {
+    return fetch(url || 'data/rank-station.json')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => setRanks(d))
+      .catch(() => false);
+  }
+  // 역 상세 순위 한 칸 — { rank, scope:'c'|'n', total, year }. 순위 밖이면 null
+  function rankOf(stationId) {
+    if (!ranks || !ranks.by[stationId]) return null;
+    const [rank, scope] = ranks.by[stationId];
+    return { rank, scope, total: ranks.total[scope], year: ranks.year };
+  }
 
   /* 한 역의 접근성. 자료가 없으면 null.
    * 반환: { rows:[{id,label,now,after,save}], score:{now,after}, rank:{now,after} } */
@@ -123,12 +110,7 @@ const StationAccess = (() => {
     return {
       rows,
       score: { now: scoreOf(rec, 'now'), after: scoreOf(rec, 'after'), gbd: scoreOf(rec, 'after', GBD_WEIGHT) },
-      rank: {
-        now: rankNow.get(stationId) || null,
-        after: rankAfter.get(stationId) || null,
-        gain: rankGain.get(stationId) || null,
-        gbd: rankGbd.get(stationId) || null,
-      },
+      rank: rankOf(stationId),
     };
   }
 
@@ -232,46 +214,31 @@ const StationAccess = (() => {
       }
       lines.push(s);
     }
-    const r2 = [];
-    if (a.rank.after) {
-      r2.push('전국 <b>' + a.rank.after.rank + '위</b>');
+    // 순위 — 홈 카드·떡상 패널과 같은 기준. 기준(연도·범위)은 숫자와 같은 줄에 (CLAUDE.md 3장)
+    if (a.rank) {
+      lines.push(a.rank.year + '년까지 개통 · ' + (a.rank.scope === 'c' ? '수도권 ' : '전국 ') +
+        a.rank.total.toLocaleString() + '역 중 <b>' + a.rank.rank + '위</b>');
+    } else if (ranks) {
+      lines.push(ranks.year + '년까지 개통한 노선으로는 거점까지 이어지지 않아 순위 밖');
     }
-    if (a.rank.gbd) {
-      r2.push('GBD 중시 <b>' + a.rank.gbd.rank + '위</b>');
-    }
-    // 단축 순위는 '줄어드는 게 있을 때'만 보여준다. 2분 줄어드는 역에
-    // '단축 954위' 를 붙이면 정보가 아니라 소음이다.
-    if (a.rank.gain && gainMin >= 3) {
-      r2.push('개통 단축 <b>' + a.rank.gain.rank + '위</b>');
-    }
-    if (r2.length) lines.push(r2.join(' · '));
     lines.forEach(t => { h += '<div class="sa-sum">' + t + '</div>'; });
     // 지도 안 떡상 패널에서 이 역 보기 (v109 — 예전엔 rank.html 로 나갔다). 패널이 없는 곳에선 주소로 연다
     h += '<div class="sa-sum"><a class="sa-rocket" href="./?rocket=1&st=' + encodeURIComponent(stationId) + '" data-rocket-st="' + stationId + '"><i data-ic="trend"></i> 떡상 랭킹에서 보기 →</a>' +
       // 수도권 역이면 RAIL MARKET MAP(역 타일)에서도 (2026-11-13) — 순위 자료가 수도권만이라 그 밖에선 안 보인다
-      (inCapital(stationId) ? ' · <a class="sa-rocket" href="./?market=1&st=' + encodeURIComponent(stationId) + '" data-market-st="' + stationId + '"><i data-ic="chart"></i> 타일 지도에서 보기 →</a>' : '') + '</div>';
+      (a.rank && a.rank.scope === 'c' ? ' · <a class="sa-rocket" href="./?market=1&st=' + encodeURIComponent(stationId) + '" data-market-st="' + stationId + '"><i data-ic="chart"></i> 타일 지도에서 보기 →</a>' : '') + '</div>';
 
-    // 역 수는 하나(stations.geojson 의 역 id 개수). 순위는 그중 철도로 거점에 닿는 역만 매기고, 닿지 않는 역(excluded)은 순위 밖.
-    const ranked = a.rank.after ? a.rank.after.total : 0;
-    const nEx = (doc.excluded || []).length;
-    const tot = (ranked + nEx).toLocaleString();
+    // 역 수는 하나(stations.geojson 의 역 id 개수 — rank-station.json stations). 순위 범위·순위 밖 역 수도 그 파일 값 그대로
+    const tot = ranks ? ranks.stations.toLocaleString() : '';
     h += '<div class="sa-note">※ 실제 시각표가 아니라 추정값입니다. 타고 가는 시간 + 갈아탈 때 걷는 시간 + <b>갈아탈 때 기다리는 시간</b>(공식 출근 시간 배차의 절반)을 ' +
       '더했습니다. 처음 열차를 기다리는 시간은 뺐습니다(역에 닿는 때에 따라 매번 달라서). 길찾기 기본(출근 시간대)과 같은 시간대입니다. 두 번째 숫자가 <b>개통 후</b>이고 −N분은 그 차이입니다. ' +
-      '순위는 CBD(도심·서울역)·YBD(여의도)·GBD(강남) 세 곳 평균, ' +
-      'GBD 중시는 강남을 두 번 센 평균으로 매긴 것으로, ' +
-      '전국 ' + tot + '역 가운데 몇 번째인지입니다' + (nEx ? ' (철도로 거점까지 이어지지 않는 ' + nEx + '역은 순위 밖)' : '') + '.</div>';
+      (ranks ? '순위는 CBD(도심·서울역)·YBD(여의도)·GBD(강남) 세 곳 평균을 ' + ranks.year + '년까지 개통한다고 보고 매긴 것으로, 홈 카드·떡상 랭킹과 같은 기준입니다. ' +
+        '전국 ' + tot + '역 가운데 수도권 역은 수도권 ' + ranks.total.c.toLocaleString() + '역 중, 그 밖은 전국 ' + ranks.total.n.toLocaleString() + '역 중 몇 번째인지이고' +
+        (ranks.unranked ? ', ' + ranks.unranked + '역은 그해까지 개통한 노선으로 거점에 닿지 않아 순위 밖입니다.' : '.') : '') + '</div>';
     return h;
   }
 
-  function inCapital(id) {
-    const f = typeof STATIONS !== 'undefined' ? STATIONS.find(x => x.properties.id === id) : null;
-    if (!f) return false;
-    const c = f.geometry.coordinates;
-    return c[0] > 126.3 && c[0] < 127.9 && c[1] > 36.85 && c[1] < 38.3;
-  }
-
   function asof() { return (doc && doc.updated) || ''; }   // 자료 기준일 (공유 카드 아래 띠)
-  return { load, isReady, of, biggestGain, sectionHtml, fmt, setDoc, asof };
+  return { load, loadRanks, setRanks, rankOf, isReady, of, biggestGain, sectionHtml, fmt, setDoc, asof };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = StationAccess;

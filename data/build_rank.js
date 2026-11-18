@@ -183,4 +183,19 @@ console.log('크기', (fs.statSync(path.join(ROOT, 'data/rank.json')).size / 102
   const out = { updated: doc.updated, year, total: res.total, basis: '평균(도심·여의도·강남) 기준 수도권 순위가 개통 후 가장 많이 오르는 역 — 교통 접근성 순위이며 집값 예측이 아님', top };
   fs.writeFileSync(path.join(ROOT, 'data/rank-top.json'), JSON.stringify(out));
   console.log('rank-top.json:', year, top.map(t => t.n + '▲' + t.ch).join(' '));
+
+  // 역 상세 순위 — 홈 카드·떡상 패널과 같은 기준(평균 · 기본 연도 · 배차 넣기 끔). 수도권 역은 수도권 안 순위, 그 밖은 전국 순위.
+  // 역 상세가 rank.json(약 470KB)을 받지 않게 작은 파일로 따로 둔다. 묶음(같은 이름·같은 자리) 안 역 id 모두에 같은 값.
+  const cap = global.RankTable.compute(doc, { weight: 'avg', region: 'capital', at: year });
+  const nat = global.RankTable.compute(doc, { weight: 'avg', region: 'all', at: year });
+  const idsOf = new Map(groups.map(g => [g.ids[0], g.ids]));
+  const by = {};
+  nat.rows.forEach(r => { if (r.aft.rank != null) (idsOf.get(r.id) || [r.id]).forEach(id => { by[id] = [r.aft.rank, 'n']; }); });
+  cap.rows.forEach(r => { if (r.aft.rank != null) (idsOf.get(r.id) || [r.id]).forEach(id => { by[id] = [r.aft.rank, 'c']; }); });
+  // 역 수(1,249 = stations.geojson 역 id)와 순위 역 수가 왜 다른지 화면이 밝히도록 — 순위 밖 역 수도 여기서 센다
+  const unranked = stations.filter(f => !by[f.properties.id]).length;
+  const rs = { updated: doc.updated, year, total: { c: cap.total, n: nat.total }, stations: stations.length, unranked,
+    basis: '평균(도심·여의도·강남) 기준 개통 후 순위 — 수도권 역(c)은 수도권 안, 그 밖(n)은 전국. 홈 카드·떡상 패널과 같은 계산(js/rank.js)', by };
+  fs.writeFileSync(path.join(ROOT, 'data/rank-station.json'), JSON.stringify(rs));
+  console.log('rank-station.json:', Object.keys(by).length + '역, 수도권 ' + cap.total + ' · 전국 ' + nat.total);
 }

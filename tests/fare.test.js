@@ -182,7 +182,8 @@ console.log("\n[68점 감사 8번] '최소요금' 은 함께 보이는 다른 �
       const all = RC.findAll(A.properties.id, B.properties.id, opts);
       if (!all.fare) continue; n++;
       // 요금 미정(개통 전 GTX, 0원으로 합산된 부분 합)인 탭은 확정 요금과 견줄 수 없어 뺀다 (I3, 감사2, 2026-11-14)
-      const lower = ['time', 'transfer', 'now'].map(k => all[k]).filter(r => r && !RC.hasPending(r) && r.fare < all.fare.fare);
+      // 최소요금 탭은 최적 + 20분 안에서만 고른다 — 그보다 오래 걸리는 탭은 더 싸도 견주지 않는다 (R-70)
+      const lower = ['time', 'transfer', 'now'].map(k => all[k]).filter(r => r && !RC.hasPending(r) && r.fare < all.fare.fare && r.minutes <= all.time.minutes + 20);
       if (lower.length) bad.push(`${A.properties.name_ko}→${B.properties.name_ko} ${all.fare.fare} > ${lower.map(r => r.fare).join('/')}`);
     }
   }

@@ -497,6 +497,19 @@ const RouteCompare = (() => {
     return out;
   }
 
+  // 최소요금 탭은 최적보다 FARE_CAP_MIN 분 넘게 더 걸리는 길을 내지 않는다 (CLAUDE.md 3-2).
+  // 최적을 먼저 정하고, 상한 안 후보 중 가장 싼 길. 최적보다 싼 길이 없으면 최적 길 그대로('최적과 같음').
+  const FARE_CAP_MIN = 20;
+  function pickFareAndBest(time0, transfer, cands) {
+    let time = undominatedBest(time0, [transfer, pickCheapest(cands)]);
+    if (!time) return { time, fare: pickCheapest(cands) };
+    const capped = cands.filter(r => r && r.minutes <= time.minutes + FARE_CAP_MIN);
+    let fare = pickCheapest(capped.concat([time]));
+    if (fare && fare !== time && typeof time.fare === 'number' && hasPending(fare) === hasPending(time) && !(fare.fare < time.fare)) fare = time;
+    time = undominatedBest(time, [fare]);
+    return { time, fare };
+  }
+
   // 운행 중인 노선만 쓰는 3종 (길찾기 기본 — 2026-11-09 결정 1: 미개통은 켠 사람에게만).
   // future 는 '개통 예정 노선까지 쓰면' 의 최단시간 — 결과에 '켜면 몇 분' 한 줄을 붙이는 데만 쓴다.
   // opts.peakWait: 길찾기 '배차 넣기'(KR_WAIT 'peak') — 처음 탈 때도 출퇴근 배차 절반 (A6)
@@ -506,8 +519,7 @@ const RouteCompare = (() => {
     return withPeak(peak, () => {
       const time0 = enrich(RF.findRoute(fromId, toId, { openOnly: true, peakWait: peak }));
       const transfer = enrich(findMinTransfer(fromId, toId, true));
-      const fare = pickCheapest([enrich(findMinFare(fromId, toId, true)), enrich(findMinFare(fromId, toId, true, true)), time0, transfer]);
-      const time = undominatedBest(time0, [transfer, fare]);
+      const { time, fare } = pickFareAndBest(time0, transfer, [enrich(findMinFare(fromId, toId, true)), enrich(findMinFare(fromId, toId, true, true)), time0, transfer]);
       const future = enrich(RF.findRoute(fromId, toId, { peakWait: peak }));
       return { time, transfer, fare, now: time, future, openOnly: true, peakWait: peak, band };
     }, band);
@@ -527,8 +539,7 @@ const RouteCompare = (() => {
     const time0 = RF ? enrich(RF.findRoute(fromId, toId, { peakWait: peak })) : null;
     const transfer = enrich(findMinTransfer(fromId, toId));
     const now = RF ? enrich(RF.findRoute(fromId, toId, { openOnly: true, peakWait: peak })) : null;
-    const fare = pickCheapest([enrich(findMinFare(fromId, toId)), enrich(findMinFare(fromId, toId, false, true)), time0, transfer, now]);   // '지금 바로' 길도 후보
-    const time = undominatedBest(time0, [transfer, fare]);
+    const { time, fare } = pickFareAndBest(time0, transfer, [enrich(findMinFare(fromId, toId)), enrich(findMinFare(fromId, toId, false, true)), time0, transfer, now]);   // '지금 바로' 길도 후보
     // '지금' — 미개통 노선을 한 개도 쓰지 않는 가장 빠른 경로.
     // 부동산에서 이게 핵심이다: 개통 전에 그 집에 살면 실제로 몇 분 걸리는가.
     // 목적지가 미개통 노선에만 있는 역이면 null 이 된다 (지금은 갈 수 없다).
@@ -544,9 +555,9 @@ const RouteCompare = (() => {
     const rail = r => !!(r && r.legs && r.legs.some(l => l.lineId && RF && typeof RF.categoryOf === 'function' && ['ktx', 'conventional'].includes(RF.categoryOf(l.lineId))));
     const base = rail(f) || rail(t) ? '성인 기준(열차 일반실·전철 교통카드, 할인 제외)' : '성인 교통카드 기준(할인·정기권 제외)';
     if (!t) return base;
-    if (hasPending(t) || hasPending(f)) return '요금 미정 구간이 있어 얼마 아끼는지는 말할 수 없어요 · ' + base;
     const samePath = t.path && f.path && t.path.length === f.path.length && t.path.every((x, i) => x === f.path[i]);
-    if (samePath) return '최적 길이 가장 싼 길이에요 (같은 길) · ' + base;
+    if (samePath) return '최적과 같음 — 최적보다 ' + FARE_CAP_MIN + '분 넘게 더 걸리지 않는 길 중 더 싼 길이 없어요 · ' + base;
+    if (hasPending(t) || hasPending(f)) return '요금 미정 구간이 있어 얼마 아끼는지는 말할 수 없어요 · ' + base;
     const dm = f.minutes - t.minutes, df = t.fare - f.fare;
     const time = dm > 0 ? dm + '분 더 걸려요' : dm < 0 ? (-dm) + '분 빨라요' : '시간은 같아요';
     if (df > 0) return '최적 길보다 ' + df.toLocaleString() + '원 싸고 ' + time + ' · ' + base;
@@ -814,7 +825,7 @@ const RouteCompare = (() => {
     return ` <span class="rc-est" title="${why}">추정</span>`;
   }
 
-  function variantHtml(r, tabId, badge) {
+  function variantHtml(r, tabId, badge, sameAsBest) {
     const fd = r.fareDetail;
     // 미정 운임(개통 전 GTX 등)이 있으면 합계가 확정처럼 보이지 않게 '+ ○○ 요금 미정' 을 합계 옆에 직접 적는다 (68점 감사 7번)
     const pend = fd && fd.parts ? fd.parts.filter(p => p.kind === 'pending').map(p => p.line) : [];
@@ -825,6 +836,8 @@ const RouteCompare = (() => {
       ? `<span class="rc-def" title="공식 운행시간 + ${BAND_TXT[r.band || 'peak']} 공식 배차의 절반을 처음 탈 때·갈아탈 때 기다린다고 본 시간">(처음 열차 기다림${r.firstWait >= 0.5 ? ' ' + Math.round(r.firstWait) + '분' : ''} 포함${r.band === 'off' ? ' · 평시 배차' : ' · 출근 배차'})</span>`
       : `<span class="rc-def" title="공식 운행시간으로 낸 시간(자료 없는 구간은 어림) — 갈아탈 때 기다리는 시간(${BAND_TXT[r.band || 'peak']} 공식 배차의 절반)은 넣고, 처음 열차를 기다리는 시간은 뺐습니다">(환승 대기 포함${r.band === 'off' ? ' · 평시 배차' : ' · 출근 배차'})</span>`} · 환승 ${r.transfers}회 · ${fareTxt} · ${r.distKm.toFixed(1)}km</div>`;
     html += fareBreakdownHtml(fd);
+    // 최소요금 = 최적 길이면 같은 길을 두 번 그리지 않는다 — 합계·요금 내역만
+    if (sameAsBest) return html + `<div class="leg rc-same">길은 <b>최적</b> 탭과 같아요</div>`;
     html += basisHtml(r);
     // 미개통 노선을 지나는 경로는 명시한다.
     // 이 지도는 착공·계획 노선까지 그리므로 '지금 갈 수 있는 길'로 오해하면 안 된다.
@@ -931,9 +944,10 @@ const RouteCompare = (() => {
         (t.id === 'time' && !fastId) ? '가장 빠름' :
         (t.id === fastId) ? '가장 빠름' :
         (t.id === 'transfer' && all.transfer && (!all.time || all.transfer.transfers < all.time.transfers)) ? '환승 최소' :
-        (t.id === 'fare' && all.fare && all.time && all.fare.fare < all.time.fare) ? '요금 최소' : '';
+        (t.id === 'fare' && all.fare && all.time && all.fare.fare < all.time.fare) ? '요금 최소' :
+        (t.id === 'fare' && all.fare && all.fare === all.time) ? '최적과 같음' : '';
       const note = t.id === 'fare' ? `<p class="rc-fare-note">${escapeHtml(fareTabNote(all))}</p>` : '';
-      return `<div class="rc-panel" id="rc-panel-${t.id}"${i === 0 ? '' : ' hidden'}>${note}${variantHtml(t.r, t.id, isBest)}</div>`;
+      return `<div class="rc-panel" id="rc-panel-${t.id}"${i === 0 ? '' : ' hidden'}>${note}${variantHtml(t.r, t.id, isBest, t.id === 'fare' && all.fare === all.time)}</div>`;
     }).join('');
     box.innerHTML = html;
     const shareBtn = box.querySelector('.rc-nf-share');

@@ -213,7 +213,7 @@
       </div>
       <div class="rp-opts">
         <label class="rp-opt" for="route-unopened"><input type="checkbox" id="route-unopened"> 개통 예정 노선 포함 <span class="rp-opt-sub">(기본: 지금 운행 중인 노선만)</span></label>
-        <label class="rp-opt" for="route-band" title="갈아탈 때(배차 넣기면 처음 탈 때도) 기다리는 시간을 어느 시간대 공식 배차로 셀지 — 기본은 지금 시각(평일 7~9시·18~20시는 출근 배차, 그 밖·주말은 평시 배차)"><span class="rp-opt-sub">시간대</span> <select id="route-band" aria-label="시간대"><option value="auto">지금 시각</option><option value="peak">출근 7~9시</option><option value="off">평시 10~16시</option></select></label>
+        <label class="rp-opt" for="route-band" title="갈아탈 때(배차 넣기면 처음 탈 때도) 기다리는 시간을 어느 시간대 공식 배차로 셀지 — 기본은 출근 7~9시 배차(역 상세·순위와 같은 시간대). 평시나 지금 시각(평일 7~9시·18~20시는 출근, 그 밖·주말은 평시)은 고를 때만"><span class="rp-opt-sub">시간대</span> <select id="route-band" aria-label="시간대"><option value="auto">지금 시각</option><option value="peak" selected>출근 7~9시</option><option value="off">평시 10~16시</option></select></label>
         <label class="rp-opt" for="route-peak" title="켜면 처음 탈 때도 출퇴근 시간 공식 배차의 절반을 기다린다고 봅니다 — 개통 효과 순위·역 타일·통근권과 같은 설정"><input type="checkbox" id="route-peak"> 배차 넣기 <span class="rp-opt-sub">(처음 열차 기다림까지)</span></label>
       </div>
       <!-- 결과 전체(역 목록)를 낭독기가 통째로 읽지 않게 aria-live 는 뺐다 — 요약 한 줄은 #status 가 읽는다 (11-15) -->

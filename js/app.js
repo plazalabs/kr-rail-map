@@ -1516,7 +1516,7 @@ if (routeUnopenedEl) {
   });
 }
 function routeIncludeUnopened() { return !!(routeUnopenedEl && routeUnopenedEl.checked); }
-// 길찾기 '시간대' (정반합 8차 A5, 2026-11-15): 지금 시각(기본) / 출근(07~09시) / 평시(10~16시). 평시 배차(data/headways-off.json)는 고를 때 한 번 받는다.
+// 길찾기 '시간대': 출근(07~09시, 기본 — 역 상세·순위·통근권과 같은 시간대) / 평시(10~16시) / 지금 시각(고를 때만). 평시 배차(data/headways-off.json)는 고를 때 한 번 받는다.
 // 이 브라우저에 기억. 공유 링크 ?band=off 는 이번 방문에만
 const BAND_KEY = 'krrail-route-band';
 const routeBandEl = document.getElementById('route-band');
@@ -1528,8 +1528,8 @@ function ensureHeadwaysOff() {
     .then(doc => RouteFinder.loadHeadwaysOff(doc)));
   return headwaysOffP;
 }
-// 11-15 20:10 회장님 지적(광운대→강남 저녁 47분 vs 카카오 53분): 기본값이 늘 '출근'이라 저녁·밤에도 출근 배차로 셈 →
-// 기본 '지금 시각'(auto): 평일 07~09시·18~20시(공식 출퇴근 시간) = 출근 배차, 그 밖·주말 = 평시 배차. 사용자가 출근/평시를 고르면 그 값 기억
+// '지금 시각'(auto)은 고를 때만:
+// 평일 07~09시·18~20시(공식 출퇴근 시간) = 출근 배차, 그 밖·주말 = 평시 배차. 사용자가 고른 값은 기억
 function autoBand(d) {
   d = d || new Date();
   const h = d.getHours(), wd = d.getDay();

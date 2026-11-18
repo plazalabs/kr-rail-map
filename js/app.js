@@ -1602,8 +1602,12 @@ function routeSummaryText() {
   const t = document.querySelector('#route-result .rc-panel:not([hidden]) .total') || document.querySelector('#route-result .total');
   if (!t) return '';
   const c = t.cloneNode(true);
+  // 시간대(출근/평시 배차)는 결과 줄의 그 말을 그대로 옮긴다 — 상태줄만 읽는 사람도 어느 배차로 잰 분인지 알게
+  const def = c.querySelector('.rc-def');
+  const band = def && (def.textContent.match(/(출근|평시) 배차/) || [])[0];
   c.querySelectorAll('.rc-badge, .rc-def').forEach(x => x.remove());
-  return c.textContent.replace(/\s+/g, ' ').replace(/^총\s*/, '').trim();
+  const s = c.textContent.replace(/\s+/g, ' ').replace(/^총\s*/, '').trim();
+  return band ? s + ' · ' + band : s;
 }
 // 휴대폰에서 경로를 찾으면 지도를 가리는 것들을 닫는다 (2026-11-14 회장님 지적)
 function clearMobileOverlays() {

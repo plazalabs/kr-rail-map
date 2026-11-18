@@ -57,7 +57,7 @@ async function openAnalysis(page, item) {
 /** 길찾기 실행 → { time, transfers, fare, text } (현재 선택된 탭 기준) */
 function parseRoute(text) {
   const t = text.match(/총 약 (?:(\d+)시간 ?)?(\d+)분/);
-  const x = text.match(/환승 (\d+)회/);
+  const x = text.match(/총 약[^\n]*?환승 (\d+)회/);
   const f = text.match(/예상 요금 ([\d,]+)원/);
   return { time: t ? minutes(t[1], t[2]) : NaN, transfers: x ? Number(x[1]) : NaN, fare: f ? num(f[1]) : NaN, text };
 }
@@ -212,13 +212,26 @@ test.describe('길찾기', () => {
     });
   }
 
-  test('[E-12] 역 하나 차이로 30분 넘게 늘지 않는다 (청량리 수인분당 대기 버그)', async ({ page }) => {
+  test('[E-12] 최소환승은 환승 수가 같거나 적은 최적 길보다 느리지 않고, 이웃 역 하나로 크게 바뀌지 않는다 (청량리 수인분당 대기 버그)', async ({ page }) => {
     await boot(page);
-    await runRoute(page, '광운대', '선릉');
-    const best = await routeTab(page, '최적');
-    const fewer = await routeTab(page, '최소환승');
-    // 검수 때: 최적 45분(회기→왕십리 경유) / 최소환승 80분(청량리에서 수인분당 6개역). 역 1개 차이로 35분.
-    expect(fewer.time - best.time, '최소환승이 최적보다 지나치게 오래 걸림').toBeLessThanOrEqual(20);
+    // 기준 1: 최적 길이 환승 수가 같거나 적은데 더 빠르면, 최소환승 탭이 그 길을 놓친 것
+    // 검수 때: 최소환승이 승차 분만 견주어 60분 기다리는 청량리 수인분당 길을 골랐다(광운대→선릉 80분).
+    // 최소환승 탭에 시간 상한은 없다 — 환승을 아끼는 대가로 더 걸리는 건 맞는 결과.
+    const pairs = [['광운대', '선릉'], ['수원', '강남'], ['광운대', '강남']];
+    for (const [a, b] of pairs) {
+      await runRoute(page, a, b);
+      const best = await routeTab(page, '최적');
+      const fewer = await routeTab(page, '최소환승');
+      if (best.transfers <= fewer.transfers) {
+        expect(fewer.time, `${a}→${b}: 최적 ${best.time}분·${best.transfers}회가 최소환승 ${fewer.time}분·${fewer.transfers}회보다 빠름`).toBeLessThanOrEqual(best.time);
+      }
+    }
+    // 기준 2: 이웃 역(회기↔청량리)에서 출발하면 '최적' 시간이 30분 넘게 바뀌지 않는다
+    await runRoute(page, '회기', '선릉');
+    const hoegi = await routeTab(page, '최적');
+    await runRoute(page, '청량리', '선릉');
+    const chr = await routeTab(page, '최적');
+    expect(Math.abs(hoegi.time - chr.time), `회기 ${hoegi.time}분 / 청량리 ${chr.time}분`).toBeLessThanOrEqual(30);
   });
 
   test('[E-13] 지선 갈아타기(성수지선→2호선 본선)는 환승으로 센다', async ({ page }) => {

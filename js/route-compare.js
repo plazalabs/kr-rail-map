@@ -301,6 +301,8 @@ const RouteCompare = (() => {
   }
 
   // 최소환승: (역,노선) 상태 다익스트라, 비용=(환승,분) 사전식
+  // 분은 화면 시간(legsOfPath)과 같은 잣대 — 갈아탈 때 기다림·환승 도보·접근 시간·처음 탈 때 기다림까지.
+  // 승차 분만 견주면 배차가 아주 드문 열차(청량리 수인분당)로 갈아타는 길이 뽑히고 화면엔 그 기다림이 붙는다 (E-12).
   // openOnly 면 미개통 노선 간선을 건너뛴다 ('지금' 경로).
   function findMinTransfer(fromId, toId, openOnly) {
     // init 전에 호출되면(지도 로드 실패 등) 조용히 '경로 없음' 으로 둔다.
@@ -313,6 +315,7 @@ const RouteCompare = (() => {
     const prev = new Map(); // key -> {pk, edge, station}
     const heap = makeHeap((a, b) => a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]));
     heap.push([0, 0, fromId, null]);
+    const peak = PEAK && (!RF.hasHeadways || RF.hasHeadways());
     let bestK = null;
     while (heap.size()) {
       const [t, m, u, cl] = heap.pop();
@@ -320,6 +323,7 @@ const RouteCompare = (() => {
       const d = dist.get(uk);
       if (!d || t !== d[0] || m !== d[1]) continue;
       if (u === toId) { bestK = uk; break; }
+      const pu = prev.has(uk) ? prev.get(uk).pk.slice(0, prev.get(uk).pk.indexOf('|')) : null;   // 직전 역 (갈아탈 때 방향)
       for (const e of (RF.adjacency().get(u) || [])) {
         if (openOnly && !e.open) continue;
         if (!openOnly && e.nowOnly) continue;   // 개통 후엔 새 역에 선다 (route.js NOW_ONLY_SPANS)
@@ -328,7 +332,12 @@ const RouteCompare = (() => {
         if (e.walk) { nt = t + 1; nl = null; }
         else if (cl === null || RF.sameService(cl, run)) { nt = t; nl = run; }
         else { nt = t + 1; nl = run; }
-        const nm = m + edgeMinutes(e);
+        let nm = m + edgeMinutes(e);
+        if (nl !== null) {
+          if (cl !== null && !RF.sameService(cl, nl)) nm += RF.transferMinutes(u, cl, nl, pu, e.to);
+          if (nl !== cl) nm += RF.accessMinutes(nl);
+          nm += cl === null ? RF.boardWait(nl, u, e.to, peak) : RF.transferWait(nl, cl, u, pu, e.to);
+        }
         const vk = skey(e.to, nl);
         const vd = dist.get(vk);
         if (!vd || nt < vd[0] || (nt === vd[0] && nm < vd[1])) {

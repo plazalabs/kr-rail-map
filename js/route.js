@@ -1386,7 +1386,7 @@ const RouteFinder = (() => {
 
   const api = {
     buildGraph, ensureGraph, findRoute, legsOfPath, runOf, allTimesFrom, lineIsUnopened, statusOf, pathDistance,
-    loadTransfers, loadHeadways, loadHeadwaysOff, withBand, hasHeadwaysOff: () => !!headwayOff, peakWaitAt, boardWait, transferMinutes, sameService, countTransfers,
+    loadTransfers, loadHeadways, loadHeadwaysOff, withBand, hasHeadwaysOff: () => !!headwayOff, peakWaitAt, boardWait, accessMinutes, transferMinutes, sameService, countTransfers,
     transferWait, stopStages, stageIds, hasHeadways: () => !!headwayDoc,   // I1·I2 (2026-11-14): route-compare 가 같은 대기 시간을 쓰게 · 배차 자료 받았는지
     // route-compare.js 가 '같은 그래프'를 쓰도록 노출한다.
     // 예전에는 route-compare 가 그래프를 따로 만들었는데, 그쪽은 선형 조각을 이어붙여

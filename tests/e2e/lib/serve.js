@@ -12,12 +12,15 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.pbf': 'application/x-protobuf',
 };
 
-function start(port) {
+// override: (경로) => 글자 | null — 그 경로만 다른 내용으로 준다 (예: 새 판 sw.js 흉내)
+function start(port, { override } = {}) {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       let p;
       try { p = decodeURIComponent(req.url.split('?')[0]); } catch (e) { res.writeHead(400); res.end('bad'); return; }
       if (p === '/') p = '/index.html';
+      const o = override && override(p);
+      if (o != null) { res.writeHead(200, { 'Content-Type': MIME[path.extname(p)] || 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(o); return; }
       const fp = path.join(ROOT, p);
       if (!fp.startsWith(ROOT) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory()) { res.writeHead(404); res.end('nf'); return; }
       res.writeHead(200, { 'Content-Type': MIME[path.extname(fp)] || 'application/octet-stream', 'Cache-Control': 'no-store' });

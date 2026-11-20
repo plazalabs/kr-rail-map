@@ -4,11 +4,11 @@
  *  - GeoJSON 데이터: Cache First (최초 로드 후 캐시)
  *  - 지도 타일: Network First (오프라인이면 캐시된 타일만, 최대 200개)
  */
-const APP_CACHE = 'kr-rail-map-app-v301';
+const APP_CACHE = 'kr-rail-map-app-v302';
 // 실거래 자료 달 — 매달 자동 갱신(.github/workflows/data-refresh.yml)이 바꾼다. 데이터는 캐시 우선이라
 // 이름이 바뀌어야 다시 찾은 사람도 새 시세를 받는다.
 const DATA_REV = '202609';
-const DATA_CACHE = 'kr-rail-map-data-v301-r' + DATA_REV;
+const DATA_CACHE = 'kr-rail-map-data-v302-r' + DATA_REV;
 const TILE_CACHE = 'kr-rail-map-tiles-v1';
 const MAX_TILE_ENTRIES = 200;
 
@@ -169,8 +169,12 @@ self.addEventListener('fetch', (event) => {
 
   // 3. 앱 셸 (같은 origin의 문서/스크립트/스타일/이미지): Cache First
   if (url.origin === self.location.origin) {
+    // 문서(내비게이션)는 질문(?…)을 뗀 주소 하나로 — 정적 사이트라 질문은 화면 스크립트가 읽을 뿐 문서는 같다.
+    // 질문마다 따로 넣으면 공유 링크(?from=…, ?x=…)를 열 때마다 같은 문서가 캐시에 쌓였다.
+    const nav = request.mode === 'navigate';
+    const docKey = url.origin + url.pathname;
     event.respondWith(
-      caches.match(request).then((cached) => {
+      (nav ? caches.match(docKey) : caches.match(request)).then((cached) => {
         if (cached) return cached;
         return fetch(request).then((res) => {
           // 내비게이션 응답은 **그 요청 주소로** 저장한다 (IMPL12 건 3).
@@ -180,7 +184,7 @@ self.addEventListener('fetch', (event) => {
           // 오프라인 재방문 때 글꼴이 시스템 글꼴로 바뀌었다. 판(버전)이 바뀌면 APP_CACHE 째로 지워지니 옛 파일이 남지 않는다.
           if (res.ok && (request.mode === 'navigate' || /\.(woff2|js|css|png|svg|webp)$/.test(url.pathname))) {
             const copy = res.clone();
-            caches.open(APP_CACHE).then((cache) => cache.put(request, copy));
+            caches.open(APP_CACHE).then((cache) => cache.put(nav ? docKey : request, copy));
           }
           return res;
         }).catch(async () => {

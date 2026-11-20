@@ -1,5 +1,5 @@
 /* e2e: 미개통 노선 표시 + 기본 길찾기 (2026-11-09 회장님 결정 1)
- *  A. 지도: 운행 중인 노선(rail-lines)엔 미개통이 없고, 미개통은 점선 레이어(rail-lines-unopened)와 '개통 예정' 글자로만 그린다
+ *  A. 지도: 운행 중인 노선(rail-lines)엔 미개통이 없고, 미개통은 점선 레이어(rail-lines-unopened)와 상태 말 글자('동북선 (공사 중)' — LineStatus.word, 숙제 66)로만 그린다
  *  B. 길찾기 기본: '개통 예정 노선 포함' 꺼짐 → 결과에 미개통 배지·'지금 vs 개통 후' 상자가 없고, '켜면 몇 분' 안내 한 줄
  *  C. 스위치 실클릭 → 다시 찾아 개통 후 경로(미개통 배지·비교 상자), 저장됨, 새로고침해도 켜짐
  *  D. 미개통 노선에만 있는 역(교산): 기본이면 '지금 운행 중인 노선으로는 갈 수 없습니다' + 개통 후 안내
@@ -67,8 +67,11 @@ async function route(b, from, to) {
     R.check('A1 운행 중 레이어에 미개통 노선 없음', A.openN > 0 && A.openBad.length === 0, A.openBad.join(',') || `${A.openN}개`);
     R.check('A2 미개통 레이어에 운행 중 노선 없음 + 동북선 보임', A.unN > 0 && A.unBad.length === 0 && A.unNames.includes('동북선'), A.unNames.join(','));
     R.check('A3 미개통은 점선', Array.isArray(A.dash) && A.dash.length >= 2, JSON.stringify(A.dash));
-    R.check('A4 글자에 "개통 예정"', JSON.stringify(A.label).includes('개통 예정'));
-    R.check('A5 GTX-D 는 갈래 여러 안임을 밝힘 (P14)', JSON.stringify(A.label).includes('GTX-D 구상 (갈래 여러 안)'));
+    { const L = JSON.stringify(A.label);
+      R.check('A4 글자에 상태 말(공사 중·계획·구상), 한 라벨 안 모순 없음', ['"공사 중"', '"계획"', '"구상"'].every(w => L.includes(w)) && !/개통 예정|구상중|계획중|공사중/.test(L), L.slice(0, 160)); }
+    { const g = await b.evaluate(`(() => { const f = map.querySourceFeatures('lines').concat(map.queryRenderedFeatures()).find(x => x.properties && x.properties.id === 'gtx-d');
+        const st = f ? f.properties.status : null; return { st, word: st ? LineStatus.word(st) : null }; })()`);
+      R.check('A5 GTX-D 는 갈래 여러 안임을 밝힘 (P14) — 상태 말은 status 에서 (계획)', g.word === '계획' && JSON.stringify(A.label).includes('" (갈래 여러 안)"') && !JSON.stringify(A.label).includes('GTX-D 구상'), JSON.stringify(g)); }
     await b.shot(path.join(OUT, 'a-map.png'));
 
     // B. 기본 길찾기 (꺼짐)

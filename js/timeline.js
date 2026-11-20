@@ -1,4 +1,4 @@
-/* RailTimeline — 개통 타임라인 (공사중/계획중 노선)
+/* RailTimeline — 개통 타임라인 (공사 중·계획·구상 노선)
  * 완전 독립 모듈. 다른 파일 수정 없이 동작.
  * 사용법:
  *   RailTimeline.init(LINES, STATIONS); // STATIONS는 선택 (역 수 표시용)
@@ -15,12 +15,6 @@
   var panel = null;
   var backdrop = null;
 
-  var STATUS_LABEL = {
-    construction: '공사중',
-    planned: '계획중',
-    proposed: '구상중',
-    open: '운행중'
-  };
   // 미정 그룹 정렬 순서
   var STATUS_ORDER = { construction: 0, planned: 1, proposed: 2 };
 
@@ -133,7 +127,7 @@
         name: p.name_ko || p.id,
         color: p.color || '#888888',
         status: p.status,
-        statusLabel: STATUS_LABEL[p.status] || p.status,
+        statusLabel: LineStatus.word(p.status),
         opening: oy,                 // {year, month} | null
         openingText: fmtYear(oy),
         km: lineLengthKm(f),
@@ -177,11 +171,11 @@
       });
 
     var html = '<div class="rt-notice">' +
-      '공사중 · 계획중 노선 ' + entries.length + '개. ' +
+      '공사 중 · 계획 · 구상 노선 ' + entries.length + '개. ' +
       '개통 연도는 데이터에 명시된 것만 표시하며, 없는 경우 "미정"으로 표기합니다.</div>';
 
     if (!entries.length) {
-      html += '<div class="rt-empty">공사중/계획중 노선이 없습니다.</div>';
+      html += '<div class="rt-empty">공사 중·계획·구상 노선이 없습니다.</div>';
     } else {
       html += '<div class="rt-timeline">';
       // 연도 확정 그룹

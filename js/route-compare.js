@@ -1013,12 +1013,11 @@ const RouteCompare = (() => {
         (window.KR_WAIT ? '&wait=' + (KR_WAIT.isPeak() ? '1' : '0') : '') + (window.KR_routeBand ? '&band=' + KR_routeBand() : '') };
   }
   // 'GTX-D (계획 · 2035년)' — 카드가 퍼질 때 확정된 노선처럼 읽히지 않게 상태·목표 연도를 붙인다
-  const STATUS_WORD = { construction: '공사 중', planned: '계획', proposed: '구상' };
   function lineStatusLabel(id) {
     const name = lineNameOf.get(id) || id, m = lineMetaOf.get(id);
-    if (!m || !STATUS_WORD[m.status]) return name;
+    if (!m || !m.status || m.status === 'open') return name;
     const y = String(m.opened || '').match(/\d{4}년대?/);
-    return name + ' (' + STATUS_WORD[m.status] + (y ? ' · ' + y[0] : '') + ')';
+    return name + ' (' + LineStatus.word(m.status) + (y ? ' · ' + y[0] : '') + ')';
   }
 
   function hide() {

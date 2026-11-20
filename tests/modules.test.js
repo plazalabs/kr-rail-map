@@ -12,6 +12,7 @@ const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
 const IconsLib = require(path.join(ROOT, 'js/icons.js'));   // 화면 조각이 Icons.svg 를 쓴다 (2026-11-12)
+const LineStatusLib = require(path.join(ROOT, 'js/line-status.js'));   // 노선 상태 말 (숙제 66)
 const LINES_FC = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/lines.geojson'), 'utf8'));
 const STATIONS_FC = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/stations.geojson'), 'utf8'));
 
@@ -51,7 +52,7 @@ function loadModule(file) {
     performance: { now: () => 0 },
   };
   c.window = c; c.globalThis = c; c.self = c;
-  c.Icons = c.Icons || IconsLib; vm.createContext(c);
+  c.Icons = c.Icons || IconsLib; c.LineStatus = LineStatusLib; vm.createContext(c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), c, { filename: file });
   return c;
 }
@@ -66,7 +67,7 @@ const L2 = C.stats('seoul-subway-line-2');
 check('2호선 통계가 나옴', !!L2);
 check('2호선 길이 55~65km (공식 60.2)', L2 && L2.km > 55 && L2.km < 65, L2 && L2.km.toFixed(1));
 check('2호선 역 40개 이상', L2 && L2.stations >= 40, L2 && L2.stations);
-check('2호선은 운행중', L2 && L2.status === '운행중', L2 && L2.status);
+check('2호선은 운행 중', L2 && L2.status === '운행 중', L2 && L2.status);
 check('2호선은 도시철도', L2 && L2.category === '도시철도', L2 && L2.category);
 check('2호선 평균 역간 1~2km', L2 && L2.avgGap > 1 && L2.avgGap < 2, L2 && L2.avgGap.toFixed(2));
 check('2호선 환승역이 10개 이상', L2 && L2.transfers >= 10, L2 && L2.transfers);
@@ -82,10 +83,10 @@ check('GTX-A 는 KTX·고속 분류가 아님', G && G.category !== 'KTX·고속
 check('없는 노선은 null', C.stats('없는-노선-id') === null);
 
 console.log('\n[노선 비교] 상태·분류 한글 라벨');
-check('open → 운행중', C.STATUS_KO.open === '운행중');
-check('construction → 공사중', C.STATUS_KO.construction === '공사중');
-check('planned → 계획중', C.STATUS_KO.planned === '계획중');
-check('proposed → 구상중', C.STATUS_KO.proposed === '구상중');
+check('open → 운행 중', C.STATUS_KO.open === '운행 중');
+check('construction → 공사 중', C.STATUS_KO.construction === '공사 중');
+check('planned → 계획', C.STATUS_KO.planned === '계획');
+check('proposed → 구상', C.STATUS_KO.proposed === '구상');
 check('ktx → KTX·고속', C.CAT_KO.ktx === 'KTX·고속');
 
 console.log('\n[선형 길이] 공식 영업거리와 비교 — 중복 선형이 섞이면 여기서 걸린다');
@@ -168,9 +169,9 @@ check('절반쯤 겹친 두 원은 1~2배 사이', half > one && half < 2 * one,
 check('원이 없으면 0', V.unionAreaKm2([], 0.5) === 0);
 
 console.log('\n[커버리지] statusLabel()');
-check('open → 운행중', V.statusLabel('open') === '운행중');
-check('construction → 공사중', V.statusLabel('construction') === '공사중');
-check('planned → 계획중', V.statusLabel('planned') === '계획중');
+check('open → 운행 중', V.statusLabel('open') === '운행 중');
+check('construction → 공사 중', V.statusLabel('construction') === '공사 중');
+check('planned → 계획', V.statusLabel('planned') === '계획');
 
 /* ================= RailTimeline ================= */
 const tl = loadModule('js/timeline.js');
@@ -313,7 +314,7 @@ console.log('\n[커버리지] 버튼 켜짐 표시를 show()/hide() 가 맡음 (
   const c = { console, Math, JSON, Date, Set, Map, Array, Object, String, Number, isNaN, isFinite, parseFloat, parseInt,
     document: doc, requestAnimationFrame: () => 0, cancelAnimationFrame() {}, setTimeout: () => 0, clearTimeout() {} };
   c.window = c; c.globalThis = c; c.self = c;
-  c.Icons = c.Icons || IconsLib; vm.createContext(c);
+  c.Icons = c.Icons || IconsLib; c.LineStatus = LineStatusLib; vm.createContext(c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/coverage.js'), 'utf8'), c, { filename: 'js/coverage.js' });
   const fakeMap = { on() {}, getSource() { return { setData() {} }; }, addSource() {}, addLayer() {}, getLayer() { return null; },
     removeLayer() {}, removeSource() {}, fitBounds() {} };
@@ -363,7 +364,7 @@ console.log('\n[그리기] 테마·배경 전환(setStyle) 후 그린 노선 복
   const c = { console, Math, JSON, Date, Set, Map, Array, Object, String, Number, isNaN, isFinite, parseFloat, parseInt,
     document: doc, localStorage: { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } } };
   c.window = c; c.globalThis = c; c.self = c;
-  c.Icons = c.Icons || IconsLib; vm.createContext(c);
+  c.Icons = c.Icons || IconsLib; c.LineStatus = LineStatusLib; vm.createContext(c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8') + '\n;this.__DT = DrawTools;', c, { filename: 'js/draw.js' });
   const DT = c.__DT;
   DT.init(fakeMap, () => {});
@@ -494,7 +495,7 @@ console.log('\n[남은 문제] 영향권 가림·노선도 버튼·메모 핀 (I
   const c = { console, Math, JSON, Date, Set, Map, Array, Object, String, Number, isNaN, isFinite, parseFloat, parseInt,
     document: doc, localStorage: { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } } };
   c.window = c; c.globalThis = c; c.self = c;
-  c.Icons = c.Icons || IconsLib; vm.createContext(c);
+  c.Icons = c.Icons || IconsLib; c.LineStatus = LineStatusLib; vm.createContext(c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8') + '\n;this.__DT = DrawTools;', c, { filename: 'js/draw.js' });
   c.__DT.init(fakeMap, () => {});
   c.__DT.refreshMemos();

@@ -21,9 +21,6 @@
   var lastTab = 't';     // 역 상세 탭 기억 (F3): t 교통 · p 시세 · d 개발 · k 이야기
   var orderCache = {};   // lineId -> { chains: [[역명...], ...] }
 
-  // 앱 전체 표기와 맞춘다 (compare/stats/timeline 과 같은 낱말).
-  // 'planned' 를 빼먹어서 배지에 영어 원문이 그대로 나온 적이 있다.
-  var STATUS_LABEL = { open: '운행중', construction: '공사중', planned: '계획중', proposed: '구상중' };
 
   /* ---------- CSS (동적 삽입) ---------- */
   var CSS =
@@ -339,7 +336,7 @@
     var nm = line ? (line.properties.name_ko || lid) : lid;
     var col = line ? (line.properties.color || '#888') : '#888';
     var st = line ? (line.properties.status || 'open') : 'open';
-    var label = STATUS_LABEL[st] || st;
+    var label = LineStatus.word(st);
     return '<div class="sd-line" data-lid="' + esc(lid) + '"><span class="sd-dot" style="background:' + esc(col) + '"></span>' +
       '<span>' + esc(nm) + '</span>' +
       '<span class="sd-badge ' + esc(st) + '">' + esc(label) + '</span></div>';

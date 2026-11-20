@@ -304,10 +304,12 @@ function lineFilterWithStatus(ids, open, only) {
 }
 // 미개통 상태별 선 모양 (J4, 2026-11-14) — 색만으로 상태를 나누지 않는다(색각 차이). 범례·노선 목록과 같은 모양.
 const STATUS_LINE = {
-  construction: { layer: 'rail-lines-unopened', label: '공사 중', dash: [3, 1.5], width: [7, 2, 12, 4, 16, 6] },
-  planned: { layer: 'rail-lines-planned', label: '계획', dash: [1.2, 1.4], width: [7, 1.8, 12, 3.5, 16, 5] },
-  proposed: { layer: 'rail-lines-proposed', label: '구상', dash: [0.2, 1.6], width: [7, 2, 12, 3.5, 16, 5], round: true },
+  construction: { layer: 'rail-lines-unopened', label: LineStatus.word('construction'), dash: [3, 1.5], width: [7, 2, 12, 4, 16, 6] },
+  planned: { layer: 'rail-lines-planned', label: LineStatus.word('planned'), dash: [1.2, 1.4], width: [7, 1.8, 12, 3.5, 16, 5] },
+  proposed: { layer: 'rail-lines-proposed', label: LineStatus.word('proposed'), dash: [0.2, 1.6], width: [7, 2, 12, 3.5, 16, 5], round: true },
 };
+// 지도 글자용 상태 말 — feature 의 status 에서 LineStatus.word 로 (운행 중은 글자 레이어에 안 나온다)
+const STATUS_WORD_EXPR = ['match', ['get', 'status'], ...['construction', 'planned', 'proposed'].flatMap(s => [s, LineStatus.word(s)]), LineStatus.word('open')];
 const UNOPENED_LINE_LAYERS = Object.values(STATUS_LINE).map(s => s.layer);
 const UNOPENED_LAYERS = [...UNOPENED_LINE_LAYERS, 'rail-lines-unopened-label'];
 function lineStatusOf(p) { return (p && p.status) || 'open'; }
@@ -318,7 +320,7 @@ function lineStatusOf(p) { return (p && p.status) || 'open'; }
  * (노선 목록 체크와 같은 visibleLines 를 바꾼다 — 역 점·라벨·역세권도 같이 따라간다).
  * 휴대폰(좁은 화면)에서는 '범례' 버튼 하나로 접혀 있다가 누르면 펼친다. */
 const STATUS_ORDER = [
-  ['open', '운행 중', null],
+  ['open', LineStatus.word('open'), null],
   ['construction', STATUS_LINE.construction.label, STATUS_LINE.construction.dash],
   ['planned', STATUS_LINE.planned.label, STATUS_LINE.planned.dash],
   ['proposed', STATUS_LINE.proposed.label, STATUS_LINE.proposed.dash],
@@ -456,11 +458,11 @@ function addDataLayers() {
     filter: lineFilterWithStatus([...visibleLines], false),
     layout: {
       'symbol-placement': 'line', 'symbol-spacing': 400,
-      // P14: GTX-D 는 한 노선의 갈래(구상안) 여럿이라 강남 부근에 같은 글자 점선 2개가 엇갈려 서로 다른 노선처럼 보였다
-      //      → 'GTX-D 구상 (갈래 여러 안)' 으로 같은 노선의 갈래임을 밝힌다
-      'text-field': ['match', ['get', 'id'], 'gtx-d', 'GTX-D 구상 (갈래 여러 안)',
-        ['concat', ['get', 'name_ko'], ' 개통 예정',
-          ['match', ['get', 'status'], 'construction', ' (공사중)', 'planned', ' (계획중)', 'proposed', ' (구상중)', '']]],
+      // P14: GTX-D 는 한 노선의 갈래 여럿이라 강남 부근에 같은 글자 점선 2개가 엇갈려 서로 다른 노선처럼 보였다
+      //      → 'GTX-D 계획 (갈래 여러 안)' 으로 같은 노선의 갈래임을 밝힌다. 상태 말은 다른 노선과 같이 status 에서 만든다
+      'text-field': ['match', ['get', 'id'],
+        'gtx-d', ['concat', ['get', 'name_ko'], ' ', STATUS_WORD_EXPR, ' (갈래 여러 안)'],
+        ['concat', ['get', 'name_ko'], ' (', STATUS_WORD_EXPR, ')']],
       'text-size': 11, 'text-font': ['Noto Sans Regular']
     },
     paint: labelPaint('#333333', 1.4)
@@ -747,7 +749,7 @@ function renderLineList() {
         label.append(cb, sw, document.createTextNode(p.name_ko || p.id), info);
         if (p.note) label.title = p.note;
         if (p.status !== 'open') label.title = (label.title ? label.title + ' / ' : '') +
-          (p.status === 'construction' ? '공사 중' : p.status === 'proposed' ? '구상' : '계획 중');
+          LineStatus.word(p.status);
         label.addEventListener('mouseenter', () => highlightLine(p.id));
         label.addEventListener('mouseleave', () => highlightLine(null));
         det.appendChild(label);
@@ -763,9 +765,9 @@ function renderLineList() {
  * 지금 켜진 노선이 어느 버튼과 똑같으면 그 버튼이 눌린 모양(aria-pressed) — 노선을 하나 직접 바꾸면 풀린다. */
 const LINE_PRESETS = [
   ['all', '전체', () => true],
-  ['open', '운행 중', p => (p.status || 'open') === 'open'],
-  ['construction', '공사 중', p => p.status === 'construction'],
-  ['plan', '계획·구상', p => p.status === 'planned' || p.status === 'proposed'],
+  ['open', LineStatus.word('open'), p => (p.status || 'open') === 'open'],
+  ['construction', LineStatus.word('construction'), p => p.status === 'construction'],
+  ['plan', LineStatus.word('planned') + '·' + LineStatus.word('proposed'), p => p.status === 'planned' || p.status === 'proposed'],
   ['hsr', '고속철도', p => p.category === 'ktx'],
 ];
 function syncLineChecks() {
@@ -1232,11 +1234,11 @@ function routeFromStation(stationName, which, stationId) {
 
 /* ---------- 길찾기 UI ---------- */
 const lineNameOf = new Map();
-// 후보 목록용 노선 이름 — 미개통(공사·계획)이면 '(미개통)' 을 붙인다 (68점 감사 3번, 2026-11-13)
+// 후보 목록용 노선 이름 — 운행 중이 아니면 상태 말을 붙인다 ('GTX-D(계획)')
 function lineLabelOf(lid) {
   const n = lineNameOf.get(lid) || lid;
-  const un = typeof RouteFinder !== 'undefined' && RouteFinder.lineIsUnopened && RouteFinder.lineIsUnopened(lid);
-  return un ? n + '(미개통)' : n;
+  const st = typeof RouteFinder !== 'undefined' && RouteFinder.statusOf ? RouteFinder.statusOf(lid) : 'open';
+  return st && st !== 'open' ? n + '(' + LineStatus.word(st) + ')' : n;
 }
 function setupRouteFinder() {
   LINES.forEach(f => lineNameOf.set(f.properties.id, f.properties.name_ko));
@@ -2551,8 +2553,7 @@ function openStationPopup(feature, lngLat) {
     const ln = LINES.find(l => l.properties.id === lid);
     const nm = lineNameOf.get(lid) || lid;
     const col = ln ? (ln.properties.color || '#888') : '#888';
-    const st = ln && ln.properties.status !== 'open' ?
-      (ln.properties.status === 'construction' ? ' (공사중)' : ' (계획)') : '';
+    const st = ln && (ln.properties.status || 'open') !== 'open' ? ' (' + LineStatus.word(ln.properties.status) + ')' : '';
     return `<span class="st-line"><span class="dot" style="background:${col}"></span>${nm}${st}</span>`;
   }).join('') : '노선 정보 없음';
   const el = document.createElement('div');

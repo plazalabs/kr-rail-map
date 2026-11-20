@@ -21,10 +21,7 @@
     return R_KM * 2 * Math.asin(Math.sqrt(h));
   }
 
-  function statusLabel(st) {
-    return st === 'open' ? '운행중' : st === 'construction' ? '공사중'
-      : st === 'planned' ? '계획중' : '구상중';
-  }
+  function statusLabel(st) { return LineStatus.word(st); }
 
   function lineById(id) {
     return LN.find(l => l.properties.id === id) || null;

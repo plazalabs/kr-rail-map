@@ -6,7 +6,7 @@
   'use strict';
 
   const CAT_NAMES = { metro: '도시철도', urban: '광역·도시', ktx: 'KTX·고속', conventional: '일반철도', etc: '기타' };
-  const STATUS_NAMES = { open: '운행중', construction: '공사중', planned: '계획중', proposed: '구상중' };
+  const STATUS_NAMES = LineStatus.WORDS;
   const STATUS_COLORS = { open: '#2e9e4f', construction: '#e07b00', planned: '#8a63d2', proposed: '#5b6470' };
 
   let LINES = [], STATIONS = [];

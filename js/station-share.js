@@ -14,12 +14,12 @@
 
   /* 카드 공통 표기 (뮤즈 카드 검수 TASK, 2026-11-14) — 카드 3종(TOP10·우리 역·타일)과 rank.html 카드가 같은 말을 쓴다.
    * - 시나리오: 같은 계산은 같은 이름 — 'GTX·새 노선 모두 개통하면' / '2031년까지 개통하면'
-   * - 계획 노선(planned·proposed: 국가철도망 반영·예타 전 등)은 연도 없이 '(계획)' — 공사 중 노선과 같은 무게로 쓰지 않는다
+   * - 계획·구상 노선은 연도 없이 상태 말만 '(계획)'·'(구상)' (LineStatus.word) — 공사 중 노선과 같은 무게로 쓰지 않는다
    * - '떡상'·'계단' 대신 '접근성 개선'·'▲N' (앱 TOP10 카드와 같은 말) */
   function scenario(y) { return (!y || y === 'all') ? 'GTX·새 노선 모두 개통하면' : y + '년까지 개통하면'; }
   function planLabel(m) {
     if (!m) return '';
-    if (m.s === 'planned' || m.s === 'proposed') return m.n + ' (계획)';
+    if (m.s === 'planned' || m.s === 'proposed') return m.n + ' (' + LineStatus.word(m.s) + ')';
     var y = (typeof RankTable !== 'undefined' && RankTable.yearOf) ? RankTable.yearOf(m.o) : null;
     return m.n + (y ? ' ' + y : '');
   }

@@ -51,3 +51,6 @@ node_modules/
 docs/AUDIT-01-checklist.md
 docs/AUDIT-02-open.md
 docs/img/
+
+# Playwright 보고서·결과 (실행할 때마다 새로 생김)
+playwright-report/

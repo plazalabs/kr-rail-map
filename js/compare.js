@@ -18,7 +18,7 @@
   let panel = null;
   let styleEl = null;
 
-  const STATUS_KO = { open: '운행중', construction: '공사중', planned: '계획중', proposed: '구상중' };
+  const STATUS_KO = LineStatus.WORDS;
   const CAT_KO = { metro: '도시철도', urban: '광역·도시', ktx: 'KTX·고속', conventional: '일반철도', etc: '기타' };
   const DEG = Math.PI / 180;
 

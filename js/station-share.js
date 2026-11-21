@@ -75,7 +75,7 @@
     var g = c.getContext('2d');
     var bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0b1d3a'); bg.addColorStop(1, '#10305e');
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
-    g.fillStyle = '#7fb0ff'; g.font = '700 26px ' + FONT; g.fillText('축을 읽으면, 도시의 미래가 보인다', 72, 70);
+    g.fillStyle = '#7fb0ff'; g.font = '700 26px ' + FONT; g.fillText('철도의 축, 도시의 내일', 72, 70);
     return { c: c, g: g, W: W, H: H };
   }
   // Q7 (11-15): 길찾기·통근권 카드 기준일 — 노선 단계(개통 시기·사업 단계)를 마지막으로 확인한 날 (data.html 기준일 표 '미래 노선'과 같은 값)

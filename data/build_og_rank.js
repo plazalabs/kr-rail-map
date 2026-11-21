@@ -32,7 +32,7 @@ g.fillStyle = '#9fb3d1'; g.font = '600 30px ' + F; g.fillText('한국철도맵',
 g.fillStyle = '#fff'; g.font = '800 64px ' + F; g.fillText('GTX 개통 후,', 64, 168); g.fillText('우리 역은 몇 등?', 64, 248);
 g.fillStyle = '#5fe39a'; g.font = '800 40px ' + F; g.fillText('🚀 GTX 축지법 랭킹', 64, 320);
 g.fillStyle = '#c8d3e6'; g.font = '500 26px ' + F; g.fillText('CBD·YBD·GBD 까지 시간으로 매긴', 64, 380); g.fillText('수도권 역 순위 — 지금 vs 개통 후', 64, 416);
-g.fillStyle = '#7fb0ff'; g.font = '700 28px ' + F; g.fillText('축을 읽으면, 도시의 미래가 보인다', 64, 500);
+g.fillStyle = '#7fb0ff'; g.font = '700 28px ' + F; g.fillText('철도의 축, 도시의 내일', 64, 500);
 g.fillStyle = '#7f93b3'; g.font = '500 22px ' + F; g.fillText('plazalabs.github.io/kr-rail-map/rank.html', 64, 580);
 // 오른쪽: 많이 오르는 TOP 5 — 기준 글자는 제목 바로 아래 (숫자와 같은 자리)
 const X = 660; g.fillStyle = 'rgba(255,255,255,.07)'; g.beginPath(); g.roundRect ? g.roundRect(X - 30, 60, 530, 510, 24) : g.rect(X - 30, 60, 530, 510); g.fill();

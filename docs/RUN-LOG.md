@@ -164,6 +164,7 @@
 - 2026-11-21 14:04 KST · v308 · 383bf88 — 블록 E 80·81(10커밋 푸시, 35509b1..383bf88). Pages 배포 성공, 배포본 sw.js app·data CACHE = v308, gtx.html·data/gtx-card.json·js/gtx-page.js 받아짐(200), data.html 에 #gtx-card 절 있음. 시험 워크플로는 푸시 직후 돌기 시작
 - 2026-11-21 14:44 KST · v309 · 79ad6c7 — 숙제 83 gtx.html 링크 미리보기(1커밋 푸시, 1b3286f..79ad6c7). Pages 배포 성공, 배포본 sw.js v309, gtx.html 에 og·twitter 태그 14개, og:image image/og-gtx.jpg 200(image/jpeg, 84,281B)
 - 2026-11-21 18:42 KST · v310 · 4668e7c — 블록 F 77·76 + TODO 86(3커밋 푸시, 6e13858..4668e7c). 배포본 sw.js app·data CACHE = v310, rank.html 에 js/line-status.js, data/rank.json lines.y: GTX-G·GTX-H·GTX-A 평택 연장 null · GTX-C 2031
+- 2026-11-21 19:38 KST · v312 · f2e41ad — 블록 G 84·85(2커밋 푸시, c57143e..f2e41ad). pages-build-deployment 성공. 배포본 sw.js app CACHE = v312, gtx.html 제목 '몇분컷 | 한국철도맵', rank.html 제목 'GTX 축지법 랭킹 | 한국철도맵'. 뒤따른 커밋 e3e103d(E-03 잠긴 시험 한 줄)·이 기록은 시험·문서만이라 같이 푸시(화면 바뀜 없음)
 
 ## 블록 B (2026-11-18 시작)
 계획: `docs/plans/block-B.md` · 시작 기준선: 데이터 시험 실패 2개
@@ -304,3 +305,12 @@
 - 빠른 실행 검색어: '축지법' 더하고 '떡상'도 남김(화면에 안 보임, 옛 말로 찾는 사람용). 빼라 하시면 한 줄
 - rank-station.json `basis` 설명 글의 '떡상 패널' — 화면에 안 나오는 자료 칸이고 바꾸면 자료 파일이 바뀌어 그대로
 - **og-rank.jpg TOP 5 숫자는 '전체 개통' 기준**(의정부 448→125위 ▲323)이라 홈·랭킹 기준 '2031년까지'(448→117위 ▲331)와 다름. 원래 그림(v276 때 구움)도 같은 문제(→126위). 이번엔 글자만 바꿔 다시 구워 숫자가 1계단씩 새 자료로 움직임(의정부 126→125, 부천종합운동장 14→13). 기준을 2031로 맞추고 그림에 기준 라벨을 붙일지 — 다음 숙제 후보
+
+### E-03 잠긴 시험 고침 (회장님 승인 11-21, e3e103d)
+- 잠금 풂 → tests/e2e/invariants.spec.mjs 132행 '떡상 패널 닫기' → '축지법 패널 닫기' 한 줄 → 잠금 되돌림(`git diff .claude/settings.json` 빈 것 확인)
+- E-03 단독 3번: **실패 2 · 통과 1 — 흔들림**. 실패 때 멈추는 자리 = 137행 `rank[1]` (rank = null). 131행 정규식 `/의정부\s+GTX-C · 2031\s+▲\d+위\s+(\d+) → (\d+)위/` 이 null — 원래 문제(블록 F 때 '시험 쪽 정규식 null')로 돌아감
+- 원인 짐작(확인용 임시 시험, 지움): 패널 글자 자체는 정규식과 맞음('1
+의정부
+GTX-C · 2031
+▲331위
+448 → 117위'). '2031년까지 개통' 단추를 누르자마자 innerText 를 읽어, 목록이 다시 그려지기 전이면 null. 고침 제안: 131행을 `await expect(rp).toContainText(/의정부\s+GTX-C · 2031/)` 기다린 뒤 읽기(단계 추가라 회장님 결정 거리)

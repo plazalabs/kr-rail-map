@@ -30,7 +30,7 @@ const g = document.getElementById('c').getContext('2d'), F = '"Malgun Gothic","A
 const bg = g.createLinearGradient(0, 0, 1200, 630); bg.addColorStop(0, '#0b1d3a'); bg.addColorStop(1, '#123a6e'); g.fillStyle = bg; g.fillRect(0, 0, 1200, 630);
 g.fillStyle = '#9fb3d1'; g.font = '600 30px ' + F; g.fillText('한국철도맵', 64, 78);
 g.fillStyle = '#fff'; g.font = '800 64px ' + F; g.fillText('GTX 개통 후,', 64, 168); g.fillText('우리 역은 몇 등?', 64, 248);
-g.fillStyle = '#5fe39a'; g.font = '800 40px ' + F; g.fillText('🚀 GTX 축지법 랭킹', 64, 320);
+g.fillStyle = '#5fe39a'; g.font = '800 40px ' + F; g.fillText('GTX 축지법 랭킹', 64, 320);
 g.fillStyle = '#c8d3e6'; g.font = '500 26px ' + F; g.fillText('CBD·YBD·GBD 까지 시간으로 매긴', 64, 380); g.fillText('수도권 역 순위 — 지금 vs 개통 후', 64, 416);
 g.fillStyle = '#7fb0ff'; g.font = '700 28px ' + F; g.fillText('철도의 축, 도시의 내일', 64, 500);
 g.fillStyle = '#7f93b3'; g.font = '500 22px ' + F; g.fillText('plazalabs.github.io/kr-rail-map/rank.html', 64, 580);

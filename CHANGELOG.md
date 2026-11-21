@@ -4,6 +4,7 @@
 코드 안에 날짜·피드백 번호 주석을 다는 대신 여기에 적는다.
 
 ## 2026-11-21
+- 2026-11-21 · v316 · 숙제 90-2 (회장 결정 11-21) · **og 그림 이모지 빼기** — 랭킹 링크 미리보기 그림 image/og-rank.jpg 의 '🚀 GTX 축지법 랭킹' → 'GTX 축지법 랭킹'(data/build_og_rank.js, 다시 구움, 숫자 그대로 · R-87 통과). tests/no-emoji.test.js 가 og 그림을 굽는 data/build_og_*.js 도 봄(전엔 html·js/·css 만 — 먼저 실패 확인).
 - 2026-11-21 · v315 · 숙제 90 (회장 결정 11-21) · **타일 지도 공유 그림 노선 묶음 글자 = LineStatus.label** — market-map.js cardCanvas 가 묶음 이름에 ' (계획)'을 손으로 붙여 구상 노선 GTX-E·GTX-F 가 'GTX-E (계획)', 공사 중 GTX-B·C 는 이름만이었음(숙제 76 에서 rank 공유 그림만 고친 사본). groupTitle(이름, rank.json lines) 이 LineStatus.label 을 부름, 같은 이름 여러 id 면 가장 앞선 단계. 칸이 좁으면 ① 'GTX-E (구상 · 2035) · 9' → ② 'GTX-E (구상) · 9' → ③ 'GTX-E · 9' — 옛 글자 줄임이 긴 이름에서 역 수를 잘라('GTX-B (공사 중 · 2031) · 1', 실제 14) 회장님 답으로 바꿈, 역 수는 안 자름. 화면 타일 지도 묶음 제목은 이름만 그대로. 회귀 R-86 여섯 곳·R-90(데이터 1·e2e 6, 먼저 실패 확인).
 - 2026-11-21 · v314 · 숙제 34 (회장 결정 11-17) · **슬로건 하나 '철도의 축, 도시의 내일'** — 옛 슬로건 '축을 읽으면, 도시의 미래가 보인다'가 남아 있던 3곳을 바꿈: index.html 상태줄('철도의 축, 도시의 내일 · 지도 로딩 중…'), TOP 10 공유 그림(station-share.js), 랭킹 og 그림(build_og_rank.js → image/og-rank.jpg 다시 구움, 숫자 그대로 · R-87 통과). 회귀 R-34(맨 위 html·site.webmanifest·js·data 스크립트에 옛 슬로건 0, 세 자리에 새 슬로건 — 먼저 실패 확인). docs/INVARIANTS.md M-02 는 '검수 때 상태' 기록이라 그대로.
 - 2026-11-21 · v313 · 숙제 87 뒤따름 · data/og-rank.json 을 data/sources.json 에 등록(rank-top.json 과 같은 원천). 블록 H 푸시 뒤 CI tests/sources.test.js 실패로 발견.

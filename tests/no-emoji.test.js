@@ -1,4 +1,4 @@
-/* 화면에 나가는 파일에 이모지·그림 문자가 없어야 한다 (디자인 결함 전수 수정, 2026-11-12)
+/* 화면에 나가는 파일(og 그림을 굽는 data/build_og_*.js 포함)에 이모지·그림 문자가 없어야 한다 (디자인 결함 전수 수정, 2026-11-12)
  * 아이콘은 js/icons.js 의 SVG 선 아이콘 하나로. 주석 안의 글자는 화면에 안 나가므로 뺀다.
  * 실행: node tests/no-emoji.test.js        (목록 보기: node tests/no-emoji.test.js --list)
  */
@@ -14,7 +14,9 @@ try { ({ stripJs, stripCss, stripHtml } = require(path.join(ROOT, 'tools', 'buil
 const BAD = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\u{25A0}-\u{25B1}\u{25B4}-\u{25BB}\u{25BE}-\u{25FF}\u{FE0F}\u{2194}-\u{21FF}]/u;
 const FILES = ['index.html', 'rank.html', 'gtx.html', 'board.html', 'data.html']
   .concat(fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js')).map(f => 'js/' + f))
-  .concat(['css/style.css']);
+  .concat(['css/style.css'])
+  // og 그림(카톡·링크 미리보기)을 굽는 스크립트 — 그림 글자도 화면에 나간다
+  .concat(fs.readdirSync(path.join(ROOT, 'data')).filter(f => /^build_og_.*\.js$/.test(f)).map(f => 'data/' + f));
 
 const hits = [];
 for (const rel of FILES) {

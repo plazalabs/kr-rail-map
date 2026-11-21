@@ -88,7 +88,7 @@ const EV = `(window.__ev || []).filter(e => e[0] === '과업').map(e => e[1].단
         scen: texts.filter(t => /개통하면/.test(t)) };
     })()`);
     R.check('TOP10 열 배치: 실제 TOP10 + 최장 이름·지역 3행 겹침 0', cardRule.overlap.length === 0 && cardRule.n === 13, cardRule.overlap);
-    R.check("계획 노선은 연도 없이 '(계획)': GTX-E (계획)·GTX-D (계획), 공사 중은 연도: GTX-C 2031", cardRule.e === 'GTX-E (계획)' && cardRule.d === 'GTX-D (계획)' && cardRule.c === 'GTX-C 2031' && cardRule.plan.includes('GTX-E (계획)'), cardRule);
+    R.check("계획·구상 노선은 연도 없이 상태 말: GTX-E (구상)·GTX-D (계획), 공사 중은 연도: GTX-C 2031", cardRule.e === 'GTX-E (구상)' && cardRule.d === 'GTX-D (계획)' && cardRule.c === 'GTX-C 2031' && cardRule.plan.includes('GTX-E (구상)'), cardRule);
     R.check("카드 글자에 '떡상'·'계단' 없음 + 시나리오는 'GTX·새 노선 모두 개통하면'", cardRule.bad.length === 0 && cardRule.scen.length >= 2 && cardRule.scen.every(t => t.startsWith('GTX·새 노선 모두 개통하면')), { bad: cardRule.bad, scen: cardRule.scen });
 
     // 4) 길찾기 결과

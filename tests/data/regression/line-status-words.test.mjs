@@ -157,3 +157,21 @@ test('[R-74] 지도 라벨 연도 = open_year, null 이면 상태 말만 (구상
   assert.ok(rows.some(r => r.status === 'proposed' && r.year == null), '연도 없는 구상 노선이 없음 — 시험이 비어 있음');
   assert.ok(rows.some(r => r.status === 'proposed' && r.year != null), '연도 있는 구상 노선이 없음 — 시험이 비어 있음');
 });
+
+// 숙제 76: rank.html 공유 그림이 구상 노선도 '(계획)'으로 썼다(앱 공유 카드 planLabel 을 손으로 베낀 것 — 66 에서 한쪽만 고침).
+// 노선 글자 함수는 LineStatus.label 하나 — 앱 공유 카드(station-share.js)와 rank.html 공유 그림(rank-page.js)이 같이 부른다.
+test('[R-76] 공유 카드 = rank.html 공유 그림: 같은 함수 LineStatus.label, rank.html 이 line-status.js 를 먼저 불러옴', () => {
+  const LS = createRequire(import.meta.url)(join(ROOT, 'js/line-status.js'));
+  assert.equal(typeof LS.label, 'function', 'LineStatus.label 없음');
+  const share = read('js/station-share.js'), rank = read('js/rank-page.js');
+  assert.match(fnSource('js/station-share.js', 'planLabel'), /LineStatus\.label\(/, 'station-share.js planLabel 이 LineStatus.label 을 안 씀');
+  const plan = rank.split(/\r?\n/).find(l => /const plan = lineChips\(r\.lines, true\)\.slice\(0, 3\)/.test(l)) || '';
+  assert.match(plan, /LineStatus\.label\(x\.m\)/, 'rank-page.js 공유 그림 노선 글자: ' + plan.trim());
+  for (const [f, src] of [['station-share.js', share], ['rank-page.js', rank]]) assert.ok(!/' \((계획|구상)\)'/.test(src), f + ': 상태 말 글자를 직접 씀');
+  const html = read('rank.html');
+  const a = html.indexOf('src="js/line-status.js"'), b = html.indexOf('src="js/rank-page.js"');
+  assert.ok(a > 0 && a < b, 'rank.html: line-status.js 가 rank-page.js 보다 먼저 있어야 함');
+  // 값: 구상 'GTX-E (구상)', 계획 'GTX-D (계획)', 공사 중 'GTX-C 2031', 연도 없는 계획 'GTX-G (계획)'
+  const rj = JSON.parse(read('data/rank.json')).lines;
+  assert.deepEqual(['gtx-e', 'gtx-d', 'gtx-c', 'gtx-g'].map(id => LS.label(rj[id])), ['GTX-E (구상)', 'GTX-D (계획)', 'GTX-C 2031', 'GTX-G (계획)']);
+});

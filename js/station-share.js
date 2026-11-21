@@ -17,11 +17,8 @@
    * - 계획·구상 노선은 연도 없이 상태 말만 '(계획)'·'(구상)' (LineStatus.word) — 공사 중 노선과 같은 무게로 쓰지 않는다
    * - '떡상'·'계단' 대신 '접근성 개선'·'▲N' (앱 TOP10 카드와 같은 말) */
   function scenario(y) { return (!y || y === 'all') ? 'GTX·새 노선 모두 개통하면' : y + '년까지 개통하면'; }
-  function planLabel(m) {
-    if (!m) return '';
-    if (m.s === 'planned' || m.s === 'proposed') return m.n + ' (' + LineStatus.word(m.s) + ')';
-    return m.n + (m.y ? ' ' + m.y : '');
-  }
+  // 노선 글자 규칙은 LineStatus.label 하나 (rank.html 공유 그림과 같은 함수)
+  function planLabel(m) { return LineStatus.label(m); }
   var CARD_TIER = { rocket: '접근성 크게 개선', up: '접근성 개선', flat: '비슷', down: '상대 하락', new: '신규' };
   function changeText(r) { return r.change > 0 ? '▲' + r.change : r.change < 0 ? '▼' + (-r.change) : '그대로'; }
   // 이 역에 새로 생기는 노선 (개통 전) — 공사 중 '이름 연도', 계획 '이름 (계획)'

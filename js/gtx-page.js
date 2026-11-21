@@ -12,7 +12,7 @@
 
   function lineText(id) {
     var l = D.lines[id]; if (!l) return id;
-    return l[0] + ' (' + LineStatus.word(l[1]) + (l[2] != null ? ' · ' + l[2] : '') + ')';
+    return LineStatus.label({ n: l[0], s: l[1], y: l[2] });
   }
   function bigText(x) {
     var d = x.d == null ? null : D.dest[x.d];

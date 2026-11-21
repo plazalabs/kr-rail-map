@@ -70,7 +70,7 @@ const EV = `(window.__ev || []).filter(e => e[0] === '과업').map(e => e[1].단
       return { w: c.width, n30now: s.n30now, n30aft: s.n30aft, best: s.best && s.best.id }; })()`);
     R.check('가짜 값(신규·120분 넘음·자료 없음·긴 이름): 그려지고 요약 1곳→1곳(서울 25→18분)·최대 단축 여의도', fake && fake.w === 1080 && fake.n30now === 1 && fake.n30aft === 1 && fake.best === 'ybd', fake);
 
-    // 카드 공통 표기 (뮤즈 카드 검수 TASK 2026-11-14): TOP10 겹침 0 · 계획 노선 '(계획)' · '떡상·계단' 없음 · 시나리오 한 문장
+    // 카드 공통 표기 (뮤즈 카드 검수 TASK 2026-11-14): TOP10 겹침 0 · 노선 글자 LineStatus.label · '떡상·계단' 없음 · 시나리오 한 문장
     const cardRule = await b.evaluate(`(async () => {
       const S = StationShareImage, doc = await fetch('data/rank.json').then(r => r.json());
       const all = RankTable.compute(doc, { weight: 'avg', region: 'capital' }).rows;
@@ -88,7 +88,7 @@ const EV = `(window.__ev || []).filter(e => e[0] === '과업').map(e => e[1].단
         scen: texts.filter(t => /개통하면/.test(t)) };
     })()`);
     R.check('TOP10 열 배치: 실제 TOP10 + 최장 이름·지역 3행 겹침 0', cardRule.overlap.length === 0 && cardRule.n === 13, cardRule.overlap);
-    R.check("계획·구상 노선은 연도 없이 상태 말: GTX-E (구상)·GTX-D (계획), 공사 중은 연도: GTX-C 2031", cardRule.e === 'GTX-E (구상)' && cardRule.d === 'GTX-D (계획)' && cardRule.c === 'GTX-C 2031' && cardRule.plan.includes('GTX-E (구상)'), cardRule);
+    R.check("노선 글자 = LineStatus.label (숙제 86): GTX-E (구상 · 2035)·GTX-D (계획 · 2035)·GTX-C (공사 중 · 2031)", cardRule.e === 'GTX-E (구상 · 2035)' && cardRule.d === 'GTX-D (계획 · 2035)' && cardRule.c === 'GTX-C (공사 중 · 2031)' && cardRule.plan.includes('GTX-E (구상 · 2035)'), cardRule);
     R.check("카드 글자에 '떡상'·'계단' 없음 + 시나리오는 'GTX·새 노선 모두 개통하면'", cardRule.bad.length === 0 && cardRule.scen.length >= 2 && cardRule.scen.every(t => t.startsWith('GTX·새 노선 모두 개통하면')), { bad: cardRule.bad, scen: cardRule.scen });
 
     // 4) 길찾기 결과

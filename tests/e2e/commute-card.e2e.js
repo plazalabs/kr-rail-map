@@ -32,7 +32,7 @@ const R = recorder('commute-card');
   const i1 = on.info || {};
   R.check("개통 예정 포함 → '출퇴근 카드로 공유' 단추", on.btn && /출퇴근 카드/.test(on.txt), on.txt);
   R.check('카드 값 = 상자 값 (지금·개통 후 분)', !!i1.now && !!i1.aft && on.times[0] === i1.now.min + '분' && on.times[1] === i1.aft.min + '분' && i1.status === 'better', { times: on.times, info: i1 });
-  R.check("노선에 상태·목표 연도 'GTX-C (공사 중 · 2031년)'", (i1.lines || []).some(l => /^GTX-C \(공사 중 · 20\d\d년\)$/.test(l)) && i1.unsure === false, i1.lines);
+  R.check("노선에 상태·목표 연도 'GTX-C (공사 중 · 2031)' (LineStatus.label)", (i1.lines || []).some(l => /^GTX-C \(공사 중 · 20\d\d\)$/.test(l)) && i1.unsure === false, i1.lines);
 
   const plan = await run('부천종합운동장', '정부과천청사', true);
   R.check('계획 노선(GTX-D)을 타면 경고 켜짐', !!plan.info && plan.info.unsure === true && plan.info.lines.some(l => /GTX-D \(계획/.test(l)), plan.info);

@@ -54,18 +54,18 @@
     const seen = new Set();
     return list.filter(x => { if (seen.has(x.m.n)) return false; seen.add(x.m.n); return true; });
   }
-  function chipHtml(x) {
+  function chipHtml(x, text) {
     const plan = x.m.s && x.m.s !== 'open';
     // 글자 대비 4.5:1 (axe 11-15): 밝은 공식 색은 조금 진하게 — js/ink.js
     const c = x.m.c || '#666', Ink = window.KRInk;
     const dark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
     const col = Ink ? (plan ? (dark ? Ink.asTextDark(c, '#1c2024') : Ink.asText(c, '#f6f7f9')) : Ink.onWhiteText(c)) : c;
     return '<span class="ln' + (plan ? ' plan' : '') + '" style="' + (plan ? 'color:' : 'background:') + esc(col) + '"' +
-      (plan ? ' title="개통 전"' : '') + '>' + esc(x.m.n) + '</span>';
+      (plan ? ' title="개통 전"' : '') + '>' + esc(text || x.m.n) + '</span>';
   }
   function chips(ids) {
     const u = lineChips(ids);
-    const h = u.slice(0, 5).map(chipHtml);
+    const h = u.slice(0, 5).map(x => chipHtml(x));
     if (u.length > 5) h.push('<span class="ln" style="background:#666">+' + (u.length - 5) + '</span>');
     return h.join('');
   }
@@ -146,10 +146,9 @@
     }).join('');
     const plan = lineChips(r.lines, true);
     const nl = plan.length
-      ? '<div class="newlines"><div class="t">이 역에 새로 생기는 노선</div>' + plan.map(x => {
-          const yr = x.m.y;
-          return '<span class="nl">' + chipHtml(x) + '<span class="nl-yr">' + (yr ? yr + '년' : '시기 미정') + '</span></span>';
-        }).join('') + '</div>'
+      ? '<div class="newlines"><div class="t">이 역에 새로 생기는 노선</div>' + plan.map(x =>
+          '<span class="nl">' + chipHtml(x, LineStatus.label(x.m)) + '</span>'   // 노선 글자는 LineStatus.label 하나 (지도·공유 그림과 같음)
+        ).join('') + '</div>'
       : (r.change > 0 ? '<div class="newlines"><div class="t">이 역에는 새 노선이 없지만, 가까운 역의 새 노선(GTX 등)으로 갈아타는 길이 빨라집니다.</div></div>' : '');
     const head = r.isNew
       ? '<div class="big"><span class="a">지금은 철도로 갈 수 없음</span><span class="arrow">→</span><span class="b">' + r.aft.rank + '위</span><span class="badge">' + Icons.svg(T.new.ic) + ' 신규</span></div>'
@@ -178,7 +177,7 @@
     const ids = st.y === 'all' ? (doc.undated_lines || []) : ((doc.year_lines || {})[st.y] || []).concat((doc.year_stages || {})[st.y] || []);
     const named = lineChips(ids);
     $('yr-opens').innerHTML = named.length
-      ? (st.y === 'all' ? '시기 미정 노선까지:' : st.y + '년 개통:') + ' ' + named.map(chipHtml).join(' ')
+      ? (st.y === 'all' ? '시기 미정 노선까지:' : st.y + '년 개통:') + ' ' + named.map(x => chipHtml(x)).join(' ')
       : '';
   }
 

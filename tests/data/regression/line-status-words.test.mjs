@@ -83,17 +83,12 @@ function evalExpr(e, props) {
 function surfaces() {
   const LS = LSmod();
   const app = read('js/app.js');
-  // 지도 글자: 미개통 라벨 레이어의 text-field
-  const exprLine = app.split(/\r?\n/).find(l => /^const STATUS_WORD_EXPR\s*=/.test(l));
-  assert.ok(exprLine, 'app.js: STATUS_WORD_EXPR 없음');
-  const STATUS_WORD_EXPR = new Function('LineStatus', exprLine.replace(/^const STATUS_WORD_EXPR\s*=/, 'return ').replace(/;\s*$/, ''))(LS);
-  // 개통 연도 꼬리(숙제 74) — 없으면 빈 글자로 두고 R-74 가 실패한다
-  const yearLine = app.split(/\r?\n/).find(l => /^const OPEN_YEAR_EXPR\s*=/.test(l));
-  const OPEN_YEAR_EXPR = yearLine ? new Function('return ' + yearLine.replace(/^const OPEN_YEAR_EXPR\s*=/, '').replace(/;\s*$/, ''))() : '';
+  // 지도 글자: 미개통 라벨 레이어의 text-field — source 'lines' 속성 label = mapLineLabel(p) (숙제 86)
+  const mapLineLabel = new Function('LineStatus', fnSource('js/app.js', 'mapLineLabel') + '; return mapLineLabel;')(LS);
   const li = app.indexOf("id: 'rail-lines-unopened-label'");
   const ti = app.indexOf("'text-field':", li);
   assert.ok(li > 0 && ti > 0, 'app.js: 미개통 라벨 text-field 없음');
-  const tf = new Function('STATUS_WORD_EXPR', 'OPEN_YEAR_EXPR', 'return ' + sliceBalanced(app, app.indexOf('[', ti), '[', ']'))(STATUS_WORD_EXPR, OPEN_YEAR_EXPR);
+  const tf = new Function('return ' + sliceBalanced(app, app.indexOf('[', ti), '[', ']'))();
   const lines = JSON.parse(read('data/lines.geojson')).features.map(f => f.properties);
   const byId = new Map(lines.map(p => [p.id, p]));
   // 검색 후보
@@ -106,7 +101,7 @@ function surfaces() {
   const planLabel = new Function('RankTable', 'LineStatus', fnSource('js/station-share.js', 'planLabel') + '; return planLabel;')({ yearOf: () => null }, LS);
   return lines.filter(p => (p.status || 'open') !== 'open').map(p => ({
     id: p.id, name: p.name_ko, status: p.status, word: LS.word(p.status), year: p.open_year,
-    map: evalExpr(tf, p),
+    map: evalExpr(tf, { ...p, label: mapLineLabel(p) }),
     search: lineLabelOf(p.id),
     detail: (lineRow(p.id).match(/class="sd-badge [^"]*">([^<]*)</) || [])[1],
     share: planLabel({ n: p.name_ko, s: p.status, y: p.open_year }),
@@ -117,10 +112,10 @@ test('[R-66] GTX-D 상태 말: 지도 라벨 = 검색 후보 = 역 상세 (= 공
   const g = surfaces().find(r => r.id === 'gtx-d');
   assert.ok(g, 'gtx-d 없음');
   const got = { map: g.map, search: g.search, detail: g.detail, share: g.share };
-  assert.ok(g.map.includes(' ' + g.word + ' ') && g.map.includes('갈래 여러 안'), '지도 ' + JSON.stringify(got));
+  assert.ok(g.map.includes('(' + g.word + ' ') && g.map.includes('갈래 여러 안'), '지도 ' + JSON.stringify(got));
   assert.equal(g.search, 'GTX-D(' + g.word + ')', '검색 ' + JSON.stringify(got));
   assert.equal(g.detail, g.word, '상세 ' + JSON.stringify(got));
-  assert.equal(g.share, 'GTX-D (' + g.word + ')', '공유 ' + JSON.stringify(got));
+  assert.equal(g.share, 'GTX-D (' + g.word + ' · ' + g.year + ')', '공유 ' + JSON.stringify(got));   // 숙제 86: 연도 붙음
 });
 
 test('[R-66] 모든 미개통 노선: 네 화면이 같은 상태 말, 구상 노선이 계획으로 안 나옴', () => {
@@ -132,8 +127,9 @@ test('[R-66] 모든 미개통 노선: 네 화면이 같은 상태 말, 구상 �
       if (!s.includes(r.word)) bad.push(`${r.id}(${r.status}) ${k}: '${s}' 에 '${r.word}' 없음`);
       for (const w of Object.values(other)) if (w !== r.word && !r.word.includes(w) && s.includes(w)) bad.push(`${r.id}(${r.status}) ${k}: '${s}' 에 다른 상태 말 '${w}'`);
     }
-    // 공유 카드는 공사 중이면 연도를 쓴다(상태 말 없음) — 계획·구상만 본다
-    if (r.status !== 'construction' && !String(r.share).endsWith('(' + r.word + ')')) bad.push(`${r.id}(${r.status}) share: '${r.share}'`);
+    // 공유 카드 = 지도 라벨 글자 (숙제 86: 공사 중도 '이름 (공사 중 · 연도)')
+    const share = r.word + (r.year == null ? '' : ' · ' + r.year);
+    if (!String(r.share).endsWith('(' + share + ')')) bad.push(`${r.id}(${r.status}) share: '${r.share}'`);
   }
   const proposed = surfaces().filter(r => r.status === 'proposed');
   assert.ok(proposed.length > 0, '구상 노선이 하나도 없음 — 시험이 비어 있음');
@@ -141,13 +137,13 @@ test('[R-66] 모든 미개통 노선: 네 화면이 같은 상태 말, 구상 �
 });
 
 // 숙제 74: 지도 미개통 라벨에 개통 연도 — '동북선 (공사 중 · 2027)'. 연도는 lines.geojson open_year 한 곳(자유 문장 opened 아님),
-// open_year 가 null 이면 상태 말만('동부선 (구상)'). GTX-D 는 'GTX-D 계획 · 2035 (갈래 여러 안)'.
+// open_year 가 null 이면 상태 말만('동부선 (구상)'). GTX-D 는 'GTX-D (계획 · 2035) 갈래 여러 안' (숙제 86: 노선 글자는 다른 곳과 같게).
 test('[R-74] 지도 라벨 연도 = open_year, null 이면 상태 말만 (구상 노선 포함)', () => {
   const rows = surfaces();
   const bad = [];
   for (const r of rows) {
     const yr = r.year == null ? '' : ' · ' + r.year;
-    const want = r.id === 'gtx-d' ? `${r.name} ${r.word}${yr} (갈래 여러 안)` : `${r.name} (${r.word}${yr})`;
+    const want = `${r.name} (${r.word}${yr})` + (r.id === 'gtx-d' ? ' 갈래 여러 안' : '');
     if (r.map !== want) bad.push(`${r.id}(${r.status}, open_year ${r.year}): 지도 '${r.map}' ≠ '${want}'`);
   }
   assert.deepEqual(bad, []);
@@ -171,7 +167,53 @@ test('[R-76] 공유 카드 = rank.html 공유 그림: 같은 함수 LineStatus.l
   const html = read('rank.html');
   const a = html.indexOf('src="js/line-status.js"'), b = html.indexOf('src="js/rank-page.js"');
   assert.ok(a > 0 && a < b, 'rank.html: line-status.js 가 rank-page.js 보다 먼저 있어야 함');
-  // 값: 구상 'GTX-E (구상)', 계획 'GTX-D (계획)', 공사 중 'GTX-C 2031', 연도 없는 계획 'GTX-G (계획)'
+  // 값 (숙제 86 규칙): 구상 'GTX-E (구상 · 2035)', 계획 'GTX-D (계획 · 2035)', 공사 중 'GTX-C (공사 중 · 2031)', 연도 없는 계획 'GTX-G (계획)'
   const rj = JSON.parse(read('data/rank.json')).lines;
-  assert.deepEqual(['gtx-e', 'gtx-d', 'gtx-c', 'gtx-g'].map(id => LS.label(rj[id])), ['GTX-E (구상)', 'GTX-D (계획)', 'GTX-C 2031', 'GTX-G (계획)']);
+  assert.deepEqual(['gtx-e', 'gtx-d', 'gtx-c', 'gtx-g'].map(id => LS.label(rj[id])), ['GTX-E (구상 · 2035)', 'GTX-D (계획 · 2035)', 'GTX-C (공사 중 · 2031)', 'GTX-G (계획)']);
+});
+
+// 숙제 86 (회장 결정 11-21): 노선 글자는 다섯 곳(지도 라벨·rank.html 역 카드·rank.html 공유 그림·앱 공유 카드·길찾기 비교 카드)이
+// LineStatus.label 하나 — '이름 (상태 말 · 연도)', 연도 없으면 '이름 (상태 말)'. 공사 중도 같은 꼴. 연도는 open_year 한 곳.
+// 고치기 전: 지도 'GTX-D 계획 · 2035' / rank.html 카드 'GTX-D 2035년' / 공유 그림 'GTX-D (계획)' / 길찾기 'GTX-D (계획 · 2035년)'.
+test('[R-86] LineStatus.label: 이름 (상태 말 · 연도), 연도 없으면 이름 (상태 말)', () => {
+  const LS = LSmod();
+  assert.equal(LS.label({ n: 'GTX-D', s: 'planned', y: 2035 }), 'GTX-D (계획 · 2035)');
+  assert.equal(LS.label({ n: 'GTX-G', s: 'planned', y: null }), 'GTX-G (계획)');
+  assert.equal(LS.label({ n: 'GTX-C', s: 'construction', y: 2031 }), 'GTX-C (공사 중 · 2031)');
+  assert.equal(LS.label({ n: 'GTX-E', s: 'proposed', y: 2035 }), 'GTX-E (구상 · 2035)');
+  assert.equal(LS.label({ n: '2호선', s: 'open', y: null }), '2호선');
+});
+
+test('[R-86] 같은 역 다섯 곳 노선 글자가 같음: 수서 GTX-D · 구리 GTX-G · 의정부 GTX-C', () => {
+  const LS = LSmod();
+  const rank = JSON.parse(read('data/rank.json'));
+  const lines = JSON.parse(read('data/lines.geojson')).features.map(f => f.properties);
+  const byId = new Map(lines.map(p => [p.id, p]));
+  // ① 지도 라벨: 미개통 라벨 레이어 text-field (속성 label = mapLineLabel(p))
+  const app = read('js/app.js');
+  const mapLineLabel = new Function('LineStatus', fnSource('js/app.js', 'mapLineLabel') + '; return mapLineLabel;')(LS);
+  const li = app.indexOf("id: 'rail-lines-unopened-label'");
+  const tf = new Function('return ' + sliceBalanced(app, app.indexOf('[', app.indexOf("'text-field':", li)), '[', ']'))();
+  // ② rank.html 역 카드 · ③ rank.html 공유 그림: 둘 다 LineStatus.label(x.m) (x.m = rank.json lines 항목)
+  const rp = read('js/rank-page.js');
+  const nlBlock = rp.slice(rp.indexOf('const nl = plan.length'), rp.indexOf('const head = r.isNew'));
+  assert.match(nlBlock, /LineStatus\.label\(x\.m\)/, 'rank-page.js 역 카드 노선 글자가 LineStatus.label 을 안 씀');
+  assert.doesNotMatch(nlBlock, /nl-yr|'년'|시기 미정/, 'rank-page.js 역 카드가 연도를 따로 씀');
+  // ④ 앱 공유 카드
+  const planLabel = new Function('LineStatus', fnSource('js/station-share.js', 'planLabel') + '; return planLabel;')(LS);
+  // ⑤ 길찾기 비교 카드
+  const lineStatusLabel = new Function('lineNameOf', 'lineMetaOf', 'LineStatus', fnSource('js/route-compare.js', 'lineStatusLabel') + '; return lineStatusLabel;')(
+    new Map(lines.map(p => [p.id, p.name_ko])), new Map(lines.map(p => [p.id, { status: p.status, year: p.open_year }])), LS);
+  const want = { 'st-2346858840': ['gtx-d', 'GTX-D (계획 · 2035)'], 'st-355173646': ['gtx-g', 'GTX-G (계획)'], 'st-7777463060': ['gtx-c', 'GTX-C (공사 중 · 2031)'] };
+  const bad = [];
+  for (const [sid, [lid, w]] of Object.entries(want)) {
+    const row = rank.rows.find(r => r.id === sid);
+    assert.ok(row && row.l.includes(lid), `${sid}: rank.json 에 ${lid} 없음`);
+    const p = byId.get(lid), m = rank.lines[lid];
+    const map = evalExpr(tf, { ...p, label: mapLineLabel(p) });
+    const got = { map: lid === 'gtx-d' ? map.replace(/ 갈래 여러 안$/, '') : map, card: LS.label(m), rankShare: LS.label(m), appShare: planLabel(m), route: lineStatusLabel(lid) };
+    for (const [k, v] of Object.entries(got)) if (v !== w) bad.push(`${row.n} ${lid} ${k}: '${v}' ≠ '${w}'`);
+  }
+  assert.equal(evalExpr(tf, { ...byId.get('gtx-d'), label: mapLineLabel(byId.get('gtx-d')) }), 'GTX-D (계획 · 2035) 갈래 여러 안');
+  assert.deepEqual(bad, []);
 });

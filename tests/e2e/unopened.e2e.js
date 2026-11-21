@@ -67,19 +67,19 @@ async function route(b, from, to) {
     R.check('A1 운행 중 레이어에 미개통 노선 없음', A.openN > 0 && A.openBad.length === 0, A.openBad.join(',') || `${A.openN}개`);
     R.check('A2 미개통 레이어에 운행 중 노선 없음 + 동북선 보임', A.unN > 0 && A.unBad.length === 0 && A.unNames.includes('동북선'), A.unNames.join(','));
     R.check('A3 미개통은 점선', Array.isArray(A.dash) && A.dash.length >= 2, JSON.stringify(A.dash));
-    { const L = JSON.stringify(A.label);
-      R.check('A4 글자에 상태 말(공사 중·계획·구상), 한 라벨 안 모순 없음', ['"공사 중"', '"계획"', '"구상"'].every(w => L.includes(w)) && !/개통 예정|구상중|계획중|공사중/.test(L), L.slice(0, 160)); }
-    // 지도가 실제로 그리는 글자 — MapLibre 가 라벨 식을 노선 자료(LINES)에 적용한 값
+    // 지도가 실제로 그리는 글자 — MapLibre 가 라벨 식을 노선 자료(LINES + 속성 label = mapLineLabel, 숙제 86)에 적용한 값
     const T = await b.evaluate(`(() => { const L = map.getLayer('rail-lines-unopened-label'); const out = {};
         LINES.forEach(f => { const p = f.properties; if ((p.status || 'open') === 'open') return;
-          out[p.id] = { t: String(L.layout.get('text-field').evaluate({ type: 'Feature', properties: p, geometry: { type: 'Point', coordinates: [0, 0] } }, {})),
+          out[p.id] = { t: String(L.layout.get('text-field').evaluate({ type: 'Feature', properties: { ...p, label: mapLineLabel(p) }, geometry: { type: 'Point', coordinates: [0, 0] } }, {})),
             st: p.status, y: p.open_year == null ? null : p.open_year, w: LineStatus.word(p.status), n: p.name_ko }; });
         return out; })()`);
-    { const bad = Object.entries(T).filter(([id, r]) => r.t !== (id === 'gtx-d' ? r.n + ' ' + r.w + (r.y == null ? '' : ' · ' + r.y) + ' (갈래 여러 안)' : r.n + ' (' + r.w + (r.y == null ? '' : ' · ' + r.y) + ')')).map(([id, r]) => id + ': ' + r.t);
+    { const L = Object.values(T).map(r => r.t).join(' | ');
+      R.check('A4 글자에 상태 말(공사 중·계획·구상), 한 라벨 안 모순 없음', ['공사 중', '계획', '구상'].every(w => L.includes(w)) && !/개통 예정|구상중|계획중|공사중/.test(L), L.slice(0, 160)); }
+    { const bad = Object.entries(T).filter(([id, r]) => r.t !== r.n + ' (' + r.w + (r.y == null ? '' : ' · ' + r.y) + ')' + (id === 'gtx-d' ? ' 갈래 여러 안' : '')).map(([id, r]) => id + ': ' + r.t);
       R.check('A4b 지도 글자 = 이름 (상태 말 · open_year), 연도 없으면 상태 말만 — 동북선 (공사 중 · 2027) · 동부선 (구상)',
         bad.length === 0 && (T['dongbuk-line'] || {}).t === '동북선 (공사 중 · 2027)' && (T['dongbu-line'] || {}).t === '동부선 (구상)', bad.join(' | ') || JSON.stringify([T['dongbuk-line'], T['dongbu-line']])); }
     { const g = T['gtx-d'] || {};
-      R.check('A5 GTX-D 는 갈래 여러 안임을 밝힘 (P14) — 상태 말은 status, 연도는 open_year: GTX-D 계획 · 2035 (갈래 여러 안)', g.w === '계획' && g.t === 'GTX-D 계획 · ' + g.y + ' (갈래 여러 안)' && g.y === 2035, JSON.stringify(g)); }
+      R.check('A5 GTX-D 는 갈래 여러 안임을 밝힘 (P14) — 노선 글자는 LineStatus.label: GTX-D (계획 · 2035) 갈래 여러 안', g.w === '계획' && g.t === 'GTX-D (계획 · ' + g.y + ') 갈래 여러 안' && g.y === 2035, JSON.stringify(g)); }
     await b.shot(path.join(OUT, 'a-map.png'));
 
     // B. 기본 길찾기 (꺼짐)

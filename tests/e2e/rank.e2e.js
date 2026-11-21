@@ -117,9 +117,9 @@ const layout = b => b.evaluate(`(() => ({
     await b.goto(RANK + '?y=all&q=' + encodeURIComponent('광운대'), 800); await rows(b);   // 전체 개통 기준 (기본은 2031 — P11)
     await b.evaluate(`document.querySelector('#list .row').click()`); await sleep(300);
     const card = await b.evaluate(`(() => { const c = document.querySelector('#list .card'); if (!c) return null; const g = c.querySelector('a.go');
-      return { big: c.querySelector('.big').textContent.replace(/\\s+/g, ' '), bars: c.querySelectorAll('.bar-row').length, yr: c.textContent.includes('2031년'),
+      return { big: c.querySelector('.big').textContent.replace(/\\s+/g, ' '), bars: c.querySelectorAll('.bar-row').length, yr: c.textContent.includes('GTX-C (공사 중 · 2031)'),
         href: g && g.getAttribute('href'), exp: document.querySelector('#list .row').getAttribute('aria-expanded'), fits: c.getBoundingClientRect().right <= innerWidth + 1 }; })()`);
-    R.check(`${w}px 광운대 카드: 지금 ${KW.now}위 → 개통 후 ${KW.aft}위 (rank.json 과 같음), 막대 3줄, GTX-C 2031년, 지도 링크 ?rocket=1&st=`,
+    R.check(`${w}px 광운대 카드: 지금 ${KW.now}위 → 개통 후 ${KW.aft}위 (rank.json 과 같음), 막대 3줄, GTX-C (공사 중 · 2031), 지도 링크 ?rocket=1&st=`,
       !!card && card.big.includes('지금 ' + KW.now + '위') && card.big.includes('개통 후 ' + KW.aft + '위') && card.bars === 3 && card.yr && /^\.\/\?rocket=1&st=st-/.test(card.href || '') && card.exp === 'true' && card.fits, card);
     // 📸 공유 이미지 — 1080×1080 그림이 만들어지고, (헤드리스는 파일 공유 불가) 내려받기로 저장했다는 안내가 뜬다
     const img = await b.evaluate(`(() => { const c = RankShare.canvas('st-355172776'); return c ? { w: c.width, h: c.height, len: c.toDataURL('image/png').length } : null; })()`);

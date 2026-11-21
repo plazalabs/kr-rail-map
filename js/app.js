@@ -308,10 +308,8 @@ const STATUS_LINE = {
   planned: { layer: 'rail-lines-planned', label: LineStatus.word('planned'), dash: [1.2, 1.4], width: [7, 1.8, 12, 3.5, 16, 5] },
   proposed: { layer: 'rail-lines-proposed', label: LineStatus.word('proposed'), dash: [0.2, 1.6], width: [7, 2, 12, 3.5, 16, 5], round: true },
 };
-// 지도 글자용 상태 말 — feature 의 status 에서 LineStatus.word 로 (운행 중은 글자 레이어에 안 나온다)
-const STATUS_WORD_EXPR = ['match', ['get', 'status'], ...['construction', 'planned', 'proposed'].flatMap(s => [s, LineStatus.word(s)]), LineStatus.word('open')];
-// 지도 글자용 개통 연도 꼬리 — lines.geojson open_year(숫자) 하나에서 ' · 2027'. null 이면 빈 글자(상태 말만)
-const OPEN_YEAR_EXPR = ['case', ['==', ['typeof', ['get', 'open_year']], 'number'], ['concat', ' · ', ['to-string', ['get', 'open_year']]], ''];
+// 지도 노선 글자 — 카드·공유 그림·길찾기와 같은 LineStatus.label. 연도는 lines.geojson open_year 하나 (source 'lines' 속성 label 로 싣는다)
+function mapLineLabel(p) { return LineStatus.label({ n: p.name_ko, s: p.status, y: p.open_year }); }
 const UNOPENED_LINE_LAYERS = Object.values(STATUS_LINE).map(s => s.layer);
 const UNOPENED_LAYERS = [...UNOPENED_LINE_LAYERS, 'rail-lines-unopened-label'];
 function lineStatusOf(p) { return (p && p.status) || 'open'; }
@@ -417,7 +415,7 @@ map.addControl(new StatusLegend(), 'bottom-right');
 
 function addDataLayers() {
   if (map.getSource('lines')) return; // 스타일 교체 후 중복 방지
-  map.addSource('lines', { type: 'geojson', data: { type: 'FeatureCollection', features: LINES } });
+  map.addSource('lines', { type: 'geojson', data: { type: 'FeatureCollection', features: LINES.map(f => ({ ...f, properties: { ...f.properties, label: mapLineLabel(f.properties) } })) } });
   // K9 (6차 ①A5): 노선 casing — 운행 중 노선 아래에 배경색 띠를 2px 더 넓게 깔아, 겹치는 노선·배경 도로와 갈라 보이게 한다.
   map.addLayer({
     id: 'rail-lines-casing', type: 'line', source: 'lines',
@@ -461,10 +459,10 @@ function addDataLayers() {
     layout: {
       'symbol-placement': 'line', 'symbol-spacing': 400,
       // P14: GTX-D 는 한 노선의 갈래 여럿이라 강남 부근에 같은 글자 점선 2개가 엇갈려 서로 다른 노선처럼 보였다
-      //      → 'GTX-D 계획 · 2035 (갈래 여러 안)' 으로 같은 노선의 갈래임을 밝힌다. 상태 말·연도는 다른 노선과 같이 status·open_year 에서
+      //      → 'GTX-D (계획 · 2035) 갈래 여러 안' 으로 같은 노선의 갈래임을 밝힌다. 노선 글자는 다른 노선과 같이 속성 label(mapLineLabel)
       'text-field': ['match', ['get', 'id'],
-        'gtx-d', ['concat', ['get', 'name_ko'], ' ', STATUS_WORD_EXPR, OPEN_YEAR_EXPR, ' (갈래 여러 안)'],
-        ['concat', ['get', 'name_ko'], ' (', STATUS_WORD_EXPR, OPEN_YEAR_EXPR, ')']],
+        'gtx-d', ['concat', ['get', 'label'], ' 갈래 여러 안'],
+        ['get', 'label']],
       'text-size': 11, 'text-font': ['Noto Sans Regular']
     },
     paint: labelPaint('#333333', 1.4)

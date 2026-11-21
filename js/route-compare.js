@@ -1018,11 +1018,10 @@ const RouteCompare = (() => {
       q: 'from=' + encodeURIComponent(sname(fromId)) + '&from_id=' + encodeURIComponent(fromId) + '&to=' + encodeURIComponent(sname(toId)) + '&to_id=' + encodeURIComponent(toId) + '&unopened=1' +
         (window.KR_WAIT ? '&wait=' + (KR_WAIT.isPeak() ? '1' : '0') : '') + (window.KR_routeBand ? '&band=' + KR_routeBand() : '') };
   }
-  // 'GTX-D (계획 · 2035년)' — 카드가 퍼질 때 확정된 노선처럼 읽히지 않게 상태·목표 연도를 붙인다
+  // 'GTX-D (계획 · 2035)' — 카드가 퍼질 때 확정된 노선처럼 읽히지 않게 상태·목표 연도를 붙인다 (노선 글자는 LineStatus.label 하나)
   function lineStatusLabel(id) {
-    const name = lineNameOf.get(id) || id, m = lineMetaOf.get(id);
-    if (!m || !m.status || m.status === 'open') return name;
-    return name + ' (' + LineStatus.word(m.status) + (m.year != null ? ' · ' + m.year + '년' : '') + ')';
+    const m = lineMetaOf.get(id) || {};
+    return LineStatus.label({ n: lineNameOf.get(id) || id, s: m.status, y: m.year });
   }
 
   function hide() {

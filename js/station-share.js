@@ -14,14 +14,14 @@
 
   /* 카드 공통 표기 (뮤즈 카드 검수 TASK, 2026-11-14) — 카드 3종(TOP10·우리 역·타일)과 rank.html 카드가 같은 말을 쓴다.
    * - 시나리오: 같은 계산은 같은 이름 — 'GTX·새 노선 모두 개통하면' / '2031년까지 개통하면'
-   * - 계획·구상 노선은 연도 없이 상태 말만 '(계획)'·'(구상)' (LineStatus.word) — 공사 중 노선과 같은 무게로 쓰지 않는다
+   * - 개통 전 노선은 '이름 (상태 말 · 연도)', 연도 없으면 '이름 (상태 말)' (LineStatus.label — 지도 라벨과 같은 글자)
    * - '떡상'·'계단' 대신 '접근성 개선'·'▲N' (앱 TOP10 카드와 같은 말) */
   function scenario(y) { return (!y || y === 'all') ? 'GTX·새 노선 모두 개통하면' : y + '년까지 개통하면'; }
   // 노선 글자 규칙은 LineStatus.label 하나 (rank.html 공유 그림과 같은 함수)
   function planLabel(m) { return LineStatus.label(m); }
   var CARD_TIER = { rocket: '접근성 크게 개선', up: '접근성 개선', flat: '비슷', down: '상대 하락', new: '신규' };
   function changeText(r) { return r.change > 0 ? '▲' + r.change : r.change < 0 ? '▼' + (-r.change) : '그대로'; }
-  // 이 역에 새로 생기는 노선 (개통 전) — 공사 중 '이름 연도', 계획 '이름 (계획)'
+  // 이 역에 새로 생기는 노선 (개통 전) — 'GTX-C (공사 중 · 2031)', 'GTX-G (계획)'
   function planLines(doc, r) {
     return (r.lines || []).map(function (id) { return doc.lines && doc.lines[id]; })
       .filter(function (m) { return m && m.s !== 'open'; }).slice(0, 3).map(planLabel);

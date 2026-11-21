@@ -73,12 +73,13 @@
     det.appendChild(tb);
     det.appendChild(el('p', 'small', '수도권 ' + num(D.total) + '역 중 ' + (x.rn ? x.rn + '위' : '지금은 철도 없음') + ' → 개통 후 ' + x.ra + '위' + (x.ch ? ' (' + (x.ch > 0 ? x.ch + '계단 오름' : (-x.ch) + '계단 밀림') + ')' : '')));
     if (k) {
-      det.appendChild(el('p', 'small', '대표 동 ' + k.dong + (k.pp ? ' · 중위 평당가 ' + num(k.pp) + '만 원' : '') + ' · 거래 ' + half(D.market.from) + ' ' + num(k.a[0]) + '건, ' + half(D.market.to) + ' ' + num(k.a[1]) + '건' + (k.p != null ? ' · 변화 ' + (k.p > 0 ? '+' : '') + k.p + '%' : '')));
+      det.appendChild(el('p', 'small', '대표 동 ' + k.dong + (k.pp ? ' · 중위 평당가 ' + num(k.pp) + '만 원 (전용면적 기준, ' + half(D.market.to) + ')' : '') + ' · 거래 ' + half(D.market.from) + ' ' + num(k.a[0]) + '건, ' + half(D.market.to) + ' ' + num(k.a[1]) + '건' + (k.p != null ? ' · 변화 ' + (k.p > 0 ? '+' : '') + k.p + '%' : '')));
       det.appendChild(el('p', 'small', '수도권 ' + num(D.market.n_label) + '개 동 기준 경계: 아래 25% ' + D.market.q25 + '% · 가운데 ' + D.market.q50 + '% · 위 25% ' + D.market.q75 + '%'));
     }
-    if (x.j) det.appendChild(el('p', 'small', '전세가율 ' + Math.round(x.j[0] * 100) + '% (짝 ' + num(x.j[1]) + '개)' + (x.j[0] >= D.risk ? ' · 전세가율 ' + Math.round(D.risk * 100) + '% 이상 짝이 많아요' : '')));
+    if (x.j) det.appendChild(el('p', 'small', x.j[0] == null ? '전세가율 비율 없음 (짝 ' + D.jeonse_min + '개 미만)'
+      : '전세가율 ' + Math.round(x.j[0] * 100) + '% (짝 ' + num(x.j[1]) + '개)' + (x.j[0] >= D.risk ? ' · 전세가율 ' + Math.round(D.risk * 100) + '% 이상 짝이 많아요' : '')));
     det.appendChild(el('p', 'small', D.market.note));
-    var how = el('a', null, '계산 방법'); how.href = 'data.html'; var hp = el('p', 'small'); hp.appendChild(how); det.appendChild(hp);
+    var how = el('a', null, '계산 방법'); how.href = 'data.html#gtx-card'; var hp = el('p', 'small'); hp.appendChild(how); det.appendChild(hp);
     card.appendChild(det);
   }
 

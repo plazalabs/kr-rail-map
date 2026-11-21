@@ -15,7 +15,6 @@ const doc = read('data/rank.json');
 const rs = read('data/rank-station.json');
 const access = read('data/access.json');
 const trend = read('data/station-trend.json');
-const price = read('data/station-price.json');
 const jeonse = read('data/station-jeonse.json');
 const stations = read('data/stations.geojson').features;
 const lineFeat = new Map(read('data/lines.geojson').features.map(f => [f.properties.id, f.properties]));
@@ -72,8 +71,9 @@ for (const [id, [rank, scope]] of Object.entries(rs.by)) {
   const ts = trend.stations[id] || trend.stations[row.id];
   const key = ts && ts.lawd && ts.dong ? ts.lawd + '|' + ts.dong : null;
   if (key && mk.k[key] && !k[key]) {
-    const x = mk.k[key], pr = (price.stations[id] || price.stations[row.id]);
-    k[key] = { dong: x.dong, m: x.m, p: x.p == null ? null : r1(x.p), a: x.a, pp: pr && pr.lawd + '|' + pr.dong === key ? Math.round(pr.medianPerPyeong) : null };
+    // 중위 평당가는 시세 라벨과 같은 자료·같은 반기(비교 끝 반기, 전용면적 기준) — 옆의 거래 건수와 기간을 맞춘다
+    const x = mk.k[key], h = (ts.s || []).find(v => v[0] === pair.to);
+    k[key] = { dong: x.dong, m: x.m, p: x.p == null ? null : r1(x.p), a: x.a, pp: h && h[1] != null ? Math.round(h[1]) : null };
   }
   const jj = jeonse.stations[id] || jeonse.stations[row.id];
   s[id] = { n: row.n, g: row.g || '', r: row.r || '', d: pd.i, kd: pd.kind, now, aft, t: RankTable.tierOf(res), ch: res.isNew ? null : res.change,
@@ -91,7 +91,7 @@ const out = {
   updated: doc.updated, year: +year, dest,
   access_note: '교통 접근성 순위 · 집값 예측 아님',
   access_basis: '평균(도심·여의도·강남) 기준 수도권 ' + cap.total + '역 중 순위 · ' + year + '년까지 개통 가정 · 배차 넣기 끔',
-  total: cap.total, risk: jeonse.risk,
+  total: cap.total, risk: jeonse.risk, jeonse_min: jeonse.minPairs,
   market: { from: pair.from, to: pair.to, min_deals: MIN_DEALS, method: 'linear',
     q25: r1(mk.q25), q50: r1(mk.q50), q75: r1(mk.q75), n_label: mk.n_label, n_hold: mk.n_hold, note: trend.note },
   // 카드의 새 노선 이름·상태·개통 연도·색 — lines.geojson name_ko·status·open_year 그대로(500KB 파일을 페이지가 받지 않게)

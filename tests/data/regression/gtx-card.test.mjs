@@ -36,3 +36,14 @@ test('[R-81] 카드 업무지구 분 = rank.json now · y[기본 연도] (aft·a
   assert.deepEqual(x.now, di.map(i => row.now[i]));
   assert.deepEqual(x.aft, di.map(i => row.y[String(card.year)][i]));
 });
+
+test('[R-81] 동 중위 평당가(pp) = station-trend 의 비교 끝 반기(market.to) 값 — 거래 건수와 같은 기간', () => {
+  const bad = [];
+  for (const [key, x] of Object.entries(card.k)) {
+    const st = Object.values(trend.stations).find(s => s.lawd + '|' + s.dong === key);
+    const row = (st.s || []).find(h => h[0] === card.market.to);
+    const want = row && row[1] != null ? Math.round(row[1]) : null;
+    if (x.pp !== want || (row ? row[2] : 0) !== x.a[1]) bad.push(`${key} ${x.pp}/${want}`);
+  }
+  assert.deepEqual(bad.slice(0, 5), []);
+});

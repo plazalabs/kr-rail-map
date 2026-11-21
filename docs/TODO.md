@@ -87,6 +87,7 @@
 - [ ] 79. (다음 블록 후보, 75 조사) rank.html ?mode=invest 무효 — 낮음, 쓰는 사람 있는지 먼저 확인
 - [x] 80. (지시서 블록 E 11-21, 회장님 실사용) 길찾기 중간 역 이름표가 줌아웃하면 사라짐 — 광운대→삼성(개통 예정 포함) ①④만 보임. 줌 12 일괄 숨김 → 화면에서 겹치는 중간 이름표만 숨김, 숨긴 역 이름은 경로 선 위에
 - [x] 81. (지시서 블록 E 11-21) GTX 입구 MVP — gtx.html · data/gtx-card.json (v307, push 전). 보고 `구현보고_GTX입구_20261121.md`. 상세 `TASK_GTX입구_MVP_20261121.md`, 기준 `결정_GTX입구_20261121.md`
+- [ ] 82. (다음 블록 후보, 검수 11-21) 길찾기 중 updateFilters(노선 표시 바꾸기)가 station-labels filter 를 덮어 경로 역 원래 글자가 다시 나옴 — app.js updateFilters 의 station-labels setFilter vs highlightRoute 의 경로 역 빼기 filter
 
 ## 4단계: 미래 노선 정리
 - [ ] 23. 공사 중인데 빠진 노선 확인 후 추가 (신안산선, 월곶판교선, 인덕원동탄선, 위례신사선, 대장홍대선). 먼저 실제로 공사 중인지 확인

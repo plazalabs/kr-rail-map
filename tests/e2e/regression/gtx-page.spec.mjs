@@ -69,3 +69,21 @@ test('[R-81] 공유 단추 → share_card 이벤트 1회 (card-gtx)', async ({ p
   await expect.poll(() => page.evaluate(() => window.__ev.filter(e => e[0] === 'share_card').length)).toBe(1);
   expect(await page.evaluate(() => window.__ev.find(e => e[0] === 'share_card')[1])).toEqual({ 종류: 'card-gtx' });
 });
+
+test('[R-81] 자세히 보기: 전세가율이 없으면 0% 가 아니라 비율 없음 (보산 j=[null,1])', async ({ page }) => {
+  await open(page, []);
+  await search(page, HOLD);
+  await page.locator('#card details summary').click();
+  const det = await page.locator('#card details').innerText();
+  expect(det).not.toContain('0%');
+  expect(det).toContain('비율 없음 (짝 3개 미만)');
+});
+
+test('[R-81] 자세히 보기: 중위 평당가는 시세 라벨과 같은 반기(전용면적 기준) · 계산 방법 링크는 data.html 절', async ({ page }) => {
+  await open(page, []);
+  await search(page, '의정부');
+  await page.locator('#card details summary').click();
+  const k = D.k[D.s['st-7777463060'].k];
+  await expect(page.locator('#card details')).toContainText('중위 평당가 ' + k.pp.toLocaleString('ko-KR') + '만 원 (전용면적 기준, 2026 상반기)');
+  await expect(page.locator('#card details a', { hasText: '계산 방법' })).toHaveAttribute('href', 'data.html#gtx-card');
+});

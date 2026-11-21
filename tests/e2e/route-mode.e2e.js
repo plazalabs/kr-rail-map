@@ -28,7 +28,7 @@ const go = async b => {
   R.check('경로 그려짐', s0.route && s0.chips >= 5, s0);
   await b.evaluate(`map.jumpTo({ center: map.getCenter(), zoom: 11 }); 0`); await sleep(500);
   const far = await b.evaluate(`[...document.querySelectorAll('.rt-label')].filter(x => getComputedStyle(x).display !== 'none').map(x => x.lastChild.textContent)`);
-  R.check('줌 11: 출발·도착·환승만 (강남·서울 포함, 전체보다 적음)', far.includes('강남') && far.includes('서울') && far.length >= 2 && far.length < s0.chips, far);
+  R.check('줌 11: 겹치는 중간 칩만 숨김 (강남·서울 포함, 전체보다 적음)', far.includes('강남') && far.includes('서울') && far.length >= 2 && far.length < s0.chips, far);
   await b.evaluate(`map.jumpTo({ center: map.getCenter(), zoom: 13 }); 0`); await sleep(500);
   const near = await b.evaluate(`[...document.querySelectorAll('.rt-label')].filter(x => getComputedStyle(x).display !== 'none').length`);
   R.check('줌 13: 칩 전부', near === s0.chips, { near, all: s0.chips });

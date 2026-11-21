@@ -915,8 +915,8 @@ body[data-theme="hospital"] .layer-opt .sa-approx { color: #526c6b; }
   font-size: var(--fs-xs); font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .rt-label.is-end .rt-label-n { background: #b01f1f; }
-/* K10: 넓게 볼 때(줌 12 미만)는 출발·도착·환승 칩만 (app.js syncRouteChipZoom) */
-.rt-far .rt-label.is-minor { display: none; }
+/* K10: 화면에서 다른 이름표와 겹치는 중간 역 이름표만 숨긴다 (app.js layoutRouteChips) */
+.rt-label.is-crowded { display: none; }
 .rt-label.is-end { color: #8c1414; }
 @media (max-width: 640px) {
   .rt-label { font-size: var(--fs-xs); padding: 2px 6px 2px 3px; }

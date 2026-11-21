@@ -1976,7 +1976,9 @@ function highlightRoute(path, legs, opt) {
   // 역 점
   map.addSource('route-highlight', {
     type: 'geojson',
-    data: { type: 'FeatureCollection', features: coords.map(c => ({ type: 'Feature', geometry: { type: 'Point', coordinates: c }, properties: {} })) },
+    data: { type: 'FeatureCollection', features: path.map(id => STATIONS.find(x => x.properties.id === id)).filter(Boolean).map(st => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: st.geometry.coordinates },
+      properties: { id: st.properties.id, name_ko: st.properties.name_ko, _n: st.properties._n || 1 } })) },
   });
   map.addLayer({
     id: 'route-highlight-stations', type: 'circle', source: 'route-highlight',
@@ -1987,6 +1989,18 @@ function highlightRoute(path, legs, opt) {
       'circle-stroke-width': 2.2,
     },
   });
+  // 이름표를 숨긴 역의 이름 — 경로 선·흰 점 위에 그린다. 지도 원래 역 이름은 경로 선 아래라 '?량리'처럼 잘렸다.
+  // 이름표가 보이는 역은 같은 이름을 두 번 쓰지 않도록 빼고(layoutRouteChips 가 filter 를 바꾼다), 겹치면 MapLibre 가 숨긴다.
+  map.addLayer({
+    id: 'route-highlight-labels', type: 'symbol', source: 'route-highlight', minzoom: 11,
+    filter: ['in', ['get', 'id'], ['literal', []]],
+    layout: {
+      'text-field': ['get', 'name_ko'], 'text-size': ['case', ['>=', ['get', '_n'], 2], 13, 11.5], 'text-offset': [0, 1.2],
+      'text-font': ['literal', ['Noto Sans Regular']],
+    },
+    paint: labelPaint('#1f2328', 1.2),
+  });
+  if (map.getLayer('station-labels')) map.setPaintProperty('station-labels', 'text-opacity', 0);
 
   // 역 이름 마커 — 배지 색은 그 역에 도착하는 구간의 노선 색
   const colorAt = i => {
@@ -1999,7 +2013,7 @@ function highlightRoute(path, legs, opt) {
     }
     return (legs && legs.length) ? routeLineInfo(legs[legs.length - 1].lineId).color : '#e23b3b';
   };
-  // K10 (6차 ①A7): 넓게 볼 때(줌 12 미만) 칩이 수십 개 겹쳐 지도를 덮었다 → 출발·도착·환승역만 남긴다.
+  // 출발·도착·환승역(is-key)은 늘 보이고, 나머지는 겹칠 때만 숨긴다(layoutRouteChips).
   // 환승역 = 마지막 구간을 뺀 각 구간의 도착역 (걷기 구간 포함 — 내려서 걸어가는 곳도 갈아타는 곳)
   const keyIds = new Set([path[0], path[path.length - 1], ...(legs || []).slice(0, -1).map(l => l.to)]);
   path.forEach((id, i) => {
@@ -2008,6 +2022,7 @@ function highlightRoute(path, legs, opt) {
     if (!c || !st) return;
     const el = document.createElement('div');
     el.className = 'rt-label' + (i === path.length - 1 ? ' is-end' : '') + (keyIds.has(id) ? ' is-key' : ' is-minor');
+    el.dataset.sid = id;
     const badge = document.createElement('span');
     badge.className = 'rt-label-n';
     badge.textContent = String(i + 1);
@@ -2022,8 +2037,12 @@ function highlightRoute(path, legs, opt) {
     } catch (e) {}
   });
 
-  syncRouteChipZoom();
-  if (!map.__rtZoom) { map.__rtZoom = true; map.on('zoom', syncRouteChipZoom); }
+  layoutRouteChips();
+  if (!map.__rtZoom) {
+    map.__rtZoom = true;
+    ['zoom', 'rotate', 'pitch'].forEach(ev => map.on(ev, scheduleRouteChips));
+    map.on('resize', () => { routeLabelMarkers.forEach(mk => { mk.getElement().__w = 0; }); scheduleRouteChips(); });
+  }
 
   // 범례 — 어떤 구간이 무슨 노선인지
   const seen = [];
@@ -2064,9 +2083,47 @@ function highlightRoute(path, legs, opt) {
 }
 
 // 하이라이트 제거 (원래대로)
-const ROUTE_CHIP_MINZOOM = 12;
-function syncRouteChipZoom() {
-  try { map.getContainer().classList.toggle('rt-far', map.getZoom() < ROUTE_CHIP_MINZOOM); } catch (e) {}
+// K10: 긴 경로를 넓게 보면 이름표 수십 개가 지도를 덮는다. 줌 숫자로 일괄 숨기면 역 4개짜리 짧은 경로의
+// 중간 역도 사라져(번호 1→4) 화면에서 실제로 겹치는 이름표만 숨긴다.
+// 출발·도착·환승(is-key)을 먼저 놓고, 나머지는 경로 순서대로 놓되 이미 놓인 상자와 겹치면 숨긴다.
+// 겹침은 줌·회전에만 달라지므로(이동은 모두 같이 움직임) 그때만 한 화면에 한 번 다시 계산한다.
+const ROUTE_CHIP_GAP = 3;
+const ROUTE_CHIP_LIFT = 30;   // 마커 offset 16 + .rt-label translateY 14 (style.css)
+let routeChipRaf = 0, routeChipLabelTimer = 0, routeChipHiddenKey = '';
+function scheduleRouteChips() {
+  if (!routeChipRaf) routeChipRaf = requestAnimationFrame(layoutRouteChips);
+}
+function layoutRouteChips() {
+  routeChipRaf = 0;
+  if (!map || !routeLabelMarkers.length) return;
+  const els = routeLabelMarkers.map(mk => mk.getElement());
+  if (els.some(el => !el.__w)) {
+    els.forEach(el => el.classList.remove('is-crowded'));
+    els.forEach(el => { el.__w = el.offsetWidth; el.__h = el.offsetHeight; });
+  }
+  const box = (mk, el) => {
+    const p = map.project(mk.getLngLat()), b = p.y - ROUTE_CHIP_LIFT;
+    return { l: p.x - el.__w / 2 - ROUTE_CHIP_GAP, r: p.x + el.__w / 2 + ROUTE_CHIP_GAP, t: b - el.__h - ROUTE_CHIP_GAP, b: b + ROUTE_CHIP_GAP };
+  };
+  const placed = [], hidden = [];
+  const hits = a => placed.some(o => a.l < o.r && o.l < a.r && a.t < o.b && o.t < a.b);
+  routeLabelMarkers.forEach((mk, i) => { if (els[i].classList.contains('is-key')) placed.push(box(mk, els[i])); });
+  routeLabelMarkers.forEach((mk, i) => {
+    const el = els[i];
+    if (el.classList.contains('is-key')) { el.classList.remove('is-crowded'); return; }
+    const b = box(mk, el);
+    const crowd = hits(b);
+    el.classList.toggle('is-crowded', crowd);
+    if (crowd) hidden.push(el.dataset.sid); else placed.push(b);
+  });
+  const key = hidden.join(',');
+  if (key !== routeChipHiddenKey) {
+    routeChipHiddenKey = key;
+    clearTimeout(routeChipLabelTimer);
+    routeChipLabelTimer = setTimeout(() => {
+      if (map.getLayer('route-highlight-labels')) map.setFilter('route-highlight-labels', ['in', ['get', 'id'], ['literal', hidden]]);
+    }, 120);
+  }
 }
 // K10 (6차 ①A8·②5): 다른 모드(떡상·시세·투자 모드·투자분석)로 바꾸면 길찾기 경로를 지운다.
 // 예전엔 패널만 바뀌고 경로 선·역 칩이 지도에 남아, 떡상 순위·시세 색과 겹쳐 무엇을 보는지 헷갈렸다.
@@ -2090,6 +2147,8 @@ function clearRouteHighlight() {
   });
   const lg = document.getElementById('route-legend');
   if (lg) lg.remove();
+  routeChipHiddenKey = '';
+  clearTimeout(routeChipLabelTimer);
   while (routeLabelMarkers.length) {
     const mk = routeLabelMarkers.pop();
     try { mk.remove(); } catch (e) {}

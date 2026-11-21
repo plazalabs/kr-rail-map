@@ -265,4 +265,6 @@
 | 81-1 | PRODUCT.md '다음 버전: GTX 입구' 절 | 8616a02 | 데이터 2 |
 | 81-2 | data/gtx-card.json(build_gtx_card.js, js/gtx-card.js 규칙): 역 675 · 동 305(라벨 282·보류 24) · 경계 −0.1/5.5/14.5% · 2025H1→2026H1 · 171KB · pz 0. 단위 gtx-card 10/10, R-81 데이터 5/5, sources 통과 | 9c2beea | 데이터 2 |
 | 81-3 | gtx.html + js/gtx-page.js: 입력 → 카드(큰 숫자·접근성/시세 흐름 칩·작은 글씨·자세히 보기·1080 공유). R-81 e2e 4/4, csp·contrast·no-emoji 목록에 gtx.html, 단위 81/81 | d991d5a | 데이터 2 |
-| 81-4 | (남음) sw.js 미리 받기 목록·버전, sitemap, README 숫자, 구현보고_GTX입구_20261121.md | — | — |
+| 80 보완 | 길찾기 중 원래 역 이름 레이어를 통째로 끄지 않고 경로 역만 filter 로 뺌 — 경로 밖 역 이름은 그대로, 닫으면 원래 filter. R-80 '경로 밖 역 이름은 길찾기 중에도 보임' 먼저 실패 → 통과, R-80 4/4 | (이 커밋) | 데이터 2 |
+| 81 시험 | 카드 규칙 8곳을 일부러 깨 봄 → 7곳은 바로 실패, null 건너뛰기만 안 잡혀 단언 추가 후 실패 확인, 모두 되돌림(diff 0) | 89afc3c | 데이터 2 |
+| 81-5 | 배포 준비 v307: sw.js 미리 받기(gtx.html·gtx-card.js·gtx-page.js), sitemap 81 URL(build_pages.py), tools/build_public.js 목록, README 81 URL. 구현보고_GTX입구_20261121.md | 8102bdd | 데이터 2 |

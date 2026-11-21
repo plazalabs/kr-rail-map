@@ -80,3 +80,25 @@ test('[R-80] 긴 경로(20역 이상) 줌 10: 보이는 이름표끼리 안 겹�
     expect(keyHidden, `줌 ${z} 숨은 핵심 이름표`).toEqual([]);
   }
 });
+
+test('[R-80] 경로 밖 역 이름은 길찾기 중에도 보임, 경로 역은 원래 이름 글자 대신 이름표 · 닫으면 원래대로', async ({ page }) => {
+  await boot(page);
+  await route(page, ['인천', 'seoul-metropolitan-subway-line-1'], ['의정부', 'seoul-metropolitan-subway-line-1'], false);
+  await page.evaluate(() => map.jumpTo({ center: [126.99, 37.56], zoom: 12.5 }));
+  await page.evaluate(() => new Promise(r => { map.once('idle', r); setTimeout(r, 4000); }));
+  const st = await page.evaluate(() => {
+    const path = new Set(lastRoute.path);
+    const f = map.queryRenderedFeatures({ layers: ['station-labels'] }).map(x => x.properties.id);
+    return { op: map.getPaintProperty('station-labels', 'text-opacity'), out: f.filter(id => !path.has(id)).length, on: f.filter(id => path.has(id)).length };
+  });
+  expect(st.op, '원래 역 이름 레이어를 통째로 끄지 않음').not.toBe(0);
+  expect(st.out, '경로 밖 역 이름이 보임').toBeGreaterThan(0);
+  expect(st.on, '경로 역은 원래 이름 글자 없음(선 아래라 잘림)').toBe(0);
+  await page.evaluate(() => document.getElementById('route-close').click());
+  await page.evaluate(() => new Promise(r => { map.once('idle', r); setTimeout(r, 4000); }));
+  const back = await page.evaluate(() => ({ op: map.getPaintProperty('station-labels', 'text-opacity'), route: !!map.getLayer('route-casing'),
+    n: map.queryRenderedFeatures({ layers: ['station-labels'] }).filter(x => ['시청', '서울', '종각'].includes(x.properties.name_ko)).length }));
+  expect(back.route).toBe(false);
+  expect(back.op).toBe(1);
+  expect(back.n, '닫으면 경로였던 역 이름도 다시 보임').toBeGreaterThan(0);
+});

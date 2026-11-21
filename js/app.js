@@ -1876,8 +1876,12 @@ function highlightRoute(path, legs, opt) {
     map.setPaintProperty('rail-stations', 'circle-opacity', only);
     map.setPaintProperty('rail-stations', 'circle-stroke-opacity', only);
   }
+  // 경로 역 이름은 이름표(+ 숨긴 역은 route-highlight-labels)가 맡는다 — 원래 글자는 경로 선 아래라 잘리므로 빼고, 경로 밖 역 이름은 그대로 둔다.
+  // 닫으면 clearRouteHighlight → updateFilters 가 원래 filter 로 되돌린다.
   if (map.getLayer('station-labels')) {
-    map.setFilter('station-labels', ['in', ['get', 'id'], ['literal', [...pathSet]]]);
+    const base = map.getFilter('station-labels');
+    const notPath = ['!', ['in', ['get', 'id'], ['literal', [...pathSet]]]];
+    map.setFilter('station-labels', base ? ['all', base, notPath] : notPath);
     map.setPaintProperty('station-labels', 'text-opacity', 1);
   }
 
@@ -2000,7 +2004,6 @@ function highlightRoute(path, legs, opt) {
     },
     paint: labelPaint('#1f2328', 1.2),
   });
-  if (map.getLayer('station-labels')) map.setPaintProperty('station-labels', 'text-opacity', 0);
 
   // 역 이름 마커 — 배지 색은 그 역에 도착하는 구간의 노선 색
   const colorAt = i => {

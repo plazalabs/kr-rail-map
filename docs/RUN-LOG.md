@@ -314,3 +314,26 @@
 GTX-C · 2031
 ▲331위
 448 → 117위'). '2031년까지 개통' 단추를 누르자마자 innerText 를 읽어, 목록이 다시 그려지기 전이면 null. 고침 제안: 131행을 `await expect(rp).toContainText(/의정부\s+GTX-C · 2031/)` 기다린 뒤 읽기(단계 추가라 회장님 결정 거리)
+
+## 블록 H (2026-11-21 밤, 지시서 `지시서_블록H_20261121.md`)
+시작 기준선: main 34bfab4(v312, 블록 G 배포 끝) · 데이터 시험 61 통과 / 실패 2(D-13·D-15) · Playwright 46/10(블록 G) · 시험 출력 `scratch/blockH/`. 순서 86 → 87. 걸리는 시간 미리 말함: 60~80분
+
+### 숙제별 한 줄
+| 번호 | 한 일 | 커밋 | 남은 실패 |
+|---|---|---|---|
+| 86 | 노선 글자 한 규칙 LineStatus.label: '이름 (상태 말 · 연도)', 연도 없으면 '이름 (상태 말)'. 시작 전에 회장님께 물음 2개 — ① 공사 중: '이름 연도'(지시서) vs 지도 규칙 74 → **답: 74로 통일, 공사 중도 'GTX-C (공사 중 · 2031)'** ② 지도 GTX-D 꼬리 → **답: 유지('GTX-D (계획 · 2035) 갈래 여러 안')**. 다섯 곳 모두 이 함수: 지도(source 'lines' 속성 label = mapLineLabel, STATUS_WORD_EXPR·OPEN_YEAR_EXPR 지움), rank.html 역 카드(칩 글자 = label, `.nl-yr` 연도·'시기 미정' 뺌), rank.html 공유 그림, 앱 공유 카드, 길찾기 비교 카드('2035년' → '2035'). 몇분컷 lineText 도 같은 함수(출력 같음). R-86 데이터 2개(먼저 실패 확인 → 통과)·e2e 1개. R-66·74·76·77·e2e 4개(unopened·rank·task-life·commute-card) 기대값을 새 규칙으로. **고치다 생긴 버그 하나 잡음**: chipHtml 에 글자 인자를 더했더니 `.map(chipHtml)` 두 곳이 순번을 글자로 넘겨 연도 단추 아래 'GTX-B 1 2' — 옛 e2e rank 가 잡음 → `x => chipHtml(x)` 로 고쳐 rank 35/0 | 29ca9b2 | 데이터 2 |
+| 87 | og-rank.jpg 를 홈·랭킹 기준으로: build_og_rank.js 가 RankTable.defaultYear(rank.json default_year=2031)·rank-top.json 과 같은 거르기(신규 빼고 오른 역)로 TOP 5, 제목 아래 '2031년까지 개통 가정 · 수도권 675역 중'. 그림에 쓴 값은 data/og-rank.json(그림 sha1 포함). require 로 크롬 안 뜨게 ogData 내보냄. R-87 3개(먼저 3 실패 → 3 통과): 기준 연도 = default_year, og-rank.json = 지금 rank.json 으로 다시 계산, 그림 sha1 일치, 앞 3곳 = rank-top.json = 홈 카드(의정부 448→117). 그림 눈으로 확인 | e06da50 | 데이터 2 |
+
+### 전·후
+| 시험 | 전 (34bfab4) | 후 (e06da50) |
+|---|---|---|
+| 데이터 `node --test` | 61 통과 / 2 실패 (D-13·D-15) | 66 통과 / 2 실패 (D-13·D-15, 기준선 안) — 새 R-86 2·R-87 3 |
+| og-rank 그림 의정부 | 448→125위 (전체 개통) | 448→117위 (2031년까지) = rank-top.json = 홈 카드 |
+| 노선 글자 수서 GTX-D | 지도 'GTX-D 계획 · 2035' / 카드 'GTX-D 2035년' / 공유 그림 'GTX-D (계획)' / 길찾기 'GTX-D (계획 · 2035년)' | 다섯 곳 'GTX-D (계획 · 2035)' (지도는 뒤에 ' 갈래 여러 안') |
+| Playwright 전체 | 46 / 10 (E-02·03·21·22·31·32·40~43) | 47 / 10 (E-21·22·31·32·40~43 + R-80·R-scenario) |
+| 옛 e2e 5개 (unopened·line-status·rank·task-life·commute-card) | — | 101 / 0 |
+| 단위 rank.test.js · neutral-examples | — | 통과 |
+
+- Playwright 새로 보인 실패 2개는 흔들림: R-scenario 단독 2번 통과, R-80 단독 1번 실패·1번 통과 → HEAD 3번 통과 · 34bfab4(블록 전) 3번 통과. 둘 다 전체 실행(작업자 2) 부하에서만. 이번엔 E-02·E-03 이 통과(E-03 흔들림은 블록 G 그대로)
+- 그대로 둔 것(지시서): '떡상' 빠른 실행 별칭, market-map '엉뚱한 주소 값' 1건, E-03 고침
+- 회장님께: og-rank 그림 왼쪽 문구 '축을 읽으면, 도시의 미래가 보인다'는 CLAUDE.md 슬로건 '철도의 축, 도시의 내일'과 다름(블록 전부터, 이번에 안 건드림)

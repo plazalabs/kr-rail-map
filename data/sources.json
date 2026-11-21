@@ -185,7 +185,8 @@
         "data/station-price.json",
         "data/station-complex.json",
         "data/station-jeonse.json",
-        "data/station-trend.json"
+        "data/station-trend.json",
+        "data/gtx-card.json"
       ],
       "intermediate": [
         "data/_gov/addr/",
@@ -553,7 +554,8 @@
         "data/headways-off.json",
         "data/rank.json",
         "data/rank-top.json",
-        "data/rank-station.json"
+        "data/rank-station.json",
+        "data/gtx-card.json"
       ],
       "commercial": "allowed"
     },
@@ -575,7 +577,8 @@
         "data/headways-off.json",
         "data/rank.json",
         "data/rank-top.json",
-        "data/rank-station.json"
+        "data/rank-station.json",
+        "data/gtx-card.json"
       ],
       "commercial": "unverified",
       "caveat": "자료 페이지에 이용허락(공공누리) 표시가 없고, 레일포털(KRIC) 이용약관에 상업적 이용 금지 조항이 있다(2026-11-15 확인). 유료 서비스 전에 공공데이터포털의 이용허락 명시 판으로 바꾸거나 허락을 받아야 한다."
@@ -596,7 +599,8 @@
         "data/access.json",
         "data/rank.json",
         "data/rank-top.json",
-        "data/rank-station.json"
+        "data/rank-station.json",
+        "data/gtx-card.json"
       ],
       "commercial": "allowed",
       "caveat": "추정값이다. 개통 전 노선은 발표 기준이다."

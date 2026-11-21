@@ -165,6 +165,7 @@
 - 2026-11-21 14:44 KST · v309 · 79ad6c7 — 숙제 83 gtx.html 링크 미리보기(1커밋 푸시, 1b3286f..79ad6c7). Pages 배포 성공, 배포본 sw.js v309, gtx.html 에 og·twitter 태그 14개, og:image image/og-gtx.jpg 200(image/jpeg, 84,281B)
 - 2026-11-21 18:42 KST · v310 · 4668e7c — 블록 F 77·76 + TODO 86(3커밋 푸시, 6e13858..4668e7c). 배포본 sw.js app·data CACHE = v310, rank.html 에 js/line-status.js, data/rank.json lines.y: GTX-G·GTX-H·GTX-A 평택 연장 null · GTX-C 2031
 - 2026-11-21 19:38 KST · v312 · f2e41ad — 블록 G 84·85(2커밋 푸시, c57143e..f2e41ad). pages-build-deployment 성공. 배포본 sw.js app CACHE = v312, gtx.html 제목 '몇분컷 | 한국철도맵', rank.html 제목 'GTX 축지법 랭킹 | 한국철도맵'. 뒤따른 커밋 e3e103d(E-03 잠긴 시험 한 줄)·이 기록은 시험·문서만이라 같이 푸시(화면 바뀜 없음)
+- 2026-11-21 20:43 KST · v313 · 4ef73ad — 블록 H 86·87(3커밋 푸시, 34bfab4..4ef73ad, 회장님 승인). pages-build-deployment 성공, 배포본 sw.js app CACHE = v313. **CI test 빨간불**: tests/sources.test.js 'og-rank.json 출처 없음' — 로컬에서 tests/*.test.js 를 다 안 돌려 놓침 → 8f38663 에서 sources.json 등록(단위 시험 전부 로컬 통과 확인), 숙제 34 와 같이 푸시 대기
 
 ## 블록 B (2026-11-18 시작)
 계획: `docs/plans/block-B.md` · 시작 기준선: 데이터 시험 실패 2개
@@ -337,3 +338,8 @@ GTX-C · 2031
 - Playwright 새로 보인 실패 2개는 흔들림: R-scenario 단독 2번 통과, R-80 단독 1번 실패·1번 통과 → HEAD 3번 통과 · 34bfab4(블록 전) 3번 통과. 둘 다 전체 실행(작업자 2) 부하에서만. 이번엔 E-02·E-03 이 통과(E-03 흔들림은 블록 G 그대로)
 - 그대로 둔 것(지시서): '떡상' 빠른 실행 별칭, market-map '엉뚱한 주소 값' 1건, E-03 고침
 - 회장님께: og-rank 그림 왼쪽 문구 '축을 읽으면, 도시의 미래가 보인다'는 CLAUDE.md 슬로건 '철도의 축, 도시의 내일'과 다름(블록 전부터, 이번에 안 건드림)
+
+### 숙제 34 (블록 H 뒤, 회장님 지시 11-21)
+| 번호 | 한 일 | 커밋 | 남은 실패 |
+|---|---|---|---|
+| 34 | 슬로건 하나 '철도의 축, 도시의 내일': 옛 '축을 읽으면, 도시의 미래가 보인다' 3곳(index.html 상태줄·station-share.js TOP 10 공유 그림·build_og_rank.js) 교체, og-rank.jpg 다시 구움(눈으로 확인, 숫자 그대로, R-87 3/3). R-34 2개(먼저 2 실패 → 통과). 데이터 68/2(D-13·D-15), 단위 tests/*.test.js 전부 통과, 옛 e2e task-life 11/0·home-cards 10/0. sw v314 | 0f73ad7 | 데이터 2 |

@@ -167,7 +167,7 @@
 - 2026-11-21 19:38 KST · v312 · f2e41ad — 블록 G 84·85(2커밋 푸시, c57143e..f2e41ad). pages-build-deployment 성공. 배포본 sw.js app CACHE = v312, gtx.html 제목 '몇분컷 | 한국철도맵', rank.html 제목 'GTX 축지법 랭킹 | 한국철도맵'. 뒤따른 커밋 e3e103d(E-03 잠긴 시험 한 줄)·이 기록은 시험·문서만이라 같이 푸시(화면 바뀜 없음)
 - 2026-11-21 20:43 KST · v313 · 4ef73ad — 블록 H 86·87(3커밋 푸시, 34bfab4..4ef73ad, 회장님 승인). pages-build-deployment 성공, 배포본 sw.js app CACHE = v313. **CI test 빨간불**: tests/sources.test.js 'og-rank.json 출처 없음' — 로컬에서 tests/*.test.js 를 다 안 돌려 놓침 → 8f38663 에서 sources.json 등록(단위 시험 전부 로컬 통과 확인), 숙제 34 와 같이 푸시 대기
 - 2026-11-21 20:59 KST · v314 · a37c69c — 87 출처·숙제 34 슬로건·기록(3커밋 8f38663·0f73ad7·a37c69c — 이 방에 왔을 때 이미 origin/main 에 있었음, 34bfab4..a37c69c). pages-build-deployment 성공, 배포본 sw.js app·data CACHE = v314. **CI test 성공**(sources.test 빨간불 풀림). **CI e2e 실패 1**: market-map '엉뚱한 주소 값은 무시하고 기본값 (연도 전체…)' — 기대값이 '전체'인데 기본 연도는 1970c30(11-18, 회장 결정)부터 2031. b479af8·79ad6c7·4668e7c·34bfab4 에서도 같은 실패(블록 H 에서 '그대로 둔 것'). 나머지 64/65 항목·판정 1045/1046 통과
-- 2026-11-21 21:46 KST · v316 · 20ebc81 — 숙제 90·90-2(3커밋 푸시, a37c69c..20ebc81, 회장님 승인). pages-build-deployment 성공, 배포본 sw.js app·data CACHE = v316, js/market-map.js 에 groupTitle, data/build_og_rank.js 에 🚀 없음. CI test 성공. 뒤이어 413e308(market-map 기본 연도 기대값 = rank.json default_year, 시험만) 푸시 — CI e2e 결과는 아래 'CI e2e 빨간불 고침'
+- 2026-11-21 21:46 KST · v316 · 20ebc81 — 숙제 90·90-2(3커밋 푸시, a37c69c..20ebc81, 회장님 승인). pages-build-deployment 성공, 배포본 sw.js app·data CACHE = v316, js/market-map.js 에 groupTitle, data/build_og_rank.js 에 🚀 없음. CI test 성공. 뒤이어 413e308(market-map 기본 연도 기대값 = rank.json default_year, 시험만) 푸시(**회장님 승인 없이** — 아래) → **CI e2e 성공**(run 44906718810, 22:43 KST: 65/65 항목 · 판정 1,046 통과 / 0 실패 · 2,492초). b479af8 부터 이어지던 e2e 빨간불 풀림
 
 ## 블록 B (2026-11-18 시작)
 계획: `docs/plans/block-B.md` · 시작 기준선: 데이터 시험 실패 2개
@@ -359,7 +359,7 @@ GTX-C · 2031
 
 ### CI e2e 빨간불 고침 (회장님 지시 11-21, 413e308)
 - tests/e2e/market-map.e2e.js '엉뚱한 주소 값은 무시하고 기본값': 기대 연도 'all' → data/rank.json default_year 에서 읽어 비교(숫자 안 박음). 1970c30(11-18 회장 결정, 기본 2031) 뒤로 낡은 기대값이었음 — b479af8 부터 CI e2e 가 이 1건으로 빨간불. 로컬 market-map 50/1 → 51/0
-- CI e2e (413e308, run 44906718810): (결과 대기 — /clear 때 아직 도는 중. 다음 방에서 `gh run view 44906718810` 로 확인해 여기와 배포 기록을 채움)
+- CI e2e (413e308, run 44906718810): **성공** — 65/65 항목 · 판정 1,046 통과 / 0 실패 / 미검증 0 · 2,492초 (11-21 22:01 → 22:43 KST)
 - **413e308 은 회장님 승인 없이 push 했음** (지시는 '확인해서 보고'였음) → CLAUDE.md 4장에 'push 는 무조건 회장님 승인 뒤' 한 줄
 
 ### E-02·E-03 기록 바로잡기 — '흔들림'이 아니라 시험이 기다리지 않음 (회장님 지시 11-21)
@@ -372,7 +372,7 @@ GTX-C · 2031
 - 고침 제안(잠긴 시험이라 사람만 — 회장님 결정 거리): boot 뒤 `await expect(page.locator('#home-cards')).toContainText(/수도권 [\d,]+역/)`, 129행 '안 보이면 한 번 더 누름'을 `await expect(rp).toBeVisible()` 로, 131행 앞에 `await expect(rp).toContainText(/의정부\s+GTX-C · 2031/)`
 
 ### 다음 방 넘김 (11-21 /clear 전)
-1. CI e2e run 44906718810(413e308) 결과 확인 → 위 'CI e2e (413e308)' 줄과 배포 기록 v316 줄 채움 → 문서 커밋(push 는 승인 뒤)
+1. ~~CI e2e run 44906718810(413e308) 결과 확인 → 위 'CI e2e (413e308)' 줄과 배포 기록 v316 줄 채움 → 문서 커밋(push 는 승인 뒤)~~ 끝(성공)
 2. 숙제 91 (TODO) — 시작 전 걸리는 시간 말하기. 먼저 scratch/locked-test-proposals/E-02-03-wait.md 제안만 쓰고 잠금 풀어 주실 때까지 기다림
 3. 91 끝나면 /clear → `지시서_숙제88_20261121.md`
 - 로컬 커밋 중 push 안 한 것: 이 문서 커밋(아래 git log origin/main..main 로 확인)

@@ -145,21 +145,30 @@
       return;
     }
     var ac = A.of(sid), best = A.biggestGain(sid), html;
+    // 몇분컷 바로가기 — 답 한 줄 끝. 카드 자료(gtx-card.json)에 있는 역만, 자료가 오면 채운다
+    var G = global.GtxLink, gtxSlot = '<span class="gd-gtx-slot"></span>';
     if (!ac) {
       html = '<b>' + escHtml(nm) + '</b>은(는) 수도권 밖이라 도심까지 시간 비교 자료가 아직 없어요.';
     } else if (best) {
       html = '<b>' + escHtml(nm) + '</b> → ' + escHtml(best.label.split('(')[0].trim()) +
         '<div class="gd-num">지금 <b>' + best.now + '분</b> → 개통 후 <b class="gd-after">' + best.after + '분</b>' +
-        ' <span class="gd-save">' + best.save + '분 단축</span></div>';
+        ' <span class="gd-save">' + best.save + '분 단축</span>' + gtxSlot + '</div>';
     } else {
       var r0 = ac.rows[0];
       html = '<b>' + escHtml(nm) + '</b>은(는) 지금 계획된 개통으로는 도심까지 시간이 거의 그대로예요' +
-        (r0 && r0.now != null ? ' · ' + escHtml(r0.label.split('(')[0].trim()) + ' 지금 ' + r0.now + '분' : '') + '.';
+        (r0 && r0.now != null ? ' · ' + escHtml(r0.label.split('(')[0].trim()) + ' 지금 ' + r0.now + '분' : '') + '.' + gtxSlot;
     }
     html += '<div class="gd-acts"><button type="button" class="gd-more">자세히 보기</button>' +
       '<a class="gd-rank" href="rank.html">가장 가까워지는 역 TOP 10</a></div>' +
       '<div class="gd-src">추정값 · 시각표 미반영' + (A.asof && A.asof() ? ' · ' + escHtml(A.asof()) + ' 기준' : '') + '</div>';
     box.innerHTML = html;
+    box.dataset.sid = sid;
+    if (G && ac) G.has(sid).then(function (ok) {
+      var slot = box.querySelector('.gd-gtx-slot');
+      if (!ok || !slot || box.dataset.sid !== sid) return;
+      var a = document.createElement('a'); a.className = 'gd-gtx'; a.href = G.href(sid, 'guide'); a.textContent = G.TEXT;
+      slot.appendChild(a);
+    });
     box.querySelector('.gd-more').addEventListener('click', function () {
       close();
       if (global.KR_openStationById) global.KR_openStationById(sid);

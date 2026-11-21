@@ -27,6 +27,7 @@
     shown: PAGE,
   };
   let doc = null, lineInfo = {};
+  let gtxIds = null;   // 몇분컷 카드가 있는 역 (data/gtx-card.json) — 그 역 카드에만 바로가기
   let DEF_Y = 'all';   // 자료를 받으면 RankTable.defaultYear 로 바뀜
 
   function saveUrl() {
@@ -156,7 +157,9 @@
     return '<div class="card t-' + t + '" id="card-' + esc(r.id) + '">' + head +
       '<div class="bars">' + bars + '</div>' +
       '<div class="legend"><span><i style="background:var(--bar-now)"></i>지금</span><span><i style="background:var(--bar-aft)"></i>' + aftLabel() + '</span></div>' +
-      nl + '<a class="go" href="' + link(r) + '">지도에서 보기 →</a>' +
+      nl + (gtxIds && Object.prototype.hasOwnProperty.call(gtxIds, r.id)
+        ? '<a class="gtx-go" href="' + esc(GtxLink.href(r.id, 'rank')) + '">' + Icons.svg('clock') + esc(GtxLink.TEXT) + '</a>' : '') +
+      '<a class="go" href="' + link(r) + '">지도에서 보기 →</a>' +
       '<button class="share" data-share="' + esc(r.id) + '"><i data-ic="camera"></i> 공유 이미지 저장</button>' +
       '<button class="share" data-link="' + esc(r.id) + '"><i data-ic="link"></i> 링크 복사</button><span class="share-msg" role="status"></span></div>';
   }
@@ -397,7 +400,8 @@
 
   let rz = null;
   window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(render, 200); });
-  fetch('data/rank.json').then(r => r.ok ? r.json() : Promise.reject(r.status)).then(d => {
+  Promise.all([fetch('data/rank.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), window.GtxLink ? GtxLink.load() : {}]).then(([d, g]) => {
+    gtxIds = g;
     doc = d; lineInfo = d.lines || {};
     DEF_Y = RankTable.defaultYear(d); if (!st.y) st.y = DEF_Y;
     // ?open=역ID 로 들어오면(지도 역 상세의 '떡상 랭킹에서 보기') 그 역 카드를 펼친다 — 목록 밖이면 이름으로 찾고, 수도권 밖이면 전국

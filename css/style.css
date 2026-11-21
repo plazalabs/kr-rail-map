@@ -1056,6 +1056,8 @@ body[data-theme="win95"] { --warn-text: #5c3600; }
 #guide-card .gd-acts { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
 #guide-card .gd-more { border: 0; border-radius: 8px; padding: 7px 12px; min-height: 32px; font: inherit; font-weight: 700; background: var(--accent); color: var(--accent-text, #fff); cursor: pointer; }
 #guide-card .gd-rank { color: var(--accent); font-size: var(--fs-xs); font-weight: 600; }
+#guide-card .gd-gtx { display: inline-flex; align-items: center; min-height: 44px; margin-left: 8px; color: var(--accent); font-size: var(--fs-sm); font-weight: 700; text-decoration: none; white-space: nowrap; vertical-align: middle; }
+#guide-card .gd-gtx:hover { text-decoration: underline; }
 #guide-card .gd-src, #guide-card .gd-wait { display: block; margin-top: 4px; font-size: var(--fs-xs); color: var(--text-2, var(--muted)); }
 #guide-card .gd-sub { margin: 0 0 4px; font-size: var(--fs-xs); color: var(--text-2, var(--muted)); }
 #guide-card .gd-slogan { margin: -2px 0 8px; font-size: var(--fs-xs); font-weight: 600; letter-spacing: -0.01em; color: var(--accent, var(--text)); }

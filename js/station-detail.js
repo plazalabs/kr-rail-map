@@ -117,6 +117,8 @@
     '.sd-dg{display:inline-flex;align-items:center;gap:4px;margin-top:6px;min-height:30px;padding:3px 10px;border:1px solid var(--border,#ddd);' +
     'border-radius:999px;background:var(--btn-bg,#fff);color:var(--text,#222);font:inherit;font-size:var(--fs-xs);font-weight:600;cursor:pointer}' +
     '.sd-dg:hover{border-color:var(--accent,#1a73e8)}.sd-dg:focus-visible{outline:2px solid var(--accent,#1a73e8);outline-offset:1px}' +
+    '.sd-gtx{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--accent,#1a73e8);font-size:var(--fs-sm);font-weight:700;text-decoration:none}' +
+    '.sd-gtx:hover{text-decoration:underline}.sd-gtx:focus-visible{outline:2px solid var(--accent,#1a73e8);outline-offset:1px;border-radius:4px}' +
     '.sd-actions button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;' +
     'padding:9px 4px;border:1px solid var(--border-strong,#ddd);border-radius:9px;' +
     'background:var(--btn-bg,#fff);color:var(--btn-text,#222);cursor:pointer;' +
@@ -561,6 +563,18 @@
     return h;
   }
 
+  function gtxLinkHtml(sid) {
+    return '<a class="sd-gtx" href="' + esc(GtxLink.href(sid, 'station')) + '"><i data-ic="clock"></i>' + esc(GtxLink.TEXT) + '</a>';
+  }
+  function fillGtx(sid, feature) {
+    if (typeof GtxLink === 'undefined' || GtxLink.hasNow(sid) !== null) return;
+    GtxLink.has(sid).then(function (ok) {
+      if (!ok || current !== feature || !panel) return;
+      var slot = panel.querySelector('#sd-body .sd-gtx-slot');
+      if (slot && !slot.firstChild) slot.innerHTML = gtxLinkHtml(sid);
+    });
+  }
+
   function show(feature) {
     if (!feature || !feature.properties) return;
     // 호스트가 '패널을 처음 열 때 받을 데이터' 를 걸어 둘 수 있다 (app.js loadDetailData — 지연 로딩)
@@ -581,6 +595,8 @@
       // J10 (2026-11-14): 같은 역을 45도 노선도에서 — 노선도가 그 역을 가운데·강조
       (typeof DiagramMode !== 'undefined' && DiagramMode.focusStation
         ? '<button type="button" class="sd-dg" title="45도 노선도에서 이 역 보기"><i data-ic="map"></i> 노선도에서 보기</button>' : '') +
+      // 몇분컷 바로가기 — 카드 자료(gtx-card.json)에 있는 역만. 자료가 아직이면 받은 뒤 채운다(아래 fillGtx)
+      '<div class="sd-gtx-slot">' + (typeof GtxLink !== 'undefined' && GtxLink.hasNow(sid) ? gtxLinkHtml(sid) : '') + '</div>' +
       '</div>';
 
     // 액션은 패널 맨 아래에 붙는다(sticky, F3) — 어느 탭에서 얼마나 내려도 스크롤 없이 보인다.
@@ -769,6 +785,7 @@
 
     var body = panel.querySelector('#sd-body');
     body.innerHTML = html;
+    fillGtx(sid, feature);
 
     // 탭 전환: 누르기 + ←/→/Home/End (WAI-ARIA 탭 패턴, 자동 활성화)
     var tabBtns = Array.prototype.slice.call(body.querySelectorAll('.sd-tab'));

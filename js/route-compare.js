@@ -555,13 +555,19 @@ const RouteCompare = (() => {
     const rail = r => !!(r && r.legs && r.legs.some(l => l.lineId && RF && typeof RF.categoryOf === 'function' && ['ktx', 'conventional'].includes(RF.categoryOf(l.lineId))));
     const base = rail(f) || rail(t) ? '성인 기준(열차 일반실·전철 교통카드, 할인 제외)' : '성인 교통카드 기준(할인·정기권 제외)';
     if (!t) return base;
+    // 상한(최적 + FARE_CAP_MIN 분) 밖에 더 싼 길이 최소환승 탭에 있으면 그 탭을 가리킨다. 분은 이미 계산된 두 탭 값에서만.
+    // 최소환승 길은 요금이 다 정해져 있어야 한다. 최소요금 길에 미정 구간이 있으면 그 요금은 '최소한 이만큼'이라 그대로 견준다
+    const x = all.transfer;
+    const elsewhere = x && typeof x.fare === 'number' && typeof f.fare === 'number' && !hasPending(x)
+      && x.fare < f.fare && x.minutes > t.minutes + FARE_CAP_MIN
+      ? '더 싸지만 ' + (x.minutes - t.minutes) + '분 더 걸리는 길은 최소환승 탭 · ' : '';
     const samePath = t.path && f.path && t.path.length === f.path.length && t.path.every((x, i) => x === f.path[i]);
-    if (samePath) return '최적과 같음 — 최적보다 ' + FARE_CAP_MIN + '분 넘게 더 걸리지 않는 길 중 더 싼 길이 없어요 · ' + base;
-    if (hasPending(t) || hasPending(f)) return '요금 미정 구간이 있어 얼마 아끼는지는 말할 수 없어요 · ' + base;
+    if (samePath) return '최적과 같음 — 최적보다 ' + FARE_CAP_MIN + '분 넘게 더 걸리지 않는 길 중 더 싼 길이 없어요 · ' + elsewhere + base;
+    if (hasPending(t) || hasPending(f)) return '요금 미정 구간이 있어 얼마 아끼는지는 말할 수 없어요 · ' + elsewhere + base;
     const dm = f.minutes - t.minutes, df = t.fare - f.fare;
     const time = dm > 0 ? dm + '분 더 걸려요' : dm < 0 ? (-dm) + '분 빨라요' : '시간은 같아요';
-    if (df > 0) return '최적 길보다 ' + df.toLocaleString() + '원 싸고 ' + time + ' · ' + base;
-    return '최적 길과 요금이 같아요 · ' + time + ' · ' + base;
+    if (df > 0) return '최적 길보다 ' + df.toLocaleString() + '원 싸고 ' + time + ' · ' + elsewhere + base;
+    return '최적 길과 요금이 같아요 · ' + time + ' · ' + elsewhere + base;
   }
 
   // 최적 길과 견준 요금 차이 (' · 600원 더 비쌈'). 한쪽이라도 요금 미정이 끼면 말하지 않는다.

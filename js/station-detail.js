@@ -344,8 +344,9 @@
 
   // 노선 lid 위에 있는 이름 nm 의 역 ID. 같은 노선에 같은 이름이 둘이면 현재 역에서 가까운 쪽.
   // 배차 한 줄 — data/headways.json(출근 7~9시)·headways-off.json(평시 10~16시)의 역 값 그대로. 두 자료를 받은 뒤 채우고,
-  // 둘 다 값이 없는 노선은 줄을 넣지 않는다. 999 = 그 시간대 열차 없음
-  function hwTxt(v) { return v == null ? '—' : (v >= 999 ? '열차 없음' : v + '분'); }
+  // 둘 다 값이 없는 노선은 줄을 넣지 않는다. 999 = 그 시간대 열차 없음.
+  // 배차는 평균값이라 화면 글자만 '약 N분'으로 반올림한다(1분 미만은 1). 자료 값·계산은 그대로.
+  function hwTxt(v) { return v == null ? '—' : (v >= 999 ? '열차 없음' : '약 ' + Math.max(1, Math.round(v)) + '분'); }
   function fillHeadways(sid, nameKo) {
     if (typeof RouteFinder === 'undefined' || !RouteFinder.headwayRaw) return;
     var ps = [];

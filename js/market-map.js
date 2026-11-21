@@ -1068,6 +1068,17 @@
     g.fillText('업무지구까지 열차 대기 뺀 추정 시간으로 본 교통 접근성 · 집값이나 투자수익 예측이 아닙니다 · 출처 plazalabs.github.io/kr-rail-map/data.html' + (doc && doc.updated ? ' · 기준 ' + doc.updated : ''), 24, ly + 28);
     return c;
   }
+  /* 공유 그림 묶음 이름 = 다른 노선 글자와 같은 LineStatus.label ('GTX-E (구상 · 2035)', 'GTX-C (공사 중 · 2031)').
+   * 같은 이름의 id 가 여럿이면 가장 앞선 단계(운행 중 > 공사 중 > 계획 > 구상)의 것. 노선이 아닌 묶음('그 밖의 새 노선')은 이름 그대로.
+   * noYear 면 연도를 뺀 글자('GTX-E (구상)') — 칸이 좁을 때 쓰는 줄인 꼴. */
+  function groupTitle(name, lines, noYear) {
+    var STAGE = { open: 0, construction: 1, planned: 2, proposed: 3 }, best = null;
+    Object.keys(lines || {}).forEach(function (id) {
+      var m = lines[id]; if (!m || m.n !== name) return;
+      if (!best || (STAGE[m.s || 'open'] || 0) < (STAGE[best.s || 'open'] || 0)) best = m;
+    });
+    return best ? LineStatus.label(noYear ? { n: best.n, s: best.s, y: null } : best) : name;
+  }
   /* 공유 카드 ④ 타일 히트맵 (11-14): 세로 1080×1350 어두운 카드 — 다른 공유 카드와 같은 바탕·아래 띠(StationShareImage).
    * 타일 숫자는 K1 처럼 고른 색 지표, 라벨은 K2 단계(labelPlan)를 글자 크기에 맞춰 늘려 쓴다. */
   function cardCanvas() {
@@ -1082,13 +1093,14 @@
     var X = 56, Y = 276, BW = k.W - 112, BH = 820, FS = 22, sc = 12 / FS;   // 카드 글자 최소 22px (카톡 압축에 뭉개지지 않게)   // 판 위치·크기, 글자 20px (labelPlan 은 12px 기준이라 비율로)
     var m2 = { ordered: model.ordered, groups: model.groups.map(function (G) { return { name: G.name, value: G.value, tiles: G.tiles.map(function (t) { return { v: t.v, row: t.row, color: t.color, gain: t.gain, _t: t }; }) }; }), total: model.total };
     Logic.layout(m2, BW, BH, 30);
-    var plannedNames = {};   // 이름 → 계획 노선(planned·proposed)인지 — 같은 이름이 공사 중으로도 있으면 계획 아님
-    Object.keys((doc && doc.lines) || {}).forEach(function (id) { var m = doc.lines[id]; if (!m || !m.n) return; var pl = m.s === 'planned' || m.s === 'proposed'; plannedNames[m.n] = (m.n in plannedNames) ? (plannedNames[m.n] && pl) : pl; });
     m2.groups.forEach(function (G) {
       var r = G.rect; if (!r || r.w < 2) return;
       g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(X + r.x, Y + r.y, r.w, r.h);
       g.fillStyle = '#ffffff'; g.font = '800 22px ' + F;
-      var gn = G.name + (plannedNames[G.name] ? ' (계획)' : '') + ' · ' + G.tiles.length; while (gn.length > 2 && g.measureText(gn).width > r.w - 10) gn = gn.slice(0, -1);   // 계획 노선 묶음은 '(계획)' (카드 공통 표기)
+      // 칸이 좁으면 ① 'GTX-E (구상 · 2035) · 9' → ② 'GTX-E (구상) · 9' → ③ 'GTX-E · 9'. 역 수는 자르지 않는다(그래도 넘치면 이름만 줄임)
+      var cnt = ' · ' + G.tiles.length, room = r.w - 10, gn = null;
+      [groupTitle(G.name, doc && doc.lines), groupTitle(G.name, doc && doc.lines, true), G.name].some(function (t) { if (g.measureText(t + cnt).width <= room) { gn = t + cnt; return true; } return false; });
+      if (!gn) { var nm0 = G.name; while (nm0.length > 1 && g.measureText(nm0 + cnt).width > room) nm0 = nm0.slice(0, -1); gn = nm0 + cnt; }
       g.fillText(gn, X + r.x + 6, Y + r.y + 23);
       G.tiles.forEach(function (t) {
         var q = t.rect; if (!q || q.w < 1) return;

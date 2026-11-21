@@ -166,6 +166,7 @@
 - 2026-11-21 18:42 KST · v310 · 4668e7c — 블록 F 77·76 + TODO 86(3커밋 푸시, 6e13858..4668e7c). 배포본 sw.js app·data CACHE = v310, rank.html 에 js/line-status.js, data/rank.json lines.y: GTX-G·GTX-H·GTX-A 평택 연장 null · GTX-C 2031
 - 2026-11-21 19:38 KST · v312 · f2e41ad — 블록 G 84·85(2커밋 푸시, c57143e..f2e41ad). pages-build-deployment 성공. 배포본 sw.js app CACHE = v312, gtx.html 제목 '몇분컷 | 한국철도맵', rank.html 제목 'GTX 축지법 랭킹 | 한국철도맵'. 뒤따른 커밋 e3e103d(E-03 잠긴 시험 한 줄)·이 기록은 시험·문서만이라 같이 푸시(화면 바뀜 없음)
 - 2026-11-21 20:43 KST · v313 · 4ef73ad — 블록 H 86·87(3커밋 푸시, 34bfab4..4ef73ad, 회장님 승인). pages-build-deployment 성공, 배포본 sw.js app CACHE = v313. **CI test 빨간불**: tests/sources.test.js 'og-rank.json 출처 없음' — 로컬에서 tests/*.test.js 를 다 안 돌려 놓침 → 8f38663 에서 sources.json 등록(단위 시험 전부 로컬 통과 확인), 숙제 34 와 같이 푸시 대기
+- 2026-11-21 20:59 KST · v314 · a37c69c — 87 출처·숙제 34 슬로건·기록(3커밋 8f38663·0f73ad7·a37c69c — 이 방에 왔을 때 이미 origin/main 에 있었음, 34bfab4..a37c69c). pages-build-deployment 성공, 배포본 sw.js app·data CACHE = v314. **CI test 성공**(sources.test 빨간불 풀림). **CI e2e 실패 1**: market-map '엉뚱한 주소 값은 무시하고 기본값 (연도 전체…)' — 기대값이 '전체'인데 기본 연도는 1970c30(11-18, 회장 결정)부터 2031. b479af8·79ad6c7·4668e7c·34bfab4 에서도 같은 실패(블록 H 에서 '그대로 둔 것'). 나머지 64/65 항목·판정 1045/1046 통과
 
 ## 블록 B (2026-11-18 시작)
 계획: `docs/plans/block-B.md` · 시작 기준선: 데이터 시험 실패 2개
@@ -343,3 +344,14 @@ GTX-C · 2031
 | 번호 | 한 일 | 커밋 | 남은 실패 |
 |---|---|---|---|
 | 34 | 슬로건 하나 '철도의 축, 도시의 내일': 옛 '축을 읽으면, 도시의 미래가 보인다' 3곳(index.html 상태줄·station-share.js TOP 10 공유 그림·build_og_rank.js) 교체, og-rank.jpg 다시 구움(눈으로 확인, 숫자 그대로, R-87 3/3). R-34 2개(먼저 2 실패 → 통과). 데이터 68/2(D-13·D-15), 단위 tests/*.test.js 전부 통과, 옛 e2e task-life 11/0·home-cards 10/0. sw v314 | 0f73ad7 | 데이터 2 |
+
+## 숙제 90 · 90-2 (2026-11-21 밤, `피드백_Claude검수_블록H_20261121.md` ★1·2, 회장 결정 11-21)
+시작 기준선: main a37c69c(v314) · 데이터 시험 68 통과 / 2 실패(D-13·D-15) · 단위 tests/*.test.js 72개 파일 + 파이프라인 자체 점검(test.yml 과 같은 순서) 모두 통과. 걸리는 시간 미리 말함: 1시간 30분~2시간
+
+| 번호 | 한 일 | 커밋 | 남은 실패 |
+|---|---|---|---|
+| 90 | 타일 지도 공유 그림(market-map.js cardCanvas) 묶음 이름 = LineStatus.label — 새 함수 groupTitle(이름, rank.json lines), 같은 이름 여러 id 면 가장 앞선 단계. 손으로 붙이던 ' (계획)'과 plannedNames 지움. 고치기 전 '전체'+더보기 펼침 그림: 'GTX-E (계획) · 9' · 'GTX-F (계획) · 12' · 'GTX-C · 12'. **고치다 생긴 문제 하나 회장님께 물음**: 이름이 길어져 옛 글자 줄임이 역 수를 자름('GTX-B (공사 중 · 2031) · 1' 실제 14, 'GTX-E (구상 · 20') → **답: 단계로 줄임** ① 'GTX-E (구상 · 2035) · 9' → ② 'GTX-E (구상) · 9' → ③ 'GTX-E · 9', 역 수는 안 자름. 고친 뒤 '전체' 그림: GTX-B (공사 중) · 14 · GTX-D (계획 · 2035) · 25 · GTX-E (구상) · 9 · GTX-G (계획) · 6. 화면 타일 지도(mm-gname)는 이름만 그대로. 시험: R-86 '다섯 곳' → 여섯 곳(데이터), R-90 데이터 1(먼저 실패 확인) · e2e 6(tile-share-lines.spec.mjs — 고치기 전 'GTX-E (계획) · 9' 로 실패, 옛 줄임으로 돌려 역 수 시험 4개 실패 확인 → 고친 뒤 6/6) | (이 커밋) | 데이터 2 (D-13·D-15) |
+
+- 손으로 붙인 상태 말 전수 grep(js/·data/*.js·data/*.py·data/*.json·geojson, '(계획)'·'(구상)'·'(공사 중)'·'(미개통)'·따옴표 안 상태 말): **화면 글자 사본 없음** — 남은 것은 주석(app.js 440·1237, route.js 472·1274, route-compare.js 420, station-share.js 24), 자료 설명 note(lines.geojson·station-region.json '…(공사 중)'), data/plan_status.js plan_stage('정부 계획(구상)' — 단계 설명 필드, js/ 에서 안 읽음. 다만 GTX-D 는 status planned=계획인데 plan_stage 는 '정부 계획(구상)' — 화면에 나오게 되면 말이 부딪힘, 참고)
+- 시험 (90 뒤): 데이터 69 통과 / 2 실패(D-13·D-15 기준선) · 단위 72 파일 + 파이프라인 점검 모두 통과 · Playwright R-66·74·76·77·86·90·market 11 통과, E-02·E-03 실패 — **HEAD(a37c69c)에서도 같음**(작업자 1 · 3번: HEAD 6/6 실패, 고친 뒤 6/6 실패; 작업자 2: HEAD 4/6 실패) → 홈 카드를 다 뜨기 전에 읽는 흔들림, 90 과 무관 · 옛 e2e market-map 50/1(HEAD 같음, 위 '엉뚱한 주소 값')·market-short 8/0·market-share 7/0·share-conditions 5/0
+

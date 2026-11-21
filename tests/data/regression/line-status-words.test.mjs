@@ -172,7 +172,7 @@ test('[R-76] 공유 카드 = rank.html 공유 그림: 같은 함수 LineStatus.l
   assert.deepEqual(['gtx-e', 'gtx-d', 'gtx-c', 'gtx-g'].map(id => LS.label(rj[id])), ['GTX-E (구상 · 2035)', 'GTX-D (계획 · 2035)', 'GTX-C (공사 중 · 2031)', 'GTX-G (계획)']);
 });
 
-// 숙제 86 (회장 결정 11-21): 노선 글자는 다섯 곳(지도 라벨·rank.html 역 카드·rank.html 공유 그림·앱 공유 카드·길찾기 비교 카드)이
+// 숙제 86 (회장 결정 11-21): 노선 글자는 여섯 곳(지도 라벨·rank.html 역 카드·rank.html 공유 그림·앱 공유 카드·길찾기 비교 카드·타일 지도 공유 그림)이
 // LineStatus.label 하나 — '이름 (상태 말 · 연도)', 연도 없으면 '이름 (상태 말)'. 공사 중도 같은 꼴. 연도는 open_year 한 곳.
 // 고치기 전: 지도 'GTX-D 계획 · 2035' / rank.html 카드 'GTX-D 2035년' / 공유 그림 'GTX-D (계획)' / 길찾기 'GTX-D (계획 · 2035년)'.
 test('[R-86] LineStatus.label: 이름 (상태 말 · 연도), 연도 없으면 이름 (상태 말)', () => {
@@ -184,7 +184,7 @@ test('[R-86] LineStatus.label: 이름 (상태 말 · 연도), 연도 없으면 �
   assert.equal(LS.label({ n: '2호선', s: 'open', y: null }), '2호선');
 });
 
-test('[R-86] 같은 역 다섯 곳 노선 글자가 같음: 수서 GTX-D · 구리 GTX-G · 의정부 GTX-C', () => {
+test('[R-86] 같은 역 여섯 곳 노선 글자가 같음: 수서 GTX-D · 구리 GTX-G · 의정부 GTX-C', () => {
   const LS = LSmod();
   const rank = JSON.parse(read('data/rank.json'));
   const lines = JSON.parse(read('data/lines.geojson')).features.map(f => f.properties);
@@ -204,6 +204,8 @@ test('[R-86] 같은 역 다섯 곳 노선 글자가 같음: 수서 GTX-D · 구�
   // ⑤ 길찾기 비교 카드
   const lineStatusLabel = new Function('lineNameOf', 'lineMetaOf', 'LineStatus', fnSource('js/route-compare.js', 'lineStatusLabel') + '; return lineStatusLabel;')(
     new Map(lines.map(p => [p.id, p.name_ko])), new Map(lines.map(p => [p.id, { status: p.status, year: p.open_year }])), LS);
+  // ⑥ 타일 지도 공유 그림 묶음 이름 (숙제 90): market-map.js groupTitle(묶음 이름, rank.json lines)
+  const groupTitle = new Function('LineStatus', fnSource('js/market-map.js', 'groupTitle') + '; return groupTitle;')(LS);
   const want = { 'st-2346858840': ['gtx-d', 'GTX-D (계획 · 2035)'], 'st-355173646': ['gtx-g', 'GTX-G (계획)'], 'st-7777463060': ['gtx-c', 'GTX-C (공사 중 · 2031)'] };
   const bad = [];
   for (const [sid, [lid, w]] of Object.entries(want)) {
@@ -211,9 +213,26 @@ test('[R-86] 같은 역 다섯 곳 노선 글자가 같음: 수서 GTX-D · 구�
     assert.ok(row && row.l.includes(lid), `${sid}: rank.json 에 ${lid} 없음`);
     const p = byId.get(lid), m = rank.lines[lid];
     const map = evalExpr(tf, { ...p, label: mapLineLabel(p) });
-    const got = { map: lid === 'gtx-d' ? map.replace(/ 갈래 여러 안$/, '') : map, card: LS.label(m), rankShare: LS.label(m), appShare: planLabel(m), route: lineStatusLabel(lid) };
+    const got = { map: lid === 'gtx-d' ? map.replace(/ 갈래 여러 안$/, '') : map, card: LS.label(m), rankShare: LS.label(m), appShare: planLabel(m), route: lineStatusLabel(lid), tileShare: groupTitle(m.n, rank.lines) };
     for (const [k, v] of Object.entries(got)) if (v !== w) bad.push(`${row.n} ${lid} ${k}: '${v}' ≠ '${w}'`);
   }
   assert.equal(evalExpr(tf, { ...byId.get('gtx-d'), label: mapLineLabel(byId.get('gtx-d')) }), 'GTX-D (계획 · 2035) 갈래 여러 안');
   assert.deepEqual(bad, []);
+});
+
+// 숙제 90 (회장 결정 11-21): 타일 지도 공유 그림(market-map.js cardCanvas)이 묶음 이름에 ' (계획)'을 손으로 붙여
+// 구상 노선(GTX-E·GTX-F)도 'GTX-E (계획)', 공사 중(GTX-B·C)은 이름만이었다 — 숙제 76 에서 rank 공유 그림만 고친 사본.
+// 묶음 이름 = LineStatus.label, 같은 이름의 id 가 여럿이면 가장 앞선 단계(운행 중 > 공사 중 > 계획 > 구상).
+test('[R-90] 타일 지도 공유 그림 묶음 이름 = LineStatus.label (구상은 구상, 공사 중도 연도)', () => {
+  const LS = LSmod();
+  const lines = JSON.parse(read('data/rank.json')).lines;
+  const groupTitle = new Function('LineStatus', fnSource('js/market-map.js', 'groupTitle') + '; return groupTitle;')(LS);
+  assert.deepEqual(['GTX-E', 'GTX-F', 'GTX-C', 'GTX-B', 'GTX-D', 'GTX-G', 'GTX-A', '그 밖의 새 노선'].map(n => groupTitle(n, lines)),
+    ['GTX-E (구상 · 2035)', 'GTX-F (구상 · 2035)', 'GTX-C (공사 중 · 2031)', 'GTX-B (공사 중 · 2031)', 'GTX-D (계획 · 2035)', 'GTX-G (계획)', 'GTX-A', '그 밖의 새 노선']);
+  // 같은 이름 여러 id: 가장 앞선 단계
+  assert.equal(groupTitle('X', { a: { n: 'X', s: 'proposed', y: 2040 }, b: { n: 'X', s: 'construction', y: 2029 }, c: { n: 'X', s: 'planned', y: 2033 } }), 'X (공사 중 · 2029)');
+  const mm = read('js/market-map.js');
+  const card = fnSource('js/market-map.js', 'cardCanvas');
+  assert.match(card, /groupTitle\(G\.name, /, 'cardCanvas 가 묶음 이름을 groupTitle 로 안 만듦');
+  assert.ok(!/' \((계획|구상|공사 중)\)'/.test(mm), 'market-map.js: 상태 말 글자를 직접 씀');
 });

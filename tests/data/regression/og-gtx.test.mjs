@@ -40,3 +40,16 @@ test('[R-83] og:image 파일이 저장소에 있고 1200×630 JPEG', () => {
   }
   assert.deepEqual(wh, [1200, 630]);
 });
+
+// 회귀(숙제 84): 이름 '몇분컷' — 제목·og 제목·그림에 'GTX 입구'·'GTX' 없음
+test('[R-84] gtx.html 제목·og 제목에 GTX 없음, 몇분컷 있음 · og 그림 글자', () => {
+  const title = (/<title>([^<]*)<\/title>/.exec(html) || [, ''])[1];
+  const t = [title, meta('property', 'og:title'), meta('property', 'og:image:alt'), meta('name', 'twitter:title')];
+  assert.deepEqual(t.filter(v => /GTX/.test(v)), []);
+  assert.match(title, /몇분컷/);
+  assert.match(meta('property', 'og:title'), /몇분컷/);
+  assert.equal(meta('property', 'og:site_name'), '한국철도맵');
+  const og = readFileSync(join(ROOT, 'data/build_og_gtx.js'), 'utf8').split(/\r?\n/).filter(l => /fillText/.test(l)).join(' ');
+  assert.ok(og.includes('몇분컷'), 'og 그림에 몇분컷');
+  assert.ok(!og.includes('GTX 입구'), 'og 그림에 GTX 입구 없음');
+});

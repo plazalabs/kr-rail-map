@@ -1,7 +1,8 @@
-/* GTX 입구 링크 미리보기 그림 — image/og-gtx.jpg (1200×630, JPEG)
+/* 몇분컷(gtx.html) 링크 미리보기 그림 — image/og-gtx.jpg (1200×630, JPEG)
  *
  * 실행: node data/build_og_gtx.js   (build_gtx_card.js 뒤. 헤드리스 크롬으로 캔버스를 그려 저장 — build_og_rank.js 와 같은 방식)
  * 정적 사이트라 역마다 다른 그림은 못 만든다 — 공용 하나. 큰 숫자 예시는 홈 TOP1 역의 카드 값(gtx-card.json) 그대로.
+ * 큰 숫자 두 줄은 화면 카드(js/gtx-page.js bigText)와 같은 말: '{업무지구} N분컷' / '지금 N분 · {라벨}'.
  * 카드 규칙의 금지어('떡상'·'계단' 등)를 쓰지 않는다.
  */
 'use strict';
@@ -21,7 +22,8 @@ const d = card.dest[x.d];
 const mk = x.k && card.k[x.k] ? card.k[x.k].m : 'none';
 const ex = {
   st: x.n + (x.g ? ' · ' + x.g : ''),
-  big: d.name + '까지 지금 ' + x.now[x.d] + '분 → 개통 후 ' + x.aft[x.d] + '분',
+  big: d.name + ' ' + x.aft[x.d] + '분컷',
+  sub: '지금 ' + x.now[x.d] + '분 · ' + d.label + ' · ' + card.year + '년까지 개통 가정',
   acc: G.TIER_WORD[x.t], mk: G.MARKET_WORD[mk], year: card.year,
 };
 const words = Object.values(ex).join(' ');
@@ -33,13 +35,13 @@ const E = ${JSON.stringify(ex)};
 const g = document.getElementById('c').getContext('2d'), F = '"Malgun Gothic","Apple SD Gothic Neo",sans-serif';
 const bg = g.createLinearGradient(0, 0, 1200, 630); bg.addColorStop(0, '#0b1d3a'); bg.addColorStop(1, '#123a6e'); g.fillStyle = bg; g.fillRect(0, 0, 1200, 630);
 const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); };
-g.fillStyle = '#9fb3d1'; g.font = '600 28px ' + F; g.fillText('한국철도맵 · GTX 입구', 64, 70);
-g.fillStyle = '#fff'; g.font = '800 46px ' + F; g.fillText('우리 동네에서 업무지구까지 몇 분?', 64, 136);
+g.fillStyle = '#9fb3d1'; g.font = '600 28px ' + F; g.fillText('몇분컷 · 한국철도맵', 64, 70);
+g.fillStyle = '#fff'; g.font = '800 46px ' + F; g.fillText('개통 후 우리 역에서 업무지구까지 몇 분컷?', 64, 136);
 // 카드
 rr(64, 172, 1072, 330, 24); g.fillStyle = '#ffffff'; g.fill();
 g.fillStyle = '#4a5158'; g.font = '700 28px ' + F; g.fillText(E.st, 104, 228);
 g.fillStyle = '#16191d'; let s = 60; g.font = '800 ' + s + 'px ' + F; while (g.measureText(E.big).width > 990) { s--; g.font = '800 ' + s + 'px ' + F; } g.fillText(E.big, 104, 310);
-g.fillStyle = '#5b6470'; g.font = '600 24px ' + F; g.fillText(E.year + '년까지 개통 가정', 104, 352);
+g.fillStyle = '#5b6470'; s = 24; g.font = '600 ' + s + 'px ' + F; while (g.measureText(E.sub).width > 990) { s--; g.font = '600 ' + s + 'px ' + F; } g.fillText(E.sub, 104, 352);
 const chip = (x, label, word, fg, bgc, round) => { g.font = '800 30px ' + F; const w = g.measureText(word).width; g.font = '600 22px ' + F; const lw = g.measureText(label).width;
   const W = lw + w + 52; rr(x, 388, W, 70, round); g.fillStyle = bgc; g.fill(); g.lineWidth = 3; g.strokeStyle = fg; g.stroke();
   g.fillStyle = fg; g.font = '600 22px ' + F; g.fillText(label, x + 20, 431); g.font = '800 30px ' + F; g.fillText(word, x + 32 + lw, 433); return x + W + 20; };

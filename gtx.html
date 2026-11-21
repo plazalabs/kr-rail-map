@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cloud.umami.is; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cloud.umami.is https://api-gateway.umami.dev https://gateway.umami.is; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GTX 입구 | 한국철도맵</title>
+<title>몇분컷 | 한국철도맵</title>
 <meta name="description" content="역 이름이나 동 이름을 넣으면 업무지구까지 지금과 개통 후 걸리는 시간, 교통 접근성 변화, 그 동네 시세 흐름을 카드 한 장으로 보여 줍니다. 집값 예측이 아닙니다.">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="canonical" href="https://plazalabs.github.io/kr-rail-map/gtx.html">
@@ -12,14 +12,14 @@
 <meta property="og:site_name" content="한국철도맵">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:url" content="https://plazalabs.github.io/kr-rail-map/gtx.html">
-<meta property="og:title" content="GTX 개통 후 우리 동네에서 업무지구까지 몇 분? | 한국철도맵">
+<meta property="og:title" content="개통 후 우리 역에서 업무지구까지 몇 분컷? | 몇분컷">
 <meta property="og:description" content="역이나 동 이름을 넣으면 도심·여의도·강남까지 지금과 개통 후 시간, 접근성 변화, 동네 시세 흐름을 카드 한 장으로. 접근성과 시세는 다른 지표 · 집값 예측 아님.">
 <meta property="og:image" content="https://plazalabs.github.io/kr-rail-map/image/og-gtx.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="GTX 입구 카드 예시 — 업무지구까지 지금과 개통 후 시간">
+<meta property="og:image:alt" content="몇분컷 카드 예시 — 업무지구까지 지금과 개통 후 시간">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="GTX 개통 후 우리 동네에서 업무지구까지 몇 분?">
+<meta name="twitter:title" content="개통 후 우리 역에서 업무지구까지 몇 분컷? | 몇분컷">
 <meta name="twitter:description" content="업무지구까지 지금 → 개통 후 시간, 접근성 변화, 시세 흐름 — 집값 예측 아님.">
 <meta name="twitter:image" content="https://plazalabs.github.io/kr-rail-map/image/og-gtx.jpg">
 <meta name="theme-color" content="#1b64da">
@@ -41,7 +41,8 @@ header.top .wrap{padding:13px 16px;display:flex;align-items:center;gap:10px}
 .logo{font-weight:700;font-size:17px;text-decoration:none;color:var(--text);white-space:nowrap}
 header.top nav{margin-left:auto;display:flex;gap:14px;font-size:13px}
 header.top nav a{text-decoration:none;color:var(--text2);white-space:nowrap}
-h1{font-size:24px;line-height:1.3;letter-spacing:-.035em;margin:26px 0 12px}
+.name{font-size:14px;font-weight:800;color:var(--accent);margin:26px 0 4px}
+h1{font-size:24px;line-height:1.3;letter-spacing:-.035em;margin:0 0 12px}
 .lede{color:var(--text2);font-size:14px;margin:0 0 14px}
 .search{position:relative}
 .search input{width:100%;font:inherit;font-size:18px;padding:14px 16px;border:2px solid var(--accent);border-radius:14px;background:var(--card);color:var(--text);min-height:52px}
@@ -56,6 +57,7 @@ h1{font-size:24px;line-height:1.3;letter-spacing:-.035em;margin:26px 0 12px}
 .card{margin:20px 0 0;padding:22px 20px;border-radius:var(--r-card);background:var(--card);box-shadow:var(--shadow);border:1px solid var(--border)}
 .card .st{font-size:15px;font-weight:700;margin:0 0 6px}
 .big{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin:4px 0 14px}
+.big-main{display:block;white-space:nowrap;overflow:hidden}
 .big small{display:block;font-size:14px;font-weight:600;color:var(--text2);letter-spacing:0}
 .chips{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
 .chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 14px;font-size:15px;font-weight:700;cursor:pointer;background:none}
@@ -82,7 +84,8 @@ footer{font-size:12px;color:var(--muted);margin:30px 0 0}
 <header class="top"><div class="wrap"><a class="logo" href="./">한국철도맵</a>
 <nav><a href="./">지도</a><a href="rank.html">순위</a><a href="data.html">자료</a></nav></div></header>
 <main class="wrap">
-<h1>우리 동네, GTX 개통 후 업무지구까지 몇 분?</h1>
+<p class="name">몇분컷</p>
+<h1>개통 후 우리 역에서 업무지구까지 몇 분컷?</h1>
 <p class="lede">교통 접근성과 시세 흐름을 따로 보여 줍니다. 둘은 서로 다른 지표이며 집값·투자수익 예측이 아닙니다.</p>
 <div class="search" role="search">
   <label for="q" class="small">역 이름이나 동 이름</label>

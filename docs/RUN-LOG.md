@@ -289,3 +289,11 @@
 - rank-top.json · rank-station.json: 바이트까지 같음(의정부·인천대입구·덕정 2031). rank.json 은 lines.y 말고 같음
 - 길찾기 비교 카드에서 GTX-G·H 는 전 '(계획 · 2030년대)'(설명 글 그대로) → 후 '(계획)'. 연도 없는 노선은 상태 말만 — 지도 라벨(74)과 같은 규칙
 | 76 | 노선 글자 함수 하나로: js/line-status.js `LineStatus.label(m)`(계획·구상 '이름 (상태 말)', 공사 중 '이름 연도' — 연도는 77 의 y). station-share.js planLabel 은 그것을 부르기만, rank-page.js 공유 그림(손으로 베낀 사본, '(계획)' 고정)도 같은 함수. rank.html 에 line-status.js 를 rank-page.js 앞에. sw.js v310. rank.html 광운대 공유 그림 '새 노선 GTX-C 2031 · GTX-E (계획)' → 'GTX-E (구상)', 수서 'GTX-D (계획)' 그대로. R-76 e2e 2개(공유 그림 글자 · 공유 단추 눌러도 페이지 오류 0) + 데이터 1개(같은 함수 · 스크립트 순서 · 값) 먼저 실패 확인 → 통과. task-life.e2e 의 옛 기대('GTX-E (계획)', 66 전 규칙)를 '(구상)'으로. 데이터 60 통과/2 실패, 단위 72/72, e2e rank 35/0·share-line 8/0·line-status 30/0·task-life 11/0·rocket-panel 37/0·home-cards 10/0, Playwright 전체 34 통과/10 실패 — 10개(E-02·03·21·22·31·32·40~43)는 INVARIANTS.md 에 이미 FAIL, E-02·E-03 은 6e13858(블록 전)에서도 같은 오류(시험 쪽 정규식 null)로 실패 | (이 커밋) | 데이터 2 |
+
+## 블록 G (2026-11-21 저녁, 지시서 `지시서_블록G_20261121.md`)
+시작 기준선: main c57143e(v310, 블록 F 배포 끝) · 데이터 시험 61 통과 / 실패 2(D-13·D-15) · 시험 출력 `scratch/blockG/`. 순서 84 → 85. 걸리는 시간 미리 말함: 3~4시간
+
+### 숙제별 한 줄
+| 번호 | 한 일 | 커밋 | 남은 실패 |
+|---|---|---|---|
+| 84 | GTX 입구 → 몇분컷. gtx.html title·og:title·og:image:alt·twitter:title·h1 에 'GTX' 0(og:site_name 한국철도맵 그대로), 이름 줄 '몇분컷'. 큰 숫자 bigText: 큰 줄 '{업무지구} N분컷'(같음은 '{업무지구} N분', 컷 없음) + 작은 줄 '지금 N분 / 지금은 철도로 못 감 / 개통 후에도 같음 · {label} · 2031년까지 개통 가정'. 큰 줄 `.big-main` 한 줄 고정 + 넘치면 글자 줄임(fitBig, resize 때 다시). 공유 그림 두 줄·이름 줄 '몇분컷 · 한국철도맵 · …/gtx.html'·파일 이름 '몇분컷_역.png'. og-gtx.jpg 다시 구움('몇분컷 · 한국철도맵' / '강남 19분컷' / '지금 59분 · GBD 강남(…) · 2031년까지 개통 가정', 눈으로 확인). data.html 절 이름·링크 '몇분컷'. R-84 e2e 7(의정부 cut·오류동 same·동명초교(가칭) new·360/390px 회기·의정부 한 줄·태그) + 데이터 1 → 고치기 전 e2e 6 실패·데이터 1 실패 확인 → 고친 뒤 gtx-page 12/0, og-gtx 3/0, gtx-card·contrast-pages·csp-pages·no-emoji·track 통과, 데이터 61/2. 파일 이름·umami 이벤트 그대로 | (이 커밋) | 데이터 2 |

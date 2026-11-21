@@ -31,7 +31,7 @@ test('[R-81] 의정부 입력 → 큰 숫자·칩 두 개·면책, 금지어 없
   const card = page.locator('#card');
   await expect(card).toBeVisible();
   const x = D.s['st-7777463060'], d = D.dest[x.d];
-  await expect(card.locator('.big')).toContainText(`${d.name}까지 지금 ${x.now[x.d]}분 → 개통 후 ${x.aft[x.d]}분`);
+  await expect(card.locator('.big-main')).toHaveText(`${d.name} ${x.aft[x.d]}분컷`);
   await expect(card.locator('.chip.acc')).toContainText('접근성 크게 개선');
   await expect(card.locator('.chip.mk')).toHaveCount(1);
   await expect(card).toContainText('접근성 순위와 시세는 다른 지표 · 집값 예측 아님');
@@ -86,4 +86,58 @@ test('[R-81] 자세히 보기: 중위 평당가는 시세 라벨과 같은 반�
   const k = D.k[D.s['st-7777463060'].k];
   await expect(page.locator('#card details')).toContainText('중위 평당가 ' + k.pp.toLocaleString('ko-KR') + '만 원 (전용면적 기준, 2026 상반기)');
   await expect(page.locator('#card details a', { hasText: '계산 방법' })).toHaveAttribute('href', 'data.html#gtx-card');
+});
+
+// 회귀(숙제 84): 몇분컷 — 큰 줄 '{업무지구} N분컷'(같음은 '컷' 없음), 작은 줄 '지금 N분 · …', 휴대폰에서 큰 줄 한 줄
+const SAME = 'st-355172808', NEW = 'st-dongbuk-1', LONG = 'st-355172769';   // 오류동(같음) · 동명초교(가칭)(새로 생김) · 회기(가장 긴 큰 줄)
+const openSt = async (page, id) => { await open(page, []); await page.goto('./gtx.html?st=' + id); await expect(page.locator('#card[data-st="' + id + '"]')).toBeVisible(); };
+
+test('[R-84] 줄어듦: 의정부 큰 줄 = 업무지구 N분컷, 작은 줄 = 지금 N분 · 라벨 · 개통 가정', async ({ page }) => {
+  const id = 'st-7777463060', x = D.s[id], d = D.dest[x.d];
+  await openSt(page, id);
+  await expect(page.locator('#card .big-main')).toHaveText(`${d.name} ${x.aft[x.d]}분컷`);
+  await expect(page.locator('#card .big small')).toHaveText(`지금 ${x.now[x.d]}분 · ${d.label} · ${D.year}년까지 개통 가정`);
+});
+
+test('[R-84] 같음: 컷 없음 · 개통 후에도 같음', async ({ page }) => {
+  const x = D.s[SAME], d = D.dest[x.d];
+  expect(x.kd).toBe('same');
+  await openSt(page, SAME);
+  await expect(page.locator('#card .big-main')).toHaveText(`${d.name} ${x.now[x.d]}분`);
+  expect(await page.locator('#card .big').innerText()).not.toContain('컷');
+  await expect(page.locator('#card .big small')).toHaveText(`개통 후에도 같음 · ${d.label} · ${D.year}년까지 개통 가정`);
+});
+
+test('[R-84] 새로 생김: 업무지구 N분컷 · 지금은 철도로 못 감', async ({ page }) => {
+  const x = D.s[NEW], d = D.dest[x.d];
+  expect(x.kd).toBe('new');
+  await openSt(page, NEW);
+  await expect(page.locator('#card .big-main')).toHaveText(`${d.name} ${x.aft[x.d]}분컷`);
+  await expect(page.locator('#card .big small')).toHaveText(`지금은 철도로 못 감 · ${d.label} · ${D.year}년까지 개통 가정`);
+});
+
+for (const w of [360, 390]) {
+  test(`[R-84] ${w}px: 큰 줄이 한 줄 (가장 긴 조합 회기·의정부)`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: 800 });
+    for (const id of [LONG, 'st-7777463060']) {
+      await openSt(page, id);
+      const m = await page.locator('#card .big-main').evaluate(e => { const cs = getComputedStyle(e); return { h: e.getBoundingClientRect().height, lh: parseFloat(cs.lineHeight), sw: e.scrollWidth, cw: e.clientWidth }; });
+      expect(m.h).toBeLessThanOrEqual(m.lh * 1.2);
+      expect(m.sw).toBeLessThanOrEqual(m.cw + 1);
+    }
+  });
+}
+
+test('[R-84] gtx.html 제목·og·twitter 에 GTX 없음, 몇분컷 있음 · 공유 그림 이름 줄', async ({ page }) => {
+  const html = readFileSync(join(ROOT, 'gtx.html'), 'utf8');
+  const tags = [/<title>([^<]*)<\/title>/, /property="og:title" content="([^"]*)"/, /property="og:image:alt" content="([^"]*)"/, /name="twitter:title" content="([^"]*)"/]
+    .map(r => (r.exec(html) || [, ''])[1]);
+  for (const t of tags) { expect(t).not.toContain('GTX'); }
+  expect(tags[0]).toContain('몇분컷');
+  expect(tags[1]).toContain('몇분컷');
+  expect((/<h1>([^<]*)<\/h1>/.exec(html) || [, ''])[1]).not.toContain('GTX');
+  await openSt(page, 'st-7777463060');
+  await expect(page).toHaveTitle(/몇분컷/);
+  const src = readFileSync(join(ROOT, 'js/gtx-page.js'), 'utf8');
+  expect(src).toContain("'몇분컷 · 한국철도맵 · plazalabs.github.io/kr-rail-map/gtx.html'");
 });

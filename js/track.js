@@ -57,7 +57,9 @@
     try {
       var loc = global.location; if (!loc) return;
       var ref = shareRef(loc.search); if (!ref) return;
-      track('공유로 도착', { 종류: ref, 첫방문: first });
+      // 몇분컷 입구(?ref=entry-…): 공유가 아니라 앱 안 어느 입구로 들어왔나 — 지도·머리 메뉴·역 상세·랭킹 카드·안내 카드
+      if (/^entry-/.test(ref)) track('몇분컷 입구', { 곳: ref, 첫방문: first });
+      else track('공유로 도착', { 종류: ref, 첫방문: first });
       var u = new URL(loc.href);
       u.searchParams.delete('ref');
       if (/^card-/.test(u.searchParams.get('from') || '')) u.searchParams.delete('from');

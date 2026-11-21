@@ -55,6 +55,7 @@
     pencil: 'M4 20l1-5L15 5l4 4L9 19zM13 7l4 4',
     ruler: 'M3 17L17 3l4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2',
     circle: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
+    arrow: 'M5 12h14M13 6l6 6-6 6',
   };
   // 속을 칠하는 아이콘 (선만으로는 작게 보일 때)
   var FILL = { star_on: 'star', play: 'play', stop: 'stop' };

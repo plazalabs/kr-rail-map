@@ -129,7 +129,7 @@ test.describe('숫자 일관성', () => {
     if (!(await rp.isVisible())) await page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('button', { name: '개통효과' }).click();
     await rp.getByRole('button', { name: '2031년까지 개통' }).click();
     const rank = (await rp.innerText()).match(/의정부\s+GTX-C · 2031\s+▲\d+위\s+(\d+) → (\d+)위/);
-    await rp.getByRole('button', { name: '떡상 패널 닫기' }).click();
+    await rp.getByRole('button', { name: '축지법 패널 닫기' }).click();
     await page.getByRole('button', { name: /GTX 역 타일로 한눈에 보기/ }).click();
     await page.locator('#mm-panel').getByText('의정부', { exact: true }).click();
     const tile = (await page.locator('#mm-panel').innerText()).match(/순위 (\d+)위 → (\d+)위/);

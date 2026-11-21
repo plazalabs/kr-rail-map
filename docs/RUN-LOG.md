@@ -254,3 +254,15 @@
 ### 보안 확인 (블록 D 6번, 읽기·시험만)
 - umami 방문 경로 `/kr-rail-map/"><b id=pwn>x</b>` 1건: 우리 시험이 넣은 것 아님 — tests·RUN-LOG·git 기록에 `id=pwn` 없음(우리 주입 시험은 share-line 의 `<img onerror>` 뿐). 그런 경로는 GitHub Pages 가 404.html 로 답하고 404.html 에는 우리 스크립트가 없음(umami 만). 로컬·배포본(v302) 각각 110개 주소(경로 2·#해시 4쪽·index 질문 36종 하나씩+한꺼번에·rank.html 10종·board.html 2종 × `<b id=pwn>`·`<img id=pwn2>`)로 열어 **요소 생김 0건** → 코드 고침·시험 추가 없음. 점검 스크립트 `scratch/blockD/scan/xss-scan.spec.mjs`, 출력 `scratch/blockD/sec_local.txt`·`sec_prod.txt`. 주소 수 = 경로 2 + 해시 4 + index 36 + 한꺼번에 1 + rank.html 10 + board.html 2 = 55 × 글자 2종 = 110. 배포본 스캔 2026-11-21 12:32:05~12:39:57 (KST) — 이 시각 umami 의 pwn 경로 방문과 /, rank.html, board.html, data.html 방문은 우리 스캔. 근거: sw.js 198행 오프라인 폴백은 범위 안 아무 경로에 index.html 을 주지만, location.pathname·hash 는 %인코딩으로 들어오고 js/ 에 decodeURI 0건, CSP script-src 'self' → 요소 안 생김
 - 규칙: 배포본에 브라우저 시험을 돌릴 땐 umami 를 끈다 — addInitScript 에 `localStorage.setItem("umami.disabled", "1")`
+
+## 블록 E (2026-11-21 오후, 지시서 `지시서_블록E_20261121.md`)
+시작 기준선: 데이터 시험 실패 2개(D-13·D-15) · 단위 71/71 · 시험 출력 `scratch/blockE/`. 72 안내 문구·.gitignore 는 회장님 결정 전이라 안 함
+
+### 숙제별 한 줄
+| 번호 | 한 일 | 커밋 | 남은 실패 |
+|---|---|---|---|
+| 80 | 길찾기 중간 역 이름표: 줌 12 일괄 숨김 → 출발·도착·환승 먼저, 나머지는 화면에서 겹칠 때만 숨김(layoutRouteChips, 줌·회전 때 한 화면에 한 번). 숨긴 역 이름은 경로 선 위 새 글자 레이어로(원래 역 이름은 선 아래라 '?량리'처럼 잘렸음 — 경로 모드에선 끔). R-80 3개 먼저 실패(②청량리 ③왕십리 숨음, 긴 경로 줌 10 핵심 2개만) → 통과. route-mode·route-fit·route-extras·route-edge·route-peek·route-tap·ktx-fare·share-wait 8/8(124/0), 단위 71/71 | df04bcb | 데이터 2 |
+| 81-1 | PRODUCT.md '다음 버전: GTX 입구' 절 | 8616a02 | 데이터 2 |
+| 81-2 | data/gtx-card.json(build_gtx_card.js, js/gtx-card.js 규칙): 역 675 · 동 305(라벨 282·보류 24) · 경계 −0.1/5.5/14.5% · 2025H1→2026H1 · 171KB · pz 0. 단위 gtx-card 10/10, R-81 데이터 5/5, sources 통과 | 9c2beea | 데이터 2 |
+| 81-3 | gtx.html + js/gtx-page.js: 입력 → 카드(큰 숫자·접근성/시세 흐름 칩·작은 글씨·자세히 보기·1080 공유). R-81 e2e 4/4, csp·contrast·no-emoji 목록에 gtx.html, 단위 81/81 | d991d5a | 데이터 2 |
+| 81-4 | (남음) sw.js 미리 받기 목록·버전, sitemap, README 숫자, 구현보고_GTX입구_20261121.md | — | — |

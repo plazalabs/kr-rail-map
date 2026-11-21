@@ -1874,14 +1874,9 @@ function highlightRoute(path, legs, opt) {
     map.setPaintProperty('rail-stations', 'circle-opacity', only);
     map.setPaintProperty('rail-stations', 'circle-stroke-opacity', only);
   }
-  // 경로 역 이름은 이름표(+ 숨긴 역은 route-highlight-labels)가 맡는다 — 원래 글자는 경로 선 아래라 잘리므로 빼고, 경로 밖 역 이름은 그대로 둔다.
-  // 닫으면 clearRouteHighlight → updateFilters 가 원래 filter 로 되돌린다.
-  if (map.getLayer('station-labels')) {
-    const base = map.getFilter('station-labels');
-    const notPath = ['!', ['in', ['get', 'id'], ['literal', [...pathSet]]]];
-    map.setFilter('station-labels', base ? ['all', base, notPath] : notPath);
-    map.setPaintProperty('station-labels', 'text-opacity', 1);
-  }
+  // 길찾기 중에는 지도 원래 역 이름을 경로 밖 역까지 전부 숨긴다 — 경로 역 이름은 이름표(+ 숨긴 역은 route-highlight-labels)가 맡는다.
+  // filter 는 건드리지 않는다. 닫으면 clearRouteHighlight 가 글자를 되돌린다.
+  if (map.getLayer('station-labels')) map.setPaintProperty('station-labels', 'text-opacity', 0);
 
   const coordOf = id => {
     const s = STATIONS.find(x => x.properties.id === id);

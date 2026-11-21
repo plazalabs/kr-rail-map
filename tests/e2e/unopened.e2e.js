@@ -69,9 +69,17 @@ async function route(b, from, to) {
     R.check('A3 미개통은 점선', Array.isArray(A.dash) && A.dash.length >= 2, JSON.stringify(A.dash));
     { const L = JSON.stringify(A.label);
       R.check('A4 글자에 상태 말(공사 중·계획·구상), 한 라벨 안 모순 없음', ['"공사 중"', '"계획"', '"구상"'].every(w => L.includes(w)) && !/개통 예정|구상중|계획중|공사중/.test(L), L.slice(0, 160)); }
-    { const g = await b.evaluate(`(() => { const f = map.querySourceFeatures('lines').concat(map.queryRenderedFeatures()).find(x => x.properties && x.properties.id === 'gtx-d');
-        const st = f ? f.properties.status : null; return { st, word: st ? LineStatus.word(st) : null }; })()`);
-      R.check('A5 GTX-D 는 갈래 여러 안임을 밝힘 (P14) — 상태 말은 status 에서 (계획)', g.word === '계획' && JSON.stringify(A.label).includes('" (갈래 여러 안)"') && !JSON.stringify(A.label).includes('GTX-D 구상'), JSON.stringify(g)); }
+    // 지도가 실제로 그리는 글자 — MapLibre 가 라벨 식을 노선 자료(LINES)에 적용한 값
+    const T = await b.evaluate(`(() => { const L = map.getLayer('rail-lines-unopened-label'); const out = {};
+        LINES.forEach(f => { const p = f.properties; if ((p.status || 'open') === 'open') return;
+          out[p.id] = { t: String(L.layout.get('text-field').evaluate({ type: 'Feature', properties: p, geometry: { type: 'Point', coordinates: [0, 0] } }, {})),
+            st: p.status, y: p.open_year == null ? null : p.open_year, w: LineStatus.word(p.status), n: p.name_ko }; });
+        return out; })()`);
+    { const bad = Object.entries(T).filter(([id, r]) => r.t !== (id === 'gtx-d' ? r.n + ' ' + r.w + (r.y == null ? '' : ' · ' + r.y) + ' (갈래 여러 안)' : r.n + ' (' + r.w + (r.y == null ? '' : ' · ' + r.y) + ')')).map(([id, r]) => id + ': ' + r.t);
+      R.check('A4b 지도 글자 = 이름 (상태 말 · open_year), 연도 없으면 상태 말만 — 동북선 (공사 중 · 2027) · 동부선 (구상)',
+        bad.length === 0 && (T['dongbuk-line'] || {}).t === '동북선 (공사 중 · 2027)' && (T['dongbu-line'] || {}).t === '동부선 (구상)', bad.join(' | ') || JSON.stringify([T['dongbuk-line'], T['dongbu-line']])); }
+    { const g = T['gtx-d'] || {};
+      R.check('A5 GTX-D 는 갈래 여러 안임을 밝힘 (P14) — 상태 말은 status, 연도는 open_year: GTX-D 계획 · 2035 (갈래 여러 안)', g.w === '계획' && g.t === 'GTX-D 계획 · ' + g.y + ' (갈래 여러 안)' && g.y === 2035, JSON.stringify(g)); }
     await b.shot(path.join(OUT, 'a-map.png'));
 
     // B. 기본 길찾기 (꺼짐)

@@ -60,12 +60,19 @@ function fnSource(file, name) {
   assert.ok(i >= 0, `${file}: function ${name} 없음`);
   return sliceBalanced(src, i, '{', '}');
 }
-// MapLibre 식 중 이 라벨이 쓰는 것만(match·get·concat)
+// MapLibre 식 중 이 라벨이 쓰는 것만(match·get·concat·case·==·typeof·to-string)
 function evalExpr(e, props) {
   if (!Array.isArray(e)) return e;
   const [op, ...a] = e;
   if (op === 'get') return props[a[0]];
   if (op === 'concat') return a.map(x => evalExpr(x, props)).join('');
+  if (op === 'case') {
+    for (let i = 0; i + 1 < a.length; i += 2) if (evalExpr(a[i], props)) return evalExpr(a[i + 1], props);
+    return evalExpr(a[a.length - 1], props);
+  }
+  if (op === '==') return evalExpr(a[0], props) === evalExpr(a[1], props);
+  if (op === 'typeof') { const v = evalExpr(a[0], props); return v == null ? 'null' : typeof v; }
+  if (op === 'to-string') { const v = evalExpr(a[0], props); return v == null ? '' : String(v); }
   if (op === 'match') {
     const v = evalExpr(a[0], props);
     for (let i = 1; i + 1 < a.length; i += 2) if ((Array.isArray(a[i]) ? a[i] : [a[i]]).includes(v)) return evalExpr(a[i + 1], props);
@@ -80,10 +87,13 @@ function surfaces() {
   const exprLine = app.split(/\r?\n/).find(l => /^const STATUS_WORD_EXPR\s*=/.test(l));
   assert.ok(exprLine, 'app.js: STATUS_WORD_EXPR 없음');
   const STATUS_WORD_EXPR = new Function('LineStatus', exprLine.replace(/^const STATUS_WORD_EXPR\s*=/, 'return ').replace(/;\s*$/, ''))(LS);
+  // 개통 연도 꼬리(숙제 74) — 없으면 빈 글자로 두고 R-74 가 실패한다
+  const yearLine = app.split(/\r?\n/).find(l => /^const OPEN_YEAR_EXPR\s*=/.test(l));
+  const OPEN_YEAR_EXPR = yearLine ? new Function('return ' + yearLine.replace(/^const OPEN_YEAR_EXPR\s*=/, '').replace(/;\s*$/, ''))() : '';
   const li = app.indexOf("id: 'rail-lines-unopened-label'");
   const ti = app.indexOf("'text-field':", li);
   assert.ok(li > 0 && ti > 0, 'app.js: 미개통 라벨 text-field 없음');
-  const tf = new Function('STATUS_WORD_EXPR', 'return ' + sliceBalanced(app, app.indexOf('[', ti), '[', ']'))(STATUS_WORD_EXPR);
+  const tf = new Function('STATUS_WORD_EXPR', 'OPEN_YEAR_EXPR', 'return ' + sliceBalanced(app, app.indexOf('[', ti), '[', ']'))(STATUS_WORD_EXPR, OPEN_YEAR_EXPR);
   const lines = JSON.parse(read('data/lines.geojson')).features.map(f => f.properties);
   const byId = new Map(lines.map(p => [p.id, p]));
   // 검색 후보
@@ -95,7 +105,7 @@ function surfaces() {
   // 공유 카드
   const planLabel = new Function('RankTable', 'LineStatus', fnSource('js/station-share.js', 'planLabel') + '; return planLabel;')({ yearOf: () => null }, LS);
   return lines.filter(p => (p.status || 'open') !== 'open').map(p => ({
-    id: p.id, status: p.status, word: LS.word(p.status),
+    id: p.id, name: p.name_ko, status: p.status, word: LS.word(p.status), year: p.open_year,
     map: evalExpr(tf, p),
     search: lineLabelOf(p.id),
     detail: (lineRow(p.id).match(/class="sd-badge [^"]*">([^<]*)</) || [])[1],
@@ -128,4 +138,22 @@ test('[R-66] 모든 미개통 노선: 네 화면이 같은 상태 말, 구상 �
   const proposed = surfaces().filter(r => r.status === 'proposed');
   assert.ok(proposed.length > 0, '구상 노선이 하나도 없음 — 시험이 비어 있음');
   assert.deepEqual(bad, []);
+});
+
+// 숙제 74: 지도 미개통 라벨에 개통 연도 — '동북선 (공사 중 · 2027)'. 연도는 lines.geojson open_year 한 곳(자유 문장 opened 아님),
+// open_year 가 null 이면 상태 말만('동부선 (구상)'). GTX-D 는 'GTX-D 계획 · 2035 (갈래 여러 안)'.
+test('[R-74] 지도 라벨 연도 = open_year, null 이면 상태 말만 (구상 노선 포함)', () => {
+  const rows = surfaces();
+  const bad = [];
+  for (const r of rows) {
+    const yr = r.year == null ? '' : ' · ' + r.year;
+    const want = r.id === 'gtx-d' ? `${r.name} ${r.word}${yr} (갈래 여러 안)` : `${r.name} (${r.word}${yr})`;
+    if (r.map !== want) bad.push(`${r.id}(${r.status}, open_year ${r.year}): 지도 '${r.map}' ≠ '${want}'`);
+  }
+  assert.deepEqual(bad, []);
+  const by = id => rows.find(r => r.id === id);
+  assert.equal(by('dongbuk-line').map, '동북선 (공사 중 · 2027)');
+  assert.equal(by('dongbu-line').map, '동부선 (구상)');          // 구상 + 연도 없음 → '(계획)' 아님
+  assert.ok(rows.some(r => r.status === 'proposed' && r.year == null), '연도 없는 구상 노선이 없음 — 시험이 비어 있음');
+  assert.ok(rows.some(r => r.status === 'proposed' && r.year != null), '연도 있는 구상 노선이 없음 — 시험이 비어 있음');
 });

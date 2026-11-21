@@ -52,7 +52,7 @@ check("market-map.js: 타일 역 카드 → task('price')", has('js/market-map.j
 check("home-cards.js: TOP3 카드 → task('top3')", has('js/home-cards.js', "global.KRTrack.task('top3')"));
 
 // 11-15: 주소 질문(?…)만 바뀌는 replaceState(공유 이름표 지우기·순위표 필터·퀴즈)를 Umami 가 새 페이지 보기로 세지 않게
-for (const f of ['index.html', 'rank.html', 'board.html', 'data.html', 'line/gtx-c.html', 'build_pages.py']) check(f + ': Umami data-exclude-search="true" (주소 질문 바뀜을 방문으로 안 셈)', has(f, 'data-exclude-search="true"'));
+for (const f of ['index.html', 'rank.html', 'gtx.html', 'board.html', 'data.html', 'line/gtx-c.html', 'build_pages.py']) check(f + ': Umami data-exclude-search="true" (주소 질문 바뀜을 방문으로 안 셈)', has(f, 'data-exclude-search="true"'));
 check('track.js: 공유 이름표 shareRef — ref 우선, 예전 from=card-* 도', (() => { const T = a.T; return T.shareRef('?ref=card-top10') === 'card-top10' && T.shareRef('?from=card-life') === 'card-life' && T.shareRef('?from=%EC%84%9C%EC%9A%B8') === null && T.shareRef('?ref=<x>') === null; })());
 
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);

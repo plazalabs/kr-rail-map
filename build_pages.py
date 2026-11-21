@@ -276,12 +276,12 @@ def main():
 
     # sitemap
     # 메인·순위표·게시판·자료 페이지도 사이트맵에 (2026-11-13 — 예전엔 손으로 넣어 다시 만들면 빠졌다)
-    urls = [f"{SITE}/", f"{SITE}/rank.html", f"{SITE}/board.html", f"{SITE}/data.html"] + [f"{SITE}/line/{lid}.html" for lid, *_ in made]
+    urls = [f"{SITE}/", f"{SITE}/rank.html", f"{SITE}/gtx.html", f"{SITE}/board.html", f"{SITE}/data.html"] + [f"{SITE}/line/{lid}.html" for lid, *_ in made]
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for u in urls:
         # 지금 사이트맵과 같은 우선순위 (메인 1.0 · 순위표 0.9 · 게시판 0.6 · 자료 0.5 · 노선 0.8)
-        pri = {f"{SITE}/": "1.0", f"{SITE}/rank.html": "0.9", f"{SITE}/board.html": "0.6", f"{SITE}/data.html": "0.5"}.get(u, "0.8")
+        pri = {f"{SITE}/": "1.0", f"{SITE}/rank.html": "0.9", f"{SITE}/gtx.html": "0.9", f"{SITE}/board.html": "0.6", f"{SITE}/data.html": "0.5"}.get(u, "0.8")
         sm.append(f"  <url><loc>{u}</loc><lastmod>{TODAY}</lastmod><priority>{pri}</priority></url>")
     sm.append("</urlset>")
     open(os.path.join(HERE, "sitemap.xml"), "w", encoding="utf-8").write("\n".join(sm))

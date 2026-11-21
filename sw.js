@@ -4,11 +4,11 @@
  *  - GeoJSON 데이터: Cache First (최초 로드 후 캐시)
  *  - 지도 타일: Network First (오프라인이면 캐시된 타일만, 최대 200개)
  */
-const APP_CACHE = 'kr-rail-map-app-v306';
+const APP_CACHE = 'kr-rail-map-app-v307';
 // 실거래 자료 달 — 매달 자동 갱신(.github/workflows/data-refresh.yml)이 바꾼다. 데이터는 캐시 우선이라
 // 이름이 바뀌어야 다시 찾은 사람도 새 시세를 받는다.
 const DATA_REV = '202609';
-const DATA_CACHE = 'kr-rail-map-data-v306-r' + DATA_REV;
+const DATA_CACHE = 'kr-rail-map-data-v307-r' + DATA_REV;
 const TILE_CACHE = 'kr-rail-map-tiles-v1';
 const MAX_TILE_ENTRIES = 200;
 
@@ -17,6 +17,9 @@ const APP_SHELL = [
   './index.html',
   './data.html',
   './rank.html',
+  './gtx.html',
+  './js/gtx-card.js',
+  './js/gtx-page.js',
   './board.html',
   './js/line-status.js',
   './js/board.js',

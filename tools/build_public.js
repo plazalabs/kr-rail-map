@@ -20,11 +20,11 @@ const OUT = path.resolve(ROOT, process.argv[2] || 'dist');
 
 // 사이트가 쓰는 것만 (js/·css/·line/·icons/·image/·vendor/ 는 폴더째)
 const FILES = [
-  'index.html', 'data.html', 'rank.html', 'board.html', 'sw.js', 'site.webmanifest', 'robots.txt', 'sitemap.xml', 'LICENSE',
+  'index.html', 'data.html', 'rank.html', 'gtx.html', 'board.html', 'sw.js', 'site.webmanifest', 'robots.txt', 'sitemap.xml', 'LICENSE',
   'data/lines.geojson', 'data/stations.geojson', 'data/exits.geojson', 'data/access.json', 'data/rank.json', 'data/sources.json',
   'data/ktx-fares.json', 'data/transfer-times.json', 'data/station-complex.json', 'data/station-dev.json', 'data/station-jeonse.json',
   'data/station-market.json', 'data/station-price.json', 'data/station-region.json',
-  'data/fares-special.json', 'data/headways.json', 'data/rank-top.json', 'data/rank-station.json', 'data/station-trend.json',
+  'data/fares-special.json', 'data/headways.json', 'data/rank-top.json', 'data/rank-station.json', 'data/station-trend.json', 'data/gtx-card.json',
 ];
 const DIRS = ['js', 'css', 'line', 'icons', 'image', 'vendor'];
 

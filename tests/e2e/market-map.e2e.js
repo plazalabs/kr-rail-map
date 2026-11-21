@@ -202,7 +202,9 @@ async function until(b, expr, n = 40) {
   await b.goto(BASE + '?market=1&y=1999&w=evil&c=%3Cimg%3E&g=x#normal', 1500); await ready(b);
   await until(b, `document.querySelectorAll('#mm-panel .mm-tile').length > 30`, 60);
   const st4 = await b.evaluate(`MarketMap.state()`);
-  R.check('엉뚱한 주소 값은 무시하고 기본값 (연도 전체·평균·빨라지는 분·새 노선)', st4.y === 'all' && st4.w === 'avg' && st4.color === 'gain' && st4.group === 'line', st4);
+  // 기본 연도 = rank.json default_year (홈 카드·랭킹과 같은 기준, 회장 결정 11-18) — 숫자를 박아 두지 않는다
+  const defaultYear = String(JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'data', 'rank.json'), 'utf8')).default_year);
+  R.check('엉뚱한 주소 값은 무시하고 기본값 (연도 ' + defaultYear + '(rank.json default_year)·평균·빨라지는 분·새 노선)', st4.y === defaultYear && st4.w === 'avg' && st4.color === 'gain' && st4.group === 'line', { defaultYear, st4 });
   b.close();
 
   // ── 투자 색: 투자 모드에서만 ──

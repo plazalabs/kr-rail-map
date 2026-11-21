@@ -186,7 +186,8 @@ check('지도가 ?st= 를 받아 역 상세를 연다', /q\.get\('st'\)/.test(ap
 const idx = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 // 작업 5(2026-11-12): 지도 범례의 '순위표 →' 는 지웠다 — 순위는 지도 안 축지법 패널(./?rocket=1)에서. rank.html 은 검색 유입용으로 남김
 check('지도 범례에 rank.html 링크 없음', !/href="rank\.html"/.test(idx));
-check('게시판·자료 머리 메뉴에 축지법 랭킹(지도 패널)', ['board.html', 'data.html'].every(f => fs.readFileSync(path.join(ROOT, f), 'utf8').includes('href="./?rocket=1"')));
+// 머리 메뉴 네 화면 모두 축지법 랭킹 = rank.html (예전 게시판·자료는 지도 패널 ./?rocket=1)
+check('머리 메뉴 축지법 랭킹 = rank.html (게시판·자료·몇분컷·랭킹)', ['board.html', 'data.html', 'gtx.html', 'rank.html'].every(f => /<a href="rank\.html"( aria-current="page")?>축지법 랭킹<\/a>/.test(fs.readFileSync(path.join(ROOT, f), 'utf8'))));
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 check('서비스워커 앱 셸에 rank.html·rank.js', /'\.\/rank\.html'/.test(sw) && /'\.\/js\/rank\.js'/.test(sw));
 

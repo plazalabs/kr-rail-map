@@ -1,6 +1,6 @@
 /* e2e: 가만히 있을 때 CPU를 안 쓴다 (R8 실측, 2026-11-15)
  *  - 오른쪽 창 손잡이(js/panel-fold.js)가 자기 hidden 을 매 프레임 다시 써 관찰자가 다시 부르는 고리 → 10초에 스타일 계산 600번·CPU 300ms
- *  - 다 뜬 뒤 5초 동안 스타일 다시 계산 30번 미만·스크립트 100ms 미만 (PC·휴대폰, 떡상 창 연 뒤에도)
+ *  - 다 뜬 뒤 5초 동안 스타일 다시 계산 30번 미만·스크립트 100ms 미만 (PC·휴대폰, 축지법 패널 연 뒤에도)
  * 실행: node tests/e2e/run.js --only idle-cpu
  */
 'use strict';
@@ -25,7 +25,7 @@ async function idle(b) {
     R.check(`${w}px 첫 화면 가만히 5초: 스타일 계산 30번 미만·스크립트 100ms 미만`, r1.style < 30 && r1.scriptMs < 100, r1);
     await b.evaluate(`RocketPanel.open({}); true`); await sleep(2500);
     const r2 = await idle(b);
-    R.check(`${w}px 떡상 창 연 뒤 가만히 5초: 같은 기준`, r2.style < 30 && r2.scriptMs < 100, r2);
+    R.check(`${w}px 축지법 패널 연 뒤 가만히 5초: 같은 기준`, r2.style < 30 && r2.scriptMs < 100, r2);
     b.close(); await sleep(800);
   }
   R.finish();

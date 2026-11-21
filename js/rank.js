@@ -109,15 +109,15 @@ const RankTable = (() => {
     return r;
   }
 
-  /* 떡상 등급 — 지금 순위에서 개통 후 순위로 몇 계단 오르나 (같은 기준·같은 지역 안에서)
-   *   rocket 떡상 : 100계단 이상
+  /* 순위 변화 등급 — 지금 순위에서 개통 후 순위로 몇 계단 오르나 (같은 기준·같은 지역 안에서)
+   *   rocket 축지법급 : 100계단 이상
    *   up     상승 : 10~99계단
    *   flat   보합 : 9계단 오름 ~ 49계단 밀림
    *   down   상대 하락 : 50계단 이상 밀림 — 내 역 시간도 줄지만 다른 역(GTX)이 더 많이 좋아져서.
    *          (수도권은 절반 넘는 역이 개통 후 9분 넘게 빨라진다 — 순위만 보고 '밀림'이라 부르면 오해를 산다, 2026-11-12)
    *   new    신규 : 지금은 철도로 못 가는 역 (새 노선이 생겨야 생기는 역) */
   const TIERS = {
-    rocket: { label: '떡상', ic: 'trend', hint: '100계단 이상 오름' },
+    rocket: { label: '축지법급', ic: 'trend', hint: '100계단 이상 오름' },
     up: { label: '상승', ic: 'up', hint: '10~99계단 오름' },
     flat: { label: '보합', ic: 'flat', hint: '9계단 오름 ~ 49계단 밀림' },
     down: { label: '상대 하락', ic: 'down', hint: '시간은 줄어도 다른 역이 더 좋아져 50계단 이상 밀림' },
@@ -145,15 +145,20 @@ const RankTable = (() => {
     return row.name.replace(/\s+/g, '').includes(s) || (row.sgg || '').includes(s) || (row.region || '').includes(s);
   }
 
-  // 기본 연도 — 모두 개통했을 때 떡상 역 수의 80% 를 처음 넘는 해 (지금 자료로는 2031).
-  // 지도 떡상 패널과 순위표 페이지가 같은 기본값을 쓴다 (P11: 같은 '떡상 랭킹' 이 다른 숫자를 보이던 것)
+  // 기본 연도 — 모두 개통했을 때 축지법급 역 수의 80% 를 처음 넘는 해 (지금 자료로는 2031).
+  // 지도 축지법 패널과 순위표 페이지가 같은 기본값을 쓴다 (P11: 같은 '축지법 랭킹' 이 다른 숫자를 보이던 것)
   // 기본 시나리오 연도는 자료(rank.json default_year) 하나에서만 — 화면마다 따로 고르지 않는다.
   function defaultYear(doc) {
     if (!doc || doc.default_year == null) return 'all';
     const y = String(doc.default_year);
     return (doc.years || []).map(String).indexOf(y) >= 0 ? y : 'all';
   }
-  return { WEIGHTS, TIERS, minutesOf, scoreOf, compute, sortRows, matches, inRegion, tierOf, tierCounts, defaultYear };
+  // 화면의 등급 이름표(data-tier-label="rocket" 등)를 TIERS 이름으로 채운다 — 등급 이름은 TIERS 한 곳에서만
+  function fillTierLabels(root) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll('[data-tier-label]').forEach(e => { const t = TIERS[e.getAttribute('data-tier-label')]; if (t) e.textContent = t.label; });
+  }
+  return { WEIGHTS, TIERS, minutesOf, scoreOf, compute, sortRows, matches, inRegion, tierOf, tierCounts, defaultYear, fillTierLabels };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = RankTable;

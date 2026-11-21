@@ -1,6 +1,6 @@
 /* e2e: 휴대폰 아래 탭 5칸 (디자인 결함 전수 수정 작업 1, 2026-11-12)
  *  - 390×844 휴대폰 흉내: 탭 5칸(길찾기·떡상·시세·게시판·더보기)이 화면 맨 아래, 툴바는 숨김
- *  - 탭을 진짜로 눌러서(좌표 클릭) 길찾기 패널·떡상 패널이 열리고 그 탭에 선택 표시
+ *  - 탭을 진짜로 눌러서(좌표 클릭) 길찾기 패널·축지법 패널이 열리고 그 탭에 선택 표시
  *  - 시세 = 투자 모드 켜지고 전세가율 색칠·범례
  *  - 더보기 = 툴바가 시트로 뜨고, 안의 버튼(노선도)을 누르면 시트가 닫힘, Esc 로도 닫힘
  *  - 1440 PC: 탭 바가 왼쪽 세로 레일(노선·길찾기·떡상·시세·게시판·사용법), 툴바 보임, 레일 '노선'으로 사이드바 접고 펴기
@@ -46,10 +46,10 @@ const cur = t => `document.querySelector('#tabbar [data-tab="${t}"]').getAttribu
   R.check('길찾기 탭 → 길찾기 패널 열림 + 선택 표시', await b.evaluate(`!document.getElementById('route-panel').hidden && ${cur('route')}`));
   await tap(b, '#tabbar [data-tab="rocket"]');
   await sleep(1200);
-  R.check('떡상 탭 → 떡상 패널 열림 + 선택 표시', await b.evaluate(`(() => { const p = document.getElementById('rocket-panel'); return !!p && !p.hidden && ${cur('rocket')}; })()`));
+  R.check('떡상 탭 → 축지법 패널 열림 + 선택 표시', await b.evaluate(`(() => { const p = document.getElementById('rocket-panel'); return !!p && !p.hidden && ${cur('rocket')}; })()`));
   await settle(b);
   const over = await b.evaluate(`(() => { const p = document.getElementById('rocket-panel').getBoundingClientRect(); const t = document.getElementById('tabbar').getBoundingClientRect(); return Math.round(p.bottom - t.top); })()`);
-  R.check('떡상 시트가 탭 바를 가리지 않음 (겹침 2px 이하)', over <= 2, over);
+  R.check('축지법 시트가 탭 바를 가리지 않음 (겹침 2px 이하)', over <= 2, over);
   await b.evaluate(`document.querySelector('#rocket-panel .rkp-close') && document.querySelector('#rocket-panel .rkp-close').click(); true`);
   await sleep(400);
 

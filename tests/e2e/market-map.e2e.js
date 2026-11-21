@@ -156,7 +156,7 @@ async function until(b, expr, n = 40) {
   await b.evaluate(`(() => { const s = document.querySelector('#mm-panel [data-k="color"]'); s.value = 'tier'; s.dispatchEvent(new Event('change')); })()`);
   await sleep(300);
   const leg = await b.evaluate(`document.querySelector('#mm-panel .mm-legend').textContent`);
-  R.check("색 '순위 변화' → 범례에 떡상·상대 하락", /떡상/.test(leg) && /상대 하락/.test(leg), leg.slice(0, 120));
+  R.check("색 '순위 변화' → 범례에 축지법급·상대 하락", /축지법급/.test(leg) && /상대 하락/.test(leg), leg.slice(0, 120));
   const before = await b.evaluate(`[...document.querySelectorAll('#mm-panel .mm-tile')].map(t => t.style.backgroundColor).join('|')`);
   await b.evaluate(`(() => { const y = document.querySelector('#mm-panel .mm-years button[data-y="2027"]'); if (y) y.click(); })()`);
   await sleep(400);

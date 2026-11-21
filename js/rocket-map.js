@@ -127,6 +127,7 @@
   function select(id) { selId = id || null; refresh(); }
   function init(map, stations) {
     mapRef = map; stationsRef = stations;
+    if (typeof RankTable !== 'undefined') RankTable.fillTierLabels(document.getElementById('rk-legend'));
     var cb = document.getElementById('layer-rocket');
     if (cb && !cb.__rk) {
       cb.__rk = true;

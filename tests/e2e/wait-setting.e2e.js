@@ -1,6 +1,6 @@
 /* e2e: 공통 '출퇴근 배차 넣기' (js/wait-setting.js · D9, 2026-11-13)
  *  - 기본 꺼짐: 역 타일 범례 '처음 열차 대기 뺌'
- *  - 역 타일에서 켜면 → 범례 '출퇴근 배차 넣음', 떡상 패널 '배차 포함' 눌림, 통근권 체크 켜짐 (한 값 공유)
+ *  - 역 타일에서 켜면 → 범례 '출퇴근 배차 넣음', 축지법 패널 '배차 포함' 눌림, 통근권 체크 켜짐 (한 값 공유)
  *  - 새로고침해도 남음(이 브라우저) → 끄면 다시 기본
  * 실행: node tests/e2e/run.js --only wait-setting
  */
@@ -25,7 +25,7 @@ async function ready(b) {
   R.check("역 타일에서 켬 → 범례 '출퇴근 배차 넣음', 개통 후 분이 늘어남(기다림 더함)", l1.peak && /출퇴근 배차 넣음/.test(l1.legend) && l1.sum > before, { before, after: l1.sum });
   await b.evaluate(`MarketMap.close(); RocketPanel.open({}); 0`); await sleep(1500);
   const rk = await b.evaluate(`(() => { const w = document.querySelector('.rkp-wait'); return w ? w.getAttribute('aria-pressed') : null; })()`);
-  R.check("떡상 패널 '배차 포함'이 같이 눌림", rk === 'true', rk);
+  R.check("축지법 패널 '배차 포함'이 같이 눌림", rk === 'true', rk);
   await b.evaluate(`RocketPanel.close(); document.getElementById('commute-btn').click(); 0`); await sleep(800);
   const cm = await b.evaluate(`(() => { const c = document.getElementById('cm-wait'); return c ? c.checked : null; })()`);
   R.check('통근권 체크도 켜짐', cm === true, cm);

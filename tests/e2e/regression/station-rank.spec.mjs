@@ -1,4 +1,4 @@
-// 회귀(숙제 64, 회장 결정 11-18): 의정부 역 상세 순위 = 홈 카드 = 떡상 랭킹, 기준은 숫자와 같은 줄.
+// 회귀(숙제 64, 회장 결정 11-18): 의정부 역 상세 순위 = 홈 카드 = 축지법 랭킹, 기준은 숫자와 같은 줄.
 // 배포본: 홈·랭킹 "2031년까지 · 수도권 675역 · 448→117위" / 역 상세 "전국 127위 · GBD 중시 134위 · 개통 단축 16위".
 import { test, expect } from '@playwright/test';
 
@@ -20,7 +20,7 @@ test('[R-64] 의정부: 역 상세 "2031년까지 개통 · 수도권 675역 중
   const rp = page.locator('#rocket-panel');
   await expect(rp).toContainText('의정부', { timeout: 20_000 });
   const [, , rAft] = (await rp.innerText()).match(/의정부\s+GTX-C · 2031\s+▲\d+위\s+(\d+) → (\d+)위/);
-  await rp.getByRole('button', { name: '떡상 패널 닫기' }).click();
+  await rp.getByRole('button', { name: '축지법 패널 닫기' }).click();
 
   const box = page.getByRole('combobox', { name: '역 검색' });
   await box.fill('의정부');

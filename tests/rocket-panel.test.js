@@ -1,4 +1,4 @@
-/* 지도 안 떡상 패널 (js/rocket-panel.js) 의 순수 계산 시험
+/* 지도 안 축지법 패널 (js/rocket-panel.js) 의 순수 계산 시험
  * 실행: node tests/rocket-panel.test.js
  */
 'use strict';

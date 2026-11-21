@@ -1,6 +1,6 @@
 // 길찾기 '배차 넣기' (정반합 8차 A6, 2026-11-15)
 //  기본: 탄 순간부터(처음 열차 기다림 0, 드문 열차만 배차 절반) — 회장님 결정, 앱들과 같은 기준
-//  켜면(KR_WAIT 'peak'): 처음 탈 때도 그 방향 출퇴근 배차의 절반을 기다린다 — 떡상 순위 '배차 포함'(allTimesFrom peakWait)과 같은 규칙
+//  켜면(KR_WAIT 'peak'): 처음 탈 때도 그 방향 출퇴근 배차의 절반을 기다린다 — 축지법 순위 '배차 포함'(allTimesFrom peakWait)과 같은 규칙
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const ROOT = path.join(__dirname, '..');
@@ -39,7 +39,7 @@ for (const [a, b] of pairs) {
   const conv = r1.legs.find(l => l.lineId) && RF.categoryOf && RF.categoryOf(r1.legs.find(l => l.lineId).lineId) === 'conventional';
   check(`${a}→${b}: 결과에 firstWait(처음 열차 기다림 분)를 실음${conv ? ' — 일반열차는 0' : ''}`, typeof r1.firstWait === 'number' && (conv ? r1.firstWait === 0 : r1.firstWait > 0) && typeof r0.firstWait === 'number');
 }
-// 떡상 순위 '배차 포함'(allTimesFrom peakWait)과 길찾기 '배차 넣기'가 같은 분을 말한다 — 표본 비교
+// 축지법 순위 '배차 포함'(allTimesFrom peakWait)과 길찾기 '배차 넣기'가 같은 분을 말한다 — 표본 비교
 {
   let n = 0, ok = 0; const bad = [];
   const sample = ['광운대', '시청', '수원', '잠실', '홍대입구', '사당', '노원', '부평'].map(by).filter(Boolean);

@@ -866,7 +866,7 @@ const clickId = id => () => { const b = document.getElementById(id); if (b) b.cl
 const PALETTE = [
   { id: 'route', label: '길찾기', hint: '출발·도착 역으로 경로·요금', keys: ['길찾기', '경로', '가는 길', '환승', '요금'], ic: 'route',
     run: () => { const p = document.getElementById('route-panel'); if (p) p.hidden = false; const f = document.getElementById('route-from'); if (f) f.focus(); } },
-  { id: 'rocket', label: 'GTX 개통 효과 순위', hint: '개통하면 우리 역은 몇 등? (떡상 랭킹)', keys: ['떡상', '랭킹', '순위', 'gtx', '개통 후', '개통 효과'], ic: 'trend', run: clickId('rocket-menu-btn') },
+  { id: 'rocket', label: 'GTX 개통 효과 순위', hint: '개통하면 우리 역은 몇 등? (축지법 랭킹)', keys: ['축지법', '떡상', '랭킹', '순위', 'gtx', '개통 후', '개통 효과'], ic: 'trend', run: clickId('rocket-menu-btn') },
   { id: 'market', label: 'RAIL MARKET MAP (역 타일)', hint: '노선별로 얼마나 빨라지나 한눈에', keys: ['타일', '마켓', 'market', '히트맵', '한눈에'], ic: 'chart',
     run: () => { if (typeof MarketMap !== 'undefined') MarketMap.open({}); } },
   { id: 'quiz', label: '나에게 맞는 역 찾기', hint: '질문 4개로 직장·예산에 맞는 역 TOP 3', keys: ['추천', '나에게', '맞는 역', '어디 살', '이사', '유형', '테스트', '질문'], ic: 'help',

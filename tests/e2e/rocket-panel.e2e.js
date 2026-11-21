@@ -1,4 +1,4 @@
-/* e2e: 지도 안 떡상 패널 (js/rocket-panel.js, 디자인 개편 v109, 2026-11-12)
+/* e2e: 지도 안 축지법 패널 (js/rocket-panel.js, 디자인 개편 v109, 2026-11-12)
  *  PC 1440×900
  *  - 툴바 '🚀 GTX 떡상' → 패널 열림, 처음엔 아무 역도 안 고르고 순위(TOP 10)부터 — 특정 역을 앞세우지 않는다
  *  - 지도에서 광운대를 누르면 카드(취소선 지금 순위 → 개통 후 순위), 문장형 제목, 곡선, 막대 3개
@@ -171,13 +171,13 @@ const overlap = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <
   await sleep(500);
   await b.evaluate(`document.querySelector('.rkp-close').click()`); await sleep(400);
   const s7 = await b.evaluate(`({ layer: !!map.getLayer('rocket-tier'), view: StationRocket.view() })`);
-  R.check('사이드바에서 켠 떡상 지도는 패널을 닫아도 남고, 기본 기준으로 돌아감', s7.layer && s7.view.at === 'all' && s7.view.weight === 'avg', s7);
+  R.check('사이드바에서 켠 축지법 지도는 패널을 닫아도 남고, 기본 기준으로 돌아감', s7.layer && s7.view.at === 'all' && s7.view.weight === 'avg', s7);
   await b.evaluate(`document.getElementById('layer-rocket').click()`); await sleep(300);
 
-  // 메뉴 '분석 → 🚀 GTX 떡상 랭킹' 도 패널을 연다
+  // 메뉴 '분석 → 🚀 GTX 축지법 랭킹' 도 패널을 연다
   await b.evaluate(`document.getElementById('rocket-menu-btn').click()`);
   const viaMenu = await until(b, `!document.getElementById('rocket-panel').hidden`);
-  R.check("분석 메뉴의 '🚀 GTX 떡상 랭킹' 도 지도 안 패널을 연다", viaMenu);
+  R.check("분석 메뉴의 '🚀 GTX 축지법 랭킹' 도 지도 안 패널을 연다", viaMenu);
   await b.evaluate(`RocketPanel.close()`);
 
   // 주소로 바로 열기

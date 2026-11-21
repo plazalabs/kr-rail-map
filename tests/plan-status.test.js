@@ -39,7 +39,7 @@ check('data.html 의 노선 페이지 링크가 모두 실제 파일', deadLinks
 check('운행 중 노선 페이지(공항철도)에는 상자 없음', !/<div class="plan">/.test(read('line/arex.html')));
 check('순위표(rank.html) 연도 옆 근거 링크', /href="data\.html#plans"/.test(read('rank.html')));
 check('타일 지도 연도 옆 근거 링크', /data\.html#plans/.test(read('js/market-map.js')));
-check('떡상 패널 연도 설명 옆 근거 링크', /data\.html#plans/.test(read('js/rocket-panel.js')));
+check('축지법 패널 연도 설명 옆 근거 링크', /data\.html#plans/.test(read('js/rocket-panel.js')));
 
 console.log(`\n결과: ${pass} 통과 / ${fail} 실패`);
 process.exit(fail ? 1 : 0);

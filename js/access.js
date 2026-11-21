@@ -223,7 +223,7 @@ const StationAccess = (() => {
     }
     lines.forEach(t => { h += '<div class="sa-sum">' + t + '</div>'; });
     // 지도 안 떡상 패널에서 이 역 보기 (v109 — 예전엔 rank.html 로 나갔다). 패널이 없는 곳에선 주소로 연다
-    h += '<div class="sa-sum"><a class="sa-rocket" href="./?rocket=1&st=' + encodeURIComponent(stationId) + '" data-rocket-st="' + stationId + '"><i data-ic="trend"></i> 떡상 랭킹에서 보기 →</a>' +
+    h += '<div class="sa-sum"><a class="sa-rocket" href="./?rocket=1&st=' + encodeURIComponent(stationId) + '" data-rocket-st="' + stationId + '"><i data-ic="trend"></i> 축지법 랭킹에서 보기 →</a>' +
       // 수도권 역이면 RAIL MARKET MAP(역 타일)에서도 (2026-11-13) — 순위 자료가 수도권만이라 그 밖에선 안 보인다
       (a.rank && a.rank.scope === 'c' ? ' · <a class="sa-rocket" href="./?market=1&st=' + encodeURIComponent(stationId) + '" data-market-st="' + stationId + '"><i data-ic="chart"></i> 타일 지도에서 보기 →</a>' : '') + '</div>';
 
@@ -231,7 +231,7 @@ const StationAccess = (() => {
     const tot = ranks ? ranks.stations.toLocaleString() : '';
     h += '<div class="sa-note">※ 실제 시각표가 아니라 추정값입니다. 타고 가는 시간 + 갈아탈 때 걷는 시간 + <b>갈아탈 때 기다리는 시간</b>(공식 출근 시간 배차의 절반)을 ' +
       '더했습니다. 처음 열차를 기다리는 시간은 뺐습니다(역에 닿는 때에 따라 매번 달라서). 길찾기 기본(출근 시간대)과 같은 시간대입니다. 두 번째 숫자가 <b>개통 후</b>이고 −N분은 그 차이입니다. ' +
-      (ranks ? '순위는 CBD(도심·서울역)·YBD(여의도)·GBD(강남) 세 곳 평균을 ' + ranks.year + '년까지 개통한다고 보고 매긴 것으로, 홈 카드·떡상 랭킹과 같은 기준입니다. ' +
+      (ranks ? '순위는 CBD(도심·서울역)·YBD(여의도)·GBD(강남) 세 곳 평균을 ' + ranks.year + '년까지 개통한다고 보고 매긴 것으로, 홈 카드·축지법 랭킹과 같은 기준입니다. ' +
         '전국 ' + tot + '역 가운데 수도권 역은 수도권 ' + ranks.total.c.toLocaleString() + '역 중, 그 밖은 전국 ' + ranks.total.n.toLocaleString() + '역 중 몇 번째인지이고' +
         (ranks.unranked ? ', ' + ranks.unranked + '역은 그해까지 개통한 노선으로 거점에 닿지 않아 순위 밖입니다.' : '.') : '') + '</div>';
     return h;

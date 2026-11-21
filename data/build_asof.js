@@ -33,7 +33,7 @@ function rows() {
   if (mk && mk.period) add('실거래 7종(전월세·오피스텔·토지 등)', per(mk.period), ym(mk.updated) + ' 마감분까지', nextUp(mk.updated).slice(3));
   if (dev && dev.updated) add('앞으로 들어올 세대(주택인허가)', '사용검사 전 인허가 건', dev.updated + ' 받음', '미착공 건은 취소·지연될 수 있음');
   if (acc && acc.updated) add('도심 접근성(역→업무지구 시간)', '공개 시간표·역간 시간 바탕 추정', rank && rank.updated ? rank.updated + ' 계산' : acc.updated + ' 계산', '');
-  if (rank && rank.updated) add('떡상 순위(개통 후 순위 변화)', '연도 = 그해까지 개통한다고 가정', rank.updated + ' 계산', '');
+  if (rank && rank.updated) add('축지법 순위(개통 후 순위 변화)', '연도 = 그해까지 개통한다고 가정', rank.updated + ' 계산', '');
   if (lines) {
     const ck = [...new Set(lines.features.map(f => f.properties.plan_checked).filter(Boolean))].sort();
     if (ck.length) add('미래 노선 개통 시기·사업 단계', '노선별 발표·보도 (아래 미래 노선 근거 표)', ck[ck.length - 1] + ' 확인', '계획은 바뀔 수 있음');

@@ -8,6 +8,7 @@
   const HI = { cbd: 0, ybd: 1, gbd: 2 };
   const TIER_ORDER = ['rocket', 'up', 'flat', 'down', 'new'];
   const T = RankTable.TIERS;
+  RankTable.fillTierLabels(document);
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 

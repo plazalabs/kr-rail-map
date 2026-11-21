@@ -2,7 +2,7 @@
  *  - 데스크톱·휴대폰: 가로 스크롤 없음, 1~3위 카드 3장, 목록 50줄
  *  - 기준 버튼(GBD 중시)을 누르면 순위가 바뀌고 주소에 남는다
  *  - 찾기 '광운대' → 그 줄만, 더 보기 버튼 숨김
- *  - 역을 누르면 지도(index.html?rocket=1&st=)로 가서 떡상 패널이 그 역을 보여 준다 (v109)
+ *  - 역을 누르면 지도(index.html?rocket=1&st=)로 가서 축지법 패널이 그 역을 보여 준다 (v109)
  * 실행: node tests/e2e/run.js --only rank
  */
 'use strict';
@@ -83,7 +83,7 @@ const layout = b => b.evaluate(`(() => ({
       const y28 = await b.evaluate(`({ url: location.search, opens: document.getElementById('yr-opens').textContent })`);
       R.check('2028 단계: "2028년 개통: GTX-A 삼성역 정차" 가 보인다', /y=2028/.test(y28.url) && /삼성역 정차/.test(y28.opens), y28);
       await b.evaluate(`document.getElementById('yr-play').click()`);
-      // ?open=역ID (지도 역 상세 '떡상 랭킹에서 보기') — 그 역 카드가 펼쳐져 있다. 수도권 밖(부산 서면)이면 전국으로
+      // ?open=역ID (지도 역 상세 '축지법 랭킹에서 보기') — 그 역 카드가 펼쳐져 있다. 수도권 밖(부산 서면)이면 전국으로
       await b.goto(RANK + '?open=st-355172776', 800); await rows(b);
       const o1 = await b.evaluate(`({ card: !!document.querySelector('#card-st-355172776'), q: document.getElementById('q').value })`);
       R.check('?open=광운대 → 광운대 카드가 펼쳐져 있다', o1.card && o1.q === '광운대', o1);
@@ -96,11 +96,11 @@ const layout = b => b.evaluate(`(() => ({
       await b.evaluate(`document.getElementById('wait').click()`); await sleep(300);
       const w1 = await b.evaluate(`({ tms: document.querySelector('#list .row .tms').textContent, pressed: document.getElementById('wait').getAttribute('aria-pressed'), url: location.search, hint: document.getElementById('hint').textContent })`);
       R.check('⏱ 배차 포함 켜면 주소 wait=1·안내·광운대 9분→12분', w1.pressed === 'true' && /wait=1/.test(w1.url) && /배차 포함/.test(w1.hint) && /9분/.test(w0) && /12분/.test(w1.tms), { w0, w1 });
-      // P11: 기본 연도 = 지도 떡상 패널과 같은 해(RankTable.defaultYear), 숫자가 다른 이유 한 줄, 지도 링크에 같은 연도
+      // P11: 기본 연도 = 지도 축지법 패널과 같은 해(RankTable.defaultYear), 숫자가 다른 이유 한 줄, 지도 링크에 같은 연도
       await b.goto(RANK, 800); await rows(b);
       const p11 = await b.evaluate(`(async () => { const d = await (await fetch('data/rank.json')).json(); const dy = RankTable.defaultYear(d);
         const a = document.querySelector('#podium .pod'); return { dy, now: document.getElementById('yr-now').textContent, hint: document.getElementById('hint').textContent, href: a && a.getAttribute('href'), url: location.search }; })()`);
-      R.check('P11 기본 연도 = 떡상 패널 기본(' + p11.dy + ') · 안내에 뒤에 생기는 역 제외 · 지도 링크 &y=', p11.dy !== 'all' && p11.now.indexOf(p11.dy) >= 0 && /새로 생기는 \d+역 제외/.test(p11.hint) && (p11.href || '').indexOf('&y=' + p11.dy) > 0 && !/y=/.test(p11.url), p11);
+      R.check('P11 기본 연도 = 축지법 패널 기본(' + p11.dy + ') · 안내에 뒤에 생기는 역 제외 · 지도 링크 &y=', p11.dy !== 'all' && p11.now.indexOf(p11.dy) >= 0 && /새로 생기는 \d+역 제외/.test(p11.hint) && (p11.href || '').indexOf('&y=' + p11.dy) > 0 && !/y=/.test(p11.url), p11);
       // P16: 1~3위 카드에 '서울 서울' 처럼 역 이름과 같은 지역이 겹치지 않는다
       await b.goto(RANK, 800); await rows(b);
       const pd = await b.evaluate(`(() => { const out = []; document.querySelectorAll('#podium .pod').forEach(p => { const nm = p.querySelector('.nm').textContent; const rg = p.querySelector('.rg').textContent; out.push([nm, rg]); }); return out; })()`);
@@ -113,7 +113,7 @@ const layout = b => b.evaluate(`(() => ({
     await b.goto(RANK, 800); await rows(b);
     const sl0 = await b.evaluate(`(() => { const s = document.querySelector('#slope svg'); return { lines: document.querySelectorAll('#slope svg a line').length, chips: document.querySelectorAll('#tiers .tchip').length,
       fits: !!s && s.getBoundingClientRect().right <= innerWidth + 1 && s.getBoundingClientRect().width > 200 }; })()`);
-    R.check(`${w}px 떡상 TOP 10 선 10개·등급 칩 6개(전체+5)·그림이 화면 안`, sl0.lines === 10 && sl0.chips === 6 && sl0.fits, sl0);
+    R.check(`${w}px 축지법 TOP 10 선 10개·등급 칩 6개(전체+5)·그림이 화면 안`, sl0.lines === 10 && sl0.chips === 6 && sl0.fits, sl0);
     await b.goto(RANK + '?y=all&q=' + encodeURIComponent('광운대'), 800); await rows(b);   // 전체 개통 기준 (기본은 2031 — P11)
     await b.evaluate(`document.querySelector('#list .row').click()`); await sleep(300);
     const card = await b.evaluate(`(() => { const c = document.querySelector('#list .card'); if (!c) return null; const g = c.querySelector('a.go');
@@ -143,7 +143,7 @@ const layout = b => b.evaluate(`(() => ({
       opened = await b.evaluate(`(() => { const p = document.getElementById('rocket-panel'); const n = p && !p.hidden && p.querySelector('.rkp-name'); return n ? n.textContent : null; })()`).catch(() => null);
       if (opened) break;
     }
-    R.check(`${w}px 순위표에서 누르면 지도 안 떡상 패널이 광운대를 보여 준다`, !!opened && /광운대/.test(opened), opened);
+    R.check(`${w}px 순위표에서 누르면 지도 안 축지법 패널이 광운대를 보여 준다`, !!opened && /광운대/.test(opened), opened);
     const exc = b.logs.filter(x => /EXC/.test(x));
     R.check(`${w}px 예외 0`, exc.length === 0, exc.slice(0, 3));
     b.close(); await sleep(600);

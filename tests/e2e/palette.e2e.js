@@ -1,6 +1,6 @@
 /* e2e: 검색 팔레트 (js/app.js PALETTE, 뮤즈 TASK 1 · 2026-11-13)
  *  - 빈 검색창 클릭 → '빠른 실행' 4개(길찾기·떡상·역 타일·통근권)
- *  - '떡상' → 맨 위 'GTX 떡상 랭킹' → Enter → 떡상 패널 열림
+ *  - '떡상' → 맨 위 'GTX 축지법 랭킹' → Enter → 축지법 패널 열림
  *  - '통근' → 통근권 찾기 / '타일' → RAIL MARKET MAP 열림
  *  - '강남에서 서울역' → 맨 위 '강남 → 서울 길찾기' → Enter → 길찾기 결과
  *  - '강남' 같은 역 이름은 예전처럼 역이 맨 위 (기능 줄이 끼어들지 않음)
@@ -37,7 +37,7 @@ const enter = async b => { await b.key('Enter', 'Enter', 13); await sleep(900); 
   R.check("'떡상' → 맨 위 'GTX 개통 효과 순위'", top[0] && top[0].action && /개통 효과 순위/.test(top[0].name), top);
   await enter(b);
   const rk = await b.evaluate(`typeof RocketPanel !== 'undefined' && RocketPanel.isOpen()`);
-  R.check("Enter → 떡상 패널 열림", rk === true);
+  R.check("Enter → 축지법 패널 열림", rk === true);
   await b.evaluate(`RocketPanel.close(); 0`); await sleep(300);
 
   top = await typeSearch(b, '타일');

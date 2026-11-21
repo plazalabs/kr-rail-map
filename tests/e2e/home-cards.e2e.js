@@ -1,6 +1,6 @@
 /* e2e: 첫 화면 사이드바 카드 (js/home-cards.js, 2026-11-13)
  *  - '개통하면 가장 많이 오르는 역' 1~3위 = data/rank-top.json (rank.json 은 첫 화면에서 안 받음)
- *  - 부제 '집값 예측 아님', 1위 누르면 떡상 패널이 그 역을 연다
+ *  - 부제 '집값 예측 아님', 1위 누르면 축지법 패널이 그 역을 연다
  *  - 게시판이 켜져 있으면 '지금 커뮤니티에서' 글 0~2개, 글은 글자로만(태그 없음)
  * 실행: node tests/e2e/run.js --only home-cards
  */
@@ -31,7 +31,7 @@ async function ready(b) {
   await b.evaluate(`document.querySelector('#home-cards .hc-top button').click(); 0`);
   let rp = null;
   for (let i = 0; i < 30; i++) { rp = await b.evaluate(`typeof RocketPanel !== 'undefined' && RocketPanel.isOpen() ? RocketPanel.state().sel : null`); if (rp) break; await sleep(300); }
-  R.check('1위 누르면 떡상 패널이 그 역을 연다', rp === TOP.top[0].id, rp);
+  R.check('1위 누르면 축지법 패널이 그 역을 연다', rp === TOP.top[0].id, rp);
   const feed = await b.evaluate(`(() => { const s = document.querySelector('#home-cards .hc-feed'); const ready = typeof KrBoard !== 'undefined' && KrBoard.ready();
     return { ready, n: s ? s.querySelectorAll('.hc-post').length : 0, tags: s ? s.querySelectorAll('.hc-body *').length : 0 }; })()`);
   R.check('커뮤니티 칸: 게시판 켜져 있으면 글 0~2개, 글 안에 태그 없음(글자로만)', feed.n <= 2 && feed.tags === 0, feed);
@@ -41,14 +41,14 @@ async function ready(b) {
   for (let i = 0; i < 40; i++) { mmOpen = await b.evaluate(`(() => { const p = document.getElementById('mm-panel'); return !!p && !p.hidden && p.querySelectorAll('.mm-tile').length > 10; })()`); if (mmOpen) break; await sleep(300); }
   R.check("TOP 3 아래 'GTX 역 타일로 한눈에 보기' → 타일맵 열림", /타일로 한눈에/.test(tb || '') && mmOpen, { tb, mmOpen });
   await b.evaluate(`typeof MarketMap !== 'undefined' && MarketMap.close && MarketMap.close(); 0`);
-  // 지도 위 '켜진 분석' (68점 감사 12번): 떡상 지도 켜면 뜨고 끄면 사라짐
+  // 지도 위 '켜진 분석' (68점 감사 12번): 축지법 지도 켜면 뜨고 끄면 사라짐
   await b.evaluate(`(() => { if (typeof RocketPanel !== 'undefined' && RocketPanel.isOpen()) RocketPanel.close(); const c = document.getElementById('layer-rocket'); if (c.checked) c.click(); })()`); await sleep(400);
   const off0 = await b.evaluate(`(() => { const e = document.getElementById('al-chip'); return !e || e.hidden; })()`);
   await b.evaluate(`document.getElementById('layer-rocket').click(); 0`); await sleep(600);
   const on1 = await b.evaluate(`(() => { const e = document.getElementById('al-chip'); return e && !e.hidden ? e.textContent : null; })()`);
   await b.evaluate(`document.getElementById('layer-rocket').click(); 0`); await sleep(600);
   const off1 = await b.evaluate(`(() => { const e = document.getElementById('al-chip'); return !e || e.hidden; })()`);
-  R.check("지도 위 '켜진 분석': 떡상 지도 켜면 표시, 끄면 사라짐", off0 && /개통 효과 지도/.test(on1 || '') && off1, { off0, on1, off1 });
+  R.check("지도 위 '켜진 분석': 축지법 지도 켜면 표시, 끄면 사라짐", off0 && /개통 효과 지도/.test(on1 || '') && off1, { off0, on1, off1 });
   // 테마: 처음엔 라이트·다크 + 더보기, 누르면 7개 (회장님 결정 2026-11-13)
   const vis = () => b.evaluate(`[...document.querySelectorAll('#theme-row .theme-btn')].filter(e => e.offsetParent).map(e => e.dataset.theme)`);
   const t0 = await vis();

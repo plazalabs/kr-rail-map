@@ -1,14 +1,14 @@
 /* e2e: 일반 키 어디서나 (K1, 회장님 지시 2026-11-13 19:40)
  *  지도 페이지
- *   - 포커스가 지도에 있어도 Esc 로 떡상 패널 · 역 타일 지도 · 질문 4개 · 역 상세가 닫힌다
- *   - 떡상 패널 위에 역 상세가 떠 있으면 Esc 한 번 = 역 상세만, 두 번 = 떡상 패널
+ *   - 포커스가 지도에 있어도 Esc 로 축지법 패널 · 역 타일 지도 · 질문 4개 · 역 상세가 닫힌다
+ *   - 축지법 패널 위에 역 상세가 떠 있으면 Esc 한 번 = 역 상세만, 두 번 = 축지법 패널
  *   - 닫을 것이 없으면 Esc = 입력칸에서 빠져나와 지도(캔버스)로 포커스
  *   - Ctrl+K = 검색창, ./?find=1 로 오면 검색창 포커스 + 주소에서 find 지움
  *  게시판 (board.html)
  *   - Esc → 지도 페이지로
  *   - 글 쓰는 중 Esc: 먼저 입력칸에서만 빠짐(페이지 그대로) → 다시 Esc 면 '나갈까요?' 묻고, 아니오면 남음 · 예면 지도
  *   - 내용 칸에서 Ctrl+Enter = 보내기
- *  자료(data.html)·떡상 랭킹(rank.html)에서도 Esc → 지도
+ *  자료(data.html)·축지법 랭킹(rank.html)에서도 Esc → 지도
  * 실행: node tests/e2e/run.js --only keyboard-esc
  */
 'use strict';
@@ -35,12 +35,12 @@ const onMap = `document.activeElement === map.getCanvas()`;
   await b.goto(BASE + '#normal', 800); await ready(b);
   const exc = [];
 
-  // 떡상 패널
+  // 축지법 패널
   await b.evaluate(`RocketPanel.open({}); 0`); await sleep(1500);
   await b.evaluate(focusMap);
   const rk0 = await b.evaluate(`RocketPanel.isOpen()`);
   await esc(b);
-  R.check('지도에 포커스가 있어도 Esc → 떡상 패널 닫힘', rk0 && !(await b.evaluate(`RocketPanel.isOpen()`)), { rk0 });
+  R.check('지도에 포커스가 있어도 Esc → 축지법 패널 닫힘', rk0 && !(await b.evaluate(`RocketPanel.isOpen()`)), { rk0 });
 
   // 역 타일 지도
   await b.evaluate(`MarketMap.open({}); 0`); await sleep(2000);
@@ -56,7 +56,7 @@ const onMap = `document.activeElement === map.getCanvas()`;
   await esc(b);
   R.check('Esc → 나에게 맞는 역 찾기(질문 4개) 닫힘', qz0 && !(await b.evaluate(`StationQuiz.isOpen()`)), { qz0 });
 
-  // 떡상 패널 위 역 상세: 한 번 = 역 상세만, 두 번 = 떡상 패널
+  // 축지법 패널 위 역 상세: 한 번 = 역 상세만, 두 번 = 축지법 패널
   await b.evaluate(`RocketPanel.open({}); 0`); await sleep(1500);
   await b.evaluate(`showStation(STATIONS.find(s => s.properties.name_ko === '잠실' && s.properties.lines.includes('seoul-subway-line-2')), null); 0`); await sleep(1200);
   await b.evaluate(focusMap);
@@ -65,7 +65,7 @@ const onMap = `document.activeElement === map.getCanvas()`;
   const st1 = await b.evaluate(`({ sd: !!document.querySelector('#sd-panel.sd-open'), rk: RocketPanel.isOpen() })`);
   await esc(b);
   const st2 = await b.evaluate(`({ sd: !!document.querySelector('#sd-panel.sd-open'), rk: RocketPanel.isOpen() })`);
-  R.check('겹쳐 있으면 맨 위부터 하나씩: Esc 1번 = 역 상세, 2번 = 떡상 패널', st0.sd && st0.rk && !st1.sd && st1.rk && !st2.sd && !st2.rk, { st0, st1, st2 });
+  R.check('겹쳐 있으면 맨 위부터 하나씩: Esc 1번 = 역 상세, 2번 = 축지법 패널', st0.sd && st0.rk && !st1.sd && st1.rk && !st2.sd && !st2.rk, { st0, st1, st2 });
 
   // 닫을 것 없음: 검색창에서 Esc → 지도로 포커스
   await b.evaluate(`(() => { const s = document.getElementById('search'); s.value = ''; s.focus(); })()`); await sleep(300);
@@ -112,7 +112,7 @@ const onMap = `document.activeElement === map.getCanvas()`;
   exc.push(...g.logs.filter(l => /EXC/.test(l)));
   g.close(); await sleep(800);
 
-  // 자료·떡상 랭킹 페이지
+  // 자료·축지법 랭킹 페이지
   const d = await launch({ port: 9873, w: 1440, h: 900 });
   await d.send('Network.setBypassServiceWorker', { bypass: true });
   for (const pg of ['data.html', 'rank.html']) {

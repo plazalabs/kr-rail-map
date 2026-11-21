@@ -1,6 +1,6 @@
 /* e2e: 지도 안 게시판 패널 (회장님 피드백 2026-11-14 — "글 쓰려는데 다른 페이지로 넘어가면 안 된다, 한 공간에서")
  *  - 왼쪽 레일 '게시판'·메뉴 '게시판·의견'을 누르면 페이지가 바뀌지 않고 지도 위 패널이 열린다
- *  - 패널 안에서 목록·글쓰기·신고, 글의 HTML 은 해석되지 않음 · 떡상 패널과 하나만 열림 · Esc 닫기
+ *  - 패널 안에서 목록·글쓰기·신고, 글의 HTML 은 해석되지 않음 · 축지법 패널과 하나만 열림 · Esc 닫기
  *  - 휴대폰: 레일 대신 아래 탭 '게시판'도 같은 패널, 가로 스크롤 없음
  * Supabase 응답은 board.e2e.js 와 같은 방식(CDP Fetch)으로 흉내 낸다.
  * 실행: node tests/e2e/run.js --only board-panel
@@ -63,7 +63,7 @@ const mk = () => [
   await b.evaluate(`window.confirm = () => true; document.querySelector('#board-panel .bdp-rep').click(); true`); await sleep(900);
   const s3 = await b.evaluate(`document.querySelector('#board-panel .bdp-rep').textContent`);
   R.check('신고 → 신고됨', /신고됨/.test(s3) && /"post_id":3/.test(seen.report || ''), { s3, rep: seen.report });
-  // 떡상 패널을 열면 게시판은 닫힘(같은 자리) → Esc 로 떡상도 닫고, 메뉴 '게시판·의견' 링크도 패널
+  // 축지법 패널을 열면 게시판은 닫힘(같은 자리) → Esc 로 떡상도 닫고, 메뉴 '게시판·의견' 링크도 패널
   await b.evaluate(`RocketPanel.open({}); true`); await sleep(2500);
   const s4 = await b.evaluate(`({ bd: !document.getElementById('board-panel').hidden, rk: RocketPanel.isOpen() })`);
   await b.evaluate(`RocketPanel.close(); document.querySelector('a.tb-menulink[href="board.html"]').click(); true`); await sleep(1000);

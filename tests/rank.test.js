@@ -133,7 +133,7 @@ console.log('\n[결론] 광운대 — 회장님 숫자와 맞는지');
 
 console.log('\n[일치] 역 상세의 순위와 순위표 전국 순위가 같다');
 {
-  // 역 상세 순위는 data/rank-station.json(build_rank.js 가 이 RankTable 로 만든 값) — 홈 카드·떡상 패널과 같은 기준(평균 · 기본 연도 · 수도권/전국)
+  // 역 상세 순위는 data/rank-station.json(build_rank.js 가 이 RankTable 로 만든 값) — 홈 카드·축지법 패널과 같은 기준(평균 · 기본 연도 · 수도권/전국)
   SA.setDoc(access);
   SA.setRanks(read('data/rank-station.json'));
   const cap = RT.compute(doc, { weight: 'avg', region: 'capital', at: doc.default_year });
@@ -159,9 +159,9 @@ check('기준 버튼 4개 (평균·CBD·YBD·GBD 중시)', ['avg', 'cbd', 'ybd',
 check('지역 버튼 (서울·수도권·전국)', ['seoul', 'capital', 'all'].every(v => html.includes('data-v="' + v + '"')));
 // 2026-11-12 레시피 비공개: 계산법은 지우고 '숫자 읽는 법'(정의)만 남긴다
 check('숫자 읽는 법: 시간 정의·배차 스위치 뜻·점수·등급·추정값', /숫자 읽는 법/.test(html) && /타고 가는 시간 \+ 갈아탈 때 걷는 시간/.test(html) &&
-  /점수<\/b> = 100 − 세 곳 평균 분/.test(html) && /떡상 100계단 이상/.test(html) && /추정값/.test(html));
+  /점수<\/b> = 100 − 세 곳 평균 분/.test(html) && /data-tier-label="rocket">축지법급<\/span> 100계단 이상/.test(html) && /추정값/.test(html));
 check('계산 계수·자료 처리 과정을 적지 않음', !/0\.41|0\.413|1\.79|중앙값|94%|07~09시|열차 수를 세어/.test(html));
-check('역을 누르면 지도 + 떡상 패널로 (?rocket=1&st=, v109)', /\.\/\?rocket=1&st=/.test(html));
+check('역을 누르면 지도 + 축지법 패널로 (?rocket=1&st=, v109)', /\.\/\?rocket=1&st=/.test(html));
 // 예외는 방문 통계 Umami 하나뿐 (회장님 확정 2026-11-12, 쿠키 없음) — 그 밖의 바깥 스크립트는 여전히 금지
 check('밖에서 불러오는 스크립트 없음 (Umami 통계만 예외)', !/<script[^>]+src="https?:/.test(html.replace(/<script defer src="https:\/\/cloud\.umami\.is\/script\.js"[^>]*><\/script>/g, '')));
 check('링크 미리보기 그림 og-rank.jpg (1200×630, 300KB 아래)', /og:image" content="[^"]+\/image\/og-rank\.jpg"/.test(html) && fs.existsSync(path.join(ROOT, 'image/og-rank.jpg')) && fs.statSync(path.join(ROOT, 'image/og-rank.jpg')).size < 300 * 1024);
@@ -184,9 +184,9 @@ check('링크 미리보기 그림 og-rank.jpg (1200×630, 300KB 아래)', /og:im
 const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
 check('지도가 ?st= 를 받아 역 상세를 연다', /q\.get\('st'\)/.test(app));
 const idx = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-// 작업 5(2026-11-12): 지도 범례의 '순위표 →' 는 지웠다 — 순위는 지도 안 떡상 패널(./?rocket=1)에서. rank.html 은 검색 유입용으로 남김
+// 작업 5(2026-11-12): 지도 범례의 '순위표 →' 는 지웠다 — 순위는 지도 안 축지법 패널(./?rocket=1)에서. rank.html 은 검색 유입용으로 남김
 check('지도 범례에 rank.html 링크 없음', !/href="rank\.html"/.test(idx));
-check('게시판·자료 머리 메뉴에 떡상 랭킹(지도 패널)', ['board.html', 'data.html'].every(f => fs.readFileSync(path.join(ROOT, f), 'utf8').includes('href="./?rocket=1"')));
+check('게시판·자료 머리 메뉴에 축지법 랭킹(지도 패널)', ['board.html', 'data.html'].every(f => fs.readFileSync(path.join(ROOT, f), 'utf8').includes('href="./?rocket=1"')));
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 check('서비스워커 앱 셸에 rank.html·rank.js', /'\.\/rank\.html'/.test(sw) && /'\.\/js\/rank\.js'/.test(sw));
 

@@ -13,7 +13,7 @@ const VPS = (process.env.VPS || 'm390,t768,d1440').split(',');
 const VP = { m390: { w: 390, h: 844, mobile: true }, t768: { w: 768, h: 1024, mobile: true }, d1440: { w: 1440, h: 1000, mobile: false } };
 const MENUS = [
   ['도구', ['draw-btn', 'measure-btn', 'radius-btn', 'memo-btn']],
-  // Q5 (11-15): 새로 생긴 항목도 누른다 — 시장 타일·맞춤 역 찾기·게시판 링크 (전엔 시험이 안 눌렀다. 떡상 랭킹 항목은 j7-off 로 숨김 — 툴바 단추가 대신)
+  // Q5 (11-15): 새로 생긴 항목도 누른다 — 시장 타일·맞춤 역 찾기·게시판 링크 (전엔 시험이 안 눌렀다. 축지법 랭킹 항목은 j7-off 로 숨김 — 툴바 단추가 대신)
   ['분석', ['compare-btn', 'stats-btn', 'timeline-btn', 'invest-btn', 'coverage-btn', 'commute-btn', 'market-btn', 'quiz-btn']],
   ['저장', ['diagram-save-btn', 'save-btn', 'share-btn', 'report-btn', 'board-link']],
 ];

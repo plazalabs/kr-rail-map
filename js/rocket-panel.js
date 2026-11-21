@@ -1,6 +1,6 @@
-/* RocketPanel — 지도 안 'GTX 떡상' 패널 (디자인 개편 v109, 2026-11-12)
+/* RocketPanel — 지도 안 'GTX 축지법' 패널 (디자인 개편 v109, 2026-11-12)
  *
- * 툴바 'GTX 떡상' 을 누르면 지도 오른쪽(PC) 카드 / 아래쪽(휴대폰) 불투명 시트가 열린다.
+ * 툴바 'GTX 축지법' 을 누르면 지도 오른쪽(PC) 카드 / 아래쪽(휴대폰) 불투명 시트가 열린다.
  *   - 문장형 제목: '2031년, 광운대는 강남까지 9분'
  *   - 기준 4개(평균·도심·여의도·강남), 개통 연도 칩 + ▶ 재생
  *   - 고른 역 카드: 지금 순위에 취소선 → 개통 후 순위, 연도별 순위 곡선(재생 때 그려짐), 업무지구 3곳 시간 막대
@@ -144,11 +144,11 @@
     var rb = document.getElementById('rocket-btn'); if (rb) rb.setAttribute('aria-controls', 'rocket-panel');
     el.className = 'rkp';
     el.hidden = true;
-    el.setAttribute('aria-label', 'GTX 떡상 랭킹');
+    el.setAttribute('aria-label', 'GTX 축지법 랭킹');
     el.innerHTML =
       '<button class="rkp-grip mob-only" type="button" aria-label="시트 접기·펴기" aria-expanded="true"><i></i></button>' +
-      '<div class="rkp-head"><p class="rkp-eyebrow">GTX 떡상 랭킹 · 수도권 <span id="rkp-total"></span>역</p>' +
-      '<button class="rkp-close" type="button" aria-label="떡상 패널 닫기"><i data-ic="close"></i></button></div>' +
+      '<div class="rkp-head"><p class="rkp-eyebrow">GTX 축지법 랭킹 · 수도권 <span id="rkp-total"></span>역</p>' +
+      '<button class="rkp-close" type="button" aria-label="축지법 패널 닫기"><i data-ic="close"></i></button></div>' +
       '<h2 class="rkp-title" id="rkp-title" aria-live="polite"></h2>' +
       '<p class="rkp-def">업무지구까지 걸리는 시간으로 매긴 <b>상대 순위</b>입니다 · 집값이나 투자수익 예측이 아닙니다</p>' +
       '<div class="rkp-seg" role="group" aria-label="기준">' +
@@ -170,7 +170,7 @@
       '<button type="button" class="rkp-topshare" hidden><i data-ic="camera"></i> TOP 10 이미지로 공유 (카톡·인스타)</button>' +   // 공유 카드 ③ (11-14)
       '<button type="button" class="rkp-allbtn" aria-expanded="false"></button>' +
       '<div class="rkp-legend" aria-label="지도 점 색">' +
-        '<span><i style="background:#0a8f4a"></i>떡상</span><span><i style="background:#3aa76d"></i>상승</span><span><i style="background:#9aa1a8"></i>보합</span><span><i style="background:#d9701a"></i>상대 하락</span><span><i style="background:#7a3fd0"></i>신규</span>' +
+        [['rocket', '#0a8f4a'], ['up', '#3aa76d'], ['flat', '#9aa1a8'], ['down', '#d9701a'], ['new', '#7a3fd0']].map(function (t) { return '<span><i style="background:' + t[1] + '"></i>' + RankTable.TIERS[t[0]].label + '</span>'; }).join('') +
       '</div>' +
       '<p class="rkp-def">상대 하락 = 그 역 시간은 그대로이거나 줄었는데 <b>다른 역이 더 좋아져</b> 순위가 밀린 경우가 많아요</p>' +
       '<div class="rkp-foot">' +
@@ -447,7 +447,7 @@
     if (!el) build();
     var go = function () {
       doc = StationRocket.doc();
-      if (!doc) { if (global.setStatus) global.setStatus('떡상 자료를 불러오지 못했습니다'); return; }
+      if (!doc) { if (global.setStatus) global.setStatus('축지법 랭킹 자료를 불러오지 못했습니다'); return; }
       if (!st.y) st.y = defaultYear(doc);
       if (o.y && (o.y === 'all' || (doc.years || []).map(String).indexOf(String(o.y)) >= 0)) st.y = String(o.y);
       else if (o.y && /^20\d\d$/.test(String(o.y))) { var ny = (doc.years || []).map(Number).filter(function (y) { return y >= +o.y; })[0]; if (ny) st.y = String(ny); }   // K14: 없어진 연도(옛 링크 2033)는 그 뒤 첫 연도로

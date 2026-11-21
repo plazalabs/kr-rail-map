@@ -21,7 +21,7 @@ E2E_BASE=https://plazalabs.github.io/kr-rail-map/index.html node tests/e2e/run.j
 | `CHROME_PATH` | 크롬 실행 파일 | 자동 탐색 (Windows 기본 설치 경로 → `google-chrome`·`chromium`) |
 | `E2E_PORT` | 정적 서버 포트 | `8124` |
 | `E2E_BASE` | 이미 떠 있는 주소. 주면 서버를 띄우지 않는다 | 없음 |
-| `E2E_OUT` | 스크린샷·`result.json`·`summary.json` 폴더 | OS 임시 폴더 `/kr-rail-map-e2e` |
+| `E2E_OUT` | 스크린샷·`result.json`·`summary.json` 폴더 | 저장소 `scratch/e2e-out` (OS 임시 폴더는 용량이 차서 안 씀) |
 | `E2E_RETRY` | 실패한 항목을 다시 돌릴 횟수. 재시도 후 통과하면 `FLAKY`로 표시 | `0` |
 | `E2E_CPU_THROTTLE` | CPU 를 N배 느리게 (CI 러너처럼 느린 기계 흉내, 예: `4`) | 없음 |
 

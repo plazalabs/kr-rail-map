@@ -8,9 +8,9 @@
  */
 'use strict';
 const path = require('path'), os = require('os');
-const { launch, sleep, BASE, recorder } = require('./lib/cdp');
+const { launch, sleep, BASE, recorder, outRoot } = require('./lib/cdp');
 const R = recorder('panel-fold');
-const SHOTS = process.env.E2E_OUT || path.join(os.tmpdir(), 'kr-rail-map-e2e');
+const SHOTS = outRoot();
 async function ready(b) { for (let k = 0; k < 200; k++) { await sleep(100); if (await b.evaluate(`typeof dataReady!=='undefined'&&dataReady`).catch(() => false)) break; } await sleep(800); }
 const STATE = `(() => { const t = document.getElementById('rpanel-toggle'); const p = document.querySelector('.rkp:not([hidden])');
   const tr = t && t.getBoundingClientRect(), pr = p && p.getBoundingClientRect();

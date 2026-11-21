@@ -11,7 +11,7 @@
  * 환경 변수:
  *   E2E_PORT    정적 서버 포트 (기본 8124)
  *   E2E_BASE    이미 떠 있는 주소를 쓸 때 (예: https://plazalabs.github.io/kr-rail-map/index.html). 주면 서버를 띄우지 않는다
- *   E2E_OUT     스크린샷·결과 JSON 폴더 (기본: OS 임시 폴더/kr-rail-map-e2e)
+ *   E2E_OUT     스크린샷·결과 JSON 폴더 (기본: 저장소 scratch/e2e-out)
  *   CHROME_PATH 크롬 실행 파일 (기본: 자동 탐색)
  *   E2E_RETRY   실패한 점검을 다시 돌릴 횟수 (기본 0). 재시도로 통과하면 'flaky' 로 따로 표시한다
  *
@@ -23,7 +23,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { start } = require('./lib/serve');
-const { findChrome } = require('./lib/cdp');
+const { findChrome, outRoot } = require('./lib/cdp');
 const Profiles = require('./lib/profiles');
 const MB = b => (b / 1048576).toFixed(0) + 'MB';
 
@@ -131,7 +131,7 @@ function runOne(file, env) {
     server = await start(port);
     base = `http://127.0.0.1:${port}/index.html`;
   }
-  const out = process.env.E2E_OUT || path.join(os.tmpdir(), 'kr-rail-map-e2e');
+  const out = outRoot();
   // 크롬 임시 프로필 — 주인이 끝난 옛 프로필을 먼저 치운다 (돌고 있는 다른 e2e 의 프로필은 건드리지 않는다)
   const pf0 = Profiles.stats(), sw0 = Profiles.sweep(), pf1 = Profiles.stats();
   console.log(`크롬 임시 프로필(시작): ${pf0.count}개 ${MB(pf0.bytes)} → 옛 것 ${sw0.removed}개 지움 → ${pf1.count}개 ${MB(pf1.bytes)}${sw0.inUse ? ` (다른 실행이 쓰는 중 ${sw0.inUse}개)` : ''}`);

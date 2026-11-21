@@ -5,7 +5,7 @@
  *  - 크롬 위치를 환경에 맞춰 찾는다 (CHROME_PATH → Windows 기본 경로 → Linux 의 google-chrome/chromium)
  *  - 크롬 프로필을 OS 임시 폴더에 새로 만든다 (서비스워커·캐시가 남지 않게, 저장소에 쌓이지 않게)
  *  - Linux(CI)에서는 --no-sandbox (GitHub Actions 우분투 러너의 사용자 네임스페이스 제한 대응)
- *  - 결과 파일(스크린샷·JSON)은 E2E_OUT(기본: OS 임시 폴더/kr-rail-map-e2e) 아래에 쓴다
+ *  - 결과 파일(스크린샷·JSON)은 E2E_OUT(기본: 저장소 scratch/e2e-out — OS 임시 폴더는 용량이 차서 쓰지 않는다) 아래에 쓴다
  */
 'use strict';
 const { spawn, execFileSync } = require('child_process');
@@ -33,8 +33,12 @@ function findChrome() {
   throw new Error('크롬을 찾지 못했습니다. CHROME_PATH 환경 변수로 위치를 알려 주세요.');
 }
 
+// 결과 폴더 기본값 — 저장소 scratch/e2e-out (git 에 올리지 않는 작업 폴더)
+const OUT_DEFAULT = path.join(__dirname, '..', '..', '..', 'scratch', 'e2e-out');
+function outRoot() { return process.env.E2E_OUT || OUT_DEFAULT; }
+
 function outDir(name) {
-  const d = path.join(process.env.E2E_OUT || path.join(os.tmpdir(), 'kr-rail-map-e2e'), name);
+  const d = path.join(outRoot(), name);
   fs.mkdirSync(d, { recursive: true });
   return d;
 }
@@ -180,4 +184,4 @@ async function ensureToolbar(b, sel) {
   return !!p;
 }
 
-module.exports = { launch, sleep, BASE, outDir, recorder, findChrome, clickStation, Profiles, ensureToolbar };
+module.exports = { launch, sleep, BASE, outDir, outRoot, recorder, findChrome, clickStation, Profiles, ensureToolbar };

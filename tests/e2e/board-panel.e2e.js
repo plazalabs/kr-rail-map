@@ -6,7 +6,7 @@
  * 실행: node tests/e2e/run.js --only board-panel
  */
 'use strict';
-const { launch, sleep, BASE, recorder } = require('./lib/cdp');
+const { launch, sleep, BASE, recorder, outRoot } = require('./lib/cdp');
 const R = recorder('board-panel');
 const SB = 'https://testproj01.supabase.co';
 const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e2e-anon-key-for-tests-only';
@@ -86,7 +86,7 @@ const mk = () => [
     return { url: location.href, open: !!p && !p.hidden, n: p ? p.querySelectorAll('.bdp-post').length : 0, inView: r && r.left >= -1 && r.right <= innerWidth + 1 && r.height > 200,
       hscroll: document.documentElement.scrollWidth > innerWidth + 1 }; })()`);
   R.check('휴대폰 아래 탭 게시판 → 같은 패널, 화면 안, 가로 스크롤 없음', t1.url === u0 && t1.open && t1.n === 2 && t1.inView && !t1.hscroll, t1);
-  await m.shot(require('path').join(process.env.E2E_OUT || require('path').join(require('os').tmpdir(), 'kr-rail-map-e2e'), 'board-panel-mobile.png'));
+  await m.shot(require('path').join(outRoot(), 'board-panel-mobile.png'));
   const exc2 = m.logs.filter(x => /EXC/.test(x));
   R.check('휴대폰 예외 0', exc2.length === 0, exc2.slice(0, 3));
   m.close();

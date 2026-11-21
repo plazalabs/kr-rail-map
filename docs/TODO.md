@@ -89,6 +89,7 @@
 - [x] 81. (지시서 블록 E 11-21) GTX 입구 MVP — gtx.html · data/gtx-card.json (v307, push 전). 보고 `구현보고_GTX입구_20261121.md`. 상세 `TASK_GTX입구_MVP_20261121.md`, 기준 `결정_GTX입구_20261121.md`
 - [ ] 82. (다음 블록 후보, 검수 11-21) 길찾기 중 updateFilters(노선 표시 바꾸기)가 station-labels filter 를 덮어 경로 역 원래 글자가 다시 나옴 — app.js updateFilters 의 station-labels setFilter vs highlightRoute 의 경로 역 빼기 filter
 - [x] 83. (검수 11-21, 배포본 v308) gtx.html 링크 미리보기(og·twitter 태그) 없음 → 태그 + 공용 그림 image/og-gtx.jpg (v309)
+- [ ] 86. (회장 결정 11-21, 블록 F 질문 ② — 블록 G 에 같이) 계획 노선 연도 표기를 지도 규칙(74)으로 통일: '이름 (상태 말 · 연도)', 연도 null 이면 '이름 (상태 말)', 공사 중은 '이름 연도'. 연도는 open_year(rank.json lines.y). rank.html 카드(rank-page.js nl-yr 'GTX-D 2035년')·공유 그림·앱 공유 카드(station-share.js)·길찾기 비교 카드(route-compare.js lineStatusLabel '(계획 · 2035년)') 모두 LineStatus.label 하나로. 지금: 지도 'GTX-D 계획 · 2035' / rank.html 카드 'GTX-D 2035년' / 공유 그림 'GTX-D (계획)' / 길찾기 비교 'GTX-D (계획 · 2035년)'
 
 ## 4단계: 미래 노선 정리
 - [ ] 23. 공사 중인데 빠진 노선 확인 후 추가 (신안산선, 월곶판교선, 인덕원동탄선, 위례신사선, 대장홍대선). 먼저 실제로 공사 중인지 확인

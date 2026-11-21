@@ -12,6 +12,8 @@ test('큰 숫자: 줄어든 분이 같으면 개통 후가 작은 곳, 그래도
 });
 test('큰 숫자: null 은 건너뜀', () => {
   assert.deepStrictEqual(G.pickDest([null, 50, 60], [10, 45, 40]), { i: 2, kind: 'cut' });
+  // 개통 후 값이 null(못 감)인 곳을 '60분 줄어듦'으로 세면 안 됨
+  assert.deepStrictEqual(G.pickDest([50, 40, 60], [45, 30, null]), { i: 1, kind: 'cut' });
 });
 test('큰 숫자: 신규 역(지금 셋 다 못 감) → 개통 후 가장 작은 곳', () => {
   assert.deepStrictEqual(G.pickDest([null, null, null], [50, 40, null]), { i: 1, kind: 'new' });

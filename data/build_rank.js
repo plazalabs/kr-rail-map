@@ -140,6 +140,11 @@ const rows = groups.map(g => {
 
 // 기본 시나리오(순위 기준)는 '2031년까지 개통' 하나 — 홈 카드·떡상 패널·순위표·타일 지도가 모두 이 값을 기본으로 쓴다.
 // 전체 개통(시기 미정 포함)은 켜는 옵션. 바꾸려면 회장님 결정 (CLAUDE.md 3-1).
+// 개통 연도는 lines.geojson open_year 하나뿐 (build_access.js openYear 와 같은 방식). 설명 글(opened)에서 뽑지 않는다.
+function openYear(p) {
+  if (!('open_year' in p)) throw new Error('open_year 없는 미개통 노선: ' + p.id + ' — node data/plan_status.js 먼저');
+  return p.open_year == null ? null : +p.open_year;
+}
 const DEFAULT_YEAR = 2031;
 if (!(yearsDoc.years || []).includes(DEFAULT_YEAR)) throw new Error('기본 시나리오 연도 ' + DEFAULT_YEAR + ' 가 연도 단계에 없음');
 const doc = {
@@ -153,13 +158,15 @@ const doc = {
   undated_lines: yearsDoc.undated_lines || [],
   lines: Object.fromEntries(Array.from(usedLines).map(l => {
     const p = lineMeta.get(l);
-    return [l, { n: p.name_ko, c: p.color, s: p.status, o: p.status === 'open' ? undefined : (p.opened || '') }];
+    const open = !p.status || p.status === 'open';
+    return [l, { n: p.name_ko, c: p.color, s: p.status, o: open ? undefined : (p.opened || ''), y: open ? undefined : openYear(p) }];
   })),
   rows,
 };
 // 노선이 아닌 '정차 단계'(js/route.js STOP_STAGES)도 연도 칩에 이름이 나오게 — 2028 '개통:' 줄이 비지 않게 (11-15)
+// y(개통 연도)는 정차 단계 연도(_access_years.json year_stages)에서 채운다
 const STAGE_META = { 'gtx-a-samseong-stop': { n: 'GTX-A 삼성역 정차', c: '#9A6292', s: 'construction', o: '2028년 예정 (2027 개통 땐 무정차 통과)' } };
-Object.values(doc.year_stages).forEach(ids => ids.forEach(id => { if (!doc.lines[id] && STAGE_META[id]) doc.lines[id] = STAGE_META[id]; }));
+Object.entries(doc.year_stages).forEach(([yr, ids]) => ids.forEach(id => { if (!doc.lines[id] && STAGE_META[id]) doc.lines[id] = Object.assign({}, STAGE_META[id], { y: +yr }); }));
 fs.writeFileSync(path.join(ROOT, 'data/rank.json'), JSON.stringify(doc));
 const bySido = {};
 rows.forEach(r => { bySido[r.r || '?'] = (bySido[r.r || '?'] || 0) + 1; });
@@ -177,8 +184,7 @@ console.log('크기', (fs.statSync(path.join(ROOT, 'data/rank.json')).size / 102
   const top = global.RankTable.sortRows(res.rows.filter(r => !r.isNew && r.change > 0), 'rise').slice(0, 3).map(r => {
     const nl = (r.lines || []).filter(l => doc.lines[l] && doc.lines[l].s !== 'open');
     const meta = nl.length ? doc.lines[nl[0]] : null;
-    const yr = meta && /(20\d\d)/.exec(meta.o || '');
-    return { id: r.id, n: r.name, ch: r.change, now: r.now.rank, aft: r.aft.rank, line: meta ? meta.n : '', c: meta ? meta.c : '', y: yr ? +yr[1] : null };
+    return { id: r.id, n: r.name, ch: r.change, now: r.now.rank, aft: r.aft.rank, line: meta ? meta.n : '', c: meta ? meta.c : '', y: meta && meta.y != null ? meta.y : null };
   });
   const out = { updated: doc.updated, year, total: res.total, basis: '평균(도심·여의도·강남) 기준 수도권 순위가 개통 후 가장 많이 오르는 역 — 교통 접근성 순위이며 집값 예측이 아님', top };
   fs.writeFileSync(path.join(ROOT, 'data/rank-top.json'), JSON.stringify(out));

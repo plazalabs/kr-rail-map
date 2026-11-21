@@ -137,7 +137,6 @@ const RankTable = (() => {
     return n;
   }
   // 개통 연도 — '2031년', '1단계: 2033년 목표' 같은 글에서 첫 4자리 연도
-  function yearOf(text) { const m = /(20\d\d)/.exec(text || ''); return m ? +m[1] : null; }
 
   // 이름 찾기 — 공백 무시, 일부만 맞아도
   function matches(row, q) {
@@ -154,7 +153,7 @@ const RankTable = (() => {
     const y = String(doc.default_year);
     return (doc.years || []).map(String).indexOf(y) >= 0 ? y : 'all';
   }
-  return { WEIGHTS, TIERS, minutesOf, scoreOf, compute, sortRows, matches, inRegion, tierOf, tierCounts, yearOf, defaultYear };
+  return { WEIGHTS, TIERS, minutesOf, scoreOf, compute, sortRows, matches, inRegion, tierOf, tierCounts, defaultYear };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = RankTable;

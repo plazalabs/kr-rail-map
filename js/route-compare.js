@@ -1022,8 +1022,7 @@ const RouteCompare = (() => {
   function lineStatusLabel(id) {
     const name = lineNameOf.get(id) || id, m = lineMetaOf.get(id);
     if (!m || !m.status || m.status === 'open') return name;
-    const y = String(m.opened || '').match(/\d{4}년대?/);
-    return name + ' (' + LineStatus.word(m.status) + (y ? ' · ' + y[0] : '') + ')';
+    return name + ' (' + LineStatus.word(m.status) + (m.year != null ? ' · ' + m.year + '년' : '') + ')';
   }
 
   function hide() {
@@ -1037,7 +1036,7 @@ const RouteCompare = (() => {
     stationNameOf = new Map(stations.map(s => [s.properties.id, s.properties.name_ko]));
     stationCoordOf = new Map(stations.map(s => [s.properties.id, s.geometry && s.geometry.coordinates]));
     lineNameOf = new Map(lines.map(f => [f.properties.id, f.properties.name_ko]));
-    lineMetaOf = new Map(lines.map(f => [f.properties.id, { status: f.properties.status, opened: f.properties.opened }]));
+    lineMetaOf = new Map(lines.map(f => [f.properties.id, { status: f.properties.status, year: f.properties.open_year }]));
     if (RF.extraLines) RF.extraLines().forEach(x => lineNameOf.set(x.id, x.name_ko));   // ITX-청춘 등 급행 계통
   }
 

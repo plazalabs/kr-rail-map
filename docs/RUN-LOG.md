@@ -270,3 +270,20 @@
 | 80 보완 | 길찾기 중 원래 역 이름 레이어를 통째로 끄지 않고 경로 역만 filter 로 뺌 — 경로 밖 역 이름은 그대로, 닫으면 원래 filter. R-80 '경로 밖 역 이름은 길찾기 중에도 보임' 먼저 실패 → 통과, R-80 4/4 | (이 커밋) | 데이터 2 |
 | 81 시험 | 카드 규칙 8곳을 일부러 깨 봄 → 7곳은 바로 실패, null 건너뛰기만 안 잡혀 단언 추가 후 실패 확인, 모두 되돌림(diff 0) | 89afc3c | 데이터 2 |
 | 81-5 | 배포 준비 v307: sw.js 미리 받기(gtx.html·gtx-card.js·gtx-page.js), sitemap 81 URL(build_pages.py), tools/build_public.js 목록, README 81 URL. 구현보고_GTX입구_20261121.md | 8102bdd | 데이터 2 |
+
+## 블록 F (2026-11-21 오후, 지시서 `지시서_블록F_20261121.md`)
+시작 기준선: main 6e13858(v309) · 데이터 시험 55 통과 / 실패 2(D-13·D-15) · 단위 72/72 · 시험 출력 `scratch/blockF/`. 순서 77 → 76. 회장님 결정 거리(계획 노선 연도 표기 통일)는 안 고침
+
+### 숙제별 한 줄
+| 번호 | 한 일 | 커밋 | 남은 실패 |
+|---|---|---|---|
+| 77 | 개통 연도를 노선 설명 글에서 뽑던 곳 5곳 → lines.geojson open_year 하나. 지시서 4곳(build_rank.js rank-top · rank-page.js 카드 149·공유 그림 323 · station-share.js planLabel) + **지시서에 없던 1곳 js/route-compare.js lineStatusLabel**(길찾기 비교 공유 카드 'GTX-A 평택 연장 (계획 · 2028년)' — 착공 구상 연도였음). rank.json lines 에 `y`(open_year, 칸 없으면 멈춤), 삼성역 정차 단계 `y` = year_stages 2028. RankTable.yearOf 지움. R-77 데이터 4개(y = open_year · 정차 단계 y · rank-top y · 설명 글 연도 grep 0) + e2e 1개(구리 GTX-G·평택지제 평택 연장 '시기 미정', 의정부 GTX-C '2031년') 먼저 실패 확인 → 통과. rank.test 65/0(yearOf 시험 2줄을 새 칸 기준으로), 데이터 59 통과/2 실패, 단위 72/72, e2e rank 35/0·rocket-panel 37/0·commute-card 9/0·line-status 30/0·unopened 16/0·share-line 8/0 | (이 커밋) | 데이터 2 |
+
+#### 77 값 바뀐 것 (rank.json lines — 바뀐 것만, 나머지 14노선은 문장 첫 연도 = open_year)
+| 노선 | 설명 글 | 전(설명 글 첫 연도) | 후(open_year) | 화면 |
+|---|---|---|---|---|
+| GTX-G | 2030년대 목표 | 2030 | null | rank.html 카드 '2030년' → '시기 미정' |
+| GTX-H | 2030년대 목표 | 2030 | null | 같음 |
+| GTX-A 평택 연장 | 미정 (2028년 착공 구상) | 2028 | null | 같음 · 길찾기 비교 카드 '(계획 · 2028년)' → '(계획)' |
+- rank-top.json · rank-station.json: 바이트까지 같음(의정부·인천대입구·덕정 2031). rank.json 은 lines.y 말고 같음
+- 길찾기 비교 카드에서 GTX-G·H 는 전 '(계획 · 2030년대)'(설명 글 그대로) → 후 '(계획)'. 연도 없는 노선은 상태 말만 — 지도 라벨(74)과 같은 규칙

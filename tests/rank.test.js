@@ -51,7 +51,7 @@ check('▲10~99 상승', RT.tierOf({ change: 10 }) === 'up' && RT.tierOf({ chang
 check('▲9 ~ ▼49 보합', RT.tierOf({ change: 9 }) === 'flat' && RT.tierOf({ change: -49 }) === 'flat');
 check('▼50 이상 상대 하락', RT.tierOf({ change: -50 }) === 'down');
 check('지금 갈 수 없던 역은 신규', RT.tierOf({ isNew: true, change: null }) === 'new');
-check('개통 연도 읽기', RT.yearOf('2031년 목표 (2026년 9월 착공)') === 2031 && RT.yearOf('1단계: 2033년 목표') === 2033 && RT.yearOf('미정') === null);
+check('설명 글에서 연도 읽는 함수가 없음 (개통 연도는 rank.json lines.y = open_year)', !('yearOf' in RT));
 {
   const c = RT.compute(doc, { weight: 'avg', region: 'capital' });
   const n = RT.tierCounts(c.rows);
@@ -81,7 +81,7 @@ check('개통 연도 읽기', RT.yearOf('2031년 목표 (2026년 9월 착공)') 
   check('연도별 시간은 해가 갈수록 늘지 않는다 (정차 단계 해만 2분까지)', doc.rows.every(r => { let p = r.now; return doc.years.every(y => { const v = r.y[y]; const slack = stageYear(String(y)) ? 2 : 0; const ok = v.every((t, i) => t == null || p[i] == null || t <= p[i] + slack); if (!ok && !badRow) badRow = JSON.stringify({ n: r.n, y, p, v }); p = v; return ok; }); }), badRow || (kRow && JSON.stringify(kRow.y)));
   const cn = doc.rows.find(r => r.n === '창릉');
   check('창릉은 2030년부터 생긴다', cn && cn.y['2027'].every(v => v == null) && cn.y['2030'].every(v => v != null), cn && JSON.stringify(cn.y));
-  check('GTX-C 개통 연도가 2031년 (2026-09 착공·60개월)', RT.yearOf((doc.lines['gtx-c'] || {}).o) === 2031, (doc.lines['gtx-c'] || {}).o);
+  check('GTX-C 개통 연도가 2031년 (2026-09 착공·60개월)', (doc.lines['gtx-c'] || {}).y === 2031, JSON.stringify(doc.lines['gtx-c']));
 }
 
 console.log('\n[⏱ 출퇴근 배차] data/headways.json — 공식 시간표로 센 값, 추정은 개통 전 노선만');

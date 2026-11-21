@@ -109,7 +109,7 @@ function surfaces() {
     map: evalExpr(tf, p),
     search: lineLabelOf(p.id),
     detail: (lineRow(p.id).match(/class="sd-badge [^"]*">([^<]*)</) || [])[1],
-    share: planLabel({ n: p.name_ko, s: p.status, o: p.opened }),
+    share: planLabel({ n: p.name_ko, s: p.status, y: p.open_year }),
   }));
 }
 

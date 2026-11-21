@@ -20,8 +20,7 @@
   function planLabel(m) {
     if (!m) return '';
     if (m.s === 'planned' || m.s === 'proposed') return m.n + ' (' + LineStatus.word(m.s) + ')';
-    var y = (typeof RankTable !== 'undefined' && RankTable.yearOf) ? RankTable.yearOf(m.o) : null;
-    return m.n + (y ? ' ' + y : '');
+    return m.n + (m.y ? ' ' + m.y : '');
   }
   var CARD_TIER = { rocket: '접근성 크게 개선', up: '접근성 개선', flat: '비슷', down: '상대 하락', new: '신규' };
   function changeText(r) { return r.change > 0 ? '▲' + r.change : r.change < 0 ? '▼' + (-r.change) : '그대로'; }

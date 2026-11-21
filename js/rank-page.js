@@ -146,7 +146,7 @@
     const plan = lineChips(r.lines, true);
     const nl = plan.length
       ? '<div class="newlines"><div class="t">이 역에 새로 생기는 노선</div>' + plan.map(x => {
-          const yr = RankTable.yearOf(x.m.o);
+          const yr = x.m.y;
           return '<span class="nl">' + chipHtml(x) + '<span class="nl-yr">' + (yr ? yr + '년' : '시기 미정') + '</span></span>';
         }).join('') + '</div>'
       : (r.change > 0 ? '<div class="newlines"><div class="t">이 역에는 새 노선이 없지만, 가까운 역의 새 노선(GTX 등)으로 갈아타는 길이 빨라집니다.</div></div>' : '');
@@ -320,7 +320,7 @@
     roundRect(g, 80, 640, bw, 78, 39); g.fillStyle = COL; g.fill();
     g.fillStyle = '#fff'; g.fillText(bt, 108, 694);
     // 이 역에 새로 생기는 노선 (개통 연도)
-    const plan = lineChips(r.lines, true).slice(0, 3).map(x => { if (x.m.s === 'planned' || x.m.s === 'proposed') return x.m.n + ' (계획)'; const y = RankTable.yearOf(x.m.o); return x.m.n + (y ? ' ' + y : ''); });   // 계획 노선은 연도 없이 (카드 공통 표기)
+    const plan = lineChips(r.lines, true).slice(0, 3).map(x => { if (x.m.s === 'planned' || x.m.s === 'proposed') return x.m.n + ' (계획)'; const y = x.m.y; return x.m.n + (y ? ' ' + y : ''); });   // 계획 노선은 연도 없이 (카드 공통 표기)
     if (plan.length) { g.font = '600 30px ' + F; g.fillStyle = '#c8d3e6'; g.fillText('새 노선 ' + plan.join(' · '), 80 + bw + 26, 692); }
     // 업무지구 분
     const D = ['도심권 CBD', '여의도권 YBD', '강남권 GBD'];   // 권역 안 가장 빠른 역까지 (감사 이전1)

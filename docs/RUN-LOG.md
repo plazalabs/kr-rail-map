@@ -167,6 +167,7 @@
 - 2026-11-21 19:38 KST · v312 · f2e41ad — 블록 G 84·85(2커밋 푸시, c57143e..f2e41ad). pages-build-deployment 성공. 배포본 sw.js app CACHE = v312, gtx.html 제목 '몇분컷 | 한국철도맵', rank.html 제목 'GTX 축지법 랭킹 | 한국철도맵'. 뒤따른 커밋 e3e103d(E-03 잠긴 시험 한 줄)·이 기록은 시험·문서만이라 같이 푸시(화면 바뀜 없음)
 - 2026-11-21 20:43 KST · v313 · 4ef73ad — 블록 H 86·87(3커밋 푸시, 34bfab4..4ef73ad, 회장님 승인). pages-build-deployment 성공, 배포본 sw.js app CACHE = v313. **CI test 빨간불**: tests/sources.test.js 'og-rank.json 출처 없음' — 로컬에서 tests/*.test.js 를 다 안 돌려 놓침 → 8f38663 에서 sources.json 등록(단위 시험 전부 로컬 통과 확인), 숙제 34 와 같이 푸시 대기
 - 2026-11-21 20:59 KST · v314 · a37c69c — 87 출처·숙제 34 슬로건·기록(3커밋 8f38663·0f73ad7·a37c69c — 이 방에 왔을 때 이미 origin/main 에 있었음, 34bfab4..a37c69c). pages-build-deployment 성공, 배포본 sw.js app·data CACHE = v314. **CI test 성공**(sources.test 빨간불 풀림). **CI e2e 실패 1**: market-map '엉뚱한 주소 값은 무시하고 기본값 (연도 전체…)' — 기대값이 '전체'인데 기본 연도는 1970c30(11-18, 회장 결정)부터 2031. b479af8·79ad6c7·4668e7c·34bfab4 에서도 같은 실패(블록 H 에서 '그대로 둔 것'). 나머지 64/65 항목·판정 1045/1046 통과
+- 2026-11-21 21:46 KST · v316 · 20ebc81 — 숙제 90·90-2(3커밋 푸시, a37c69c..20ebc81, 회장님 승인). pages-build-deployment 성공, 배포본 sw.js app·data CACHE = v316, js/market-map.js 에 groupTitle, data/build_og_rank.js 에 🚀 없음. CI test 성공. 뒤이어 413e308(market-map 기본 연도 기대값 = rank.json default_year, 시험만) 푸시 — CI e2e 결과는 아래 'CI e2e 빨간불 고침'
 
 ## 블록 B (2026-11-18 시작)
 계획: `docs/plans/block-B.md` · 시작 기준선: 데이터 시험 실패 2개
@@ -354,5 +355,25 @@ GTX-C · 2031
 | 90-2 | og 그림 이모지 빼기: data/build_og_rank.js '🚀 GTX 축지법 랭킹' → 'GTX 축지법 랭킹'(글자만 — 아이콘 없이도 읽혀 선 아이콘 안 그림). build_og_gtx.js 는 이모지 없음(build_og_* 는 둘뿐). tests/no-emoji.test.js 검사 목록에 data/build_og_*.js 더함 → 고치기 전 1 실패(build_og_rank.js:28 🚀) 확인 → 통과. image/og-rank.jpg 다시 구움(sha1 8a99abd1… → 31ffae78…, og-rank.json jpg_sha1 갱신, 숫자 그대로), 눈으로 확인: 이모지 없음·TOP 5·'2031년까지 개통 가정 · 수도권 675역 중'·슬로건 '철도의 축, 도시의 내일'. R-87 3/3. 시험: 데이터 69/2(D-13·D-15) · 단위 72 파일 + 파이프라인 점검 통과 · Playwright og 관련 1/0 | 1b1311c | 데이터 2 (D-13·D-15) |
 
 - 손으로 붙인 상태 말 전수 grep(js/·data/*.js·data/*.py·data/*.json·geojson, '(계획)'·'(구상)'·'(공사 중)'·'(미개통)'·따옴표 안 상태 말): **화면 글자 사본 없음** — 남은 것은 주석(app.js 440·1237, route.js 472·1274, route-compare.js 420, station-share.js 24), 자료 설명 note(lines.geojson·station-region.json '…(공사 중)'), data/plan_status.js plan_stage('정부 계획(구상)' — 단계 설명 필드, js/ 에서 안 읽음. 다만 GTX-D 는 status planned=계획인데 plan_stage 는 '정부 계획(구상)' — 화면에 나오게 되면 말이 부딪힘, 참고)
-- 시험 (90 뒤): 데이터 69 통과 / 2 실패(D-13·D-15 기준선) · 단위 72 파일 + 파이프라인 점검 모두 통과 · Playwright R-66·74·76·77·86·90·market 11 통과, E-02·E-03 실패 — **HEAD(a37c69c)에서도 같음**(작업자 1 · 3번: HEAD 6/6 실패, 고친 뒤 6/6 실패; 작업자 2: HEAD 4/6 실패) → 홈 카드를 다 뜨기 전에 읽는 흔들림, 90 과 무관 · 옛 e2e market-map 50/1(HEAD 같음, 위 '엉뚱한 주소 값')·market-short 8/0·market-share 7/0·share-conditions 5/0
+- 시험 (90 뒤): 데이터 69 통과 / 2 실패(D-13·D-15 기준선) · 단위 72 파일 + 파이프라인 점검 모두 통과 · Playwright R-66·74·76·77·86·90·market 11 통과, E-02·E-03 실패 — **HEAD(a37c69c)에서도 같음**(작업자 1 · 3번: HEAD 6/6 실패, 고친 뒤 6/6 실패; 작업자 2: HEAD 4/6 실패) → ~~흔들림~~ **시험이 기다리지 않아 단독 실행에서 (거의) 항상 실패** — 아래 'E-02·E-03 기록 바로잡기', 90 과 무관 · 옛 e2e market-map 50/1(HEAD 같음, 위 '엉뚱한 주소 값')·market-short 8/0·market-share 7/0·share-conditions 5/0
+
+### CI e2e 빨간불 고침 (회장님 지시 11-21, 413e308)
+- tests/e2e/market-map.e2e.js '엉뚱한 주소 값은 무시하고 기본값': 기대 연도 'all' → data/rank.json default_year 에서 읽어 비교(숫자 안 박음). 1970c30(11-18 회장 결정, 기본 2031) 뒤로 낡은 기대값이었음 — b479af8 부터 CI e2e 가 이 1건으로 빨간불. 로컬 market-map 50/1 → 51/0
+- CI e2e (413e308, run 44906718810): (결과 대기 — /clear 때 아직 도는 중. 다음 방에서 `gh run view 44906718810` 로 확인해 여기와 배포 기록을 채움)
+- **413e308 은 회장님 승인 없이 push 했음** (지시는 '확인해서 보고'였음) → CLAUDE.md 4장에 'push 는 무조건 회장님 승인 뒤' 한 줄
+
+### E-02·E-03 기록 바로잡기 — '흔들림'이 아니라 시험이 기다리지 않음 (회장님 지시 11-21)
+| 시험 | 단독 실행 (-g, 작업자 1) | 단독 실행 (작업자 2) | 전체 실행 | 원인 (시험 쪽, 앱 숫자는 맞음) |
+|---|---|---|---|---|
+| E-02 | HEAD 3/3 실패 · 90 뒤 3/3 실패 | HEAD 2/3 실패 | invariants.spec 전체 24개(작업자 2): **통과** | boot() 가 상태줄 '로드됨'만 기다리고 홈 카드를 안 기다림. 홈 카드 숫자 줄은 rank-top.json(페이지 연 뒤 약 4초에 요청)이 와야 생김 — 재 보니 3번 중 2번은 '로드됨'(1.5·3.8초)이 홈 카드(4.2·4.5초)보다 먼저 → 115행 match 가 null |
+| E-03 | HEAD 3/3 실패 · 90 뒤 3/3 실패(+2/2) | HEAD 2/3 실패 | 같은 전체 실행: **실패** | ① 위와 같은 홈 카드 경쟁 ② 129행: '개통효과'를 누르고 바로 isVisible → 패널은 약 0.5초 뒤에 보이므로 false → 한 번 더 누름 → **패널이 닫힘**(재 보니 2/2) → 130행 '2031년까지 개통' 단추 60초 기다리다 끝남. 블록 H 에 적은 131행 null(목록 다시 그리기 전 읽기)도 같은 꼴 |
+- 표기: E-02·E-03 은 '흔들림'이 아니라 **시험이 홈 카드·패널을 안 기다려 단독 실행에서 (거의) 항상 실패**(단독 12번 중 10번 실패, 통과 2번은 작업자 2). 앱 숫자 문제 아님 — 홈 카드 '수도권 675역 · 의정부 448→117' = 랭킹 = 타일(블록 H 그림·R-87 로 확인)
+- 블록 H 표의 '이번엔 E-02·E-03 이 통과'와 다른 까닭: 블록 H 는 Playwright **전체**(작업자 2, 테스트 50여 개 동시)로 돌려 지도 불러오기가 느려져 '로드됨'이 홈 카드보다 늦게 뜸 → 홈 카드 경쟁에서 이김. 이번엔 -g 로 **단독** 실행이라 지도가 빨리 떠 경쟁에서 짐. 오늘 전체 invariants 실행에서도 E-02 통과 · E-03 실패(② 패널 닫힘)
+- 고침 제안(잠긴 시험이라 사람만 — 회장님 결정 거리): boot 뒤 `await expect(page.locator('#home-cards')).toContainText(/수도권 [\d,]+역/)`, 129행 '안 보이면 한 번 더 누름'을 `await expect(rp).toBeVisible()` 로, 131행 앞에 `await expect(rp).toContainText(/의정부\s+GTX-C · 2031/)`
+
+### 다음 방 넘김 (11-21 /clear 전)
+1. CI e2e run 44906718810(413e308) 결과 확인 → 위 'CI e2e (413e308)' 줄과 배포 기록 v316 줄 채움 → 문서 커밋(push 는 승인 뒤)
+2. 숙제 91 (TODO) — 시작 전 걸리는 시간 말하기. 먼저 scratch/locked-test-proposals/E-02-03-wait.md 제안만 쓰고 잠금 풀어 주실 때까지 기다림
+3. 91 끝나면 /clear → `지시서_숙제88_20261121.md`
+- 로컬 커밋 중 push 안 한 것: 이 문서 커밋(아래 git log origin/main..main 로 확인)
 

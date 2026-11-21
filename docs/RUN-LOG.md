@@ -163,6 +163,7 @@
 - 2026-11-21 12:55 KST · v305 · b479af8 — 블록 D 75·73·74·72·작은 것·보안 확인(8커밋 푸시, d76626b..b479af8). Pages 배포 성공, 배포본 sw.js app·data CACHE = v305, js/app.js 에 OPEN_YEAR_EXPR·js/route-compare.js 에 '최소환승 탭' 안내 있음. 시험 워크플로 test 성공(e2e 워크플로는 돌고 있었음)
 - 2026-11-21 14:04 KST · v308 · 383bf88 — 블록 E 80·81(10커밋 푸시, 35509b1..383bf88). Pages 배포 성공, 배포본 sw.js app·data CACHE = v308, gtx.html·data/gtx-card.json·js/gtx-page.js 받아짐(200), data.html 에 #gtx-card 절 있음. 시험 워크플로는 푸시 직후 돌기 시작
 - 2026-11-21 14:44 KST · v309 · 79ad6c7 — 숙제 83 gtx.html 링크 미리보기(1커밋 푸시, 1b3286f..79ad6c7). Pages 배포 성공, 배포본 sw.js v309, gtx.html 에 og·twitter 태그 14개, og:image image/og-gtx.jpg 200(image/jpeg, 84,281B)
+- 2026-11-21 18:42 KST · v310 · 4668e7c — 블록 F 77·76 + TODO 86(3커밋 푸시, 6e13858..4668e7c). 배포본 sw.js app·data CACHE = v310, rank.html 에 js/line-status.js, data/rank.json lines.y: GTX-G·GTX-H·GTX-A 평택 연장 null · GTX-C 2031
 
 ## 블록 B (2026-11-18 시작)
 계획: `docs/plans/block-B.md` · 시작 기준선: 데이터 시험 실패 2개

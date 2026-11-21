@@ -94,6 +94,9 @@ const out = {
   total: cap.total, risk: jeonse.risk,
   market: { from: pair.from, to: pair.to, min_deals: MIN_DEALS, method: 'linear',
     q25: r1(mk.q25), q50: r1(mk.q50), q75: r1(mk.q75), n_label: mk.n_label, n_hold: mk.n_hold, note: trend.note },
+  // 카드의 새 노선 이름·상태·개통 연도·색 — lines.geojson name_ko·status·open_year 그대로(500KB 파일을 페이지가 받지 않게)
+  lines: Object.fromEntries([...new Set(Object.values(s).flatMap(x => x.ln))].map(id => { const p = lineFeat.get(id) || {};
+    return [id, [p.name_ko || id, p.status || 'open', p.open_year == null ? null : p.open_year, p.color || '#555']]; })),
   s, k, o: outside,
 };
 fs.writeFileSync(path.join(ROOT, 'data/gtx-card.json'), JSON.stringify(out));

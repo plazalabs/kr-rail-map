@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cloud.umami.is; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cloud.umami.is https://api-gateway.umami.dev https://gateway.umami.is; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GTX 입구 | 한국철도맵</title>
+<meta name="description" content="역 이름이나 동 이름을 넣으면 업무지구까지 지금과 개통 후 걸리는 시간, 교통 접근성 변화, 그 동네 시세 흐름을 카드 한 장으로 보여 줍니다. 집값 예측이 아닙니다.">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="canonical" href="https://plazalabs.github.io/kr-rail-map/gtx.html">
+<meta name="theme-color" content="#1b64da">
+<link rel="stylesheet" href="vendor/pretendard/pretendard.css">
+<style>
+:root{--bg:#fff;--surface:#f6f7f9;--card:#fff;--text:#16191d;--text2:#4a5158;--muted:#5b6470;--border:#e3e6ea;
+--accent:#1b64da;--accentbg:#e8f0fe;--acc:#08743c;--accbg:#dcf5e6;--mk:#6a2fc0;--mkbg:#f1eafd;
+--r-card:18px;--shadow:0 1px 2px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.06)}
+@media(prefers-color-scheme:dark){:root{--bg:#14171a;--surface:#1c2024;--card:#191d21;--text:#e8eaed;--text2:#b3bac1;--muted:#9aa2aa;
+--border:#2c3238;--accent:#8ab0ff;--accentbg:#1b2840;--acc:#4fd88a;--accbg:#12301f;--mk:#c4a3ff;--mkbg:#2a1f3d;--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.32)}}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Pretendard Variable","Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;word-break:keep-all}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+[hidden]{display:none!important}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px 40px}
+header.top{background:var(--surface);box-shadow:var(--shadow)}
+header.top .wrap{padding:13px 16px;display:flex;align-items:center;gap:10px}
+.logo{font-weight:700;font-size:17px;text-decoration:none;color:var(--text);white-space:nowrap}
+header.top nav{margin-left:auto;display:flex;gap:14px;font-size:13px}
+header.top nav a{text-decoration:none;color:var(--text2);white-space:nowrap}
+h1{font-size:24px;line-height:1.3;letter-spacing:-.035em;margin:26px 0 12px}
+.lede{color:var(--text2);font-size:14px;margin:0 0 14px}
+.search{position:relative}
+.search input{width:100%;font:inherit;font-size:18px;padding:14px 16px;border:2px solid var(--accent);border-radius:14px;background:var(--card);color:var(--text);min-height:52px}
+.pick{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.pick button{width:100%;text-align:left;min-height:44px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card);cursor:pointer}
+.msg{color:var(--text2);font-size:14px;margin:10px 0}
+.top3{margin:22px 0 0}
+.top3 h2{font-size:14px;margin:0 0 2px}
+.top3 p{font-size:12px;color:var(--muted);margin:0 0 8px}
+.top3 ol{list-style:none;margin:0;padding:0;display:flex;gap:8px;flex-wrap:wrap}
+.top3 button{min-height:44px;padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface);cursor:pointer;font-size:14px}
+.card{margin:20px 0 0;padding:22px 20px;border-radius:var(--r-card);background:var(--card);box-shadow:var(--shadow);border:1px solid var(--border)}
+.card .st{font-size:15px;font-weight:700;margin:0 0 6px}
+.big{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.25;margin:4px 0 14px}
+.big small{display:block;font-size:14px;font-weight:600;color:var(--text2);letter-spacing:0}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 14px;font-size:15px;font-weight:700;cursor:pointer;background:none}
+.chip span{font-size:12px;font-weight:600;color:var(--muted)}
+.chip.acc{border-radius:999px;background:var(--accbg);color:var(--acc);border:2px solid var(--acc)}
+.chip.mk{border-radius:6px;background:var(--mkbg);color:var(--mk);border:2px solid var(--mk)}
+.chip.mk.hold{border-style:dashed;background:none}
+.chip.mk.none{border:0;background:var(--surface);color:var(--muted)}
+.chip-note{font-size:13px;color:var(--text2);margin:-6px 0 12px}
+.small{font-size:12.5px;color:var(--muted);margin:2px 0}
+.badge{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:6px;background:#fff6da;color:#7a5600;margin-left:6px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
+.actions button,.actions a{min-height:44px;display:inline-flex;align-items:center;padding:8px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);text-decoration:none;color:var(--text);font-size:14px;cursor:pointer}
+.actions .primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+details{margin:14px 0 0;border-top:1px solid var(--border);padding-top:10px}
+summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700;font-size:14px}
+details table{width:100%;border-collapse:collapse;font-size:13.5px}
+details td,details th{padding:6px 4px;border-bottom:1px solid var(--border);text-align:left;font-variant-numeric:tabular-nums}
+footer{font-size:12px;color:var(--muted);margin:30px 0 0}
+</style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="090a0561-5e07-4582-8c99-095ddf26e6cd" data-domains="plazalabs.github.io" data-exclude-hash="true" data-exclude-search="true"></script>
+</head>
+<body>
+<header class="top"><div class="wrap"><a class="logo" href="./">한국철도맵</a>
+<nav><a href="./">지도</a><a href="rank.html">순위</a><a href="data.html">자료</a></nav></div></header>
+<main class="wrap">
+<h1>우리 동네, GTX 개통 후 업무지구까지 몇 분?</h1>
+<p class="lede">교통 접근성과 시세 흐름을 따로 보여 줍니다. 둘은 서로 다른 지표이며 집값·투자수익 예측이 아닙니다.</p>
+<div class="search" role="search">
+  <label for="q" class="small">역 이름이나 동 이름</label>
+  <input id="q" type="search" autocomplete="off" placeholder="역 이름이나 동 이름 (예: 의정부, 운정)" aria-describedby="msg">
+</div>
+<p class="msg" id="msg" role="status"></p>
+<ul class="pick" id="pick" hidden></ul>
+<section class="top3" id="top3" hidden><h2>개통 후 교통 접근성 변화 TOP3</h2><p id="top3-sub"></p><ol id="top3-list"></ol></section>
+<section class="card" id="card" hidden aria-live="polite"></section>
+<footer>공개 자료로 낸 추정값입니다. 출처와 계산 방법은 <a href="data.html">자료 페이지</a>에 있습니다.</footer>
+</main>
+<script src="js/track.js"></script>
+<script src="js/ink.js"></script>
+<script src="js/line-status.js"></script>
+<script src="js/gtx-card.js"></script>
+<script src="js/gtx-page.js"></script>
+</body>
+</html>

@@ -15,7 +15,7 @@ const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) +
 const FG = ['text', 'text2', 'muted', 'accent', 'warn', 'ok', 'i-rocket', 'i-up', 'i-flat', 'i-down', 'i-new', 'gold'];
 const BG = ['bg', 'surface', 'card', 'warnbg', 'accentbg', 'goldbg'];
 let pass = 0; const bad = [];
-for (const f of ['rank.html', 'board.html', 'data.html']) {
+for (const f of ['rank.html', 'gtx.html', 'board.html', 'data.html']) {
   const s = fs.readFileSync(path.join(ROOT, f), 'utf8');
   const blocks = [...s.matchAll(/:root\{([^}]*)\}/g)].map(m => m[1]);
   if (blocks.length < 2) bad.push(`${f}: 밝은·어두운 :root 둘 다 있어야 함 (${blocks.length}개)`);

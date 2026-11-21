@@ -12,7 +12,7 @@ try { ({ stripJs, stripCss, stripHtml } = require(path.join(ROOT, 'tools', 'buil
 // 이모지·그림 문자: 이모지 블록, 기타 기호(☆✕◎ 등), 화살표 그림(⬆), 변형 선택자
 // 허용: 한글·숫자·일반 문장부호, 그리고 글자로 쓰는 화살표 → ← ↓ (U+2190~2193), 가운뎃점 ·, ▲▼ (순위 등락 — 글자 기호)
 const BAD = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\u{25A0}-\u{25B1}\u{25B4}-\u{25BB}\u{25BE}-\u{25FF}\u{FE0F}\u{2194}-\u{21FF}]/u;
-const FILES = ['index.html', 'rank.html', 'board.html', 'data.html']
+const FILES = ['index.html', 'rank.html', 'gtx.html', 'board.html', 'data.html']
   .concat(fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js')).map(f => 'js/' + f))
   .concat(['css/style.css']);
 

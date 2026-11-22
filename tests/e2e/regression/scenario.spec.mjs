@@ -22,7 +22,7 @@ test('[R-scenario] 홈 카드 = 타일 지도 기본값 (2031년까지 · 수도
   const homeUi = home.match(/의정부[\s\S]*?(\d+)위→(\d+)위/);
   await page.getByRole('button', { name: /GTX 역 타일로 한눈에 보기/ }).click();
   const mm = page.locator('#mm-panel');
-  await expect(mm).toContainText('수도권');
+  await expect(mm).toContainText(/수도권 [\d,]+역/, { timeout: 15_000 });   // '순위 자료를 받는 중…'(수도권 역 중)이 아니라 숫자가 뜰 때까지
   const tile = await mm.innerText();
   expect(num(tile.match(/수도권 ([\d,]+)역/)[1])).toBe(homeN);
   await mm.getByText('의정부', { exact: true }).click();

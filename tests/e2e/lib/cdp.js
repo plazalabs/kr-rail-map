@@ -162,6 +162,21 @@ async function clickStation(b, id, { timeout = 10000 } = {}) {
   return { ok: true, waitedMs: Date.now() - t0 };
 }
 
+/* 지도에서 역을 눌러 역 상세를 연다 — 역을 누르면 말풍선 [출발][도착][역 정보]가 뜨고,
+ * 그 말풍선의 [역 정보]를 실제로 눌러야 역 상세가 열린다. 반환: clickStation 결과 + popup(말풍선 떴나) */
+async function openStationOnMap(b, id, opts) {
+  const c = await clickStation(b, id, opts);
+  if (!c.ok) return c;
+  let pt = null;
+  for (let i = 0; i < 30 && !pt; i++) {
+    await sleep(100);
+    pt = await b.evaluate(`(() => { const e = document.querySelector('.st-popup [data-act=info]'); if (!e) return null; const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+  }
+  if (!pt) return { ...c, ok: false, why: '말풍선이 안 뜸' };
+  await b.click(pt[0], pt[1]);
+  return { ...c, popup: true };
+}
+
 // 휴대폰·태블릿(980px 이하)은 툴바가 아래 탭 바의 '더보기' 시트 안에 숨어 있다 (작업 1, 2026-11-12).
 // sel 이 툴바 안 요소이고 툴바가 숨어 있으면 '더보기'를 실제 클릭으로 연다. 열었으면 true.
 async function ensureToolbar(b, sel) {
@@ -184,4 +199,4 @@ async function ensureToolbar(b, sel) {
   return !!p;
 }
 
-module.exports = { launch, sleep, BASE, outDir, outRoot, recorder, findChrome, clickStation, Profiles, ensureToolbar };
+module.exports = { launch, sleep, BASE, outDir, outRoot, recorder, findChrome, clickStation, openStationOnMap, Profiles, ensureToolbar };

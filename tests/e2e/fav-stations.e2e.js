@@ -5,7 +5,7 @@
  * 실행: node tests/e2e/run.js --only fav-stations
  */
 'use strict';
-const { launch, sleep, BASE, recorder, clickStation, ensureToolbar } = require('./lib/cdp');
+const { launch, sleep, BASE, recorder, clickStation, openStationOnMap, ensureToolbar } = require('./lib/cdp');
 const R = recorder('fav-stations');
 const KEY = 'kr-rail-map-favorites-v1';
 
@@ -27,7 +27,7 @@ async function press(b, sel) {
 async function openOnMap(b, id) {
   await b.evaluate(`(() => { const s = STATIONS.find(f => f.properties.id === '${id}'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`);
   // 고정 1.8초 대기 뒤 눈감고 클릭하던 것을, 그 역이 클릭으로 잡힐 때까지 기다리게 (2026-11-09 FLAKY 원인)
-  const c = await clickStation(b, id); await sleep(1200);
+  const c = await openStationOnMap(b, id); await sleep(1200);   // 역 → 말풍선 [역 정보]
   return c.ok && b.evaluate(`document.getElementById('sd-panel').classList.contains('sd-open')`);
 }
 const favRows = b => b.evaluate(`[...document.querySelectorAll('#fav-list .fav-item')].filter(d => !/→/.test(d.textContent)).map(d => d.textContent.replace('✕', '').trim())`);

@@ -455,8 +455,9 @@ console.log('\n[즐겨찾기] 역 즐겨찾기를 역 ID 로 (IMPL9 건 5)');
   check('새 항목은 { name, id } 로 저장', /favorites\.stations\.push\(id \? \{ name, id \} : name\)/.test(app));
   check('옛 이름 문자열: 이름이 하나뿐이면 ID 로, 동명이면 그대로',
     /typeof e !== 'string'\) return e;[\s\S]{0,160}same\.length === 1 \? \{ name: e, id: same\[0\]\.properties\.id \} : e/.test(app));
-  check('역 상세·팝업의 ⭐ 가 역 ID 를 넘김',
-    /toggleFavStation\(stationName, stationId\)/.test(app) && /toggleFavStation\(sname, p\.id\)/.test(app) && /isFavStation\(sname, p\.id\)/.test(app));
+  // 지도 말풍선은 [출발][도착][역 정보] 세 버튼뿐 — ⭐ 는 역 상세에만 있다
+  check('역 상세의 ⭐ 가 역 ID 를 넘김',
+    /toggleFavStation\(stationName, stationId\)/.test(app));
   check('사이드바 항목 클릭은 ID 로 역을 찾음', /const s = byId \|\| STATIONS\.find/.test(app));
 }
 

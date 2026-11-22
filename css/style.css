@@ -644,16 +644,22 @@ body[data-theme="hospital"] .layer-opt .sa-approx { color: #526c6b; }
   color: var(--text-2);
 }
 .st-line .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-.st-popup .st-btns { display: flex; gap: 5px; }
+.st-popup .st-btns { display: flex; gap: 6px; }
+/* 지도 역 말풍선 버튼 — 역 상세의 '여기서 출발'(파란 채움)·'여기로 도착'(테두리)과 같은 모양 */
 .st-popup .st-btns button {
-  flex: 1; padding: 7px 0;
-  border: 1px solid var(--border); border-radius: 7px;
-  background: var(--input); color: var(--text);
-  font-size: var(--fs-xs); font-weight: 600; white-space: nowrap;
+  flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  min-width: 64px; min-height: 44px; padding: 0 10px;
+  border: 1px solid var(--border-strong, var(--border)); border-radius: 9px;
+  background: var(--btn-bg, var(--panel)); color: var(--btn-text, var(--text));
+  font: inherit; font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; word-break: keep-all; cursor: pointer;
 }
-.st-popup .st-btns button:hover {
-  background: var(--accent); color: var(--accent-text); border-color: var(--accent);
-}
+.st-popup .st-btns button svg { width: 16px; height: 16px; flex: none; }
+.st-popup .st-btns button:hover { background: var(--hover); border-color: var(--accent); }
+.st-popup .st-btns button.st-from { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.st-popup .st-btns button.st-from:hover { filter: brightness(1.06); }
+.st-popup .st-btns button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.st-pop .maplibregl-popup-content { max-width: min(320px, calc(100vw - 24px)); }
+.st-pop .st-popup { min-width: 0; }
 
 /* ---------- 7. 길찾기 결과 ---------- */
 #route-result .leg {

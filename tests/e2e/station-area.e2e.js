@@ -4,7 +4,7 @@
  */
 // IMPL5B 검증: 역세권 범위(근사) 레이어 — 실클릭 토글 / 방식별 그리기 / 거리 / 테마·배경 복원 / 위성 라벨 / 노선 필터 / ✕ / 역 패널 / 모바일
 // cdp.js·impl1·impl6 방식 재사용
-const { launch, sleep, BASE, outDir, clickStation } = require('./lib/cdp');
+const { launch, sleep, BASE, outDir, clickStation, openStationOnMap } = require('./lib/cdp');
 const path = require('path'), fs = require('fs');
 const OUT = outDir('station-area');
 const out = { checks: [] };
@@ -139,7 +139,7 @@ async function clickSel(b, sel) {
 
   // 7. 역 패널 한 줄 (강남 실클릭)
   await b.evaluate(`(() => { const s = STATIONS.find(x => x.properties.id === '${gangnam}'); map.jumpTo({ center: s.geometry.coordinates, zoom: 15 }); 0 })()`); await idle(b);
-  await clickStation(b, gangnam); await sleep(1200);   // 클릭으로 잡힐 때까지 기다린 뒤 클릭 (2026-11-09)
+  await openStationOnMap(b, gangnam); await sleep(1200);   // 역 → 말풍선 [역 정보]. 클릭으로 잡힐 때까지 기다린 뒤 클릭 (2026-11-09)
   const panel = await b.evaluate(`(() => { const sec = [...document.querySelectorAll('#sd-panel .sd-sec')].find(e => /역세권 범위/.test(e.innerText)); return { open: document.getElementById('sd-panel').classList.contains('sd-open'), text: sec ? sec.innerText.replace(/\\s+/g, ' ') : null, sum: StationArea.summaryOf('${gangnam}') }; })()`);
   check('역 패널에 역세권 한 줄', panel.open && panel.text && /1차\(250m\) 안 출구 \d+개 · 다른 역 \d+개/.test(panel.text), panel);
   await b.shot(path.join(OUT, `panel.png`));

@@ -1211,7 +1211,8 @@ function restoreFromUrl() {
  * (실제로 그랬다. Esc 로 역 패널을 닫아야 그제서야 입력칸이 드러났다.)
  * 그래서 역 패널을 먼저 닫고, 반대편 칸으로 초점을 옮긴다.
  */
-function routeFromStation(stationName, which, stationId) {
+function routeFromStation(stationName, which, stationId, opts) {
+  const viaMap = !!(opts && opts.viaMap);
   if (typeof StationDetail !== 'undefined') StationDetail.hide();
   const panel = document.getElementById('route-panel');
   panel.hidden = false;
@@ -1226,10 +1227,12 @@ function routeFromStation(stationName, which, stationId) {
     return;
   }
   box.innerHTML = '';
-  other.focus();
+  // 지도 말풍선에서 고른 것이면 다음 역도 지도에서 누르게 둔다 — 입력칸에 초점을 주면 휴대폰 키보드가 지도를 가린다
+  if (!viaMap) other.focus();
+  const how = viaMap ? '지도에서 누르거나 입력하세요' : '입력하세요';
   setStatus(which === 'from'
-    ? `${stationName}에서 출발 — 도착역을 입력하세요.`
-    : `${stationName}으로 도착 — 출발역을 입력하세요.`);
+    ? `${stationName}에서 출발 — 도착역을 ${how}.`
+    : `${stationName}으로 도착 — 출발역을 ${how}.`);
 }
 
 /* ---------- 길찾기 UI ---------- */
@@ -2597,15 +2600,16 @@ function showStation(feature, lngLat) {
   openStationPopup(feature, lngLat);
 }
 
-function openStationPopup(feature, lngLat) {
+// 지도에서 역을 누르면 뜨는 말풍선: [출발] [도착] [역 정보].
+// 입력칸에 치지 않고 지도만으로 출발·도착을 정한다. [역 정보]는 역 상세 패널을 그대로 연다.
+// 말풍선은 역에 붙어 지도를 따라 움직이고, 역이 화면 밖으로 나가면 닫힌다.
+function openStationPopup(feature) {
   closeStationPopup();
   const p = feature.properties;
-  const sname = p.name_ko;
-  // STATIONS 원본에서 찾기 (MapLibre feature properties는 배열이 문자열화될 수 있음)
   const orig = STATIONS.find(s => s.properties.id === p.id);
-  const lineIds = orig ? (orig.properties.lines || []) : [];
-  const nameEn = orig ? (orig.properties.name_en || '') : '';
-  // 노선별 색상 도트와 함께 표시
+  if (!orig) return;
+  const sname = orig.properties.name_ko;
+  const lineIds = orig.properties.lines || [];
   const lineHtml = lineIds.length ? lineIds.map(lid => {
     const ln = LINES.find(l => l.properties.id === lid);
     const nm = lineNameOf.get(lid) || lid;
@@ -2615,33 +2619,84 @@ function openStationPopup(feature, lngLat) {
   }).join('') : '노선 정보 없음';
   const el = document.createElement('div');
   el.className = 'st-popup';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', sname + ' — 출발·도착 고르기');
   el.innerHTML =
-    '<div class="st-name">' + sname + (nameEn ? ' <span class="st-en">' + nameEn + '</span>' : '') + '</div>' +
+    '<div class="st-name">' + sname + '</div>' +
     '<div class="st-lines">' + lineHtml + '</div>' +
     '<div class="st-btns">' +
-      '<button data-act="from">출발지</button>' +
-      '<button data-act="to">도착지</button>' +
-      '<button data-act="fav">' + Icons.svg(isFavStation(sname, p.id) ? 'star_on' : 'star') + ' 즐겨찾기</button>' +
+      '<button type="button" class="st-from" data-act="from">' + Icons.svg('depart') + '<span>출발</span></button>' +
+      '<button type="button" class="st-to" data-act="to">' + Icons.svg('flag') + '<span>도착</span></button>' +
+      '<button type="button" class="st-info" data-act="info"><span>역 정보</span></button>' +
     '</div>';
+  // 말풍선 버튼 누르기가 지도까지 가면, 바로 이어 역을 누를 때 '두 번 누르기 확대'로 잡혀 말풍선이 안 뜬다
+  ['touchstart', 'touchend', 'mousedown', 'pointerdown', 'dblclick'].forEach(t => el.addEventListener(t, ev => ev.stopPropagation()));
   el.querySelectorAll('button').forEach(b => {
     b.addEventListener('click', ev => {
       ev.stopPropagation();
       const act = b.dataset.act;
-      if (act === 'fav') {
-        toggleFavStation(sname, p.id);
-        b.innerHTML = Icons.svg(isFavStation(sname, p.id) ? 'star_on' : 'star') + ' 즐겨찾기';
-        return;
-      }
-      setRouteStation(document.getElementById(act === 'from' ? 'route-from' : 'route-to'), orig || sname);
-      document.getElementById('route-panel').hidden = false;
       closeStationPopup();
+      if (act === 'info') { showStation(orig, { lng: orig.geometry.coordinates[0], lat: orig.geometry.coordinates[1] }); return; }
+      routeFromStation(sname, act, orig.properties.id, { viaMap: true });
     });
   });
-  stationPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: '240px' })
-    .setLngLat(lngLat)
-    .setDOMContent(el)
-    .addTo(map);
+  const ll = orig.geometry.coordinates;
+  const pop = new maplibregl.Popup({ closeButton: false, closeOnClick: true, maxWidth: 'none', offset: 14, className: 'st-pop' })
+    .setLngLat(ll).setDOMContent(el).addTo(map);
+  // 지도 위에 겹친 패널·탭 바·검색 칸에 가리지 않는 방향을 고른다 (지도 라이브러리의 자동 방향은 지도 테두리만 본다)
+  const pe = pop.getElement();
+  const pc = pe.querySelector('.maplibregl-popup-content');
+  // 점수: 화면 안에 다 들어오면 10, 그다음 다른 화면 요소에 안 가린 모서리 수(0~4)
+  const seen = () => {
+    const box = pe.getBoundingClientRect(), cb = pc.getBoundingClientRect();
+    const n = [[cb.left + 8, cb.top + 8], [cb.right - 8, cb.top + 8], [cb.left + 8, cb.bottom - 8], [cb.right - 8, cb.bottom - 8]]
+      .filter(([x, y]) => { const t = document.elementFromPoint(x, y); return t && pe.contains(t); }).length;
+    const inside = box.left >= 0 && box.top >= 0 && box.right <= window.innerWidth && box.bottom <= window.innerHeight;
+    return (inside ? 10 : 0) + n;
+  };
+  let best = { anchor: undefined, n: seen() };
+  if (best.n < 14) {
+    for (const anchor of ['bottom', 'top', 'left', 'right', 'bottom-left', 'bottom-right', 'top-left', 'top-right']) {
+      pop.options.anchor = anchor; pop.setLngLat(ll);
+      const n = seen();
+      if (n > best.n) best = { anchor, n };
+      if (n === 14) break;
+    }
+    pop.options.anchor = best.anchor; pop.setLngLat(ll);
+  }
+  // 어느 방향도 화면에 다 안 들어오면(좁은 휴대폰에서 가장자리와 가운데 사이 역) 말풍선을 옆으로 밀고, 꼬리는 역을 계속 가리킨다
+  if (best.n < 10) {
+    const pt = map.project(ll), a = pt.y > map.getContainer().clientHeight / 2 ? 'bottom' : 'top';
+    pop.options.anchor = a; pop.setLngLat(ll);
+    const b = pe.getBoundingClientRect(), M = 8;
+    const dx = Math.round(b.left < M ? M - b.left : b.right > window.innerWidth - M ? window.innerWidth - M - b.right : 0);
+    pop.setOffset({ [a]: [dx, a === 'bottom' ? -14 : 14] });
+    const tip = pe.querySelector('.maplibregl-popup-tip');
+    if (tip) tip.style.transform = 'translateX(' + (-dx) + 'px)';
+  }
+  stationPopup = pop;
+  pop.on('close', () => { if (stationPopup === pop) stationPopup = null; });
 }
+// 역이 화면 밖으로 나가면 말풍선을 닫는다 (따라 움직이는 동안은 그대로)
+map.on('move', () => {
+  if (!stationPopup) return;
+  const pt = map.project(stationPopup.getLngLat()), c = map.getContainer();
+  if (pt.x < 0 || pt.y < 0 || pt.x > c.clientWidth || pt.y > c.clientHeight) closeStationPopup();
+});
+// Esc 는 맨 위에 뜬 말풍선부터 닫는다 (길찾기 칸·왼쪽 패널은 그대로)
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || !stationPopup || e.isComposing) return;
+  e.preventDefault(); e.krEscHandled = true;
+  closeStationPopup();
+}, true);
+// 지도 밖(패널·툴바 등)을 눌러도 닫는다. 지도 위 누르기는 지도 라이브러리가 닫는다.
+document.addEventListener('pointerdown', e => {
+  if (!stationPopup) return;
+  const pe = stationPopup.getElement();
+  if (pe && pe.contains(e.target)) return;
+  if (e.target === map.getCanvas()) return;
+  closeStationPopup();
+}, true);
 map.on('click', e => {
   // 그리기 모드 중에는 역 팝업 띄우지 않음
   if (document.body.classList.contains('drawing')) return;
@@ -2654,7 +2709,8 @@ map.on('click', e => {
   if (!feats.length) return;
   // 떡상 패널이 열려 있으면 패널이 그 역을 보여 준다 (역 상세는 패널의 '역 상세' 버튼으로)
   if (typeof RocketPanel !== 'undefined' && RocketPanel.handleMapClick && RocketPanel.handleMapClick(feats[0])) return;
-  showStation(feats[0], e.lngLat);
+  // 역 상세 대신 말풍선 [출발][도착][역 정보] — 지도만으로 출발·도착을 정한다
+  openStationPopup(feats[0]);
 });
 map.on('mouseenter', 'rail-stations', () => { map.getCanvas().style.cursor = 'pointer'; });
 map.on('mouseleave', 'rail-stations', () => { map.getCanvas().style.cursor = ''; });

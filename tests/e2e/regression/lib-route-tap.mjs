@@ -116,3 +116,26 @@ export async function bringIntoView(page, id, zoom) {
     map.once('idle', () => { const q = map.project(s.geometry.coordinates); res({ x: r.x + q.x, y: r.y + q.y }); });
   }), [id, target[0], target[1], zoom]);
 }
+
+// 숙제 99·101: 화면 좌표 pt 자리에 역 점이 그려져 있는지 — 역 점 레이어를 껐을 때·켰을 때·다시 껐을 때 그 자리를 찍어 비교한다.
+// 두 번 끈 화면이 같을 때(타일 등이 다 그려진 뒤)만 판정한다. 판정 못 하면 null.
+const setStationsVisible = (page, on) => page.evaluate(on => new Promise(res => {
+  map.setLayoutProperty('rail-stations', 'visibility', on ? 'visible' : 'none');
+  map.once('idle', res);
+  map.triggerRepaint();
+}), on);
+export async function dotSeen(page, pt) {
+  const clip = { x: Math.round(pt.x) - 6, y: Math.round(pt.y) - 6, width: 12, height: 12 };
+  for (let i = 0; i < 6; i++) {
+    await setStationsVisible(page, false);
+    const off1 = await page.screenshot({ clip });
+    await setStationsVisible(page, true);
+    const on = await page.screenshot({ clip });
+    await setStationsVisible(page, false);
+    const off2 = await page.screenshot({ clip });
+    await setStationsVisible(page, true);
+    if (off1.equals(off2)) return !on.equals(off1);
+    await page.waitForTimeout(500);
+  }
+  return null;
+}

@@ -591,6 +591,10 @@ body[data-theme="hospital"] .layer-opt .sa-approx { color: #526c6b; }
 #route-panel .rp-opts { row-gap: 2px; }
 #route-panel .rp-opts .rp-opt { margin: 0; }
 .rp-note { font-size: var(--fs-xs); color: var(--muted); line-height: 1.5; }
+/* 길찾기 중 [다른 역 보기] ↔ [경로만 보기] — PC·펼친 시트는 결과 칸 맨 위, 휴대폰 접힌 카드는 요약 줄 안 */
+.rp-others { flex: none; min-height: 44px; min-width: 44px; padding: 0 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--btn-bg); color: var(--accent); font: inherit; font-size: var(--fs-xs); font-weight: 700; white-space: nowrap; word-break: keep-all; cursor: pointer; }
+#route-result > .rp-others { display: block; margin: 0 0 8px auto; }
+.rp-others[hidden] { display: none !important; }
 
 /* 그리기 */
 .dp-row { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); }

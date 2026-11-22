@@ -1659,6 +1659,7 @@ function setRoutePeek(on, text) {
   rp.classList.add('rp-has-result');
   if (text != null) rp.querySelector('.rp-peek-sum').textContent = text;
   else if (on) rp.querySelector('.rp-peek-sum').textContent = routeSummaryText() || '경로 결과';
+  placeRouteOthersBtn();
   if (on && window.KRTrack) { /* 접기는 세지 않는다 — 너무 잦음 */ }
 }
 
@@ -1696,13 +1697,14 @@ document.getElementById('route-go').addEventListener('click', () => {
     setStatus('동명역: ' + pair.guessed.map(s => `${s.properties.name_ko}(${stationLinesLabel(s)})`).join(', ') +
       ' 으로 해석했습니다. 다른 역이면 입력칸 목록에서 고르세요.');
   }
+  routeOthersShown = false;   // 새 경로는 기본(경로 밖 역 점 숨김)
   // 3종 비교 모듈이 있으면 사용, 없으면 기존 단일 경로
   if (typeof RouteCompare !== 'undefined') {
     const peek = isMobileSheet();
     if (peek) clearMobileOverlays();   // 키보드·서랍·역 상세·더보기·검색 목록 닫기 (지도가 보이게)
     if (peek) setRoutePeek(true, '경로를 찾는 중…');   // 먼저 접어야 지도 맞춤이 접힌 창 높이로 여백을 잡는다
     RouteCompare.show(from.properties.id, to.properties.id, { includeUnopened: routeIncludeUnopened(), band: routeBand() });
-    if (peek) setRoutePeek(true);
+    if (peek) setRoutePeek(true); else placeRouteOthersBtn();
     if (peek) { setTimeout(refitLastRoute, 450); setTimeout(refitLastRoute, 1000); }   // 키보드가 내려간 뒤 화면 높이로 다시 맞춤
     if (window.KRTrack) KRTrack('길찾기', { 개통예정포함: routeIncludeUnopened() ? '예' : '아니오' });
     // 아래 상태 줄에 '도착역을 입력하세요' 같은 옛 안내가 남지 않게 — 동명역 해석 안내는 위에서 이미 띄웠으면 그대로 둔다
@@ -1801,6 +1803,7 @@ document.getElementById('route-go').addEventListener('click', () => {
   box.innerHTML = html;
   // 경로 하이라이트: 해당 경로 역만 밝게, 나머지는 어둡게
   highlightRoute(r.path, r.legs);
+  placeRouteOthersBtn();
   // (경유역은 이제 항상 표시되므로 토글 불필요)
 });
 
@@ -1853,11 +1856,48 @@ function routeLineInfo(lineId) {
 
 let lastRoute = null;   // 배경 바꿀 때(스타일 통째 교체) 경로를 다시 그리려고 기억 (K10)
 const ROUTE_BG_OPACITY = 0.18;   // 경로 표시 중 배경 노선 (A7)
-const ROUTE_OFF_STATION_OPACITY = 0.45;   // 경로 표시 중 경로 밖 역 점 — 다음 역을 지도에서 찾아 누를 수 있게 흐리게 남긴다(이름은 숨김)
+const ROUTE_OFF_STATION_OPACITY = 0.45;   // [다른 역 보기]를 켰을 때 경로 밖 역 점 — 다음 역을 지도에서 찾아 누를 수 있게 흐리게(이름은 숨김)
+// 경로 밖 역 점은 기본 0(경로만 남김). 결과 카드의 [다른 역 보기]를 누를 때만 흐리게 보인다. 새 경로를 찾으면 다시 기본.
+let routeOthersShown = false;
+function setRouteStationOpacity(path) {
+  if (!map || !map.getLayer('rail-stations')) return;
+  const only = ['case', ['in', ['get', 'id'], ['literal', [...new Set(path)]]], 1, routeOthersShown ? ROUTE_OFF_STATION_OPACITY : 0];
+  map.setPaintProperty('rail-stations', 'circle-opacity', only);
+  map.setPaintProperty('rail-stations', 'circle-stroke-opacity', only);
+}
+function routeOthersBtn() {
+  let b = document.getElementById('route-others');
+  if (!b) {
+    b = document.createElement('button');
+    b.type = 'button'; b.id = 'route-others'; b.className = 'rp-others'; b.hidden = true;
+    b.addEventListener('click', () => {
+      routeOthersShown = !routeOthersShown;
+      if (lastRoute) setRouteStationOpacity(lastRoute.path);
+      syncRouteOthersBtn();
+    });
+  }
+  return b;
+}
+// 휴대폰 접힌 결과 카드면 요약 줄 안, 아니면(PC 오른쪽 패널·펼친 시트) 결과 칸 맨 위
+function placeRouteOthersBtn() {
+  const b = routeOthersBtn();
+  const rp = document.getElementById('route-panel');
+  const bar = rp.querySelector('.rp-peekbar');
+  if (rp.classList.contains('rp-peek') && bar) { if (b.parentElement !== bar) bar.insertBefore(b, bar.querySelector('.rp-peek-open')); }
+  else { const box = document.getElementById('route-result'); if (box && box.firstChild !== b) box.prepend(b); }
+  syncRouteOthersBtn();
+}
+function syncRouteOthersBtn() {
+  const b = document.getElementById('route-others');
+  if (!b) return;
+  b.hidden = !lastRoute;
+  b.textContent = routeOthersShown ? '경로만 보기' : '다른 역 보기';
+}
 function highlightRoute(path, legs, opt) {
   if (!map || !path || !path.length) return;
   clearRouteHighlight();
   lastRoute = { path, legs };
+  syncRouteOthersBtn();
   if (typeof closeStationPopup === 'function') closeStationPopup();
 
   // 배경 지도에 그려진 철도·역 심볼까지 숨긴다
@@ -1867,18 +1907,13 @@ function highlightRoute(path, legs, opt) {
     }
   });
 
-  const pathSet = new Set(path);
   // 노선 레이어는 흐리게(18%) 남기고, 경로만 따로 진하게 그린다 — 다 지우면 경로가 도시 어디쯤인지 감이 없다
   // (정반합 8차 A7, 2026-11-15 실측: 예전엔 0 — 완전히 지워졌음). 테두리·미개통 점선은 그대로 숨김(경로와 헷갈림)
   if (map.getLayer('rail-lines')) map.setPaintProperty('rail-lines', 'line-opacity', ROUTE_BG_OPACITY);
   if (map.getLayer('rail-lines-casing')) map.setPaintProperty('rail-lines-casing', 'line-opacity', 0);
   UNOPENED_LINE_LAYERS.forEach(id => { if (map.getLayer(id)) map.setPaintProperty(id, 'line-opacity', 0); });
   if (map.getLayer('rail-lines-unopened-label')) map.setLayoutProperty('rail-lines-unopened-label', 'visibility', 'none');
-  if (map.getLayer('rail-stations')) {
-    const only = ['case', ['in', ['get', 'id'], ['literal', [...pathSet]]], 1, ROUTE_OFF_STATION_OPACITY];
-    map.setPaintProperty('rail-stations', 'circle-opacity', only);
-    map.setPaintProperty('rail-stations', 'circle-stroke-opacity', only);
-  }
+  setRouteStationOpacity(path);
   // 길찾기 중에는 지도 원래 역 이름을 경로 밖 역까지 전부 숨긴다 — 경로 역 이름은 이름표(+ 숨긴 역은 route-highlight-labels)가 맡는다.
   // filter 는 건드리지 않는다. 닫으면 clearRouteHighlight 가 글자를 되돌린다.
   if (map.getLayer('station-labels')) map.setPaintProperty('station-labels', 'text-opacity', 0);
@@ -2138,6 +2173,7 @@ window.leaveRouteMode = leaveRouteMode;
 
 function clearRouteHighlight() {
   lastRoute = null;
+  syncRouteOthersBtn();
   if (!map) return;
   lastRouteFit = null;
   ['route-highlight-labels', 'route-highlight-walk', 'route-highlight-stations', 'route-highlight-line', 'route-casing'].forEach(id => {

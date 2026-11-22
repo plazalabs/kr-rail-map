@@ -2714,6 +2714,9 @@ map.on('click', e => {
     feats = map.queryRenderedFeatures([[p.x - r, p.y - r], [p.x + r, p.y + r]], { layers: ['rail-stations'] });
   } catch (_) { return; }
   if (!feats.length) return;
+  // 상자 안에 역이 여럿이면 누른 자리에서 가장 가까운 역 — 결과 순서는 거리 순이 아니다(여의도 자리를 눌러도 샛강이 먼저 온다)
+  const dist = f => { const q = map.project(f.geometry.coordinates); return Math.hypot(q.x - e.point.x, q.y - e.point.y); };
+  feats.sort((a, b) => dist(a) - dist(b));
   // 떡상 패널이 열려 있으면 패널이 그 역을 보여 준다 (역 상세는 패널의 '역 상세' 버튼으로)
   if (typeof RocketPanel !== 'undefined' && RocketPanel.handleMapClick && RocketPanel.handleMapClick(feats[0])) return;
   // 역 상세 대신 말풍선 [출발][도착][역 정보] — 지도만으로 출발·도착을 정한다

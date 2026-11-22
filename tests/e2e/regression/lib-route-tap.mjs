@@ -88,3 +88,31 @@ export const fields = page => page.evaluate(() => ({ from: document.getElementBy
 export async function waitRoute(page) {
   await expect.poll(() => page.evaluate(() => !!map.getLayer('route-casing')), { timeout: 30_000 }).toBe(true);
 }
+
+// 숙제 99: 지도에서 광운대 [출발] → 삼성 [도착]으로 경로를 만든다
+export async function routeGwangSam(page) {
+  // 1024px 는 툴바가 두 줄이라 지도 위쪽 가운데에서 연 말풍선이 길찾기 패널 밑에 깔린다(TODO 100) — 경로는 아래쪽에서 눌러 만든다
+  const where = (await page.evaluate(() => innerWidth)) === 1024 ? 'bottom' : 'center';
+  await tapStation(page, ID.gwang, { where });
+  await pick(page, '출발');
+  await tapStation(page, ID.sam, { where });
+  await pick(page, '도착');
+  await waitRoute(page);
+  // 휴대폰은 경로를 그린 뒤 0.45·1초에 경로로 다시 맞춘다(refitLastRoute) — 그 뒤에 사람이 지도를 움직인다
+  await page.waitForTimeout(1500);
+}
+
+// 역을 지도에서 가리지 않는 자리로 옮기고(사람이 지도를 끌어 그쪽을 보는 것) 화면 좌표를 돌려준다.
+// tapStation 과 달리 '그 역이 첫 번째로 잡힐 때까지' 기다리지 않는다 — 사람처럼 그 자리를 그대로 누르게.
+export async function bringIntoView(page, id, zoom) {
+  const target = await spot(page, 'center');
+  expect(target, '지도에서 보이는 자리').not.toBeNull();
+  return page.evaluate(([id, tx, ty, zoom]) => new Promise(res => {
+    const s = STATIONS.find(f => f.properties.id === id);
+    const r = map.getCanvas().getBoundingClientRect();
+    map.jumpTo({ center: s.geometry.coordinates, zoom });
+    const p = map.project(s.geometry.coordinates);
+    map.panBy([p.x - (tx - r.x), p.y - (ty - r.y)], { duration: 0 });
+    map.once('idle', () => { const q = map.project(s.geometry.coordinates); res({ x: r.x + q.x, y: r.y + q.y }); });
+  }), [id, target[0], target[1], zoom]);
+}

@@ -111,6 +111,7 @@ test.describe('숫자 일관성', () => {
 
   test('[E-02] 수도권 역 수와 시나리오: 홈 카드 = 랭킹(같은 연도) = 타일 지도 기본값', async ({ page }) => {
     await boot(page);
+    await expect(page.locator('#home-cards')).toContainText(/수도권 [\d,]+역/, { timeout: 15_000 });
     const home = await page.locator('#home-cards').innerText();
     const homeN = num(home.match(/수도권 ([\d,]+)역/)[1]);
     const homeYear = home.match(/(20\d\d)년까지 개통 가정/)[1];
@@ -123,6 +124,7 @@ test.describe('숫자 일관성', () => {
 
   test('[E-03] 의정부 순위: 홈 카드 = 랭킹 패널 = 타일 지도', async ({ page }) => {
     await boot(page);
+    await expect(page.locator('#home-cards')).toContainText(/의정부[\s\S]*?\d+위→\d+위/, { timeout: 15_000 });
     const home = (await page.locator('#home-cards').innerText()).match(/의정부[\s\S]*?(\d+)위→(\d+)위/);
     await page.getByRole('navigation', { name: '주요 메뉴' }).getByRole('button', { name: '개통효과' }).click();
     const rp = page.locator('#rocket-panel');

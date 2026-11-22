@@ -176,6 +176,7 @@
 - 2026-11-21 23:02 KST · v317 · 23a05e2 — 숙제 92 + 문서 2(3커밋 푸시, 413e308..23a05e2, 회장님 승인). pages-build-deployment 성공, 배포본 sw.js app·data CACHE = v317, 배포본 js/app.js 에 길찾기 중 station-labels text-opacity 0 있음·경로 역 빼는 filter(notPath) 없음. **CI test 성공**(run 44911788756). CI e2e(run 44911788744)는 돌고 있음(약 40분, 다음 방에서 확인)
 - 2026-11-22 01:48 KST · v318 · 3c0535c — 숙제 93 몇분컷 입구(4커밋 푸시 c7509b9·da2fb5d·916c26b·3c0535c, 23a05e2..3c0535c, 회장님 승인). pages-build-deployment 성공, 배포본 sw.js app CACHE = v318. 배포본 확인(1440·390): index 몇분컷 버튼(PC .tb-gtx · 휴대폰 #m-gtx → gtx.html?ref=entry-map) 보임, rank·gtx 머리 메뉴 '지도 · 몇분컷 · 축지법 랭킹 · 게시판 · 자료'(지금 화면 aria-current). **CI test 성공**. CI e2e 는 돌고 있음(다음 방에서 확인)
 - 2026-11-22 14:58 KST · v320 · 111567e — 숙제 96·97 지도 말풍선 길찾기(5커밋 푸시 46d57e4·179ea21·4613d37·ad4e627·111567e, 3c0535c..111567e, 회장님 승인). pages-build-deployment 성공, 배포본 sw.js app CACHE = v320. 배포본에서 R-96 광운대 [출발] → 삼성 [도착] 390px · R-97 여의도 [도착] → 광운대 → 여의도 390px 2/2 통과. **CI test 성공**(run 44991603349). CI e2e(run 44991603354)는 돌고 있음(다음 방에서 확인)
+- 2026-11-22 16:43 KST · v322 · 5fcb011 — 숙제 99 가장 가까운 역·경로 밖 점 흐리게 + E-02·E-03 기다림(5커밋 푸시 54c2a3f·5a6e4eb·46e1240·d8c65f1·5fcb011, 111567e..5fcb011, 회장님 승인). pages-build-deployment 성공(run 44999545691), 배포본 sw.js app CACHE = v322. 배포본에서 R-96·R-97·R-99 390·1440px 13/13 통과. **CI test 성공**(run 44999545991). CI e2e(run 44999545922)는 진행 중. (v320 때 돌던 CI e2e run 44991603354 는 성공)
 
 ## 블록 B (2026-11-18 시작)
 계획: `docs/plans/block-B.md` · 시작 기준선: 데이터 시험 실패 2개

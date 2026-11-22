@@ -1219,6 +1219,13 @@ function routeFromStation(stationName, which, stationId, opts) {
   const mine = document.getElementById(which === 'from' ? 'route-from' : 'route-to');
   const other = document.getElementById(which === 'from' ? 'route-to' : 'route-from');
   const box = document.getElementById('route-result');
+  // 두 칸이 다 찬 뒤 다른 역을 '출발'로 고르면 새로 시작한다 — 이전 도착·경로를 남기지 않는다.
+  // '도착'으로 고르면 출발은 그대로 두고 도착만 바꿔 다시 찾는다(아래).
+  if (which === 'from' && mine.value.trim() && other.value.trim()) {
+    setRouteStation(other, '');
+    clearRouteHighlight();
+    panel.classList.remove('rp-peek', 'rp-has-result');
+  }
   // 이름이 아니라 그 역(ID)을 넘긴다. 서울 시청 패널에서 눌렀는데 부산 시청이 잡히면 안 된다.
   setRouteStation(mine, stationById(stationId) || stationName);
   if (other.value.trim()) {

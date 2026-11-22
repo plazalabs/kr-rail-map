@@ -1859,6 +1859,7 @@ function routeLineInfo(lineId) {
 
 let lastRoute = null;   // 배경 바꿀 때(스타일 통째 교체) 경로를 다시 그리려고 기억 (K10)
 const ROUTE_BG_OPACITY = 0.18;   // 경로 표시 중 배경 노선 (A7)
+const ROUTE_OFF_STATION_OPACITY = 0.45;   // 경로 표시 중 경로 밖 역 점 — 다음 역을 지도에서 찾아 누를 수 있게 흐리게 남긴다(이름은 숨김)
 function highlightRoute(path, legs, opt) {
   if (!map || !path || !path.length) return;
   clearRouteHighlight();
@@ -1880,7 +1881,7 @@ function highlightRoute(path, legs, opt) {
   UNOPENED_LINE_LAYERS.forEach(id => { if (map.getLayer(id)) map.setPaintProperty(id, 'line-opacity', 0); });
   if (map.getLayer('rail-lines-unopened-label')) map.setLayoutProperty('rail-lines-unopened-label', 'visibility', 'none');
   if (map.getLayer('rail-stations')) {
-    const only = ['case', ['in', ['get', 'id'], ['literal', [...pathSet]]], 1, 0];
+    const only = ['case', ['in', ['get', 'id'], ['literal', [...pathSet]]], 1, ROUTE_OFF_STATION_OPACITY];
     map.setPaintProperty('rail-stations', 'circle-opacity', only);
     map.setPaintProperty('rail-stations', 'circle-stroke-opacity', only);
   }
